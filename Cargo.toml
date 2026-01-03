@@ -1,6 +1,6 @@
 [package]
 name = "univis_ui"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024" # Rust 2024 edition is appropriate for modern development
 description = "A high-performance, SDF-based hybrid world-space UI framework for the Bevy game engine."
 authors = ["abdellah-haffout <abdellahhaffout9@gmail.com>"]

@@ -17,7 +17,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         UWorldRoot {
             size: Vec2::new(800.0, 600.0), // حجم اللوحة
-            resolution_scale: 1.0,
+            ..default()
         },
         // 3. إضافة خصائص الشكل (UNode)
         UNode {
@@ -45,6 +45,12 @@ fn setup(mut commands: Commands) {
                 padding: USides::all(10.0),
                 ..default()
             },
+
+            UPbr {
+            metallic: 0.0,  // معدني
+            roughness: 0.0, // لامع
+            emissive: LinearRgba::new(10.0, 10.0, 10.0, 1.0), // توهج خفيف
+        },
             ULayout {
                 align_items: UAlignItems::Center,
                 justify_content: UJustifyContent::Center,
@@ -58,13 +64,18 @@ fn setup(mut commands: Commands) {
             }
         )).with_children(|card| {
             // 6. إضافة نص
-            card.spawn(UTextLabel {
+            card.spawn((UTextLabel {
                 text: "Hello, Univis!".into(),
                 font_size: 32.0,
                 color: Color::WHITE,
                 autosize: true, // النص يضبط حجم الحاوية تلقائياً
                 ..default()
-            });
+            },
+            UPbr {
+            metallic: 0.0,  // معدني
+            roughness: 0.0, // لامع
+            emissive: LinearRgba::new(10.0, 10.0, 10.0, 1.0), // توهج خفيف
+        },));
         });
     });
 }

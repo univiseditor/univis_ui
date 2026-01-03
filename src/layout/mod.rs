@@ -4,6 +4,7 @@ pub mod layout_system;
 pub mod core;
 pub mod render;
 pub mod algorithms;
+pub mod pipeline;
 
 /// A convenient module that re-exports all essential layout components and types.
 ///
@@ -16,6 +17,7 @@ pub mod prelude {
     pub use crate::layout::render::prelude::*;
     pub use crate::layout::algorithms::prelude::*;
     pub use crate::layout::UnivisLayoutPlugin;
+    pub use crate::layout::pipeline::prelude::*;
 }
 
 use bevy::{prelude::*, sprite_render::Material2dPlugin};
@@ -62,10 +64,16 @@ impl Plugin for UnivisLayoutPlugin {
         app
          // Initialize the Material2d plugin for our custom SDF shader material
          .add_plugins(Material2dPlugin::<UNodeMaterial>::default())
+         .add_plugins(MaterialPlugin::<UNodeMaterial3d>::default())
+         .register_type::<UI3d>()
+         .register_type::<UPbr>()
          
          // Sync the computed layout data (Size, Borders) to the GPU/Shader
          // This runs after the layout has been solved.
-         .add_systems(PostUpdate, update_shader_visuals); 
+         .add_systems(PostUpdate, (
+            auto_propagate_ui3d.before(update_shader_visuals),
+            update_shader_visuals
+        )); 
         
     }
 }

@@ -44,6 +44,5 @@ fn traverse_and_mark(
             current_max = current_max.max(child_depth);
         }
     }
-    
     current_max
 }

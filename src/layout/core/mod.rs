@@ -5,6 +5,8 @@ pub mod hierarchy;
 pub mod pass_up;
 pub mod pass_down;
 pub mod solver;
+pub mod pbr;
+
 pub use crate::layout::core::prelude::*;
 
 pub mod prelude {
@@ -14,5 +16,6 @@ pub mod prelude {
         pass_down::*,
         pass_up::*,
         hierarchy::*,
+        pbr::*,
     };
 }

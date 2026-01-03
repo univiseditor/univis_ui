@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{color::palettes::css::*, prelude::*};
 use univis_ui::prelude::*;
 
 fn main() {
@@ -31,7 +31,6 @@ fn setup(mut commands: Commands) {
                 width: UVal::Px(400.0),
                 height: UVal::Px(400.0),
                 background_color: Color::BLACK,
-                // border_radius: UCornerRadius::all(50.0),
                 ..default()
             },
             ULayout {
@@ -39,7 +38,6 @@ fn setup(mut commands: Commands) {
                 align_items: UAlignItems::Center,
                 ..default()
             },
-            // هام جداً: تفعيل التقاط الماوس
             
 
         )).with_children(|btn| {
@@ -47,19 +45,27 @@ fn setup(mut commands: Commands) {
                 UNode {
                     width: UVal::Px(150.),
                     height: UVal::Px(150.),
-                    border_radius: UCornerRadius::all(70.),
+                    border_radius: UCornerRadius {
+                        top_left: 75.0,
+                        top_right: 0.0,
+                        bottom_left: 0.0,
+                        bottom_right: 0.0,
+                    },
                     background_color: Color::Srgba(RED),
                     ..default()
                 },
                 Pickable::default(),
-            // ألوان التفاعل التلقائية (Hover/Press)
                 UInteractionColors {
                     normal: Color::Srgba(RED),
                     hovered: Color::Srgba(BLUE),
                     pressed: Color::Srgba(GREEN),
                 },
-            ));
+            )).with_children(|ch| {
+                ch.spawn(
+                    UNode::default()
+                );
+            });
         });
-        // --- استخدام Observer (الطريقة الحديثة في Bevy) --
     });
+    
 }

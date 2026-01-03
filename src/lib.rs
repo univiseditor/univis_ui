@@ -73,7 +73,6 @@
 pub mod widget;
 pub mod layout;
 pub mod interaction;
-pub mod univis_debug;
 
 /// A convenient module that exports the most commonly used types and traits.
 ///
@@ -84,21 +83,15 @@ pub mod univis_debug;
 pub mod prelude {
     // Layout System
     pub use crate::layout::prelude::*;
-    
+
     // Widgets (Buttons, Text, Checkboxes, etc.)
     pub use crate::widget::prelude::*;
     
     // Interaction System (Picking, Hover, Click)
     pub use crate::interaction::prelude::*;
     
-    // Debugging Tools
-    pub use crate::univis_debug::prelude::*;
-    
     // The Main Plugin
     pub use crate::UnivisUiPlugin;
-    
-    // Re-export Bevy colors for convenience
-    pub use bevy::color::palettes::css::*;
 }
 
 use bevy::prelude::*;

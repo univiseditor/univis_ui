@@ -6,13 +6,11 @@ description = "A high-performance, SDF-based hybrid world-space UI framework for
 authors = ["abdellah-haffout <abdellahhaffout9@gmail.com>"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/USERNAME/univis" # Replace with your actual repo URL
-homepage = "https://github.com/USERNAME/univis"
+repository = "https://github.com/univiseditor/univis_ui" # Replace with your actual repo URL
+homepage = "https://github.com/univiseditor/univis_ui"
 keywords = ["bevy", "ui", "sdf", "gamedev", "hud"]
 categories = ["game-development", "gui", "rendering"]
 exclude = [".github/*"] # Exclude heavy assets from the published crate
 
 [dependencies]
 bevy = "0.17.3"
-
-

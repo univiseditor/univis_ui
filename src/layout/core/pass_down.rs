@@ -214,7 +214,11 @@ fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
          if u.align_self == UAlignSelf::Auto { None } else { Some(u.align_self) }, 
          u.order)
     } else {
-        (UPositionType::Relative, UVal::Auto, UVal::Auto, UVal::Auto, UVal::Auto, None, 0)
+        (
+            UPositionType::Relative, 
+            UVal::Auto, UVal::Auto, UVal::Auto, UVal::Auto, 
+            None, 0
+        )
     };
 
     SolverSpec {

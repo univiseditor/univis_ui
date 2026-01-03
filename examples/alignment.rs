@@ -10,12 +10,12 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
     let font = Handle::<Font>::default();
 
     // 1. الجذر (Root)
     commands.spawn((
-        UWorldRoot { size: Vec2::new(1280.0, 720.0), ..default() },
+        UWorldRoot {size: Vec2::new(1280.0, 720.0), ..default() },
         UNode {
             width: UVal::Percent(1.0),
             height: UVal::Percent(1.0),
@@ -113,7 +113,7 @@ fn spawn_demo_card(
         card.spawn(UTextLabel {
             text: title.to_string(),
             font_size: 16.0,
-            color: Color::srgb(0.6, 0.8, 1.0),
+            color: Color::srgb(0.0, 0.8, 1.0),
             font: font,
             ..default()
         });

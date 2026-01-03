@@ -30,3 +30,9 @@ pub struct IntrinsicSize {
 pub struct LayoutTreeDepth {
     pub max_depth: usize,
 }
+
+/// علامة (Marker Component) تستخدم لتحديد أن هذا العنصر يجب رسمه 
+/// ككائن ثلاثي الأبعاد (Mesh3d) يتفاعل مع الإضاءة، بدلاً من 2D.
+#[derive(Component, Reflect, Default, Clone, Copy, Debug)]
+#[reflect(Component)]
+pub struct UI3d;

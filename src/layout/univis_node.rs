@@ -13,6 +13,13 @@ impl Plugin for UnivisNodePlugin {
     }
 }
 
+#[derive(Reflect, Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UShapeMode {
+    #[default]
+    Round, // 0
+    Cut,   // 1
+}
+
 /// The core component for any UI node.
 /// Defines sizing, spacing, appearance (color/radius), and layout behavior.
 #[derive(Component, Clone, Reflect)]
@@ -32,6 +39,8 @@ pub struct UNode {
     pub background_color: Color,
     /// Corner radius for rounded rectangles (independent corners).
     pub border_radius: UCornerRadius,
+
+    pub shape_mode: UShapeMode, 
 }
 
 impl Default for UNode {
@@ -43,6 +52,7 @@ impl Default for UNode {
             margin: USides::default(),
             background_color: Color::NONE,
             border_radius: UCornerRadius::default(),
+            shape_mode: UShapeMode::Round,
         }
     }
 }

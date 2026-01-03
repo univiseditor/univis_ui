@@ -22,7 +22,7 @@ Univis is designed for developers looking for a development experience (DX) simi
 ### 1. Writing as a User Interface...
 Layout is defined using familiar concepts like **Padding**, **Margin**, **Flex**, and **Grid**.
 
-### 2. ...Rendered as a 3D Mesh
+### 2. ...Rendered as a 2D Mesh
 Behind the scenes, each element is a `Mesh2d` with a custom SDF shader. This means:
 
 - ✨ **Infinite resolution** - Sharp edges no matter how close the camera

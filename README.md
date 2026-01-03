@@ -1,12 +1,8 @@
-<<<<<<< HEAD
-# univis_ui
-A layout engine built on pure ECS using Bevy
-=======
 
 # 🎨 Univis UI
 
-[![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis)
-[![Bevy](https://img.shields.io/badge/Bevy-0.15-blue)](https://bevyengine.org/)
+[![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis_ui)
+[![Bevy](https://img.shields.io/badge/Bevy-0.17-blue)](https://bevyengine.org/)
 [![License](https://img.shields.io/badge/License-MIT%2FApache--2.0-green)](LICENSE)
 
 **Univis** is a "hybrid" (Hybrid) framework for user interfaces in the Bevy engine.
@@ -120,7 +116,7 @@ UNode {
 
 ```toml
 [dependencies]
-bevy = "0.17.3"
+bevy = "0.17"
 univis = "0.1.0"
 ```
 
@@ -194,14 +190,14 @@ All examples are available in the `examples/` folder in the repository.
 
 ## 🆚 Comparison: Univis vs Bevy UI
 
-| Feature                  | Bevy UI                       | Univis UI                     |
-|--------------------------|-------------------------------|-------------------------------|
-| **Rendering Technology**  | Rasterized (blurs in 3D)      | SDF Shaders (infinite precision)|
-| **Space**                 | Screen Space / 2D layer       | World Space / 3D objects       |
-| **Lighting**              | Not lit                        | Responds to 3D lighting        |
-| **Physics**               | No interaction                | Compatible with Colliders      |
-| **Layout**                | Flexbox only (Taffy)          | Flex + Grid + Radial + Masonry |
-| **Corners**               | Uniform                       | Independent corners            |
+| Feature                  | Bevy UI                  | Univis UI                        |
+| ------------------------ | ------------------------ | -------------------------------- |
+| **Rendering Technology** | Rasterized (blurs in 3D) | SDF Shaders (infinite precision) |
+| **Space**                | Screen Space / 2D layer  | World Space / Screen Space       |
+| **Lighting**             | Not lit                  | Responds to 2D lighting          |
+| **Physics**              | No interaction           | Compatible with Colliders        |
+| **Layout**               | Flexbox only (Taffy)     | Flex + Grid + Radial + Masonry   |
+| **Corners**              | Uniform                  | Independent corners              |
 
 ### ✅ Univis is suitable for:
 
@@ -280,24 +276,6 @@ commands.spawn((ULayout::default(), UNode::default()))
 
 ---
 
-## 🌍 UI in 3D Space
-
-Easily create interfaces in 3D space:
-
-```rust
-commands.spawn((
-    UWorldRoot {
-        size: Vec2::new(800.0, 600.0),
-        resolution_scale: 1.0,
-    },
-    UNode::default(),
-    Transform::from_xyz(0.0, 2.0, 5.0)
-        .with_rotation(Quat::from_rotation_x(-0.3)),
-))
-.with_children(|parent| {
-    // Content here
-});
-```
 
 Now the interface:
 - ✅ Responds to lighting
@@ -361,23 +339,3 @@ To contribute:
 ## 📄 License
 
 Licensed under [MIT](LICENSE-MIT) and [Apache 2.0](LICENSE-APACHE).
-
----
-
-## 🔗 Useful Links
-
-- [Full Documentation](https://docs.rs/univis)
-- [Examples](https://github.com/your-repo/univis/tree/main/examples)
-- [Discord Community](https://discord.gg/bevy)
-- [Issue Tracker](https://github.com/your-repo/univis/issues)
-
----
-
-<div align="center">
-
-**Built with ❤️ for the Bevy Community**
-
-[⭐ Star on GitHub](https://github.com/your-repo/univis) | [📖 Read the Documentation](https://docs.rs/univis) | [💬 Join the Discussions](https://github.com/your-repo/univis/discussions)
-
-</div>
->>>>>>> 242b785 (finished lvl 1)

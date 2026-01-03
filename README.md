@@ -177,13 +177,13 @@ The library includes a set of illustrative examples:
 
 ```bash
 # Basic Example
-cargo run --example minimal
+cargo run --example hello_world
 
-# Dashboard with Grid
-cargo run --example dashboard
+# Justify and alignItems
+cargo run --example alignment
 
-# Sci-fi UI with Radial
-cargo run --example sci_fi_hud
+# Interactive 
+cargo run --example interaction
 ```
 
 All examples are available in the `examples/` folder in the repository.

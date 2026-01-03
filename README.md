@@ -7,6 +7,8 @@
 
 **Univis** is a "hybrid" (Hybrid) framework for user interfaces in the Bevy engine.
 
+![univis_ui](univis_ui.png)
+
 The library acts as a bridge between the ease of traditional 2D UI layouts and the power of 3D world objects. With Univis, you write standard ECS code using Flexbox and Grid layouts, but the result is drawn as meshes supported by SDF technology within the game world.
 
 **No pixelation. No separate drawing stages. Just pure Bevy ECS entities.**

@@ -1,6 +1,8 @@
 
 # Univis UI
 [![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis)
+# Univis UI
+[![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis)
 [![Bevy](https://img.shields.io/badge/Bevy-0.17-blue)](https://bevyengine.org/)
 [![License](https://img.shields.io/badge/License-MIT%2FApache--2.0-green)](LICENSE)
 **Why Univis UI and what is it?**
@@ -10,11 +12,11 @@
 > This version is still very early (**Alpha**).
 > Before any update, make sure to back up your data.
 ---
-form example `cargo run --example card_profile`
+from example `cargo run --example card_profile`
 
 ![profile](profile.png)
 
-form example `cargo run --example sci_fi`
+from example `cargo run --example sci_fi`
 
 ![sci_fi](sci_fi.png)
 ###### What is it?
@@ -75,6 +77,23 @@ Rebellious children
 USelf::default()
 // This component is responsible for enforcing a specific arrangement for the child, like absolute positioning
 ```
+- #### Layout
+Univis has its own layout system with **nodes, units, and widgets**
+
+``` rust
+// This is the most important layout element, like Node in bevy_ui
+UNode::default()
+```
+Univis UI does not provide everything in `UNode` for organizing children 
+``` rust
+ULayout::default()
+// This component contains all the essential layout elements that are applied to children
+```
+Rebellious children
+``` rust 
+USelf::default()
+// This component is responsible for enforcing a specific arrangement for the child, like absolute positioning
+```
 Univis supports smart, flexible sizing modes:
 
 ```rust
@@ -92,6 +111,18 @@ UVal::Auto
 
 // Flexible - takes a share of remaining space
 UVal::Flex(1.0)
+```
+# Ready-to-use Examples
+
+``` fish
+cargo run --example hello_world
+cargo run --example sci_fi
+cargo run --example border_light_3d
+cargo run --example alignment
+cargo run --example card_profile
+cargo run --example texture
+cargo run --example masonry
+cargo run --example interation
 ```
 # Ready-to-use Examples
 

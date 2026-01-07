@@ -82,7 +82,7 @@ fn setup_profile_card(mut commands: Commands, asset_server: Res<AssetServer>) {
             )).with_children(|text_container| {
                 // الاسم
                 text_container.spawn(UTextLabel {
-                    text: "Abdellah Developer".into(),
+                    text: "Univis UI".into(),
                     font_size: 22.0,
                     color: Color::WHITE,
                     ..default()

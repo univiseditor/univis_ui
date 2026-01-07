@@ -1,6 +1,3 @@
-
-# Univis UI
-[![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis)
 # Univis UI
 [![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis)
 [![Bevy](https://img.shields.io/badge/Bevy-0.17-blue)](https://bevyengine.org/)
@@ -60,23 +57,7 @@ commands.spawn(
     }
 ).with_children(/* your code*/);
 ```
-- #### Layout
-Univis has its own layout system with **nodes, units, and widgets**
 
-``` rust
-// This is the most important layout element, like Node in bevy_ui
-UNode::default()
-```
-Univis UI does not provide everything in `UNode` for organizing children 
-``` rust
-ULayout::default()
-// This component contains all the essential layout elements that are applied to children
-```
-Rebellious children
-``` rust 
-USelf::default()
-// This component is responsible for enforcing a specific arrangement for the child, like absolute positioning
-```
 - #### Layout
 Univis has its own layout system with **nodes, units, and widgets**
 
@@ -114,17 +95,6 @@ UVal::Flex(1.0)
 ```
 # Ready-to-use Examples
 
-``` fish
-cargo run --example hello_world
-cargo run --example sci_fi
-cargo run --example border_light_3d
-cargo run --example alignment
-cargo run --example card_profile
-cargo run --example texture
-cargo run --example masonry
-cargo run --example interation
-```
-# Ready-to-use Examples
 
 ``` fish
 cargo run --example hello_world
@@ -140,9 +110,10 @@ cargo run --example interation
 ## 🤝 Contributing
 
 Contributions are welcome! Especially in:
-- Clipping support (Scroll Views)
-- Performance improvements
-- New examples
+- Clipping support (Scroll Views).
+- Performance improvements.
+- New examples.
+- supportes more widgets.
 
 To contribute:
 1. Fork the repository

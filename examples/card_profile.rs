@@ -4,7 +4,7 @@ use univis_ui::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(UnivisUiPlugin)
+        .add_plugins((UnivisUiPlugin,LayoutProfilingPlugin))
         .add_systems(Startup, setup_profile_card)
         .run();
 }
@@ -147,7 +147,6 @@ fn setup_profile_card(mut commands: Commands, asset_server: Res<AssetServer>) {
                 // زر أساسي (يأخذ المساحة المتبقية بفضل FlexGrow)
                 actions.spawn((
                     UButton::primary(),
-                    UFlexGrow(1.0), // تمدد
                     ULayout { justify_content: UJustifyContent::Center, ..default() }
                 )).with_children(|btn| {
                     btn.spawn(UTextLabel { text: "Follow".into(), font_size: 16.0, ..default() });
@@ -156,7 +155,6 @@ fn setup_profile_card(mut commands: Commands, asset_server: Res<AssetServer>) {
                 // زر ثانوي
                 actions.spawn((
                     UButton::secondary(),
-                    UFlexGrow(1.0), // تمدد
                     ULayout { justify_content: UJustifyContent::Center, ..default() }
                 )).with_children(|btn| {
                     btn.spawn(UTextLabel { text: "Message".into(), font_size: 16.0, ..default() });

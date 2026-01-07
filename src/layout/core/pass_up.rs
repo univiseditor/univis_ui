@@ -125,3 +125,145 @@ pub fn upward_measure_pass(
         }
     }
 }
+
+/// نسخة محسّنة من upward_measure_pass مع Cache و Profiling
+pub fn upward_measure_pass_cached(
+    tree_depth: Res<LayoutTreeDepth>,
+    mut cache: ResMut<LayoutCache>,
+    mut profiler: Option<ResMut<LayoutProfiler>>,
+    
+    mut params: ParamSet<(
+        Query<(&IntrinsicSize, &UNode, Option<&USelf>)>,
+        Query<(Entity, &UNode, &LayoutDepth, Option<&Children>, Option<&ULayout>, &mut IntrinsicSize)>,
+    )>,
+) {
+    let start = std::time::Instant::now();
+    
+    for depth in (0..=tree_depth.max_depth).rev() {
+        
+        // استخدام Cache للحصول على العقد في هذا العمق
+        let Some(layer_entities) = cache.get_entities_at_depth(depth) else {
+            continue;
+        };
+        
+        // ✅ الإصلاح: معالجة كل العقد (متسخة وغير متسخة)
+        let layer_work_items: Vec<(Entity, UNode, Option<Vec<Entity>>, Option<ULayout>, bool)> = {
+            let q_parents = params.p1();
+            layer_entities.iter()
+                .filter_map(|&entity| {
+                    q_parents.get(entity).ok()
+                        .map(|(e, node, _, children, layout, _)| {
+                            let kids = children.map(|c| c.iter().collect());
+                            let is_dirty = cache.is_dirty(entity);
+                            (e, node.clone(), kids, layout.cloned(), is_dirty)
+                        })
+                })
+                .collect()
+        };
+
+        for (entity, node_spec, children_vec, layout_opt, is_dirty) in layer_work_items {
+            
+            // ✅ إذا لم تكن متسخة، استخدم Cache واستمر
+            if !is_dirty {
+                if let Some(cached) = cache.get_cached_intrinsic(entity) {
+                    if let Ok((_, _, _, _, _, mut intrinsic)) = params.p1().get_mut(entity) {
+                        *intrinsic = cached;
+                    }
+                }
+                continue;
+            }
+            
+            // ✅ إذا كانت متسخة، أعد الحساب
+            let mut calculated_width = 0.0;
+            let mut calculated_height = 0.0;
+
+            if let Some(children) = children_vec {
+                let direction = layout_opt.as_ref()
+                    .map(|l| l.flex_direction)
+                    .unwrap_or(UFlexDirection::Row);
+                let gap = layout_opt.as_ref().map(|l| l.gap).unwrap_or(0.0);
+                
+                let mut accum_main: f32 = 0.0;
+                let mut max_cross: f32 = 0.0;
+                let mut visible_count = 0;
+
+                let q_children = params.p0();
+
+                for child_entity in children {
+                    if let Ok((child_intrinsic, child_node, child_uself_opt)) = q_children.get(child_entity) {
+                        
+                        // تجاهل Absolute items
+                        if let Some(uself) = child_uself_opt {
+                            if uself.position_type == UPositionType::Absolute {
+                                continue;
+                            }
+                        }
+
+                        let w = child_intrinsic.width;
+                        let h = child_intrinsic.height;
+                        let m = child_node.margin;
+
+                        match direction {
+                            UFlexDirection::Row => {
+                                accum_main += w + m.left + m.right;
+                                max_cross = max_cross.max(h + m.top + m.bottom);
+                            },
+                            UFlexDirection::Column => {
+                                accum_main += h + m.top + m.bottom;
+                                max_cross = max_cross.max(w + m.left + m.right);
+                            },
+                        }
+                        visible_count += 1;
+                    }
+                }
+
+                // إضافة الفجوات
+                if visible_count > 1 {
+                    accum_main += (visible_count - 1) as f32 * gap;
+                }
+
+                match direction {
+                    UFlexDirection::Row => {
+                        calculated_width = accum_main;
+                        calculated_height = max_cross;
+                    },
+                    UFlexDirection::Column => {
+                        calculated_width = max_cross;
+                        calculated_height = accum_main;
+                    },
+                }
+            }
+
+            let h_pad = node_spec.padding.width_sum();
+            let v_pad = node_spec.padding.height_sum();
+
+            let mut q_write = params.p1();
+            if let Ok((_, _, _, _, _, mut intrinsic)) = q_write.get_mut(entity) {
+                
+                intrinsic.width = match node_spec.width {
+                    UVal::Px(v) => v,
+                    _ => calculated_width + h_pad,
+                };
+
+                intrinsic.height = match node_spec.height {
+                    UVal::Px(v) => v,
+                    _ => calculated_height + v_pad,
+                };
+                
+                // حفظ في Cache
+                cache.cache_intrinsic(entity, *intrinsic);
+                
+                // مسح علامة "متسخ"
+                cache.clear_dirty(entity);
+            }
+        }
+    }
+    
+    // زيادة عداد الإطارات
+    cache.increment_frame();
+    
+    // تحديث Profiler
+    if let Some(ref mut prof) = profiler {
+        prof.upward_pass_time = start.elapsed().as_secs_f64() * 1000.0;
+    }
+}

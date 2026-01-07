@@ -7,7 +7,7 @@ use crate::prelude::*;
 /// Use this for UI that stays fixed to the camera/screen.
 /// It typically takes its size automatically from the window dimensions.
 #[derive(Component, Default)]
-#[require(Transform, Visibility)]
+#[require(UNode)]
 pub struct UScreenRoot; 
 
 /// Marker for World Space UI Root.
@@ -15,7 +15,7 @@ pub struct UScreenRoot;
 /// Use this for UI elements that exist in the 3D world (e.g., floating over a character).
 /// You must manually define the `size` (Canvas Size).
 #[derive(Component)]
-#[require(Transform, Visibility)]
+#[require(UNode)]
 pub struct UWorldRoot {
     pub size: Vec2, 
     pub is_3d: bool,

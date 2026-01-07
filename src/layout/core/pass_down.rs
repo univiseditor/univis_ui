@@ -1,177 +1,311 @@
 use bevy::prelude::*;
 use crate::prelude::*;
 
-/// The Downward Pass (Top-Down) of the layout algorithm.
-///
-/// Iterates from Root down to leaves.
-/// Applies **Box Constraints**, runs the Solver, and updates `ComputedSize` and `Transform`.
-pub fn downward_solve_pass(
-    tree_depth: Res<LayoutTreeDepth>,
-    // Comprehensive Query for nodes (mutable)
-    mut nodes: Query<(
-        Entity, 
-        &UNode, 
-        Option<&ULayout>, 
-        &LayoutDepth, 
-        Option<&Children>, 
-        Option<&USelf>,
-        &mut ComputedSize, 
-        &mut Transform
-    )>,
-    // Query for IntrinsicSize (Read-only)
-    intrinsic_query: Query<&IntrinsicSize>,
-    // Root queries
-    root_query: Query<&UWorldRoot>,
-    window_query: Query<&Window>,
-) {
-    // 1. Iterate layers from Root (0) downwards
-    for depth in 0..=tree_depth.max_depth {
-        
-        // Collect entities to avoid borrow conflicts
-        let current_layer_entities: Vec<Entity> = nodes.iter()
-            .filter(|(_, _, _, d, _, _, _, _)| d.0 == depth)
-            .map(|(e, ..)| e)
-            .collect();
+// =========================================================
+// نسخة Owned آمنة من SolverItem
+// =========================================================
 
-        for entity in current_layer_entities {
-            
-            // a. Read Parent Data
-            let (node_spec, layout_opt, children_vec, current_computed_size, _uself_opt) = {
-                if let Ok((_, n, l, _, c, u, s, _)) = nodes.get(entity) {
-                    let kids = c.map(|children| children.iter().collect::<Vec<Entity>>());
-                    (n.clone(), l.cloned(), kids, *s, u.cloned())
-                } else {
-                    continue;
-                }
-            };
+/// نسخة آمنة من SolverItem - تملك بياناتها
+pub struct SolverItemOwned {
+    pub spec: SolverSpec,
+    pub result: Box<SolverResult>,
+    pub margin: USides,
+}
 
-            // b. Determine Initial Container Size
-            let container_size = if depth == 0 {
-                // Root: Use Window size or UWorldRoot size
-                if let Ok(world_root) = root_query.get(entity) {
-                    world_root.size
-                } else if let Ok(window) = window_query.single() {
-                    Vec2::new(window.width(), window.height())
-                } else {
-                    Vec2::new(800.0, 600.0) // Fallback
-                }
-            } else {
-                // Children: Use computed size (from parent's calculation or previous pass)
-                Vec2::new(current_computed_size.width, current_computed_size.height)
-            };
-
-            // Immediately update Root Computed Size
-            if depth == 0 {
-                if let Ok((_, _, _, _, _, _, mut s, _)) = nodes.get_mut(entity) {
-                    s.width = container_size.x;
-                    s.height = container_size.y;
-                }
-            }
-
-            let children = match children_vec { Some(c) => c, None => continue };
-            let layout_config = layout_opt.unwrap_or_default(); 
-
-            // c. Prepare Children for Solver
-            let mut solver_items_specs = Vec::new();
-            let mut temp_results = Vec::new(); 
-            let mut temp_margins = Vec::new();
-            let mut solved_children_entities = Vec::new(); 
-
-            for &child_entity in &children {
-                // Read child data
-                if let Ok((_, child_node, _, _, _, child_uself, _, _)) = nodes.get(child_entity) {
-                    let child_intrinsic = intrinsic_query.get(child_entity)
-                        .unwrap_or(&IntrinsicSize { width: 0.0, height: 0.0 });
-                    
-                    // Translate spec
-                    let mut spec = translate_spec(child_node, child_uself); 
-                    
-                    // Inject intrinsic size if Content mode
-                    if spec.width_mode == SolverSizeMode::Content {
-                        spec.width_val = child_intrinsic.width;
-                    }
-                    if spec.height_mode == SolverSizeMode::Content {
-                        spec.height_val = child_intrinsic.height;
-                    }
-
-                    solver_items_specs.push(spec);
-                    temp_results.push(SolverResult::default());
-                    temp_margins.push(child_node.margin);
-                    solved_children_entities.push(child_entity);
-                }
-            }
-
-            if solved_children_entities.is_empty() {
-                continue;
-            }
-
-            // Create SolverItems
-            let mut final_items: Vec<SolverItem> = solver_items_specs.iter()
-                .zip(temp_results.iter_mut())
-                .zip(temp_margins.iter())
-                .map(|((spec, res), margin)| SolverItem { 
-                    spec: *spec, 
-                    result: res,
-                    margin: *margin 
-                })
-                .collect();
-
-            // d. Setup Constraints
-            let mut constraints = BoxConstraints::tight(container_size);
-
-            // Open constraints for Auto/Content size to allow Placers to dictate size
-            if node_spec.width == UVal::Auto || node_spec.width == UVal::Content {
-                constraints.min_width = 0.0;
-                constraints.max_width = f32::INFINITY; 
-            }
-            if node_spec.height == UVal::Auto || node_spec.height == UVal::Content {
-                constraints.min_height = 0.0;
-                constraints.max_height = f32::INFINITY;
-            }
-
-            // e. Run Solver
-            let solver_conf = translate_config(&layout_config, &node_spec);
-            
-            // Solver returns actual used size
-            let final_size = solve_flex_layout(&solver_conf, constraints, &mut final_items);
-
-            // f. Update Container (Parent) with Final Size
-            if let Ok((_, _, _, _, _, _, mut my_computed, _)) = nodes.get_mut(entity) {
-                my_computed.width = final_size.x;
-                my_computed.height = final_size.y;
-            }
-
-            // g. Apply Results to Children
-            let parent_w = final_size.x;
-            let parent_h = final_size.y;
-
-            for (i, &child_entity) in solved_children_entities.iter().enumerate() {
-                let result = &final_items[i].result;
-                let spec = &final_items[i].spec;
-                
-                if let Ok((_, _, _, _, _, _, mut child_computed, mut child_transform)) = nodes.get_mut(child_entity) {
-                    // Update Child Computed Size
-                    child_computed.width = result.size.x;
-                    child_computed.height = result.size.y;
-
-                    // Update Child Position
-                    // Transform UI Top-Left origin to Bevy Center origin
-                    let child_w = result.size.x; 
-                    let child_h = result.size.y;
-
-                    child_transform.translation.x = (-parent_w / 2.0) + result.pos.x + (child_w / 2.0);
-                    child_transform.translation.y = (parent_h / 2.0) - result.pos.y - (child_h / 2.0);
-                    
-                    // Z-Index: Base 0.1 + Order step
-                    child_transform.translation.z = 0.1 + (spec.order as f32 * 0.001); 
-                }
-            }
+impl SolverItemOwned {
+    /// تحويل إلى SolverItem مؤقت (للاستخدام مع الـ Solver)
+    pub fn as_solver_item(&mut self) -> SolverItem<'_> {
+        SolverItem {
+            spec: self.spec,
+            result: &mut *self.result,
+            margin: self.margin,
         }
     }
 }
 
 // =========================================================
-// Helpers
+// Data Structures
+// =========================================================
+
+#[derive(Clone)]
+struct NodeData {
+    spec: UNode,
+    layout: ULayout,
+    children: Vec<Entity>,
+    computed_size: ComputedSize,
+}
+
+struct ChildLayoutData {
+    entity: Entity,
+    spec: SolverSpec,
+    margin: USides,
+}
+
+struct SolvedChild {
+    entity: Entity,
+    result: SolverResult,
+}
+
+// =========================================================
+// النظام الرئيسي - 100% آمن
+// =========================================================
+
+pub fn downward_solve_pass_safe(
+    tree_depth: Res<LayoutTreeDepth>,
+    cache: Res<LayoutCache>,
+    mut profiler: Option<ResMut<LayoutProfiler>>, // إضافة Profiler اختياري
+    
+    mut nodes: Query<(
+        Entity,
+        &UNode,
+        Option<&ULayout>,
+        &LayoutDepth,
+        Option<&Children>,
+        Option<&USelf>,
+        &mut ComputedSize,
+        &mut Transform
+    )>,
+    
+    intrinsic_query: Query<&IntrinsicSize>,
+    root_query: Query<&UWorldRoot>,
+    window_query: Query<&Window>,
+) {
+    let start = std::time::Instant::now();
+    
+    for depth in 0..=tree_depth.max_depth {
+        
+        // استخدام Cache
+        let Some(layer_entities) = cache.get_entities_at_depth(depth) else {
+            continue;
+        };
+
+        for &entity in layer_entities {
+            
+            // 1. استخراج البيانات
+            let Some(node_data) = extract_node_data(entity, &nodes) else {
+                continue;
+            };
+
+            // 2. حساب حجم الحاوية
+            let container_size = if depth == 0 {
+                calculate_root_size(entity, &root_query, &window_query)
+            } else {
+                Vec2::new(node_data.computed_size.width, node_data.computed_size.height)
+            };
+
+            // تحديث الجذر
+            if depth == 0 {
+                if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+                    computed.width = container_size.x;
+                    computed.height = container_size.y;
+                }
+            }
+
+            // 3. جمع بيانات الأطفال
+            let children_layout_data = collect_children_layout_data(
+                &node_data.children,
+                &nodes,
+                &intrinsic_query,
+            );
+
+            if children_layout_data.is_empty() {
+                continue;
+            }
+
+            // 4. تحويل إلى Solver (الطريقة الآمنة)
+            let (mut solver_items_owned, entities_map) = 
+                prepare_solver_data_safe(children_layout_data);
+
+            // 5. تحويل مؤقت إلى SolverItem
+            let mut solver_items_refs: Vec<SolverItem> = solver_items_owned
+                .iter_mut()
+                .map(|item| item.as_solver_item())
+                .collect();
+
+            // 6. إعداد القيود
+            let constraints = build_constraints(container_size, &node_data.spec);
+
+            // 7. تشغيل Solver
+            let solver_config = translate_config(&node_data.layout, &node_data.spec);
+            let final_size = solve_flex_layout(
+                &solver_config,
+                constraints,
+                &mut solver_items_refs,
+            );
+
+            // 8. تحديث حجم الحاوية
+            if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+                computed.width = final_size.x;
+                computed.height = final_size.y;
+            }
+
+            // 9. ترجمة النتائج
+            let solved_children: Vec<SolvedChild> = solver_items_owned
+                .iter()
+                .zip(entities_map.iter())
+                .map(|(item, &entity)| SolvedChild {
+                    entity,
+                    result: *item.result,
+                })
+                .collect();
+
+            // 10. تطبيق النتائج
+            apply_results_to_children(&solved_children, final_size, &mut nodes);
+        }
+    }
+    
+    // تحديث Profiler
+    if let Some(ref mut prof) = profiler {
+        prof.downward_pass_time = start.elapsed().as_secs_f64() * 1000.0;
+    }
+}
+
+// =========================================================
+// Helper Functions
+// =========================================================
+
+fn extract_node_data(
+    entity: Entity,
+    query: &Query<(
+        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
+        Option<&Children>, Option<&USelf>,
+        &mut ComputedSize, &mut Transform
+    )>,
+) -> Option<NodeData> {
+    let (_, node, layout_opt, _, children_opt, _, computed, _) = 
+        query.get(entity).ok()?;
+
+    Some(NodeData {
+        
+        spec: node.clone(),
+        layout: layout_opt.copied().unwrap_or_default(),
+        children: children_opt
+            .map(|c| c.iter().collect())
+            .unwrap_or_default(),
+        computed_size: *computed,
+    })
+}
+
+fn calculate_root_size(
+    entity: Entity,
+    root_query: &Query<&UWorldRoot>,
+    window_query: &Query<&Window>,
+) -> Vec2 {
+    if let Ok(world_root) = root_query.get(entity) {
+        world_root.size
+    } else if let Ok(window) = window_query.single() {
+        Vec2::new(window.width(), window.height())
+    } else {
+        Vec2::new(800.0, 600.0)
+    }
+}
+
+fn collect_children_layout_data(
+    children: &[Entity],
+    nodes_query: &Query<(
+        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
+        Option<&Children>, Option<&USelf>,
+        &mut ComputedSize, &mut Transform
+    )>,
+    intrinsic_query: &Query<&IntrinsicSize>,
+) -> Vec<ChildLayoutData> {
+    children.iter()
+        .filter_map(|&child_entity| {
+            let (_, node, _, _, _, uself_opt, _, _) = nodes_query.get(child_entity).ok()?;
+            let intrinsic = intrinsic_query.get(child_entity).ok()?;
+
+            let mut spec = translate_spec(node, uself_opt.as_deref());
+
+            if spec.width_mode == SolverSizeMode::Content {
+                spec.width_val = intrinsic.width;
+            }
+            if spec.height_mode == SolverSizeMode::Content {
+                spec.height_val = intrinsic.height;
+            }
+
+            Some(ChildLayoutData {
+                entity: child_entity,
+                spec,
+                margin: node.margin,
+            })
+        })
+        .collect()
+}
+
+/// ✅ الطريقة الآمنة لتحضير بيانات Solver
+fn prepare_solver_data_safe(
+    children_data: Vec<ChildLayoutData>,
+) -> (Vec<SolverItemOwned>, Vec<Entity>) {
+    
+    let mut entities_map = Vec::new();
+    let mut solver_items = Vec::new();
+    
+    for child_data in children_data {
+        entities_map.push(child_data.entity);
+        
+        solver_items.push(SolverItemOwned {
+            spec: child_data.spec,
+            result: Box::new(SolverResult::default()),
+            margin: child_data.margin,
+        });
+    }
+    
+    (solver_items, entities_map)
+}
+
+fn build_constraints(
+    container_size: Vec2,
+    node_spec: &UNode,
+) -> BoxConstraints {
+    let mut constraints = BoxConstraints::tight(container_size);
+
+    if matches!(node_spec.width, UVal::Auto | UVal::Content) {
+        constraints.min_width = 0.0;
+        constraints.max_width = f32::INFINITY;
+    }
+
+    if matches!(node_spec.height, UVal::Auto | UVal::Content) {
+        constraints.min_height = 0.0;
+        constraints.max_height = f32::INFINITY;
+    }
+
+    constraints
+}
+
+fn apply_results_to_children(
+    solved_children: &[SolvedChild],
+    parent_size: Vec2,
+    nodes_query: &mut Query<(
+        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
+        Option<&Children>, Option<&USelf>,
+        &mut ComputedSize, &mut Transform
+    )>,
+) {
+    for solved in solved_children.iter() {
+        if let Ok((_, _, _, _, _, _, mut computed, mut transform)) = 
+            nodes_query.get_mut(solved.entity) 
+        {
+            computed.width = solved.result.size.x;
+            computed.height = solved.result.size.y;
+
+            let child_w = solved.result.size.x;
+            let child_h = solved.result.size.y;
+
+            transform.translation.x = (-parent_size.x / 2.0) 
+                + solved.result.pos.x 
+                + (child_w / 2.0);
+                
+            transform.translation.y = (parent_size.y / 2.0) 
+                - solved.result.pos.y 
+                - (child_h / 2.0);
+            
+            transform.translation.z = 0.1;
+        }
+    }
+}
+
+// =========================================================
+// Translation Functions
 // =========================================================
 
 fn map_uval_to_mode(val: UVal) -> SolverSizeMode {
@@ -189,13 +323,11 @@ fn translate_config(layout: &ULayout, node: &UNode) -> SolverConfig {
         gap: layout.gap,
         padding: node.padding,
         grid_columns: layout.grid_columns,
-        
         width_mode: map_uval_to_mode(node.width),
         height_mode: map_uval_to_mode(node.height),
     }
 }
 
-// Re-implementation of translate_spec for local usage (if needed) or reused
 fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
     let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
         match dim {
@@ -210,21 +342,22 @@ fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
     let (h_mode, h_val, h_flex) = map_dim(node.height);
 
     let (pos_type, l, r, t, b, align, order) = if let Some(u) = uself {
-        (u.position_type, u.left, u.right, u.top, u.bottom, 
-         if u.align_self == UAlignSelf::Auto { None } else { Some(u.align_self) }, 
-         u.order)
+        (
+            u.position_type, u.left, u.right, u.top, u.bottom,
+            if u.align_self == UAlignSelf::Auto { None } else { Some(u.align_self) },
+            u.order,
+        )
     } else {
         (
-            UPositionType::Relative, 
-            UVal::Auto, UVal::Auto, UVal::Auto, UVal::Auto, 
-            None, 0
+            UPositionType::Relative,
+            UVal::Auto, UVal::Auto, UVal::Auto, UVal::Auto,
+            None, 0,
         )
     };
 
     SolverSpec {
         width_mode: w_mode, width_val: w_val, width_flex: w_flex,
         height_mode: h_mode, height_val: h_val, height_flex: h_flex,
-        
         position_type: pos_type,
         left: l, right: r, top: t, bottom: b,
         align_self: align,

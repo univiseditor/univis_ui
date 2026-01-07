@@ -177,40 +177,40 @@ pub enum UDisplay {
     None,
 }
 
-/// Defines how much an item should grow relative to others to fill available space.
-/// 0.0 = Do not grow. 1.0 = Take 1 share.
-#[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-#[reflect(Component, Default)]
-pub struct UFlexGrow(pub f32);
+// /// Defines how much an item should grow relative to others to fill available space.
+// /// 0.0 = Do not grow. 1.0 = Take 1 share.
+// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
+// #[reflect(Component, Default)]
+// pub struct UFlexGrow(pub f32);
 
-impl Default for UFlexGrow {
-    fn default() -> Self {
-        Self(0.0) // Default is no growth
-    }
-}
+// impl Default for UFlexGrow {
+//     fn default() -> Self {
+//         Self(0.0) // Default is no growth
+//     }
+// }
 
-impl UFlexGrow {
-    /// Standard fill (shares space equally).
-    pub fn fill() -> Self { Self(1.0) }
+// impl UFlexGrow {
+//     /// Standard fill (shares space equally).
+//     pub fn fill() -> Self { Self(1.0) }
     
-    /// Double growth factor.
-    pub fn double() -> Self { Self(2.0) }
-}
+//     /// Double growth factor.
+//     pub fn double() -> Self { Self(2.0) }
+// }
 
-// =========================================================
-// 3. Flex Shrink (Optional)
-// =========================================================
+// // =========================================================
+// // 3. Flex Shrink (Optional)
+// // =========================================================
 
-/// Defines the ability of a flex item to shrink if necessary.
-#[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-#[reflect(Component, Default)]
-pub struct UFlexShrink(pub f32);
+// /// Defines the ability of a flex item to shrink if necessary.
+// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
+// #[reflect(Component, Default)]
+// pub struct UFlexShrink(pub f32);
 
-impl Default for UFlexShrink {
-    fn default() -> Self {
-        Self(1.0) // Shrinkable by default
-    }
-}
+// impl Default for UFlexShrink {
+//     fn default() -> Self {
+//         Self(1.0) // Shrinkable by default
+//     }
+// }
 
 /// Self-control component for a child node.
 /// Overrides parent settings (Alignment) or Layout flow (Positioning).

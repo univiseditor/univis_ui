@@ -4,7 +4,7 @@ use univis_ui::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(UnivisUiPlugin)
+        .add_plugins((UnivisUiPlugin,LayoutProfilingPlugin))
         .add_systems(Startup, setup_sci_fi_hud)
         .add_systems(Update, (animate_holo_pulse, animate_sim_data))
         .run();
@@ -12,8 +12,8 @@ fn main() {
 
 pub fn setup_sci_fi_hud(mut commands: Commands) {
     // الألوان الرئيسية (Neon Palette)
-    let cyan = Color::srgb(0.0, 0.9, 5.0);
-    let orange = Color::srgb(10.0, 0.6, 0.0);
+    let cyan = Color::srgb(0.0, 0.5, 2.5);
+    let orange = Color::srgb(5.0, 0.6, 0.0);
     let deep_bg = Color::srgb(0.02, 0.05, 0.1).with_alpha(0.85);
     
     // الخط الافتراضي
@@ -39,7 +39,6 @@ pub fn setup_sci_fi_hud(mut commands: Commands) {
             // خلفية شفافة لتبدو كشاشة عرض رأسية
             background_color: Color::BLACK.with_alpha(0.2), 
             padding: USides::all(40.0),
-            
             ..default()
         },
         ULayout {

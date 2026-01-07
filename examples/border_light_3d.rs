@@ -15,7 +15,7 @@ fn setup(mut commands: Commands) {
             clear_color: ClearColorConfig::Custom(Color::BLACK),
             ..default()
         },
-        Transform::from_xyz(0.0, 0.0, 500.),
+        Transform::from_xyz(0.0, 0.0, 1000.),
         Bloom::NATURAL,
     ));
     commands.spawn((
@@ -23,6 +23,7 @@ fn setup(mut commands: Commands) {
             is_3d: true,
             ..default()
         },
+
         ULayout {
             flex_direction: UFlexDirection::Row,
             justify_content: UJustifyContent::Center,

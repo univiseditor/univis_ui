@@ -31,6 +31,15 @@ impl Default for UTextLabel {
     }
 }
 
+impl UTextLabel {
+    pub fn new(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            ..default()
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct TextChildMarker;
 
@@ -135,9 +144,9 @@ impl Plugin for UnivisTextPlugin {
                 // النظام الجديد لفرض الحجم
                 fit_node_to_text_size
                     // .after(bevy::text::TextSystem::UpdateLayout) // بعد حساب حجم النص
-                    .before(upward_measure_pass) // قبل بدء نظام التخطيط الخاص بك
+                    .before(upward_measure_pass_cached) // قبل بدء نظام التخطيط الخاص بك
                     // وأيضاً قبل تحديث المرئيات لضمان أن الخلفية تأخذ الحجم الصحيح في نفس الإطار
-                    .before(update_shader_visuals),
+                    .before(update_materials_optimized),
             ));
     }
 }

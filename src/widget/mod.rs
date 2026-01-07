@@ -6,7 +6,14 @@ pub mod text_label;
 pub mod badge;
 pub mod progress;
 pub mod image;
-pub mod text_3d_label;
+pub mod seekbar;
+pub mod checkbox;
+pub mod menu;
+pub mod scrolling;
+pub mod icon_btn;
+pub mod toggle;
+pub mod radio;
+// pub mod radio2;
 
 pub mod prelude {
     pub use crate::widget::{
@@ -15,7 +22,14 @@ pub mod prelude {
         progress::*,
         button::*,
         image::*,
-        // text_3d_label::*,
+        // radio2::*,
+        checkbox::*,
+        radio::*,
+        // menu::*,
+        // scrolling::*,
+        seekbar::*,
+        icon_btn::*,
+        toggle::*,
     };
 }
 
@@ -27,12 +41,16 @@ impl Plugin for UnivisWidgetPlugin {
          .register_type::<UImage>()
          .add_systems(Update, 
             sync_image_geometry
-               .before(update_shader_visuals) // قبل الرسم
-               .before(upward_measure_pass)) // قبل التخطيط
+               .before(update_materials_optimized) 
+               .before(upward_measure_pass_cached))
          .add_plugins(UnivisTextPlugin)
          .add_plugins(UnivisProgressPlugin)
          .add_plugins(UnivisButtonPlugin)
-        //  .add_plugins(UnivisText3dPlugin)
+         .add_plugins(UnivisRadioPlugin)
+         .add_plugins(UnivisIconButtonPlugin)
+         .add_plugins(UnivisTogglePlugin)
+         .add_plugins(UnivisCheckboxPlugin)
+         .add_plugins(UnivisSeekBarPlugin)
          .add_plugins(UnivisBadgePlugin);
     }
 }

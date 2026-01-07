@@ -73,6 +73,7 @@
 pub mod widget;
 pub mod layout;
 pub mod interaction;
+pub mod style;
 
 /// A convenient module that exports the most commonly used types and traits.
 ///
@@ -89,13 +90,15 @@ pub mod prelude {
     
     // Interaction System (Picking, Hover, Click)
     pub use crate::interaction::prelude::*;
+    // Style
+    pub use crate::style::prelude::*;
     
     // The Main Plugin
     pub use crate::UnivisUiPlugin;
 }
 
 use bevy::prelude::*;
-use crate::{prelude::*, widget::UnivisWidgetPlugin};
+use crate::{prelude::*, style::UnivisUiStylePlugin, widget::UnivisWidgetPlugin};
 
 /// The main plugin for the Univis UI library.
 ///
@@ -120,11 +123,15 @@ pub struct UnivisUiPlugin;
 impl Plugin for UnivisUiPlugin {
     fn build(&self, app: &mut App) {
         app
+
             // Core Systems
             .add_plugins(UnivisInteractionPlugin)
             .add_plugins(MeshPickingPlugin) // Custom Backend for Rounded SDF Picking
             .add_plugins(UnivisNodePlugin)  // Core Node & Material Management
             .add_plugins(UnivisLayoutPlugin) // Layout Solver
+            
+            // Style
+            .add_plugins(UnivisUiStylePlugin)
             
             // Built-in Widgets
             .add_plugins(UnivisWidgetPlugin);

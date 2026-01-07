@@ -10,7 +10,11 @@ pub struct UInteractionColors {
     pub hovered: Color,
     pub pressed: Color,
 }
-
+impl Default for UInteractionColors{
+    fn default() -> Self {
+        UInteractionColors { normal: Color::NONE, hovered: Color::srgb(0.1, 0.1, 0.1), pressed: Color::BLACK }
+    }
+}
 /// Event Handler: Pointer Over (Hover Enter)
 pub fn on_pointer_over(
     trigger: On<Pointer<Over>>,

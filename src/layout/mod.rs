@@ -5,7 +5,7 @@ pub mod core;
 pub mod render;
 pub mod algorithms;
 pub mod pipeline;
-
+pub mod profiling;
 /// A convenient module that re-exports all essential layout components and types.
 ///
 /// Import this module to get access to nodes, geometry types, and the layout plugin.
@@ -18,9 +18,10 @@ pub mod prelude {
     pub use crate::layout::algorithms::prelude::*;
     pub use crate::layout::UnivisLayoutPlugin;
     pub use crate::layout::pipeline::prelude::*;
+    pub use crate::layout::profiling::*;
 }
 
-use bevy::{prelude::*, sprite_render::Material2dPlugin};
+use bevy::prelude::*;
 pub use crate::layout::prelude::*;
 
 /// The core Bevy Plugin that initializes the Univis Layout Engine.
@@ -45,35 +46,24 @@ impl Plugin for UnivisLayoutPlugin {
          // Initialize the resource tracking the maximum depth of the UI tree
          .init_resource::<LayoutTreeDepth>()
          
-         .register_type::<UFlexGrow>()
-         .register_type::<UFlexShrink>() // Registered if used
+        //  .register_type::<UFlexGrow>()
+        //  .register_type::<UFlexShrink>() // Registered if used
 
          // --- Layout Systems Pipeline ---
          // The order of these systems is critical for the layout algorithm to function correctly.
          // They run in PostUpdate to ensure they process the latest frame data.
+         .add_plugins(LayoutCachePlugin)
          .add_systems(PostUpdate, (
              // 1. Calculate the depth of every node in the tree.
              update_layout_hierarchy,
              // 2. Pass Up: Calculate intrinsic sizes (Children -> Parent).
              upward_measure_pass,
              // 3. Pass Down: Enforce constraints and determine final positions (Parent -> Children).
-             downward_solve_pass,
+             downward_solve_pass_safe,
          ).chain());
 
         // --- UI Render Setup ---
-        app
-         // Initialize the Material2d plugin for our custom SDF shader material
-         .add_plugins(Material2dPlugin::<UNodeMaterial>::default())
-         .add_plugins(MaterialPlugin::<UNodeMaterial3d>::default())
-         .register_type::<UI3d>()
-         .register_type::<UPbr>()
-         
-         // Sync the computed layout data (Size, Borders) to the GPU/Shader
-         // This runs after the layout has been solved.
-         .add_systems(PostUpdate, (
-            auto_propagate_ui3d.before(update_shader_visuals),
-            update_shader_visuals
-        )); 
+        app.add_plugins(UnivisRenderPlugin);
         
     }
 }

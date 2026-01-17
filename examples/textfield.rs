@@ -269,7 +269,7 @@ fn create_form_example(parent: &mut ChildSpawnerCommands) {
 
 /// معالجة تغييرات النص
 fn handle_textfield_changed(
-    mut events: EventReader<TextFieldChangedEvent>,
+    mut events: MessageReader<TextFieldChangedEvent>,
 ) {
     for event in events.read() {
         info!("TextField changed: '{}'", event.text);
@@ -278,7 +278,7 @@ fn handle_textfield_changed(
 
 /// معالجة Submit (Enter)
 fn handle_textfield_submit(
-    mut events: EventReader<TextFieldSubmitEvent>,
+    mut events: MessageReader<TextFieldSubmitEvent>,
 ) {
     for event in events.read() {
         info!("TextField submitted: '{}'", event.text);

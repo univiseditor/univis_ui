@@ -203,9 +203,9 @@ impl UTextField {
     }
 }
 
-/// علامات داخلية
-#[derive(Component)]
-struct TextFieldContainer;
+// /// علامات داخلية
+// #[derive(Component)]
+// struct TextFieldContainer;
 
 #[derive(Component)]
 struct TextFieldTextLabel;
@@ -213,8 +213,8 @@ struct TextFieldTextLabel;
 #[derive(Component)]
 struct TextFieldCursor;
 
-#[derive(Component)]
-struct TextFieldParent(Entity);
+// #[derive(Component)]
+// struct TextFieldParent(Entity);
 
 // =========================================================
 // Systems

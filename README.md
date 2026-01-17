@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> 0f2b371 (update cargo.toml)
 # Univis UI
 [![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis)
 [![Bevy](https://img.shields.io/badge/Bevy-0.17-blue)](https://bevyengine.org/)
@@ -13,19 +9,11 @@
 > This version is still very early (**Alpha**).
 > Before any update, make sure to back up your data.
 ---
-<<<<<<< HEAD
 from example `cargo run --example card_profile`
 
 ![profile](profile.png)
 
 from example `cargo run --example sci_fi`
-=======
-form example `cargo run --example card_profile`
-
-![profile](profile.png)
-
-form example `cargo run --example sci_fi`
->>>>>>> 0f2b371 (update cargo.toml)
 
 ![sci_fi](sci_fi.png)
 ###### What is it?
@@ -47,7 +35,6 @@ commands.spawn(Camera2d);
 // We use the UScreenRoot tag to handle layout based on the screen and its size
 commands.spawn(UScreenRoot)
    .with_children(/* your code*/);
-<<<<<<< HEAD
 ```
 - In WorldSpace
 ``` rust
@@ -69,8 +56,6 @@ commands.spawn(
        ..default()
     }
 ).with_children(/* your code*/);
-=======
->>>>>>> 0f2b371 (update cargo.toml)
 ```
 - In WorldSpace
 ``` rust
@@ -82,25 +67,6 @@ commands.spawn(Camera3d);
 // We use the UWorldRoot tag to handle layout based on the UWorldRoot measurements
 // to specify the layout area size
 
-<<<<<<< HEAD
-- #### Layout
-Univis has its own layout system with **nodes, units, and widgets**
-
-``` rust
-// This is the most important layout element, like Node in bevy_ui
-UNode::default()
-```
-Univis UI does not provide everything in `UNode` for organizing children 
-``` rust
-ULayout::default()
-// This component contains all the essential layout elements that are applied to children
-```
-Rebellious children
-``` rust 
-USelf::default()
-// This component is responsible for enforcing a specific arrangement for the child, like absolute positioning
-```
-=======
 commands.spawn(
     // Specify the UWorld tag for the game world
     UWorldRoot {
@@ -129,7 +95,6 @@ Rebellious children
 USelf::default()
 // This component is responsible for enforcing a specific arrangement for the child, like absolute positioning
 ```
->>>>>>> 0f2b371 (update cargo.toml)
 Univis supports smart, flexible sizing modes:
 
 ```rust
@@ -150,10 +115,6 @@ UVal::Flex(1.0)
 ```
 # Ready-to-use Examples
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 0f2b371 (update cargo.toml)
 ``` fish
 cargo run --example hello_world
 cargo run --example sci_fi
@@ -168,16 +129,10 @@ cargo run --example interation
 ## 🤝 Contributing
 
 Contributions are welcome! Especially in:
-<<<<<<< HEAD
 - Clipping support (Scroll Views).
 - Performance improvements.
 - New examples.
 - supportes more widgets.
-=======
-- Clipping support (Scroll Views)
-- Performance improvements
-- New examples
->>>>>>> 0f2b371 (update cargo.toml)
 
 To contribute:
 1. Fork the repository

@@ -4,7 +4,7 @@ use univis_ui::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(UnivisUiPlugin)
+        .add_plugins((UnivisUiPlugin,LayoutProfilingPlugin))
         // .add_plugins(UnivisTogglePlugin)
         
         // إضافة Event

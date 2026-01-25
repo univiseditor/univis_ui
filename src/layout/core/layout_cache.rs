@@ -128,28 +128,55 @@ impl LayoutCache {
 pub fn track_layout_changes(
     mut cache: ResMut<LayoutCache>,
     
-    // مراقبة التغييرات في المكونات المؤثرة
-    changed_nodes: Query<
-        Entity,
+    // نستخدم Ref لنتمكن من فحص is_changed() لكل مكون على حدة
+    nodes: Query<
+        (
+            Entity,
+            Option<&Children>,
+            Ref<UNode>,
+            Option<Ref<ULayout>>,
+            Option<Ref<USelf>>,
+            Ref<IntrinsicSize>,
+        ),
+        // الفلتر العام: نمر فقط على العقد التي تغير فيها شيء ما
         Or<(
             Changed<UNode>,
             Changed<ULayout>,
             Changed<USelf>,
             Changed<Children>,
+            Changed<IntrinsicSize>,
         )>
     >,
     
-    // مراقبة العقد الجديدة
     added_nodes: Query<Entity, Added<UNode>>,
-    
     children_query: Query<&Children>,
 ) {
-    // تعليم العقد المتغيرة
-    for entity in changed_nodes.iter() {
+    // 1. معالجة التغييرات
+    for (entity, children, node, layout, uself, intrinsic) in nodes.iter() {
+        
+        // === المنطق الذكي لكسر الحلقة ===
+        // إذا كان التغيير الوحيد هو في IntrinsicSize...
+        if intrinsic.is_changed() 
+           && !node.is_changed() 
+           && !layout.map_or(false, |l| l.is_changed()) 
+           && !uself.map_or(false, |s| s.is_changed()) 
+           && !nodes.contains(entity) // تأكدنا من الفلاتر الأخرى
+        {
+             // ...وتحققنا أن العنصر "حاوية" (له أبناء)
+             if let Some(kids) = children {
+                 if !kids.is_empty() {
+                     // إذن هذا التغيير هو نتيجة حساباتنا السابقة (Output) وليس مدخلاً جديداً
+                     // نتجاهله لمنع التكرار اللانهائي
+                     continue;
+                 }
+             }
+        }
+
+        // في جميع الحالات الأخرى، نعتبر العنصر متسخاً
         cache.mark_dirty_recursive(entity, &children_query);
     }
     
-    // تعليم العقد الجديدة
+    // 2. معالجة العناصر الجديدة
     for entity in added_nodes.iter() {
         cache.mark_dirty(entity);
     }

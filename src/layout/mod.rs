@@ -57,7 +57,7 @@ impl Plugin for UnivisLayoutPlugin {
              // 1. Calculate the depth of every node in the tree.
              update_layout_hierarchy,
              // 2. Pass Up: Calculate intrinsic sizes (Children -> Parent).
-             upward_measure_pass,
+             upward_measure_pass_cached,
              // 3. Pass Down: Enforce constraints and determine final positions (Parent -> Children).
              downward_solve_pass_safe,
          ).chain());

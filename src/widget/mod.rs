@@ -50,7 +50,6 @@ impl Plugin for UnivisWidgetPlugin {
          .add_plugins(UnivisIconButtonPlugin)
          .add_plugins(UnivisTogglePlugin)
          .add_plugins(UnivisCheckboxPlugin)
-         .add_plugins(UnivisSeekBarPlugin)
-         .add_plugins(UnivisBadgePlugin);
+         .add_plugins(UnivisSeekBarPlugin);
     }
 }

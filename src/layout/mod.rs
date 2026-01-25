@@ -60,6 +60,7 @@ impl Plugin for UnivisLayoutPlugin {
              upward_measure_pass,
              // 3. Pass Down: Enforce constraints and determine final positions (Parent -> Children).
              downward_solve_pass_safe,
+             downward_solve_pass_safe,
          ).chain());
 
         // --- UI Render Setup ---

@@ -10,6 +10,16 @@ pub struct UInteractionColors {
     pub hovered: Color,
     pub pressed: Color,
 }
+
+#[derive(Component, Clone, Reflect, PartialEq, Default)]
+pub enum UInteraction {
+    #[default]
+    Normaled,
+    Clicked,
+    Hovered,
+    Released
+}
+
 impl Default for UInteractionColors{
     fn default() -> Self {
         UInteractionColors { normal: Color::NONE, hovered: Color::srgb(0.1, 0.1, 0.1), pressed: Color::BLACK }
@@ -18,50 +28,47 @@ impl Default for UInteractionColors{
 /// Event Handler: Pointer Over (Hover Enter)
 pub fn on_pointer_over(
     trigger: On<Pointer<Over>>,
-    mut query: Query<(&UInteractionColors, &mut UNode) , With<UInteractionColors>>,
+    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
     
-    if let Ok((colors_opt, mut node)) = query.get_mut(entity) {
-        node.background_color = colors_opt.hovered;
+    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+        *interaction = UInteraction::Hovered;
     }
 }
 
 /// Event Handler: Pointer Out (Hover Exit)
 pub fn on_pointer_out(
     trigger: On<Pointer<Out>>,
-    mut query: Query<(&UInteractionColors, &mut UNode), With<UInteractionColors>>,
+    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
     
-    if let Ok(( colors_opt, mut node)) = query.get_mut(entity) {
-        node.background_color = colors_opt.normal;
-        
+    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+        *interaction = UInteraction::Normaled;
     }
 }
 
 /// Event Handler: Pointer Press (Click Down)
 pub fn on_pointer_press(
     trigger: On<Pointer<Press>>,
-    mut query: Query<(&UInteractionColors, &mut UNode), With<UInteractionColors>>,
+    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
     
-    if let Ok(( colors_opt, mut node)) = query.get_mut(entity) {
-        node.background_color = colors_opt.pressed;
-        
+    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+        *interaction = UInteraction::Clicked;
     }
 }
 
 /// Event Handler: Pointer Release (Click Up)
 pub fn on_pointer_release(
     trigger: On<Pointer<Release>>,
-    mut query: Query<(&UInteractionColors, &mut UNode), With<UInteractionColors>>,
+    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
     
-    if let Ok(( colors_opt, mut node)) = query.get_mut(entity) {
-        node.background_color = colors_opt.hovered;
-        
+    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+        *interaction = UInteraction::Released;
     }
 }

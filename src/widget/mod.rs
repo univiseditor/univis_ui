@@ -13,7 +13,7 @@ pub mod scrolling;
 pub mod icon_btn;
 pub mod toggle;
 pub mod radio;
-// pub mod radio2;
+pub mod text_field;
 
 pub mod prelude {
     pub use crate::widget::{
@@ -22,7 +22,7 @@ pub mod prelude {
         progress::*,
         button::*,
         image::*,
-        // radio2::*,
+        text_field::*,
         checkbox::*,
         radio::*,
         // menu::*,

@@ -17,6 +17,7 @@ pub enum UInteraction {
     Normaled,
     Clicked,
     Hovered,
+    Pressed,
     Released
 }
 
@@ -57,7 +58,7 @@ pub fn on_pointer_press(
     let entity = trigger.entity.entity(); 
     
     if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
-        *interaction = UInteraction::Clicked;
+        *interaction = UInteraction::Pressed;
     }
 }
 

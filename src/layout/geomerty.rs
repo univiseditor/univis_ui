@@ -175,16 +175,17 @@ impl UCornerRadius {
     }
 }
 
-/// A helper struct to abstract Main/Cross axis logic.
-/// Allows writing a single algorithm for both Row and Column directions.
-pub struct AxisHelper {
-    axis: UFlexDirection,
-}
-
 #[derive(Debug, Clone, Copy, Default)]
 pub struct AxisPadding {
     pub main: f32,  // Sum of padding on the main axis
     pub cross: f32, // Sum of padding on the cross axis
+}
+
+
+/// A helper struct to abstract Main/Cross axis logic.
+/// Allows writing a single algorithm for both Row and Column directions.
+pub struct AxisHelper {
+    axis: UFlexDirection,
 }
 
 impl AxisHelper {
@@ -192,71 +193,78 @@ impl AxisHelper {
         Self { axis }
     }
 
-    /// Converts world coordinates (Width, Height) to logical (Main, Cross).
+    /// هل الاتجاه معكوس؟
+    pub fn is_reverse(&self) -> bool {
+        matches!(self.axis, UFlexDirection::RowReverse | UFlexDirection::ColumnReverse)
+    }
+
+    /// هل هو صف (أفقي)؟
+    pub fn is_row(&self) -> bool {
+        matches!(self.axis, UFlexDirection::Row | UFlexDirection::RowReverse)
+    }
+
     pub fn from_world(&self, size: Vec2) -> (f32, f32) {
-        match self.axis {
-            UFlexDirection::Row => (size.x, size.y), // Main=Width
-            UFlexDirection::Column => (size.y, size.x),   // Main=Height
+        if self.is_row() {
+            (size.x, size.y) // Main=Width
+        } else {
+            (size.y, size.x) // Main=Height
         }
     }
 
-    /// Converts logical coordinates (Main, Cross) back to world (Width, Height).
     pub fn to_world(&self, main: f32, cross: f32) -> Vec2 {
-        match self.axis {
-            UFlexDirection::Row => Vec2::new(main, cross),
-            UFlexDirection::Column => Vec2::new(cross, main),
+        if self.is_row() {
+            Vec2::new(main, cross)
+        } else {
+            Vec2::new(cross, main)
         }
     }
 
-    /// Extracts constraints and converts them to (MinMain, MaxMain, MinCross, MaxCross).
     pub fn extract_constraints(&self, constraints: BoxConstraints) -> (f32, f32, f32, f32) {
-        match self.axis {
-            UFlexDirection::Row => (
-                constraints.min_width, constraints.max_width,   // Main = Width
-                constraints.min_height, constraints.max_height  // Cross = Height
-            ),
-            UFlexDirection::Column => (
-                constraints.min_height, constraints.max_height, // Main = Height
-                constraints.min_width, constraints.max_width    // Cross = Width
-            ),
+        if self.is_row() {
+            (constraints.min_width, constraints.max_width, constraints.min_height, constraints.max_height)
+        } else {
+            (constraints.min_height, constraints.max_height, constraints.min_width, constraints.max_width)
         }
     }
 
-    /// Extracts padding and returns logical (MainSum, CrossSum).
     pub fn extract_padding(&self, padding: USides) -> AxisPadding {
-        match self.axis {
-            UFlexDirection::Row => AxisPadding {
+        if self.is_row() {
+            AxisPadding {
                 main: padding.left + padding.right,
                 cross: padding.top + padding.bottom,
-            },
-            UFlexDirection::Column => AxisPadding {
+            }
+        } else {
+            AxisPadding {
                 main: padding.top + padding.bottom,
                 cross: padding.left + padding.right,
-            },
+            }
         }
     }
 
-    /// Extracts margins in logical order: (MainStart, MainEnd, CrossStart, CrossEnd).
+    // نحتاج أيضاً لقلب الهوامش إذا كان الاتجاه معكوساً، لكن في Flexbox
+    // الهوامش تتبع العنصر، لذا الترتيب المنطقي يكفي.
     pub fn extract_margin_sides(&self, margin: USides) -> (f32, f32, f32, f32) {
-        match self.axis {
-            UFlexDirection::Row => (margin.left, margin.right, margin.top, margin.bottom),
-            UFlexDirection::Column => (margin.top, margin.bottom, margin.left, margin.right),
+        if self.is_row() {
+            (margin.left, margin.right, margin.top, margin.bottom)
+        } else {
+            (margin.top, margin.bottom, margin.left, margin.right)
         }
     }
     
-    /// Gets the sizing specification for the main axis.
+    // ... باقي الدوال (get_main_spec, get_cross_spec) تستخدم نفس منطق is_row()
     pub fn get_main_spec(&self, spec: &SolverSpec) -> (SolverSizeMode, f32, f32) {
-        match self.axis {
-            UFlexDirection::Row => (spec.width_mode, spec.width_val, spec.width_flex),
-            UFlexDirection::Column => (spec.height_mode, spec.height_val, spec.height_flex),
+        if self.is_row() {
+            (spec.width_mode, spec.width_val, spec.width_flex)
+        } else {
+            (spec.height_mode, spec.height_val, spec.height_flex)
         }
     }
 
-    /// Gets the sizing specification for the cross axis.
     pub fn get_cross_spec(&self, spec: &SolverSpec) -> (SolverSizeMode, f32, f32) {
-        match self.axis {
-            UFlexDirection::Row => (spec.height_mode, spec.height_val, spec.height_flex),
-            UFlexDirection::Column => (spec.width_mode, spec.width_val, spec.width_flex),
+        if self.is_row() {
+            (spec.height_mode, spec.height_val, spec.height_flex)
+        } else {
+            (spec.width_mode, spec.width_val, spec.width_flex)
         }
     }
 }

@@ -149,8 +149,10 @@ pub enum UAlignItems {
 /// Layout direction (Main Axis).
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UFlexDirection {
-    Row, // Horizontal
-    Column,   // Vertical
+    Row,           // Left -> Right
+    Column,        // Top -> Bottom
+    RowReverse,    // Right -> Left (New)
+    ColumnReverse, // Bottom -> Top (New)
 }
 
 /// Distribution of space along the Main Axis.

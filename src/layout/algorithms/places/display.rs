@@ -35,18 +35,14 @@ fn calculate_cross_pos_with_margin(
 
 /// Standard Flexbox Placer.
 /// Handles linear layout (Row/Column) with `justify_content` distribution.
+
 pub struct FlexPlacer;
+
 impl LayoutPlacer for FlexPlacer {
     fn place(&self, items: &mut [SolverItem], axis: &AxisHelper, ctx: &PlacementContext) -> Vec2 {
         let count = items.len();
-        if count == 0 { 
-            return Vec2::new(
-                ctx.padding_main_start + ctx.padding_main_end, 
-                ctx.padding_cross_start * 2.0
-            ); 
-        }
-
-        // Calculate total content span
+        
+        // 1. حساب إجمالي حجم المحتوى (Span)
         let total_items_span: f32 = items.iter()
             .map(|i| {
                 let (s, _) = axis.from_world(i.result.size);
@@ -57,11 +53,11 @@ impl LayoutPlacer for FlexPlacer {
 
         let total_gap_size = if count > 1 { (count as f32 - 1.0) * ctx.gap } else { 0.0 };
         
-        // Available space for distribution
+        // المساحة المتاحة للمحتوى (بدون حشو الحاوية)
         let content_space = ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end;
         let free_space = (content_space - total_items_span - total_gap_size).max(0.0);
 
-        // Cursor setup
+        // إعداد المؤشر (Cursor)
         let (mut cursor, step_extra) = match ctx.justify_content {
             UJustifyContent::Start => (ctx.padding_main_start, 0.0),
             UJustifyContent::Center => (ctx.padding_main_start + (free_space / 2.0), 0.0),
@@ -94,14 +90,23 @@ impl LayoutPlacer for FlexPlacer {
                 child_cross, ctx, item.spec.align_self, m_cross_start, m_cross_end
             );
 
-            // Main Position
-            let pos_main = cursor + m_main_start;
+            // Main Position (المبدئي)
+            let mut pos_main = cursor + m_main_start;
+
+            // === منطق العكس (Reverse Logic) ===
+            if axis.is_reverse() {
+                // نقلب الموقع بالنسبة لحجم الحاوية الكلي
+                // المعادلة: الحجم الكلي - (الموقع من البداية + عرض العنصر)
+                pos_main = ctx.container_main_size - (pos_main + child_main);
+            }
+
+            // تعيين الموقع النهائي
             item.result.pos = axis.to_world(pos_main, pos_cross);
 
-            // Track Max Height
+            // تتبع أقصى ارتفاع (Cross Size)
             max_cross_used = max_cross_used.max(child_cross + m_cross_start + m_cross_end);
 
-            // Move cursor
+            // تحريك المؤشر
             let item_span = m_main_start + child_main + m_main_end;
             if ctx.justify_content == UJustifyContent::SpaceEvenly || ctx.justify_content == UJustifyContent::SpaceAround {
                  cursor += item_span + step_extra;
@@ -110,14 +115,17 @@ impl LayoutPlacer for FlexPlacer {
             }
         }
 
-        // Calculate used size
+        // 2. تعريف المتغيرات المفقودة (calculated_main, calculated_cross)
+        // الحجم المستخدم في المحور الرئيسي
         let calculated_main = total_items_span + total_gap_size + ctx.padding_main_start + ctx.padding_main_end;
+        
+        // الحجم المستخدم في المحور الفرعي
         let calculated_cross = max_cross_used + ctx.padding_cross_start * 2.0;
 
+        // إرجاع الحجم النهائي
         Vec2::new(calculated_main, calculated_cross)
     }
 }
-
 // ------------------------------------------------------------------
 // 2. GridPlacer
 // ------------------------------------------------------------------

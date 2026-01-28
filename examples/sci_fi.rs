@@ -43,7 +43,7 @@ pub fn setup_sci_fi_hud(mut commands: Commands) {
         },
         ULayout {
             display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
+            flex_direction: UFlexDirection::RowReverse,
             justify_content: UJustifyContent::SpaceBetween,
              // هوامش الشاشة
             ..default()

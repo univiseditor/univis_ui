@@ -126,7 +126,6 @@ impl Plugin for UnivisUiPlugin {
 
             // Core Systems
             .add_plugins(UnivisInteractionPlugin)
-            .add_plugins(MeshPickingPlugin) // Custom Backend for Rounded SDF Picking
             .add_plugins(UnivisNodePlugin)  // Core Node & Material Management
             .add_plugins(UnivisLayoutPlugin) // Layout Solver
             

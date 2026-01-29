@@ -12,6 +12,7 @@ pub struct UInteractionColors {
 }
 
 #[derive(Component, Clone, Reflect, PartialEq, Default)]
+#[require(Pickable)]
 pub enum UInteraction {
     #[default]
     Normaled,
@@ -44,35 +45,44 @@ pub fn on_pointer_over(
 /// Event Handler: Pointer Out (Hover Exit)
 pub fn on_pointer_out(
     trigger: On<Pointer<Out>>,
-    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
+    mut query: Query<(&mut UInteraction, &mut UNode, Option<&UInteractionColors>) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
     
-    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+    if let Ok((mut interaction, mut node, colors)) = query.get_mut(entity) {
         *interaction = UInteraction::Normaled;
+        if let Some(color) = colors {
+            node.background_color = color.normal;
+        }
     }
 }
 
 /// Event Handler: Pointer Press (Click Down)
 pub fn on_pointer_press(
     trigger: On<Pointer<Press>>,
-    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
+    mut query: Query<(&mut UInteraction, &mut UNode, Option<&UInteractionColors>) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
     
-    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+    if let Ok((mut interaction, mut node, colors)) = query.get_mut(entity) {
         *interaction = UInteraction::Pressed;
+        if let Some(color) = colors {
+            node.background_color = color.pressed;
+        }
     }
 }
 
 /// Event Handler: Pointer Release (Click Up)
 pub fn on_pointer_release(
     trigger: On<Pointer<Release>>,
-    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
+    mut query: Query<(&mut UInteraction, &mut UNode, Option<&UInteractionColors>) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
     
-    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+    if let Ok((mut interaction, mut node, colors)) = query.get_mut(entity) {
         *interaction = UInteraction::Released;
+        if let Some(color) = colors {
+            node.background_color = color.hovered;
+        }
     }
 }

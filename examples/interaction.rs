@@ -23,7 +23,7 @@ fn setup(mut commands: Commands) {
             flex_direction: UFlexDirection::Column, // ترتيب عمودي
             gap: 20.0,
             ..default() 
-        }
+        },
     )).with_children(|parent| {
 
         parent.spawn((
@@ -54,17 +54,14 @@ fn setup(mut commands: Commands) {
                     background_color: Color::Srgba(RED),
                     ..default()
                 },
+                // Pickable::default(),
                 UInteraction::default(),
                 UInteractionColors {
                     normal: Color::Srgba(RED),
                     hovered: Color::Srgba(BLUE),
                     pressed: Color::Srgba(GREEN),
                 },
-            )).with_children(|ch| {
-                ch.spawn(
-                    UNode::default()
-                );
-            });
+            ));
         });
     });
     

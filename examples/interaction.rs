@@ -54,7 +54,7 @@ fn setup(mut commands: Commands) {
                     background_color: Color::Srgba(RED),
                     ..default()
                 },
-                Pickable::default(),
+                UInteraction::default(),
                 UInteractionColors {
                     normal: Color::Srgba(RED),
                     hovered: Color::Srgba(BLUE),

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::relationship::Relationship, prelude::*};
 use crate::prelude::*;
 
 /// مكون يحفظ Handle للـ Material مع العقدة
@@ -37,9 +37,9 @@ impl MaterialPool {
 pub fn update_materials_optimized(
     mut commands: Commands,
     mut pool: ResMut<MaterialPool>,
-    mut profiler: Option<ResMut<LayoutProfiler>>, // إضافة Profiler اختياري
+    mut profiler: Option<ResMut<LayoutProfiler>>,
     
-    // العقد التي تغيرت
+    // الاستعلام يشمل UI3d و UPbr
     mut query: Query<
         (
             Entity,
@@ -47,7 +47,7 @@ pub fn update_materials_optimized(
             &ComputedSize,
             Option<&UBorder>,
             Option<&UImage>,
-            Option<&UI3d>,
+            Option<&UI3d>, // <--- نحتاج هذا للتمييز بين 2D و 3D
             Option<&UPbr>,
             Option<&mut MaterialHandles>,
         ),
@@ -58,28 +58,29 @@ pub fn update_materials_optimized(
             Changed<UImage>,
             Changed<UI3d>,
             Changed<UPbr>,
+            Changed<ChildOf>, // مهم للقص
         )>
     >,
 
+    // استعلامات القص
+    parents_query: Query<&ChildOf>,
+    clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+
+    // الموارد
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials_2d: ResMut<Assets<UNodeMaterial>>,
     mut materials_3d: ResMut<Assets<UNodeMaterial3d>>,
 ) {
     let start = std::time::Instant::now();
-    
-    // حفظ العدادات
     let created_before = pool.created_count;
     let reused_before = pool.reused_count;
     
     for (entity, node, size, border, image, ui3d_opt, pbr_opt, handles_opt) in query.iter_mut() {
         
         let size_vec = Vec2::new(size.width, size.height);
-        
-        if size_vec.x <= 0.0 || size_vec.y <= 0.0 {
-            continue;
-        }
+        if size_vec.x <= 0.0 || size_vec.y <= 0.0 { continue; }
 
-        // إعداد البيانات
+        // --- البيانات المشتركة ---
         let (tex_handle, use_tex, base_color) = if let Some(img) = image {
             (Some(img.texture.clone()), 1, LinearRgba::from(img.color))
         } else {
@@ -93,10 +94,8 @@ pub fn update_materials_optimized(
         };
 
         let radius = Vec4::new(
-            node.border_radius.top_right,
-            node.border_radius.bottom_right,
-            node.border_radius.top_left,
-            node.border_radius.bottom_left,
+            node.border_radius.top_right, node.border_radius.bottom_right,
+            node.border_radius.top_left, node.border_radius.bottom_left,
         );
 
         let shape_mode = match node.shape_mode {
@@ -104,11 +103,19 @@ pub fn update_materials_optimized(
             UShapeMode::Cut => 1,
         };
 
-        // إنشاء أو إعادة استخدام Mesh
+        // --- البحث عن القص (لـ 2D فقط حالياً) ---
+        let (clip_center, clip_size, clip_radius, use_clip) = find_clipper(
+            entity, &parents_query, &clipper_query
+        );
+
         let mesh = meshes.add(Rectangle::new(size_vec.x, size_vec.y));
 
+        // =========================================================
+        // التفرع: هل نحن في وضع 3D أم 2D؟
+        // =========================================================
+        
         if ui3d_opt.is_some() {
-            // === وضع 3D ===
+            // >>>> مسار 3D <<<<
             
             let (metallic, roughness, emissive_val) = if let Some(pbr) = pbr_opt {
                 (pbr.metallic, pbr.roughness, Vec4::from(pbr.emissive.to_vec4()))
@@ -116,11 +123,10 @@ pub fn update_materials_optimized(
                 (0.0, 0.5, Vec4::ZERO)
             };
 
-            // محاولة إعادة استخدام المادة الموجودة
             let material_handle = if let Some(mut handles) = handles_opt {
                 if let Some(existing_handle) = &handles.material_3d {
-                    // تحديث المادة الموجودة
                     if let Some(existing_mat) = materials_3d.get_mut(existing_handle) {
+                        // تحديث المادة 3D الموجودة
                         existing_mat.color = Vec4::from(base_color.to_vec4());
                         existing_mat.size = size_vec;
                         existing_mat.radius = radius;
@@ -136,41 +142,38 @@ pub fn update_materials_optimized(
                         pool.reused_count += 1;
                         existing_handle.clone()
                     } else {
-                        // المادة غير موجودة، إنشاء جديدة
+                        // إعادة إنشاء 3D
                         let new_mat = materials_3d.add(create_3d_material(
                             base_color, size_vec, radius, b_color, emissive_val,
-                            b_width, metallic, roughness, use_tex, shape_mode, tex_handle
+                            b_width, metallic, roughness, use_tex, shape_mode, tex_handle.clone()
                         ));
                         handles.material_3d = Some(new_mat.clone());
                         pool.created_count += 1;
                         new_mat
                     }
                 } else {
-                    // لا توجد مادة سابقة، إنشاء جديدة
                     let new_mat = materials_3d.add(create_3d_material(
                         base_color, size_vec, radius, b_color, emissive_val,
-                        b_width, metallic, roughness, use_tex, shape_mode, tex_handle
+                        b_width, metallic, roughness, use_tex, shape_mode, tex_handle.clone()
                     ));
                     handles.material_3d = Some(new_mat.clone());
                     pool.created_count += 1;
                     new_mat
                 }
             } else {
-                // لا يوجد مكون MaterialHandles، إنشاؤه
                 let new_mat = materials_3d.add(create_3d_material(
                     base_color, size_vec, radius, b_color, emissive_val,
-                    b_width, metallic, roughness, use_tex, shape_mode, tex_handle
+                    b_width, metallic, roughness, use_tex, shape_mode, tex_handle.clone()
                 ));
-                
                 commands.entity(entity).insert(MaterialHandles {
                     material_2d: None,
                     material_3d: Some(new_mat.clone()),
                 });
-                
                 pool.created_count += 1;
                 new_mat
             };
 
+            // تطبيق مكونات 3D وإزالة 2D
             commands.entity(entity)
                 .insert((
                     Mesh3d(mesh),
@@ -179,11 +182,12 @@ pub fn update_materials_optimized(
                 .remove::<(Mesh2d, MeshMaterial2d<UNodeMaterial>)>();
 
         } else {
-            // === وضع 2D ===
+            // >>>> مسار 2D (مع القص) <<<<
             
             let material_handle = if let Some(mut handles) = handles_opt {
                 if let Some(existing_handle) = &handles.material_2d {
                     if let Some(existing_mat) = materials_2d.get_mut(existing_handle) {
+                        // تحديث المادة 2D الموجودة
                         existing_mat.color = base_color;
                         existing_mat.radius = radius;
                         existing_mat.border_color = b_color;
@@ -192,23 +196,32 @@ pub fn update_materials_optimized(
                         existing_mat.border_offset = b_offset;
                         existing_mat.use_texture = use_tex;
                         existing_mat.shape_mode = shape_mode;
-                        existing_mat.texture = tex_handle;
+                        existing_mat.texture = tex_handle.clone();
+                        
+                        // تحديث بيانات القص
+                        existing_mat.clip_center = clip_center;
+                        existing_mat.clip_size = clip_size;
+                        existing_mat.clip_radius = clip_radius;
+                        existing_mat.use_clip = use_clip;
                         
                         pool.reused_count += 1;
                         existing_handle.clone()
                     } else {
+                        // إعادة إنشاء 2D
                         let new_mat = materials_2d.add(create_2d_material(
                             base_color, radius, b_color, size_vec,
-                            b_width, b_offset, use_tex, shape_mode, tex_handle
+                            b_width, b_offset, use_tex, shape_mode, tex_handle.clone(),
+                            clip_center, clip_size, clip_radius, use_clip
                         ));
                         handles.material_2d = Some(new_mat.clone());
                         pool.created_count += 1;
                         new_mat
                     }
                 } else {
-                    let new_mat = materials_2d.add(create_2d_material(
+                     let new_mat = materials_2d.add(create_2d_material(
                         base_color, radius, b_color, size_vec,
-                        b_width, b_offset, use_tex, shape_mode, tex_handle
+                        b_width, b_offset, use_tex, shape_mode, tex_handle.clone(),
+                        clip_center, clip_size, clip_radius, use_clip
                     ));
                     handles.material_2d = Some(new_mat.clone());
                     pool.created_count += 1;
@@ -217,18 +230,18 @@ pub fn update_materials_optimized(
             } else {
                 let new_mat = materials_2d.add(create_2d_material(
                     base_color, radius, b_color, size_vec,
-                    b_width, b_offset, use_tex, shape_mode, tex_handle
+                    b_width, b_offset, use_tex, shape_mode, tex_handle.clone(),
+                    clip_center, clip_size, clip_radius, use_clip
                 ));
-                
                 commands.entity(entity).insert(MaterialHandles {
                     material_2d: Some(new_mat.clone()),
                     material_3d: None,
                 });
-                
                 pool.created_count += 1;
                 new_mat
             };
 
+            // تطبيق مكونات 2D وإزالة 3D
             commands.entity(entity)
                 .insert((
                     Mesh2d(mesh),
@@ -238,7 +251,6 @@ pub fn update_materials_optimized(
         }
     }
     
-    // تحديث Profiler إن وجد
     if let Some(ref mut prof) = profiler {
         prof.materials_created = pool.created_count - created_before;
         prof.materials_reused = pool.reused_count - reused_before;
@@ -247,19 +259,62 @@ pub fn update_materials_optimized(
 }
 
 // ===== Helper Functions =====
+// 1. دالة البحث عن القص (مشتركة)
+fn find_clipper(
+    start_entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+) -> (Vec2, Vec2, Vec4, u32) {
+    let mut current_entity = start_entity;
+    while let Ok(parent) = parents_query.get(current_entity) {
+        current_entity = parent.get();
+        if let Ok((transform, size, node, clip)) = clipper_query.get(current_entity) {
+            if clip.enabled {
+                let center = transform.translation().truncate();
+                let clip_size = Vec2::new(size.width, size.height);
+                let radius = Vec4::new(
+                    node.border_radius.top_right, node.border_radius.bottom_right,
+                    node.border_radius.top_left, node.border_radius.bottom_left,
+                );
+                return (center, clip_size, radius, 1);
+            }
+        }
+    }
+    (Vec2::ZERO, Vec2::ZERO, Vec4::ZERO, 0)
+}
 
+// 2. دالة إنشاء مادة 2D (محدثة مع بيانات القص)
+fn create_2d_material(
+    base_color: LinearRgba, radius: Vec4, b_color: LinearRgba, size_vec: Vec2,
+    b_width: f32, b_offset: f32, use_tex: u32, shape_mode: u32, tex: Option<Handle<Image>>,
+    // بيانات القص
+    clip_center: Vec2, clip_size: Vec2, clip_radius: Vec4, use_clip: u32,
+) -> UNodeMaterial {
+    UNodeMaterial {
+        color: base_color,
+        radius,
+        border_color: b_color,
+        size: size_vec,
+        border_width: b_width,
+        border_offset: b_offset,
+        softness: 1.0,
+        use_texture: use_tex,
+        shape_mode,
+        texture: tex,
+        _pad: 0.0,
+        // الحقول الجديدة
+        clip_center,
+        clip_size,
+        clip_radius,
+        use_clip,
+    }
+}
+
+// 3. دالة إنشاء مادة 3D (الأصلية - بدون تغييرات القص حالياً)
 fn create_3d_material(
-    base_color: LinearRgba,
-    size_vec: Vec2,
-    radius: Vec4,
-    b_color: LinearRgba,
-    emissive: Vec4,
-    b_width: f32,
-    metallic: f32,
-    roughness: f32,
-    use_tex: u32,
-    shape_mode: u32,
-    tex: Option<Handle<Image>>,
+    base_color: LinearRgba, size_vec: Vec2, radius: Vec4, b_color: LinearRgba,
+    emissive: Vec4, b_width: f32, metallic: f32, roughness: f32,
+    use_tex: u32, shape_mode: u32, tex: Option<Handle<Image>>,
 ) -> UNodeMaterial3d {
     UNodeMaterial3d {
         color: Vec4::from(base_color.to_vec4()),
@@ -276,62 +331,3 @@ fn create_3d_material(
         texture: tex,
     }
 }
-
-fn create_2d_material(
-    base_color: LinearRgba,
-    radius: Vec4,
-    b_color: LinearRgba,
-    size_vec: Vec2,
-    b_width: f32,
-    b_offset: f32,
-    use_tex: u32,
-    shape_mode: u32,
-    tex: Option<Handle<Image>>,
-) -> UNodeMaterial {
-    UNodeMaterial {
-        color: base_color,
-        radius,
-        border_color: b_color,
-        size: size_vec,
-        border_width: b_width,
-        border_offset: b_offset,
-        softness: 1.0,
-        use_texture: use_tex,
-        shape_mode,
-        texture: tex,
-        _pad: 0.0,
-    }
-}
-
-// /// نظام لطباعة إحصائيات الـ Pool (اختياري للـ Debug)
-// #[cfg(feature = "debug_pool")]
-// pub fn log_pool_stats(
-//     pool: Res<MaterialPool>,
-//     mut timer: Local<f32>,
-//     time: Res<Time>,
-// ) {
-//     *timer += time.delta_secs();
-    
-//     if *timer >= 5.0 {
-//         info!(
-//             "Material Pool Stats - Reused: {}, Created: {}",
-//             pool.reused_count,
-//             pool.created_count
-//         );
-//         *timer = 0.0;
-//     }
-// }
-
-// /// Plugin لنظام Material Pooling
-// pub struct MaterialPoolPlugin;
-
-// impl Plugin for MaterialPoolPlugin {
-//     fn build(&self, app: &mut App) {
-//         app
-//             .init_resource::<MaterialPool>()
-//             .add_systems(Update, update_materials_optimized);
-        
-//         #[cfg(feature = "debug_pool")]
-//         app.add_systems(Update, log_pool_stats);
-//     }
-// }

@@ -9,7 +9,7 @@ pub fn univis_picking_backend(
     pointers: Query<(&PointerId, &PointerLocation)>,
     // 1. We need the camera to convert Screen -> World
     cameras: Query<(Entity, &Camera, &GlobalTransform), With<Camera2d>>,
-    nodes_query: Query<(Entity, &UNode, &GlobalTransform, &ComputedSize, &Pickable), With<UInteractionColors>>,
+    nodes_query: Query<(Entity, &UNode, &GlobalTransform, &ComputedSize, &Pickable), With<UInteraction>>,
     mut output: MessageWriter<PointerHits>,
 ) {
     // Assume one UI camera

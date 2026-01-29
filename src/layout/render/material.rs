@@ -39,6 +39,15 @@ pub struct UNodeMaterial {
     #[texture(1)]
     #[sampler(2)]
     pub texture: Option<Handle<Image>>,
+
+    #[uniform(0)]
+    pub clip_center: Vec2, // موقع مركز القص في العالم
+    #[uniform(0)]
+    pub clip_size: Vec2,   // حجم منطقة القص
+    #[uniform(0)]
+    pub clip_radius: Vec4, // زوايا منطقة القص (SDF يدعم قص دائري!)
+    #[uniform(0)]
+    pub use_clip: u32,     // 0 = لا قص، 1 = يوجد قص
 }
 
 impl Default for UNodeMaterial {
@@ -55,6 +64,10 @@ impl Default for UNodeMaterial {
             texture: None,
             use_texture: 0,
             shape_mode: 0,
+            clip_center: Vec2::ZERO,
+            clip_size: Vec2::ZERO,
+            clip_radius: Vec4::ZERO,
+            use_clip: 0,
         }
     }
 }

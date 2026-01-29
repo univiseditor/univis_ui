@@ -14,6 +14,7 @@ pub mod icon_btn;
 pub mod toggle;
 pub mod radio;
 pub mod text_field;
+pub mod scroll_view;
 
 pub mod prelude {
     pub use crate::widget::{
@@ -26,7 +27,7 @@ pub mod prelude {
         checkbox::*,
         radio::*,
         // menu::*,
-        // scrolling::*,
+        scroll_view::*,
         seekbar::*,
         icon_btn::*,
         toggle::*,

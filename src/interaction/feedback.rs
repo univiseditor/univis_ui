@@ -29,12 +29,15 @@ impl Default for UInteractionColors{
 /// Event Handler: Pointer Over (Hover Enter)
 pub fn on_pointer_over(
     trigger: On<Pointer<Over>>,
-    mut query: Query<(&mut UInteraction, &mut UNode) , With<UInteraction>>,
+    mut query: Query<(&mut UInteraction, &mut UNode, Option<&UInteractionColors>) , With<UInteraction>>,
 ) {
     let entity = trigger.entity.entity(); 
-    
-    if let Ok((mut interaction, mut _node)) = query.get_mut(entity) {
+     
+    if let Ok((mut interaction, mut node, colors)) = query.get_mut(entity) {
         *interaction = UInteraction::Hovered;
+        if let Some(color) = colors {
+            node.background_color = color.hovered;
+        }
     }
 }
 

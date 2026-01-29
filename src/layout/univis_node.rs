@@ -16,8 +16,8 @@ impl Plugin for UnivisNodePlugin {
 #[derive(Reflect, Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UShapeMode {
     #[default]
-    Round, // 0
-    Cut,   // 1
+    Round,
+    Cut, 
 }
 
 /// The core component for any UI node.
@@ -107,7 +107,6 @@ impl Default for ULayout {
             justify_content: UJustifyContent::Start,
             align_items: UAlignItems::Start,
             gap: 0.0,
-            
             grid_columns: 1, // Default is one column
         }
     }
@@ -268,4 +267,19 @@ pub struct UPosition {
 pub enum UPositionType {
     Relative, // In-flow
     Absolute, // Out-of-flow
+}
+
+/// مكون يفرض القص (Masking) على جميع أبنائه.
+/// يتم استخدام حدود هذا العنصر (Size + Position + Radius) كقناع.
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+#[require(UNode, ComputedSize, GlobalTransform)]
+pub struct UClip {
+    /// هل القص مفعل؟
+    pub enabled: bool,
+}
+impl UClip {
+    pub fn enabled(enable: bool) -> Self {
+        UClip { enabled: enable }
+    }
 }

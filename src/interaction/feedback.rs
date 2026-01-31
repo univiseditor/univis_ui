@@ -5,6 +5,7 @@ use crate::prelude::*;
 ///
 /// Attaching this component to a `UNode` enables automatic hover/press color changes.
 #[derive(Component, Clone, Reflect)]
+#[require(UInteraction)]
 pub struct UInteractionColors {
     pub normal: Color,
     pub hovered: Color,
@@ -12,15 +13,16 @@ pub struct UInteractionColors {
 }
 
 #[derive(Component, Clone, Reflect, PartialEq, Default)]
-#[require(Pickable)]
+// #[require(Pickable)]
 pub enum UInteraction {
     #[default]
-    Normaled,
+    Normal,
     Clicked,
     Hovered,
     Pressed,
     Released
 }
+
 
 impl Default for UInteractionColors{
     fn default() -> Self {
@@ -50,7 +52,7 @@ pub fn on_pointer_out(
     let entity = trigger.entity.entity(); 
     
     if let Ok((mut interaction, mut node, colors)) = query.get_mut(entity) {
-        *interaction = UInteraction::Normaled;
+        *interaction = UInteraction::Normal;
         if let Some(color) = colors {
             node.background_color = color.normal;
         }

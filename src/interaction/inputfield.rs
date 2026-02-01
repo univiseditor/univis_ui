@@ -95,7 +95,7 @@ pub fn text_field_input_system(
     mut active: ResMut<ActiveTextField>,
     mut keyboard_inputs: MessageReader<bevy::input::keyboard::KeyboardInput>,
     keys: Res<ButtonInput<KeyCode>>,
-    mut fields: Query<(Entity, &mut UTextField)>,
+    mut fields: Query<(Entity, &mut UTextInput)>,
     mut change_events: MessageWriter<UTextFieldChangeEvent>,
     mut submit_events: MessageWriter<UTextFieldSubmitEvent>,
 ) {

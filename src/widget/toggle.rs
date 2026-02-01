@@ -180,6 +180,7 @@ fn init_toggle_visuals(
                 align_items: UAlignItems::Center,
                 ..default()
             },
+            UInteraction::default(),
         )).with_children(|parent| {
             // Track (المسار/الخلفية)
             parent.spawn((
@@ -231,10 +232,10 @@ fn init_toggle_visuals(
 /// تحديث حالة Toggle عند النقر
 fn update_toggle_state(
     events: On<Pointer<Click>>,
-    mut toggle_query: Query<&mut UToggle>,
+    mut toggle_query: Query<(&mut UToggle, &UInteraction)>,
     
 ) {
-    if let Ok(mut toggle) = toggle_query.get_mut(events.entity.entity()) {
+    if let Ok((mut toggle, _inter)) = toggle_query.get_mut(events.entity.entity()) {
         if toggle.disabled {
             return;
         }

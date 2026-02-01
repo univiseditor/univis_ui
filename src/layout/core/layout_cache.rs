@@ -186,16 +186,32 @@ pub fn track_layout_changes(
 pub fn update_depth_cache(
     mut cache: ResMut<LayoutCache>,
     tree_depth: Res<LayoutTreeDepth>,
+    
+    // الاستعلام الكامل لإعادة البناء
     depth_query: Query<(Entity, &LayoutDepth)>,
+    
+    // === [الإضافة الهامة] ===
+    // مراقبة هل تم إضافة مكون LayoutDepth جديد؟
+    // هذا يعني أن هناك عقدة جديدة دخلت النظام
+    added_nodes: Query<Entity, Added<LayoutDepth>>,
+    
+    // مراقبة هل تم حذف عقد؟ (لتنظيف الكاش)
+    mut removed_nodes: RemovedComponents<LayoutDepth>,
 ) {
-    // تحديث فقط إذا تغير العمق الأقصى أو كان Cache فارغاً
-    if tree_depth.max_depth != cache.last_max_depth 
+    // هل تغير الهيكل؟ (إضافة أو حذف عقد)
+    let structure_changed = !added_nodes.is_empty() || removed_nodes.read().count() > 0;
+
+    // شروط إعادة البناء:
+    // 1. تغير الهيكل (عقد جديدة/محذوفة)
+    // 2. تغير العمق الأقصى
+    // 3. الكاش فارغ (أول إطار)
+    if structure_changed 
+        || tree_depth.max_depth != cache.last_max_depth 
         || cache.entities_by_depth.is_empty() 
     {
         cache.rebuild_depth_map(&depth_query, tree_depth.max_depth);
     }
 }
-
 /// Plugin للـ Cache System
 pub struct LayoutCachePlugin;
 

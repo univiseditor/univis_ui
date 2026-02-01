@@ -16,8 +16,8 @@ impl Plugin for UnivisNodePlugin {
 #[derive(Reflect, Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UShapeMode {
     #[default]
-    Round, // 0
-    Cut,   // 1
+    Round,
+    Cut, 
 }
 
 /// The core component for any UI node.
@@ -107,7 +107,6 @@ impl Default for ULayout {
             justify_content: UJustifyContent::Start,
             align_items: UAlignItems::Start,
             gap: 0.0,
-            
             grid_columns: 1, // Default is one column
         }
     }
@@ -149,8 +148,10 @@ pub enum UAlignItems {
 /// Layout direction (Main Axis).
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UFlexDirection {
-    Row, // Horizontal
-    Column,   // Vertical
+    Row,           // Left -> Right
+    Column,        // Top -> Bottom
+    RowReverse,    // Right -> Left (New)
+    ColumnReverse, // Bottom -> Top (New)
 }
 
 /// Distribution of space along the Main Axis.
@@ -177,40 +178,40 @@ pub enum UDisplay {
     None,
 }
 
-/// Defines how much an item should grow relative to others to fill available space.
-/// 0.0 = Do not grow. 1.0 = Take 1 share.
-#[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-#[reflect(Component, Default)]
-pub struct UFlexGrow(pub f32);
+// /// Defines how much an item should grow relative to others to fill available space.
+// /// 0.0 = Do not grow. 1.0 = Take 1 share.
+// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
+// #[reflect(Component, Default)]
+// pub struct UFlexGrow(pub f32);
 
-impl Default for UFlexGrow {
-    fn default() -> Self {
-        Self(0.0) // Default is no growth
-    }
-}
+// impl Default for UFlexGrow {
+//     fn default() -> Self {
+//         Self(0.0) // Default is no growth
+//     }
+// }
 
-impl UFlexGrow {
-    /// Standard fill (shares space equally).
-    pub fn fill() -> Self { Self(1.0) }
+// impl UFlexGrow {
+//     /// Standard fill (shares space equally).
+//     pub fn fill() -> Self { Self(1.0) }
     
-    /// Double growth factor.
-    pub fn double() -> Self { Self(2.0) }
-}
+//     /// Double growth factor.
+//     pub fn double() -> Self { Self(2.0) }
+// }
 
-// =========================================================
-// 3. Flex Shrink (Optional)
-// =========================================================
+// // =========================================================
+// // 3. Flex Shrink (Optional)
+// // =========================================================
 
-/// Defines the ability of a flex item to shrink if necessary.
-#[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-#[reflect(Component, Default)]
-pub struct UFlexShrink(pub f32);
+// /// Defines the ability of a flex item to shrink if necessary.
+// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
+// #[reflect(Component, Default)]
+// pub struct UFlexShrink(pub f32);
 
-impl Default for UFlexShrink {
-    fn default() -> Self {
-        Self(1.0) // Shrinkable by default
-    }
-}
+// impl Default for UFlexShrink {
+//     fn default() -> Self {
+//         Self(1.0) // Shrinkable by default
+//     }
+// }
 
 /// Self-control component for a child node.
 /// Overrides parent settings (Alignment) or Layout flow (Positioning).
@@ -266,4 +267,19 @@ pub struct UPosition {
 pub enum UPositionType {
     Relative, // In-flow
     Absolute, // Out-of-flow
+}
+
+/// مكون يفرض القص (Masking) على جميع أبنائه.
+/// يتم استخدام حدود هذا العنصر (Size + Position + Radius) كقناع.
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
+#[require(UNode, ComputedSize, GlobalTransform)]
+pub struct UClip {
+    /// هل القص مفعل؟
+    pub enabled: bool,
+}
+impl UClip {
+    pub fn enabled(enable: bool) -> Self {
+        UClip { enabled: enable }
+    }
 }

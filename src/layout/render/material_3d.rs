@@ -47,7 +47,7 @@ pub struct UNodeMaterial3d {
 
 impl Material for UNodeMaterial3d {
     fn fragment_shader() -> ShaderRef {
-        "shaders/unode_3d.wgsl".into()
+        "embedded://univis_ui/layout/render/shaders/unode_3d.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {

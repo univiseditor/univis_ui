@@ -9,11 +9,11 @@
 > This version is still very early (**Alpha**).
 > Before any update, make sure to back up your data.
 ---
-from example `cargo run --example card_profile`
+form example `cargo run --example card_profile`
 
 ![profile](profile.png)
 
-from example `cargo run --example sci_fi`
+form example `cargo run --example sci_fi`
 
 ![sci_fi](sci_fi.png)
 ###### What is it?
@@ -95,7 +95,6 @@ UVal::Flex(1.0)
 ```
 # Ready-to-use Examples
 
-
 ``` fish
 cargo run --example hello_world
 cargo run --example sci_fi
@@ -110,10 +109,9 @@ cargo run --example interation
 ## 🤝 Contributing
 
 Contributions are welcome! Especially in:
-- Clipping support (Scroll Views).
-- Performance improvements.
-- New examples.
-- supportes more widgets.
+- Clipping support (Scroll Views)
+- Performance improvements
+- New examples
 
 To contribute:
 1. Fork the repository

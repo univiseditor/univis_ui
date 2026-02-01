@@ -6,6 +6,8 @@ pub mod pass_up;
 pub mod pass_down;
 pub mod solver;
 pub mod pbr;
+pub mod layout_cache;
+
 
 pub use crate::layout::core::prelude::*;
 
@@ -17,5 +19,6 @@ pub mod prelude {
         pass_up::*,
         hierarchy::*,
         pbr::*,
+        layout_cache::*,
     };
 }

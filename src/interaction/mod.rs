@@ -1,15 +1,17 @@
 use bevy::prelude::*;
 
-use crate::prelude::univis_picking_backend;
+use crate::prelude::*;
 
 pub mod math;
 pub mod picking;
 pub mod feedback;
+pub mod inputfield;
 
 pub mod prelude {
     pub use crate::interaction::{
         feedback::*,
         picking::*,
+        inputfield::*,
         UnivisInteractionPlugin,
     };
 }
@@ -18,6 +20,8 @@ pub struct UnivisInteractionPlugin;
 
 impl Plugin for UnivisInteractionPlugin {
     fn build(&self, app: &mut App) {
+
+        app.add_plugins(UnivisInputFieldPlugin);
         // 1. إضافة Backend الالتقاط (حساب من أين يمر الماوس)
         app.add_systems(PreUpdate, univis_picking_backend);
         

@@ -1,34 +1,28 @@
 use bevy::prelude::*;
 
-/// Signed Distance Function (SDF) for a rounded box.
-///
-/// Calculates the distance from point `p` to the edge of a box of size `b`
-/// with variable corner radii `r`.
-///
-/// * `p`: Point position (local space).
-/// * `b`: Half-size of the box (width/2, height/2).
-/// * `r`: Corner radii (TR, BR, TL, BL).
-///
-/// Returns:
-/// * `< 0.0`: Inside the box.
-/// * `> 0.0`: Outside the box.
-/// * `0.0`: On the edge.
+/// دالة SDF للمربع ذو الزوايا الدائرية
+/// تتطابق مع منطق الـ Shader حيث:
+/// Y+ = الأعلى, X+ = اليمين
 pub fn sd_rounded_box(p: Vec2, b: Vec2, r: Vec4) -> f32 {
-    // Select radius based on quadrant
-    // Y+ is Up, X+ is Right
-    let upper = p.y > 0.0;
-    let right = p.x > 0.0;
+    // r.x = Top-Right
+    // r.y = Bottom-Right
+    // r.z = Top-Left
+    // r.w = Bottom-Left
 
-    let radius = match (right, upper) {
-        (true, true)   => r.x, // Top-Right
-        (true, false)  => r.y, // Bottom-Right
-        (false, true)  => r.z, // Top-Left
-        (false, false) => r.w, // Bottom-Left
+    // 1. تحديد هل نحن في اليمين أم اليسار؟
+    // إذا x > 0 نختار (Top-Right, Bottom-Right) وإلا (Top-Left, Bottom-Left)
+    let (r_top, r_bottom) = if p.x > 0.0 {
+        (r.x, r.y)
+    } else {
+        (r.z, r.w)
     };
 
-    // Calculate distance
+    // 2. تحديد هل نحن في الأعلى أم الأسفل؟
+    // إذا y > 0 نختار r_top وإلا r_bottom
+    let radius = if p.y > 0.0 { r_top } else { r_bottom };
+
+    // 3. حساب المسافة (نفس معادلة الشيدر)
     let q = p.abs() - b + Vec2::splat(radius);
     
-    // Standard SDF Box logic with corner radius subtraction
     q.max(Vec2::ZERO).length() + q.x.max(q.y).min(0.0) - radius
 }

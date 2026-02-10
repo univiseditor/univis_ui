@@ -44,6 +44,21 @@ pub fn on_pointer_over(
     }
 }
 
+/// Event Handler: Pointer Click (Click Enter)
+pub fn on_pointer_click(
+    trigger: On<Pointer<Click>>,
+    mut query: Query<(&mut UInteraction, &mut UNode, Option<&UInteractionColors>) , With<UInteraction>>,
+) {
+    let entity = trigger.entity.entity(); 
+     
+    if let Ok((mut interaction, mut node, colors)) = query.get_mut(entity) {
+        *interaction = UInteraction::Clicked;
+        if let Some(color) = colors {
+            node.background_color = color.pressed;
+        }
+    }
+}
+
 /// Event Handler: Pointer Out (Hover Exit)
 pub fn on_pointer_out(
     trigger: On<Pointer<Out>>,

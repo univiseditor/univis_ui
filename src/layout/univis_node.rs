@@ -244,6 +244,14 @@ impl Default for USelf {
     }
 }
 
+impl USelf {
+    pub fn get_val(&self) -> f32 {
+        match &self.left {
+            UVal::Px(p) => *p,
+            _ => 0.0
+        }
+    }
+}
 /// Self alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UAlignSelf {

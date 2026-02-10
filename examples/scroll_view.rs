@@ -56,11 +56,6 @@ fn setup_scroll_list(mut commands: Commands) {
                         ..default()
                     },
                     // يجب أن يكون Relative ليتحرك بالنسبة للأب
-                    USelf {
-                        position_type: UPositionType::Relative,
-                        top: UVal::Px(0.0), // القيمة المبدئية
-                        ..default()
-                    },
                 ))
                 .with_children(|list| {
                     // إضافة 20 عنصر

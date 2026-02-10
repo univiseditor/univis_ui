@@ -1,374 +1,506 @@
-use bevy::{input::keyboard::KeyboardInput, prelude::*};
+use bevy::{input::{ButtonState, keyboard::*}, prelude::*};
 use crate::prelude::*;
+
+pub struct UnivisTextFieldPlugin;
+
+impl Plugin for UnivisTextFieldPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .register_type::<UTextField>()
+            .add_message::<TextFieldChangedEvent>()
+            .add_message::<TextFieldSubmitEvent>()
+            .add_systems(Update, (
+                init_textfield_visuals,
+                handle_global_unfocus,  // ✅ نظام جديد
+                handle_textfield_input,
+                update_textfield_visuals,
+                animate_textfield_cursor,
+                emit_textfield_events,
+            ).chain());
+    }
+}
 
 // =========================================================
 // Components
 // =========================================================
 
-/// المكون الرئيسي لحقل الإدخال
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
-pub struct UTextInput {
-    pub value: String,
+#[require(UNode, ULayout, Pickable)]
+pub struct UTextField {
+    pub text: String,
+    previous_text: String,
     pub placeholder: String,
-    pub input_type: UInputType,
-    pub max_length: Option<usize>,
-    pub cursor_position: usize, // موضع المؤشر (عدد الحروف، ليس البايت)
-    pub disabled: bool,
-    pub password_char: char,
+    pub width: f32,
+    pub height: f32,
+    pub background_color: Color,
+    pub background_focused_color: Color,
     pub text_color: Color,
     pub placeholder_color: Color,
+    pub border_color: Color,
+    pub border_focused_color: Color,
+    pub cursor_color: Color,
+    pub font_size: f32,
     pub focused: bool,
+    pub disabled: bool,
+    pub readonly: bool,
+    pub cursor_position: usize,
+    pub cursor_visible: bool,
+    pub cursor_blink_timer: f32,
+    pub cursor_blink_speed: f32,
+    pub max_length: Option<usize>,
+    pub input_type: TextFieldInputType,
+    pub padding: f32,
 }
 
-/// علامة لكيان النص الظاهر (Value)
-#[derive(Component)]
-pub struct UTextInputValue;
-
-/// علامة لكيان الـ Placeholder
-#[derive(Component)]
-pub struct UTextInputPlaceholder;
-
-/// علامة لكيان المؤشر (Cursor)
-#[derive(Component)]
-pub struct UTextInputCursor;
-
-/// إعدادات المؤشر (مورد عام)
-#[derive(Resource, Default)]
-pub struct UTextInputSettings {
-    pub blink_interval: f32,
-    pub cursor_width: f32,
+#[derive(Clone, Copy, PartialEq, Reflect)]
+pub enum TextFieldInputType {
+    Text,
+    Number,
+    Email,
+    Password,
 }
 
-impl Default for UTextInput {
+impl Default for UTextField {
     fn default() -> Self {
         Self {
-            value: String::new(),
-            placeholder: String::from("Enter text..."),
-            input_type: UInputType::Text,
-            max_length: None,
-            cursor_position: 0,
-            disabled: false,
-            focused: false,
-            password_char: '•',
+            text: String::new(),
+            previous_text: String::new(),
+            placeholder: "Enter text...".to_string(),
+            width: 300.0,
+            height: 50.0,
+            background_color: Color::srgb(0.15, 0.15, 0.2),
+            background_focused_color: Color::srgb(0.2, 0.2, 0.3),
             text_color: Color::WHITE,
-            placeholder_color: Color::srgb(0.5, 0.5, 0.5),
+            placeholder_color: Color::srgb(0.5, 0.5, 0.6),
+            border_color: Color::srgb(0.3, 0.3, 0.35),
+            border_focused_color: Color::srgb(0.3, 0.7, 1.0),
+            cursor_color: Color::srgb(0.3, 0.7, 1.0),
+            font_size: 18.0,
+            focused: false,
+            disabled: false,
+            readonly: false,
+            cursor_position: 0,
+            cursor_visible: true,
+            cursor_blink_timer: 0.0,
+            cursor_blink_speed: 0.5,
+            max_length: None,
+            input_type: TextFieldInputType::Text,
+            padding: 12.0,
         }
     }
 }
 
-// =========================================================
-// Events (Bevy 0.17 Message System)
-// =========================================================
-
-#[derive(Message, Clone, Debug)]
-pub struct UTextInputChangeEvent {
-    pub entity: Entity,
-    pub value: String,
-}
-
-#[derive(Message, Clone, Debug)]
-pub struct UTextInputSubmitEvent {
-    pub entity: Entity,
-    pub value: String,
-}
-
-// =========================================================
-// Builder Pattern
-// =========================================================
-
-impl UTextInput {
-    pub fn new(placeholder: impl Into<String>) -> Self {
-        Self {
-            placeholder: placeholder.into(),
-            ..default()
-        }
+impl UTextField {
+    pub fn new() -> Self {
+        Self::default()
     }
-
-    pub fn with_value(mut self, value: impl Into<String>) -> Self {
-        let val = value.into();
-        self.cursor_position = val.chars().count();
-        self.value = val;
+    
+    pub fn with_text(mut self, text: impl Into<String>) -> Self {
+        let text = text.into();
+        self.cursor_position = text.len();
+        self.text = text.clone();
+        self.previous_text = text;
         self
     }
-
-    pub fn password(mut self) -> Self {
-        self.input_type = UInputType::Password;
+    
+    pub fn with_placeholder(mut self, placeholder: impl Into<String>) -> Self {
+        self.placeholder = placeholder.into();
         self
     }
-
-    pub fn number(mut self) -> Self {
-        self.input_type = UInputType::Number;
+    
+    pub fn with_size(mut self, width: f32, height: f32) -> Self {
+        self.width = width;
+        self.height = height;
         self
     }
-
-    pub fn max_length(mut self, len: usize) -> Self {
-        self.max_length = Some(len);
+    
+    pub fn with_max_length(mut self, max: usize) -> Self {
+        self.max_length = Some(max);
         self
     }
-
-    pub fn disabled(mut self) -> Self {
-        self.disabled = true;
+    
+    pub fn input_type(mut self, input_type: TextFieldInputType) -> Self {
+        self.input_type = input_type;
         self
     }
 }
+
+#[derive(Component)]
+struct TextFieldTextLabel;
+
+#[derive(Component)]
+struct TextFieldCursor;
 
 // =========================================================
 // Systems
 // =========================================================
 
-/// نظام إدارة التركيز (Focus)
-pub fn text_input_focus_system(
-    mouse: Res<ButtonInput<MouseButton>>,
-    mut active: ResMut<ActiveTextField>,
-    mut query: Query<(Entity, &mut UTextInput, &UInteraction), Changed<UInteraction>>,
-    // للتحقق من النقر خارج الحقل
-    _all_inputs: Query<Entity, With<UTextInput>>,
-    windows: Query<&Window>,
-    cameras: Query<(&Camera, &GlobalTransform)>,
+fn init_textfield_visuals(
+    mut commands: Commands,
+    query: Query<(Entity, &UTextField), Added<UTextField>>,
 ) {
-    // معالجة النقر على الحقول
-    for (entity, mut input, interaction) in query.iter_mut() {
-        if *interaction == UInteraction::Clicked && !input.disabled {
-            input.focused = true;
-            active.0 = Some(entity);
-        }
-    }
-
-    // النقر خارج الجميع = إلغاء التركيز
-    if mouse.just_pressed(MouseButton::Left) {
-        let Ok(window) = windows.single() else {return;};
-        let Ok((camera, cam_transform)) = cameras.single() else {return;};
+    for (entity, textfield) in query.iter() {
         
-        if let Some(cursor_pos) = window.cursor_position() {
-            if let Ok(_world_pos) = camera.viewport_to_world_2d(cam_transform, cursor_pos) {
-                let mut clicked_on_input = false;
-                
-                // التحقق إذا كان النقر داخل أي UTextInput (باستخدام ComputedSize و Transform)
-                // هذا يتطلب استعلاماً إضافياً لتحديد المواقع...
-                // لأجل البساطة، نستخدم UInteraction كمؤشر
-                for (_, _, interaction) in query.iter() {
-                    if *interaction == UInteraction::Clicked {
-                        clicked_on_input = true;
-                        break;
-                    }
-                }
-
-                if !clicked_on_input {
-                    active.0 = None;
-                    for (_, mut input, _) in query.iter_mut() {
-                        input.focused = false;
-                    }
-                }
+        let border_color = if textfield.focused {
+            textfield.border_focused_color
+        } else {
+            textfield.border_color
+        };
+        
+        let bg_color = if textfield.focused {
+            textfield.background_focused_color
+        } else {
+            textfield.background_color
+        };
+        
+        commands.entity(entity).insert((
+            UNode {
+                width: UVal::Px(textfield.width),
+                height: UVal::Px(textfield.height),
+                background_color: bg_color,
+                border_radius: UCornerRadius::all(8.0),
+                padding: USides::all(textfield.padding),
+                ..default()
+            },
+            UInteraction::default(),
+            UBorder {
+                color: border_color,
+                width: 2.0,
+                radius: UCornerRadius::all(8.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                justify_content: UJustifyContent::Center,
+                ..default()
+            },
+        ));
+        
+        commands.entity(entity).observe(on_textfield_click);
+        
+        commands.entity(entity).with_children(|parent| {
+            let display_text = if textfield.text.is_empty() {
+                &textfield.placeholder
+            } else if textfield.input_type == TextFieldInputType::Password {
+                &"•".repeat(textfield.text.len())
+            } else {
+                &textfield.text
+            };
+            
+            let text_color = if textfield.text.is_empty() {
+                textfield.placeholder_color
+            } else {
+                textfield.text_color
+            };
+            
+            parent.spawn((
+                UTextLabel {
+                    text: display_text.to_string(),
+                    font_size: textfield.font_size,
+                    color: text_color,
+                    autosize: false,
+                    ..default()
+                },
+                TextFieldTextLabel,
+            ));
+            
+            if textfield.focused {
+                parent.spawn((
+                    UNode {
+                        width: UVal::Px(2.0),
+                        height: UVal::Px(textfield.font_size * 1.2),
+                        background_color: textfield.cursor_color,
+                        border_radius: UCornerRadius::all(1.0),
+                        margin: USides::left(4.0),
+                        ..default()
+                    },
+                    TextFieldCursor,
+                ));
             }
+        });
+    }
+}
+
+// ✅ Observer للنقر
+fn on_textfield_click(
+    trigger: On<Pointer<Press>>,
+    mut textfield_query: Query<(Entity, &mut UTextField)>,
+) {
+    // إلغاء التركيز من جميع الحقول
+    for (entity, mut textfield) in textfield_query.iter_mut() {
+        if entity == trigger.entity.entity() {
+            if !textfield.disabled && !textfield.readonly {
+                textfield.focused = true;
+                textfield.cursor_visible = true;
+                textfield.cursor_blink_timer = 0.0;
+            }
+        } else {
+            textfield.focused = false;
         }
     }
 }
 
-/// نظام معالجة لوحة المفاتيح (Bevy 0.17 API)
-pub fn text_input_keyboard_system(
-    active: Res<ActiveTextField>,
-    mut keyboard: MessageReader<KeyboardInput>,
-    keys: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(Entity, &mut UTextInput)>,
-    mut change_events: MessageWriter<UTextInputChangeEvent>,
-    mut submit_events: MessageWriter<UTextInputSubmitEvent>,
+// ✅ نظام جديد: إلغاء التركيز عند النقر خارج TextField
+fn handle_global_unfocus(
+    mut textfield_query: Query<&mut UTextField>,
+    mouse_button: Res<ButtonInput<MouseButton>>,
+    interaction_query: Query<&UInteraction>,
 ) {
-    let Some(active_entity) = active.0 else { return };
-    let Ok((entity, mut input)) = query.get_mut(active_entity) else { return };
-    
-    if input.disabled { return; }
+    if !mouse_button.just_pressed(MouseButton::Left) {
+        return;
+    }
 
-    let mut changed = false;
-    let mut cursor_moved = false;
+    // التحقق: هل تم النقر على أي TextField؟
+    let clicked_on_textfield = interaction_query.iter().any(|interaction| {
+        matches!(interaction, UInteraction::Pressed)
+    });
 
-    // --- معالجة الأزرار الخاصة (Backspace, Delete, Arrows) ---
-    
-    if keys.just_pressed(KeyCode::Backspace) && input.cursor_position > 0 {
-        let char_idx = input.cursor_position - 1;
-        if let Some((byte_idx, _)) = input.value.char_indices().nth(char_idx) {
-            input.value.remove(byte_idx);
-            input.cursor_position -= 1;
-            changed = true;
+    // إذا لم يتم النقر على أي TextField، ألغِ التركيز
+    if !clicked_on_textfield {
+        for mut textfield in textfield_query.iter_mut() {
+            textfield.focused = false;
         }
-    }
-
-    if keys.just_pressed(KeyCode::Delete) && input.cursor_position < input.value.chars().count() {
-        if let Some((byte_idx, _)) = input.value.char_indices().nth(input.cursor_position) {
-            input.value.remove(byte_idx);
-            changed = true;
-        }
-    }
-
-    if keys.just_pressed(KeyCode::ArrowLeft) && input.cursor_position > 0 {
-        input.cursor_position -= 1;
-        cursor_moved = true;
-    }
-
-    if keys.just_pressed(KeyCode::ArrowRight) && input.cursor_position < input.value.chars().count() {
-        input.cursor_position += 1;
-        cursor_moved = true;
-    }
-
-    if keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter) {
-        submit_events.write(UTextInputSubmitEvent {
-            entity,
-            value: input.value.clone(),
-        });
-    }
-
-    // --- معالجة إدخال الأحرف ---
-    
-    for ev in keyboard.read() {
-        if !ev.state.is_pressed() { continue; }
-        
-        if let Some(text) = ev.text.as_deref() {
-            for ch in text.chars() {
-                if ch.is_control() { continue; }
-
-                // فلترة الأرقام
-                if input.input_type == UInputType::Number && !ch.is_numeric() {
-                    continue;
-                }
-
-                // فحص الطول الأقصى
-                if let Some(max) = input.max_length {
-                    if input.value.chars().count() >= max { continue; }
-                }
-
-                // إدراج الحرف في موضع المؤشر
-                let byte_pos = input.value.char_indices()
-                    .nth(input.cursor_position)
-                    .map(|(i, _)| i)
-                    .unwrap_or(input.value.len());
-
-                input.value.insert(byte_pos, ch);
-                input.cursor_position += 1;
-                changed = true;
-            }
-        }
-    }
-
-    if changed {
-        change_events.write(UTextInputChangeEvent {
-            entity,
-            value: input.value.clone(),
-        });
-    }
-
-    // تحديث المؤشر المرئي إذا تحرك (سيتم التعامل معه في نظام آخر)
-    if cursor_moved {
-        // يمكن إرسال حدث تحديث المؤشر هنا إذا لزم الأمر
     }
 }
 
-/// تحديث العرض المرئي (النص والمؤشر)
-/// تحديث العرض المرئي (النص والمؤشر) - إصدار محدث بدون borrow conflict
-pub fn text_input_visual_update(
-    inputs: Query<(Entity, &UTextInput, &Children, &ComputedSize), Changed<UTextInput>>,
-    mut texts: Query<(
-        &mut UTextLabel, 
-        Option<&UTextInputValue>, 
-        Option<&UTextInputPlaceholder>
-    ), Without<UTextInput>>,
-    mut cursors: Query<(&mut Transform, &mut Visibility), With<UTextInputCursor>>,
+fn handle_textfield_input(
+    mut textfield_query: Query<&mut UTextField>,
+    mut keyboard_events: MessageReader<KeyboardInput>,
 ) {
-    for (_entity, input, children, computed_size) in inputs.iter() {
+    let mut focused_textfield: Option<Mut<UTextField>> = None;
+    for textfield in textfield_query.iter_mut() {
+        if textfield.focused && !textfield.disabled && !textfield.readonly {
+            focused_textfield = Some(textfield);
+            break;
+        }
+    }
+    
+    let Some(mut textfield) = focused_textfield else { return };
+
+    
+    for event in keyboard_events.read() {
+        if event.state != ButtonState::Pressed {
+            continue;
+        }
+
         
-        // 1. تحديث النصوص (Value و Placeholder)
-        for child in children.iter() {
-            if let Ok((mut text, is_value, is_placeholder)) = texts.get_mut(child) {
-                
-                if is_value.is_some() {
-                    // هذا كيان قيمة الإدخال
-                    let display_text = match input.input_type {
-                        UInputType::Password => {
-                            input.password_char.to_string().repeat(input.value.chars().count())
-                        },
-                        _ => input.value.clone(),
-                    };
-                    text.text = display_text;
-                    
-                } else if is_placeholder.is_some() {
-                    // هذا كيان الـ Placeholder
-                    // نظهره فقط إذا كان الحقل فارغاً وغير مُركز
-                    let show_placeholder = input.value.is_empty() && !input.focused;
-                    text.text = if show_placeholder {
-                        input.placeholder.clone()
-                    } else {
-                        String::new() // إخفاء Placeholder عند الكتابة
-                    };
+        
+        match &event.logical_key {
+            Key::Enter => {}
+            
+            Key::Backspace => {
+                let textfi = textfield.cursor_position;
+                if textfield.cursor_position > 0 && !textfield.text.is_empty() {
+                    textfield.text.remove(textfi - 1);
+                    textfield.cursor_position -= 1;
                 }
             }
-
-            // 2. تحديث المؤشر (Cursor)
-            if let Ok((mut transform, mut visibility)) = cursors.get_mut(child) {
-                *visibility = if input.focused && !input.disabled {
-                    Visibility::Visible
-                } else {
-                    Visibility::Hidden
+            
+            Key::Delete => {
+                let textfi = textfield.cursor_position;
+                if textfield.cursor_position < textfield.text.len() {
+                    textfield.text.remove(textfi);
+                }
+            }
+            
+            Key::ArrowLeft => {
+                if textfield.cursor_position > 0 {
+                    textfield.cursor_position -= 1;
+                }
+            }
+            
+            Key::ArrowRight => {
+                if textfield.cursor_position < textfield.text.len() {
+                    textfield.cursor_position += 1;
+                }
+            }
+            
+            Key::Home => {
+                textfield.cursor_position = 0;
+            }
+            
+            Key::End => {
+                textfield.cursor_position = textfield.text.len();
+            }
+            
+            Key::Character(char_str) => {
+                if let Some(max) = textfield.max_length {
+                    if textfield.text.len() >= max {
+                        continue;
+                    }
+                }
+                
+                let valid = match textfield.input_type {
+                    TextFieldInputType::Number => {
+                        char_str.chars().all(|c| c.is_numeric() || c == '.' || c == '-')
+                    }
+                    TextFieldInputType::Email => {
+                        char_str.chars().all(|c| {
+                            c.is_alphanumeric() || c == '@' || c == '.' || c == '_' || c == '-'
+                        })
+                    }
+                    _ => true,
                 };
+                
+                if valid {
+                    let textfi = textfield.cursor_position;
+                    textfield.text.insert_str(textfi, char_str);
+                    textfield.cursor_position += char_str.len();
+                }
+            }
+            
+            _ => {}
+        }
+        
+        textfield.cursor_visible = true;
+        textfield.cursor_blink_timer = 0.0;
+    }
+}
 
-                if input.focused {
-                    // حساب X بناءً على موضع المؤشر
-                    // ملاحظة: هذا تقديري، يتطلب TextLayout للدقة العالية
-                    let estimated_char_width = 10.0; // يجب استبداله بحساب حقيقي
-                    let text_width_before_cursor = input.value[..input.cursor_position.min(input.value.len())]
-                        .chars()
-                        .count() as f32 * estimated_char_width;
-                    
-                    // توسيط النص + الإزاحة
-                    let start_x = -(computed_size.width / 2.0) + 15.0; // 15px padding
-                    transform.translation.x = start_x + text_width_before_cursor;
+fn update_textfield_visuals(
+    textfield_query: Query<(Entity, &UTextField, &Children), Changed<UTextField>>,
+    mut node_query: Query<&mut UNode>,
+    mut border_query: Query<&mut UBorder>,
+    mut text_query: Query<&mut UTextLabel, With<TextFieldTextLabel>>,
+    cursor_query: Query<Entity, With<TextFieldCursor>>,
+    mut commands: Commands,
+) {
+    for (entity, textfield, children) in textfield_query.iter() {
+        
+        // تحديث الـ Node الرئيسي
+        if let Ok(mut node) = node_query.get_mut(entity) {
+            node.background_color = if textfield.focused {
+                textfield.background_focused_color
+            } else {
+                textfield.background_color
+            };
+        }
+        
+        // تحديث Border
+        if let Ok(mut border) = border_query.get_mut(entity) {
+            border.color = if textfield.focused {
+                textfield.border_focused_color
+            } else {
+                textfield.border_color
+            };
+        }
+        
+        // تحديث النص
+        for child in children.iter() {
+            if let Ok(mut text_label) = text_query.get_mut(child) {
+                let display_text = if textfield.text.is_empty() {
+                    &textfield.placeholder
+                } else if textfield.input_type == TextFieldInputType::Password {
+                    &"•".repeat(textfield.text.len())
+                } else {
+                    &textfield.text
+                };
+                
+                text_label.text = display_text.to_string();
+                text_label.color = if textfield.text.is_empty() {
+                    textfield.placeholder_color
+                } else {
+                    textfield.text_color
+                };
+            }
+        }
+        
+        // إدارة Cursor
+        let has_cursor = children.iter().any(|c| cursor_query.get(c).is_ok());
+        
+        if textfield.focused && !has_cursor {
+            commands.entity(entity).with_children(|parent| {
+                parent.spawn((
+                    UNode {
+                        width: UVal::Px(2.0),
+                        height: UVal::Px(textfield.font_size * 1.2),
+                        background_color: textfield.cursor_color,
+                        border_radius: UCornerRadius::all(1.0),
+                        margin: USides::left(4.0),
+                        ..default()
+                    },
+                    TextFieldCursor,
+                ));
+            });
+        } else if !textfield.focused && has_cursor {
+            for child in children.iter() {
+                if cursor_query.get(child).is_ok() {
+                    commands.entity(child).despawn();
                 }
             }
         }
     }
 }
 
-/// وميض المؤشر (Cursor Blink)
-pub fn text_input_cursor_blink(
+fn animate_textfield_cursor(
     time: Res<Time>,
-    active: Res<ActiveTextField>,
-    mut query: Query<&mut Visibility, With<UTextInputCursor>>,
+    mut textfield_query: Query<(&mut UTextField, &Children)>,
+    mut cursor_query: Query<&mut Visibility, With<TextFieldCursor>>,
 ) {
-    // تنفيذ بسيط للوميض (يمكن تحسينه بـ Timer Resource)
-    let blink_speed = 0.5; // ثانية
-    let visible = ((time.elapsed_secs() / blink_speed) as i32) % 2 == 0;
-
-    if let Some(_) = active.0 {
-        for mut vis in query.iter_mut() {
-            // فقط إذا كان المرئي أصلاً (للتركيز)
-            if *vis != Visibility::Inherited {
-                *vis = if visible { Visibility::Visible } else { Visibility::Hidden };
+    for (mut textfield, children) in textfield_query.iter_mut() {
+        if !textfield.focused {
+            continue;
+        }
+        
+        textfield.cursor_blink_timer += time.delta_secs();
+        
+        if textfield.cursor_blink_timer >= textfield.cursor_blink_speed {
+            textfield.cursor_blink_timer = 0.0;
+            textfield.cursor_visible = !textfield.cursor_visible;
+            
+            for child in children.iter() {
+                if let Ok(mut visibility) = cursor_query.get_mut(child) {
+                    *visibility = if textfield.cursor_visible {
+                        Visibility::Visible
+                    } else {
+                        Visibility::Hidden
+                    };
+                }
             }
         }
-    } else {
-        // إخفاء الكل عند فقدان التركيز
-        for mut vis in query.iter_mut() {
-            *vis = Visibility::Hidden;
+    }
+}
+
+fn emit_textfield_events(
+    mut changed_events: MessageWriter<TextFieldChangedEvent>,
+    mut submit_events: MessageWriter<TextFieldSubmitEvent>,
+    mut textfield_query: Query<(Entity, &mut UTextField)>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    for (entity, mut textfield) in textfield_query.iter_mut() {
+        if textfield.text != textfield.previous_text {
+            changed_events.write(TextFieldChangedEvent {
+                entity,
+                text: textfield.text.clone(),
+            });
+            
+            textfield.previous_text = textfield.text.clone();
+        }
+        
+        if textfield.focused && keyboard.just_pressed(KeyCode::Enter) {
+            submit_events.write(TextFieldSubmitEvent {
+                entity,
+                text: textfield.text.clone(),
+            });
         }
     }
 }
 
 // =========================================================
-// Plugin
+// Events
 // =========================================================
 
-pub struct UTextInputPlugin;
-
-impl Plugin for UTextInputPlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .init_resource::<UTextInputSettings>()
-            .add_message::<UTextInputChangeEvent>()
-            .add_message::<UTextInputSubmitEvent>()
-            .add_systems(Update, (
-                text_input_focus_system,
-                text_input_keyboard_system.after(text_input_focus_system),
-                text_input_visual_update.after(text_input_keyboard_system),
-                text_input_cursor_blink,
-            ).chain());
-    }
+#[derive(Message)]
+pub struct TextFieldChangedEvent {
+    pub entity: Entity,
+    pub text: String,
 }
 
+#[derive(Message)]
+pub struct TextFieldSubmitEvent {
+    pub entity: Entity,
+    pub text: String,
+}

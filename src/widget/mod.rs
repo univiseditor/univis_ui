@@ -9,7 +9,6 @@ pub mod image;
 pub mod seekbar;
 pub mod checkbox;
 pub mod menu;
-pub mod scrolling;
 pub mod icon_btn;
 pub mod toggle;
 pub mod radio;

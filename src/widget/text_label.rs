@@ -117,7 +117,7 @@ pub fn fit_node_to_text_size(
 
 pub fn sync_text_label_props(
     label_query: Query<(&UTextLabel, &Children), Changed<UTextLabel>>,
-    mut text_query: Query<(&mut Text, &mut TextFont, &mut TextColor, &mut TextLayout), With<TextChildMarker>>,
+    mut text_query: Query<(&mut Text2d, &mut TextFont, &mut TextColor, &mut TextLayout), With<TextChildMarker>>,
 ) {
     for (label, children) in label_query.iter() {
         for &child in children {

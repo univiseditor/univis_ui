@@ -80,7 +80,6 @@ fn update_progress_bars(
                         ..default()
                     },
                     ProgressBarFill,
-                    Pickable::IGNORE, // لا يتفاعل مع الماوس
                 ));
             });
         }

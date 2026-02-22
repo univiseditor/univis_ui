@@ -159,7 +159,9 @@ fn setup(mut commands: Commands) {
 ## Profiling
 - Optional plugin: `LayoutProfilingPlugin`
 - Tracks pass timings, node stats, cache hit ratio, material reuse stats
-- Optional overlay and periodic reports
+- Visual overlay with timing bars and frame graph
+- Keyboard controls: `F10` enable/disable profiler, `F11` overlay, `F9` graph, `F12` overlay position
+- No terminal logging by default (overlay-only diagnostics)
 
 ## Examples
 ### Existing Examples

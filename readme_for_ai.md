@@ -193,7 +193,14 @@ Item-level:
 - Profiling plugin: `LayoutProfilingPlugin`
   - timing metrics (upward/downward/material)
   - cache/material hit stats
-  - frame history + optional overlay/reporting
+  - frame history + percentile summaries (including p95)
+  - visual overlay (timing bars + frame-time graph)
+  - overlay diagnostics are visual-only (no periodic terminal logging by default)
+  - controls:
+    - `F10`: enable/disable profiler
+    - `F11`: toggle overlay
+    - `F9`: toggle graph
+    - `F12`: cycle overlay position
 
 ## 11. System Scheduling Snapshot
 ### 11.1 Layout Plugin

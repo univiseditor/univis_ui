@@ -34,6 +34,17 @@ pub struct SolverSpec {
     pub bottom: UVal,
     
     pub align_self: Option<UAlignSelf>,
+    pub align_self_ext: Option<UAlignSelfExt>,
+    pub justify_self_ext: Option<UAlignSelfExt>,
+    pub justify_overflow: UOverflowPosition,
+    pub align_overflow: UOverflowPosition,
+    pub flex_grow: Option<f32>,
+    pub flex_shrink: Option<f32>,
+    pub flex_basis: Option<UVal>,
+    pub grid_column_start: Option<u32>,
+    pub grid_column_span: u32,
+    pub grid_row_start: Option<u32>,
+    pub grid_row_span: u32,
     pub order: i32,
     
 }
@@ -53,12 +64,23 @@ pub struct SolverItem<'a> {
 }
 
 /// Configuration for the solver run (Container properties).
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct SolverConfig {
     pub layout: ULayout,
     pub gap: f32,
+    pub row_gap: Option<f32>,
+    pub column_gap: Option<f32>,
     pub padding: USides,
     pub grid_columns: u32,
+    pub justify_items: Option<UAlignItemsExt>,
+    pub align_content: Option<UContentAlignExt>,
+    pub flex_wrap: UFlexWrap,
+    pub flex_align_content: Option<UContentAlignExt>,
+    pub grid_template_columns: Vec<UTrackSize>,
+    pub grid_template_rows: Vec<UTrackSize>,
+    pub grid_auto_flow: UGridAutoFlow,
+    pub grid_auto_rows: UTrackSize,
+    pub grid_auto_columns: UTrackSize,
     
     // Width/Height modes to determine sizing constraints
     pub width_mode: SolverSizeMode,
@@ -74,8 +96,52 @@ pub struct PlacementContext {
     pub padding_cross_start: f32,
 
     pub gap: f32,
+    pub main_gap: f32,
+    pub cross_gap: f32,
     pub justify_content: UJustifyContent,
     pub align_items: UAlignItems,
+    pub justify_items: Option<UAlignItemsExt>,
+    pub align_content: Option<UContentAlignExt>,
+    pub flex_wrap: UFlexWrap,
+    pub grid_columns: u32,
+    pub grid_template_columns: Vec<UTrackSize>,
+    pub grid_template_rows: Vec<UTrackSize>,
+    pub grid_auto_flow: UGridAutoFlow,
+    pub grid_auto_rows: UTrackSize,
+    pub grid_auto_columns: UTrackSize,
+}
+
+fn map_align_items_to_ext(align: UAlignItems) -> UAlignItemsExt {
+    match align {
+        UAlignItems::Center => UAlignItemsExt::Center,
+        UAlignItems::End | UAlignItems::FlexEnd => UAlignItemsExt::End,
+        UAlignItems::Stretch => UAlignItemsExt::Stretch,
+        UAlignItems::Baseline => UAlignItemsExt::Baseline,
+        _ => UAlignItemsExt::Start,
+    }
+}
+
+fn map_align_self_to_ext(align: UAlignSelf) -> UAlignSelfExt {
+    match align {
+        UAlignSelf::Center => UAlignSelfExt::Center,
+        UAlignSelf::End => UAlignSelfExt::End,
+        UAlignSelf::Stretch => UAlignSelfExt::Stretch,
+        UAlignSelf::Auto => UAlignSelfExt::Auto,
+        UAlignSelf::Start => UAlignSelfExt::Start,
+    }
+}
+
+fn resolve_flex_basis(basis: UVal, default_content: f32, available_main: f32) -> Option<f32> {
+    match basis {
+        UVal::Px(v) => Some(v.max(0.0)),
+        UVal::Percent(p) => Some((p * available_main).max(0.0)),
+        UVal::Content => Some(default_content.max(0.0)),
+        UVal::Auto | UVal::Flex(_) => None,
+    }
+}
+
+fn is_ext_stretch(value: UAlignSelfExt) -> bool {
+    matches!(value, UAlignSelfExt::Stretch)
 }
 
 // =========================================================
@@ -113,26 +179,51 @@ pub fn solve_flex_layout(
     let (min_main, max_main, min_cross, max_cross) = axis.extract_constraints(constraints);
     let padding = axis.extract_padding(config.padding);
     let available_main = (max_main - padding.main).max(0.0);
+    let main_gap = if axis.is_row() {
+        config.column_gap.unwrap_or(config.gap)
+    } else {
+        config.row_gap.unwrap_or(config.gap)
+    };
+    let cross_gap = if axis.is_row() {
+        config.row_gap.unwrap_or(config.gap)
+    } else {
+        config.column_gap.unwrap_or(config.gap)
+    };
     
     // 3. Calculate Sizes (Flexbox Sizing Loop)
     let mut used_main = 0.0;
     let mut total_grow = 0.0;
+    let mut total_shrink_weight = 0.0;
+    let mut shrink_data: Vec<(usize, f32)> = Vec::with_capacity(normal_indices.len());
     
     for &idx in &normal_indices {
         let item = &mut items[idx];
         let (m_start, m_end, _, _) = axis.extract_margin_sides(item.margin);
         let margin_span = m_start + m_end;
         let (main_mode, main_val, main_flex_factor) = axis.get_main_spec(&item.spec);
+        let ext_grow = item.spec.flex_grow.unwrap_or(0.0).max(0.0);
+        let grow_factor = if ext_grow > 0.0 { ext_grow } else { main_flex_factor.max(0.0) };
         
-        let base_size = match main_mode {
+        let mut base_size = match main_mode {
             SolverSizeMode::Fixed => main_val,
             SolverSizeMode::Percent => main_val * available_main, 
             SolverSizeMode::Flex => 0.0, 
             SolverSizeMode::Content => main_val,
             SolverSizeMode::Auto => main_val,
         };
-        if main_flex_factor > 0.0 {
-            total_grow += main_flex_factor;
+        if let Some(basis) = item.spec.flex_basis {
+            if let Some(resolved_basis) = resolve_flex_basis(basis, base_size, available_main) {
+                base_size = resolved_basis;
+            }
+        }
+
+        let shrink_factor = item.spec.flex_shrink.unwrap_or(1.0).max(0.0);
+        let shrink_weight = (base_size.max(1.0)) * shrink_factor;
+        total_shrink_weight += shrink_weight;
+        shrink_data.push((idx, shrink_weight));
+
+        if grow_factor > 0.0 {
+            total_grow += grow_factor;
             item.result.size = axis.to_world(base_size, 0.0);
             used_main += margin_span; 
         } else {
@@ -141,21 +232,41 @@ pub fn solve_flex_layout(
         }
     }
 
-    if normal_indices.len() > 1 { used_main += (normal_indices.len() as f32 - 1.0) * config.gap; }
+    if normal_indices.len() > 1 {
+        used_main += (normal_indices.len() as f32 - 1.0) * main_gap;
+    }
     
     // 4. Apply Flex Grow
-    let remaining_space = (available_main - used_main).max(0.0);
-    if total_grow > 0.0 && remaining_space > 0.0 {
-        let unit = remaining_space / total_grow;
+    let positive_free_space = (available_main - used_main).max(0.0);
+    if total_grow > 0.0 && positive_free_space > 0.0 {
+        let unit = positive_free_space / total_grow;
         for &idx in &normal_indices {
             let item = &mut items[idx];
-            let (_, _, main_flex_factor) = axis.get_main_spec(&item.spec);
-            if main_flex_factor > 0.0 {
+            let (_, _, legacy_main_flex_factor) = axis.get_main_spec(&item.spec);
+            let ext_grow = item.spec.flex_grow.unwrap_or(0.0).max(0.0);
+            let grow_factor = if ext_grow > 0.0 { ext_grow } else { legacy_main_flex_factor.max(0.0) };
+            if grow_factor > 0.0 {
                 let current_base = axis.from_world(item.result.size).0;
-                let added = main_flex_factor * unit;
+                let added = grow_factor * unit;
                 item.result.size = axis.to_world(current_base + added, 0.0);
                 used_main += added;
             }
+        }
+    }
+
+    // 4b. Apply Flex Shrink if content overflows the main axis.
+    let overflow = (used_main - available_main).max(0.0);
+    if overflow > 0.0 && total_shrink_weight > 0.0 {
+        for (idx, weight) in shrink_data {
+            if weight <= 0.0 {
+                continue;
+            }
+            let item = &mut items[idx];
+            let current_main = axis.from_world(item.result.size).0;
+            let shrink_share = overflow * (weight / total_shrink_weight);
+            let new_main = (current_main - shrink_share).max(0.0);
+            used_main -= current_main - new_main;
+            item.result.size = axis.to_world(new_main, 0.0);
         }
     }
 
@@ -175,11 +286,14 @@ pub fn solve_flex_layout(
             SolverSizeMode::Auto => cross_val,
         };
         
-        let should_stretch = match item.spec.align_self {
-            None => config.layout.align_items == UAlignItems::Stretch,
-            Some(UAlignSelf::Auto) => config.layout.align_items == UAlignItems::Stretch,
-            Some(UAlignSelf::Stretch) => true,
-            _ => false,
+        let ext_self = item.spec.align_self_ext
+            .or_else(|| item.spec.align_self.map(map_align_self_to_ext));
+        let container_ext_align = map_align_items_to_ext(config.layout.align_items);
+        let should_stretch = match ext_self {
+            Some(UAlignSelfExt::Auto | UAlignSelfExt::Normal) | None => {
+                container_ext_align == UAlignItemsExt::Stretch
+            }
+            Some(value) => is_ext_stretch(value),
         };
 
         if should_stretch && cross_mode != SolverSizeMode::Fixed {
@@ -211,8 +325,19 @@ pub fn solve_flex_layout(
         padding_main_end: p_main_end,
         padding_cross_start: p_cross_start,
         gap: config.gap,
+        main_gap,
+        cross_gap,
         justify_content: config.layout.justify_content, 
         align_items: config.layout.align_items,
+        justify_items: config.justify_items,
+        align_content: config.flex_align_content.or(config.align_content),
+        flex_wrap: config.flex_wrap,
+        grid_columns: config.grid_columns,
+        grid_template_columns: config.grid_template_columns.clone(),
+        grid_template_rows: config.grid_template_rows.clone(),
+        grid_auto_flow: config.grid_auto_flow,
+        grid_auto_rows: config.grid_auto_rows,
+        grid_auto_columns: config.grid_auto_columns,
     };
 
     // Receive actual size from the placer
@@ -269,7 +394,13 @@ pub fn solve_flex_layout(
 }
 
 // 2. Spec Translation Helper
-pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
+pub fn translate_spec(
+    node: &UNode,
+    uself: Option<&USelf>,
+    box_align_self: Option<&UBoxAlignSelf>,
+    flex_item_ext: Option<&UFlexItemExt>,
+    grid_item_ext: Option<&UGridItemExt>,
+) -> SolverSpec {
     let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
         match dim {
             UVal::Px(v) => (SolverSizeMode::Fixed, v, 0.0),
@@ -289,6 +420,33 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
     } else {
         (UPositionType::Relative, UVal::Auto, UVal::Auto, UVal::Auto, UVal::Auto, None, 0)
     };
+    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) =
+        if let Some(ext) = box_align_self {
+            (
+                ext.align_self,
+                if ext.justify_self == UAlignSelfExt::Auto { None } else { Some(ext.justify_self) },
+                ext.justify_overflow,
+                ext.align_overflow,
+            )
+        } else {
+            (None, None, UOverflowPosition::Unsafe, UOverflowPosition::Unsafe)
+        };
+    let (flex_grow, flex_shrink, flex_basis) = if let Some(ext) = flex_item_ext {
+        (Some(ext.flex_grow.max(0.0)), Some(ext.flex_shrink.max(0.0)), Some(ext.flex_basis))
+    } else {
+        (None, None, None)
+    };
+    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) =
+        if let Some(ext) = grid_item_ext {
+            (
+                ext.column_start,
+                ext.column_span.max(1),
+                ext.row_start,
+                ext.row_span.max(1),
+            )
+        } else {
+            (None, 1, None, 1)
+        };
 
     SolverSpec {
         width_mode: w_mode, width_val: w_val, width_flex: w_flex,
@@ -297,6 +455,17 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         position_type: pos_type,
         left: l, right: r, top: t, bottom: b,
         align_self: align,
+        align_self_ext,
+        justify_self_ext,
+        justify_overflow,
+        align_overflow,
+        flex_grow,
+        flex_shrink,
+        flex_basis,
+        grid_column_start,
+        grid_column_span,
+        grid_row_start,
+        grid_row_span,
         order,
     }
 }
@@ -369,4 +538,63 @@ fn solve_absolute_box(
     };
 
     (Vec2::new(width, height), Vec2::new(x, y))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_flex_basis_handles_percent() {
+        let value = resolve_flex_basis(UVal::Percent(0.5), 10.0, 300.0);
+        assert_eq!(value, Some(150.0));
+    }
+
+    #[test]
+    fn translate_spec_copies_ext_fields() {
+        let node = UNode {
+            width: UVal::Px(40.0),
+            height: UVal::Px(20.0),
+            ..default()
+        };
+        let uself = USelf {
+            align_self: UAlignSelf::Center,
+            ..default()
+        };
+        let box_align_self = UBoxAlignSelf {
+            justify_self: UAlignSelfExt::End,
+            align_self: Some(UAlignSelfExt::Start),
+            justify_overflow: UOverflowPosition::Safe,
+            align_overflow: UOverflowPosition::Unsafe,
+        };
+        let flex_item_ext = UFlexItemExt {
+            flex_grow: 2.0,
+            flex_shrink: 0.5,
+            flex_basis: UVal::Px(30.0),
+        };
+        let grid_item_ext = UGridItemExt {
+            column_start: Some(2),
+            column_span: 3,
+            row_start: Some(1),
+            row_span: 2,
+        };
+
+        let spec = translate_spec(
+            &node,
+            Some(&uself),
+            Some(&box_align_self),
+            Some(&flex_item_ext),
+            Some(&grid_item_ext),
+        );
+
+        assert_eq!(spec.align_self, Some(UAlignSelf::Center));
+        assert_eq!(spec.align_self_ext, Some(UAlignSelfExt::Start));
+        assert_eq!(spec.justify_self_ext, Some(UAlignSelfExt::End));
+        assert_eq!(spec.justify_overflow, UOverflowPosition::Safe);
+        assert_eq!(spec.flex_grow, Some(2.0));
+        assert_eq!(spec.flex_basis, Some(UVal::Px(30.0)));
+        assert_eq!(spec.grid_column_start, Some(2));
+        assert_eq!(spec.grid_column_span, 3);
+        assert_eq!(spec.grid_row_span, 2);
+    }
 }

@@ -136,6 +136,12 @@ pub fn track_layout_changes(
             Ref<UNode>,
             Option<Ref<ULayout>>,
             Option<Ref<USelf>>,
+            Option<Ref<UBoxAlignContainer>>,
+            Option<Ref<UBoxAlignSelf>>,
+            Option<Ref<UFlexContainerExt>>,
+            Option<Ref<UFlexItemExt>>,
+            Option<Ref<UGridContainerExt>>,
+            Option<Ref<UGridItemExt>>,
             Ref<IntrinsicSize>,
         ),
         // الفلتر العام: نمر فقط على العقد التي تغير فيها شيء ما
@@ -143,6 +149,12 @@ pub fn track_layout_changes(
             Changed<UNode>,
             Changed<ULayout>,
             Changed<USelf>,
+            Changed<UBoxAlignContainer>,
+            Changed<UBoxAlignSelf>,
+            Changed<UFlexContainerExt>,
+            Changed<UFlexItemExt>,
+            Changed<UGridContainerExt>,
+            Changed<UGridItemExt>,
             Changed<Children>,
             Changed<IntrinsicSize>,
         )>
@@ -152,7 +164,7 @@ pub fn track_layout_changes(
     children_query: Query<&Children>,
 ) {
     // 1. معالجة التغييرات
-    for (entity, children, node, layout, uself, intrinsic) in nodes.iter() {
+    for (entity, children, node, layout, uself, box_align_container, box_align_self, flex_container_ext, flex_item_ext, grid_container_ext, grid_item_ext, intrinsic) in nodes.iter() {
         
         // === المنطق الذكي لكسر الحلقة ===
         // إذا كان التغيير الوحيد هو في IntrinsicSize...
@@ -160,6 +172,12 @@ pub fn track_layout_changes(
            && !node.is_changed() 
            && !layout.map_or(false, |l| l.is_changed()) 
            && !uself.map_or(false, |s| s.is_changed()) 
+           && !box_align_container.map_or(false, |v| v.is_changed())
+           && !box_align_self.map_or(false, |v| v.is_changed())
+           && !flex_container_ext.map_or(false, |v| v.is_changed())
+           && !flex_item_ext.map_or(false, |v| v.is_changed())
+           && !grid_container_ext.map_or(false, |v| v.is_changed())
+           && !grid_item_ext.map_or(false, |v| v.is_changed())
            && !nodes.contains(entity) // تأكدنا من الفلاتر الأخرى
         {
              // ...وتحققنا أن العنصر "حاوية" (له أبناء)

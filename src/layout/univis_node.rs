@@ -9,7 +9,20 @@ impl Plugin for UnivisNodePlugin {
             .register_type::<UVal>()
             .register_type::<ULayout>()
             .register_type::<UNode>()
-            .register_type::<ComputedSize>();
+            .register_type::<ComputedSize>()
+            .register_type::<UBoxAlignContainer>()
+            .register_type::<UBoxAlignSelf>()
+            .register_type::<UFlexContainerExt>()
+            .register_type::<UFlexItemExt>()
+            .register_type::<UGridContainerExt>()
+            .register_type::<UGridItemExt>()
+            .register_type::<UAlignSelfExt>()
+            .register_type::<UAlignItemsExt>()
+            .register_type::<UContentAlignExt>()
+            .register_type::<UOverflowPosition>()
+            .register_type::<UFlexWrap>()
+            .register_type::<UTrackSize>()
+            .register_type::<UGridAutoFlow>();
     }
 }
 
@@ -178,40 +191,219 @@ pub enum UDisplay {
     None,
 }
 
-// /// Defines how much an item should grow relative to others to fill available space.
-// /// 0.0 = Do not grow. 1.0 = Take 1 share.
-// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-// #[reflect(Component, Default)]
-// pub struct UFlexGrow(pub f32);
+/// CSS-inspired extended alignment values for self alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UAlignSelfExt {
+    #[default]
+    Auto,
+    Normal,
+    Start,
+    End,
+    Center,
+    Stretch,
+    Baseline,
+    FirstBaseline,
+    LastBaseline,
+    FlexStart,
+    FlexEnd,
+    SelfStart,
+    SelfEnd,
+    Left,
+    Right,
+}
 
-// impl Default for UFlexGrow {
-//     fn default() -> Self {
-//         Self(0.0) // Default is no growth
-//     }
-// }
+/// CSS-inspired extended alignment values for container item alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UAlignItemsExt {
+    #[default]
+    Normal,
+    Start,
+    End,
+    Center,
+    Stretch,
+    Baseline,
+    FirstBaseline,
+    LastBaseline,
+    FlexStart,
+    FlexEnd,
+    SelfStart,
+    SelfEnd,
+    Left,
+    Right,
+}
 
-// impl UFlexGrow {
-//     /// Standard fill (shares space equally).
-//     pub fn fill() -> Self { Self(1.0) }
-    
-//     /// Double growth factor.
-//     pub fn double() -> Self { Self(2.0) }
-// }
+/// CSS-inspired extended alignment values for distributing lines/tracks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UContentAlignExt {
+    #[default]
+    Normal,
+    Start,
+    End,
+    Center,
+    Stretch,
+    SpaceBetween,
+    SpaceAround,
+    SpaceEvenly,
+    FlexStart,
+    FlexEnd,
+}
 
-// // =========================================================
-// // 3. Flex Shrink (Optional)
-// // =========================================================
+/// Overflow position behavior for alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UOverflowPosition {
+    Safe,
+    #[default]
+    Unsafe,
+}
 
-// /// Defines the ability of a flex item to shrink if necessary.
-// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-// #[reflect(Component, Default)]
-// pub struct UFlexShrink(pub f32);
+/// Flex wrap behavior.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UFlexWrap {
+    #[default]
+    NoWrap,
+    Wrap,
+    WrapReverse,
+}
 
-// impl Default for UFlexShrink {
-//     fn default() -> Self {
-//         Self(1.0) // Shrinkable by default
-//     }
-// }
+/// Grid track sizing.
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
+pub enum UTrackSize {
+    Px(f32),
+    Fr(f32),
+    #[default]
+    Auto,
+}
+
+/// Grid auto-placement flow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UGridAutoFlow {
+    #[default]
+    Row,
+    Column,
+}
+
+/// Extended container-level alignment options.
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct UBoxAlignContainer {
+    pub justify_items: UAlignItemsExt,
+    pub align_content: UContentAlignExt,
+    pub row_gap: Option<f32>,
+    pub column_gap: Option<f32>,
+}
+
+impl Default for UBoxAlignContainer {
+    fn default() -> Self {
+        Self {
+            justify_items: UAlignItemsExt::Normal,
+            align_content: UContentAlignExt::Normal,
+            row_gap: None,
+            column_gap: None,
+        }
+    }
+}
+
+/// Extended child-level alignment options.
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct UBoxAlignSelf {
+    pub justify_self: UAlignSelfExt,
+    pub align_self: Option<UAlignSelfExt>,
+    pub justify_overflow: UOverflowPosition,
+    pub align_overflow: UOverflowPosition,
+}
+
+impl Default for UBoxAlignSelf {
+    fn default() -> Self {
+        Self {
+            justify_self: UAlignSelfExt::Auto,
+            align_self: None,
+            justify_overflow: UOverflowPosition::Unsafe,
+            align_overflow: UOverflowPosition::Unsafe,
+        }
+    }
+}
+
+/// Extended flex container options.
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct UFlexContainerExt {
+    pub wrap: UFlexWrap,
+    pub align_content: Option<UContentAlignExt>,
+}
+
+impl Default for UFlexContainerExt {
+    fn default() -> Self {
+        Self {
+            wrap: UFlexWrap::NoWrap,
+            align_content: None,
+        }
+    }
+}
+
+/// Extended flex item options.
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct UFlexItemExt {
+    pub flex_grow: f32,
+    pub flex_shrink: f32,
+    pub flex_basis: UVal,
+}
+
+impl Default for UFlexItemExt {
+    fn default() -> Self {
+        Self {
+            flex_grow: 0.0,
+            flex_shrink: 1.0,
+            flex_basis: UVal::Auto,
+        }
+    }
+}
+
+/// Extended grid container options.
+#[derive(Component, Debug, Clone, Reflect)]
+#[reflect(Component)]
+pub struct UGridContainerExt {
+    pub template_columns: Vec<UTrackSize>,
+    pub template_rows: Vec<UTrackSize>,
+    pub auto_flow: UGridAutoFlow,
+    pub auto_rows: UTrackSize,
+    pub auto_columns: UTrackSize,
+}
+
+impl Default for UGridContainerExt {
+    fn default() -> Self {
+        Self {
+            template_columns: Vec::new(),
+            template_rows: Vec::new(),
+            auto_flow: UGridAutoFlow::Row,
+            auto_rows: UTrackSize::Auto,
+            auto_columns: UTrackSize::Auto,
+        }
+    }
+}
+
+/// Extended grid item placement options.
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct UGridItemExt {
+    pub column_start: Option<u32>,
+    pub column_span: u32,
+    pub row_start: Option<u32>,
+    pub row_span: u32,
+}
+
+impl Default for UGridItemExt {
+    fn default() -> Self {
+        Self {
+            column_start: None,
+            column_span: 1,
+            row_start: None,
+            row_span: 1,
+        }
+    }
+}
+
 
 /// Self-control component for a child node.
 /// Overrides parent settings (Alignment) or Layout flow (Positioning).

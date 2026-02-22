@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 use univis_ui::prelude::*;
-use bevy::input::keyboard::{Key, KeyboardInput};
-use bevy::input::ButtonState;
 
 fn main() {
     App::new()

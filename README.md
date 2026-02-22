@@ -1,126 +1,207 @@
 # Univis UI
-[![Crates.io](https://img.shields.io/crates/v/univis)](https://crates.io/crates/univis)
-[![Bevy](https://img.shields.io/badge/Bevy-0.17-blue)](https://bevyengine.org/)
+[![Crates.io](https://img.shields.io/crates/v/univis_ui)](https://crates.io/crates/univis_ui)
+[![Bevy](https://img.shields.io/badge/Bevy-0.17.3-blue)](https://bevyengine.org/)
 [![License](https://img.shields.io/badge/License-MIT%2FApache--2.0-green)](LICENSE)
-**Why Univis UI and what is it?**
 
----
-> **important** ⚠️.
-> This version is still very early (**Alpha**).
-> Before any update, make sure to back up your data.
----
-form example `cargo run --example card_profile`
+High-performance ECS UI framework for Bevy with an SDF-based rendering pipeline.
+
+> Important:
+> This project is in **Alpha** stage. API and behavior can change between versions.
+
+From example `cargo run --release --example card_profile`:
 
 ![profile](profile.png)
 
-form example `cargo run --example sci_fi`
 
-![sci_fi](sci_fi.png)
-###### What is it?
-It is an open-source framework built entirely on ECS and fully integrated with all Bevy features. It provides a layout system to simplify building interactive interfaces and computer screens inside games.
+## What Is Univis UI?
+Univis UI is a Bevy-native UI framework designed for both screen-space and world-space interfaces.
+It uses Signed Distance Field (SDF) materials to render crisp shapes and rounded UI at any scale.
+
+### Core Highlights
+- ECS-first architecture (all UI is entities + components)
+- Custom layout solver with multiple display modes:
+`Flex`, `Grid`, `Masonry`, `Stack`, `Radial`
+- Extended CSS-inspired alignment/flex/grid controls
+- Screen-space and world-space roots
+- Optional 3D-lit UI with PBR controls
+- Built-in interaction states and pointer picking backend
+- Ready widgets: text, image, button, icon button, toggle, radio, seekbar, checkbox, progress
+- Optional profiling overlay/tools for layout performance
+
+## Installation
+```toml
+[dependencies]
+univis_ui = "0.1.2"
+```
+
+## Quick Start
+```rust,no_run
+use bevy::prelude::*;
+use univis_ui::prelude::*;
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(UnivisUiPlugin)
+        .add_systems(Startup, setup)
+        .run();
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2d);
+
+    commands
+        .spawn((
+            UScreenRoot,
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                background_color: Color::srgb(0.08, 0.1, 0.14),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::Center,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .with_children(|root| {
+            root.spawn(UTextLabel {
+                text: "Hello Univis UI".to_string(),
+                font_size: 32.0,
+                color: Color::WHITE,
+                ..default()
+            });
+        });
+}
+```
+
+## Spaces And Roots
+### Screen Space
+- Use `Camera2d`
+- Root marker: `UScreenRoot`
+
+### World Space
+- Use `UWorldRoot { size, is_3d, resolution_scale }`
+- Supports 2D/3D placement depending on your scene and camera setup
+- Set `is_3d: true` to propagate `UI3d` and use the 3D material path
+
+## Layout Model
+### Primary Components
+- `UNode`: size, padding, margin, background, border radius, shape mode
+- `ULayout`: display algorithm + axis alignment + gaps + grid columns
+- `USelf`: per-child overrides (`align_self`, absolute positioning, order)
+
+### Units
+- `UVal::Px(f32)`
+- `UVal::Percent(f32)`
+- `UVal::Content`
+- `UVal::Auto`
+- `UVal::Flex(f32)`
+
+### Display Modes
+- `UDisplay::Flex`
+- `UDisplay::Grid`
+- `UDisplay::Masonry`
+- `UDisplay::Stack`
+- `UDisplay::Radial`
+- `UDisplay::None`
+
+### Extended Controls (New)
+- Container-level alignment: `UBoxAlignContainer`
+- Item-level alignment: `UBoxAlignSelf`
+- Flex extensions: `UFlexContainerExt`, `UFlexItemExt`
+- Grid extensions: `UGridContainerExt`, `UGridItemExt`
+- Grid track sizing: `UTrackSize::{Px, Fr, Auto}`
+- Grid auto flow: `UGridAutoFlow::{Row, Column}`
+
+## Rendering And Visuals
+- Borders: `UBorder`
+- Shapes: `UShapeMode::{Round, Cut}`
+- Clipping: `UClip { enabled: bool }`
+- 3D lighting controls: `UPbr { metallic, roughness, emissive }`
+
+## Interaction Model
+- Interaction state component: `UInteraction`
+- Auto color feedback: `UInteractionColors`
+- Pointer observers for over/out/press/release/click
+- Picking backend performs SDF hit-tests and respects clipping ancestors
+
+## Built-in Widgets
+- `UTextLabel`
+- `UImage`
+- `UButton`
+- `UIconButton`
+- `UCheckbox`
+- `UToggle`
+- `URadioButton`, `URadioGroup`
+- `USeekBar`
+- `UProgressBar`
+- `UTextField`
+- `UScrollContainer`
+- `UBadge`, `UTag`
+
+### Widget Notes
+- `UnivisUiPlugin` installs the core widget plugin set.
+- If you use text field features heavily, ensure `UnivisTextFieldPlugin` is added.
+- For scrolling behavior, add `scroll_interaction_system` in your app schedule.
+
+## Style And Icons
+- Embedded fonts (Inter, Adwaita Sans, Fira Sans)
+- Embedded Lucide icon font
+- `Theme` resource available via prelude
+- Icon constants available from `style::icons::Icon`
+
+## Profiling
+- Optional plugin: `LayoutProfilingPlugin`
+- Tracks pass timings, node stats, cache hit ratio, material reuse stats
+- Optional overlay and periodic reports
+
+## Examples
+### Existing Examples
+```bash
+cargo run --release --example hello_world
+cargo run --release --example text_label
+cargo run --release --example text_field
+cargo run --release --example texture
+cargo run --release --example widgets
+cargo run --release --example toggle
+cargo run --release --example radio
+cargo run --release --example seekbar
+cargo run --release --example scroll_view
+cargo run --release --example interaction
+cargo run --release --example alignment
+cargo run --release --example masonry
+cargo run --release --example ex_node
+cargo run --release --example layout_cache
+cargo run --release --example card_profile
+cargo run --release --example border_light_3d
+cargo run --release --example sci_fi
+cargo run --release --example css_alignment_showcase
+```
+
+### New Layout Case Examples
+```bash
+cargo run --release --example layout_case_flex_wrap
+cargo run --release --example layout_case_grid_tracks
+cargo run --release --example layout_case_grid_auto_flow
+cargo run --release --example layout_case_stack
+cargo run --release --example layout_case_masonry_ext
+cargo run --release --example layout_case_radial
+cargo run --release --example layout_case_alignment_overflow
+```
+
+## Contributing
+Contributions are welcome.
+Useful areas:
+- Layout edge-case fixes
+- Performance and cache improvements
+- New widgets and examples
+- Documentation quality and API consistency
+
+## License
+Licensed under [MIT](LICENSE) OR [Apache-2.0](LICENSE).
 
 ---
-###### Why Univis UI?
-Providing an integrated layout system with Bevy saves 90% of the effort and time that would otherwise be wasted. Univis UI relies on shaders, mesh2d, and mesh3d. Building holographic or VR/XR interfaces is no longer a nightmare thanks to Univis UI. The same code can interact with light and physics, or work in ScreenSpace, WorldSpace, 3D camera, or 2D camera, all with the same code.
-
----
-###### Usage in Spaces
-Specify the display type in the space:
-
-   - In ScreenSpace
-``` rust
-// In ScreenSpace, it is necessary to use Camera2d
-commands.spawn(Camera2d);
-// Here we specify the root 
-// We use the UScreenRoot tag to handle layout based on the screen and its size
-commands.spawn(UScreenRoot)
-   .with_children(/* your code*/);
-```
-- In WorldSpace
-``` rust
-// In WorldSpace
-// You can use either camera2d or camera3d
-// depending on your needs
-commands.spawn(Camera3d);
-// Here we specify the root 
-// We use the UWorldRoot tag to handle layout based on the UWorldRoot measurements
-// to specify the layout area size
-
-commands.spawn(
-    // Specify the UWorld tag for the game world
-    UWorldRoot {
-       // Specify the layout area size
-       size: Vec2::new(400.0,300.0),
-       // Specify if the layout targets camera3d or camera2d
-       is_3d: true,
-       ..default()
-    }
-).with_children(/* your code*/);
-```
-
-- #### Layout
-Univis has its own layout system with **nodes, units, and widgets**
-
-``` rust
-// This is the most important layout element, like Node in bevy_ui
-UNode::default()
-```
-Univis UI does not provide everything in `UNode` for organizing children 
-``` rust
-ULayout::default()
-// This component contains all the essential layout elements that are applied to children
-```
-Rebellious children
-``` rust 
-USelf::default()
-// This component is responsible for enforcing a specific arrangement for the child, like absolute positioning
-```
-Univis supports smart, flexible sizing modes:
-
-```rust
-// Fixed pixels
-UVal::Px(200.0)
-
-// Percentage of parent
-UVal::Percent(0.5)  // 50%
-
-// Content-based sizing
-UVal::Content  // Based on children
-
-// Auto - fills available space
-UVal::Auto
-
-// Flexible - takes a share of remaining space
-UVal::Flex(1.0)
-```
-# Ready-to-use Examples
-
-``` fish
-cargo run --example hello_world
-cargo run --example sci_fi
-cargo run --example border_light_3d
-cargo run --example alignment
-cargo run --example card_profile
-cargo run --example texture
-cargo run --example masonry
-cargo run --example interation
-```
-
-## 🤝 Contributing
-
-Contributions are welcome! Especially in:
-- Clipping support (Scroll Views)
-- Performance improvements
-- New examples
-
-To contribute:
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Push and create a pull request
-
----
-
-## 📄 License
-
-Licensed under [MIT](LICENSE-MIT) and [Apache 2.0](LICENSE-APACHE).
+For AI-focused documentation, read: `readme_for_ai.md`.

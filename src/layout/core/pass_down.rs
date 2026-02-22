@@ -31,6 +31,9 @@ impl SolverItemOwned {
 struct NodeData {
     spec: UNode,
     layout: ULayout,
+    box_align_container: Option<UBoxAlignContainer>,
+    flex_container_ext: Option<UFlexContainerExt>,
+    grid_container_ext: Option<UGridContainerExt>,
     children: Vec<Entity>,
     computed_size: ComputedSize,
 }
@@ -59,9 +62,15 @@ pub fn downward_solve_pass_safe(
         Entity,
         &UNode,
         Option<&ULayout>,
+        Option<&UBoxAlignContainer>,
+        Option<&UFlexContainerExt>,
+        Option<&UGridContainerExt>,
         &LayoutDepth,
         Option<&Children>,
         Option<&USelf>,
+        Option<&UBoxAlignSelf>,
+        Option<&UFlexItemExt>,
+        Option<&UGridItemExt>,
         &mut ComputedSize,
         &mut Transform
     )>,
@@ -95,7 +104,7 @@ pub fn downward_solve_pass_safe(
 
             // تحديث الجذر
             if depth == 0 {
-                if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+                if let Ok((_, _, _, _, _, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
                     computed.width = container_size.x;
                     computed.height = container_size.y;
                 }
@@ -126,7 +135,13 @@ pub fn downward_solve_pass_safe(
             let constraints = build_constraints(container_size, &node_data.spec);
 
             // 7. تشغيل Solver
-            let solver_config = translate_config(&node_data.layout, &node_data.spec);
+            let solver_config = translate_config(
+                &node_data.layout,
+                &node_data.spec,
+                node_data.box_align_container.as_ref(),
+                node_data.flex_container_ext.as_ref(),
+                node_data.grid_container_ext.as_ref(),
+            );
             let final_size = solve_flex_layout(
                 &solver_config,
                 constraints,
@@ -134,7 +149,7 @@ pub fn downward_solve_pass_safe(
             );
 
             // 8. تحديث حجم الحاوية
-            if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+            if let Ok((_, _, _, _, _, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
                 computed.width = final_size.x;
                 computed.height = final_size.y;
             }
@@ -167,18 +182,23 @@ pub fn downward_solve_pass_safe(
 fn extract_node_data(
     entity: Entity,
     query: &Query<(
-        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
-        Option<&Children>, Option<&USelf>,
+        Entity, &UNode, Option<&ULayout>,
+        Option<&UBoxAlignContainer>, Option<&UFlexContainerExt>, Option<&UGridContainerExt>,
+        &LayoutDepth, Option<&Children>, Option<&USelf>, Option<&UBoxAlignSelf>,
+        Option<&UFlexItemExt>, Option<&UGridItemExt>,
         &mut ComputedSize, &mut Transform
     )>,
 ) -> Option<NodeData> {
-    let (_, node, layout_opt, _, children_opt, _, computed, _) = 
+    let (_, node, layout_opt, box_align_container, flex_container_ext, grid_container_ext, _, children_opt, _, _, _, _, computed, _) = 
         query.get(entity).ok()?;
 
     Some(NodeData {
         
         spec: node.clone(),
         layout: layout_opt.copied().unwrap_or_default(),
+        box_align_container: box_align_container.copied(),
+        flex_container_ext: flex_container_ext.copied(),
+        grid_container_ext: grid_container_ext.cloned(),
         children: children_opt
             .map(|c| c.iter().collect())
             .unwrap_or_default(),
@@ -203,18 +223,26 @@ fn calculate_root_size(
 fn collect_children_layout_data(
     children: &[Entity],
     nodes_query: &Query<(
-        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
-        Option<&Children>, Option<&USelf>,
+        Entity, &UNode, Option<&ULayout>,
+        Option<&UBoxAlignContainer>, Option<&UFlexContainerExt>, Option<&UGridContainerExt>,
+        &LayoutDepth, Option<&Children>, Option<&USelf>, Option<&UBoxAlignSelf>,
+        Option<&UFlexItemExt>, Option<&UGridItemExt>,
         &mut ComputedSize, &mut Transform
     )>,
     intrinsic_query: &Query<&IntrinsicSize>,
 ) -> Vec<ChildLayoutData> {
     children.iter()
         .filter_map(|&child_entity| {
-            let (_, node, _, _, _, uself_opt, _, _) = nodes_query.get(child_entity).ok()?;
+            let (_, node, _, _, _, _, _, _, uself_opt, box_align_self_opt, flex_item_ext_opt, grid_item_ext_opt, _, _) = nodes_query.get(child_entity).ok()?;
             let intrinsic = intrinsic_query.get(child_entity).ok()?;
 
-            let mut spec = translate_spec(node, uself_opt.as_deref());
+            let mut spec = translate_spec(
+                node,
+                uself_opt.as_deref(),
+                box_align_self_opt.as_deref(),
+                flex_item_ext_opt.as_deref(),
+                grid_item_ext_opt.as_deref(),
+            );
 
             if spec.width_mode == SolverSizeMode::Content {
                 spec.width_val = intrinsic.width;
@@ -276,13 +304,15 @@ fn apply_results_to_children(
     solved_children: &[SolvedChild],
     parent_size: Vec2,
     nodes_query: &mut Query<(
-        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
-        Option<&Children>, Option<&USelf>,
+        Entity, &UNode, Option<&ULayout>,
+        Option<&UBoxAlignContainer>, Option<&UFlexContainerExt>, Option<&UGridContainerExt>,
+        &LayoutDepth, Option<&Children>, Option<&USelf>, Option<&UBoxAlignSelf>,
+        Option<&UFlexItemExt>, Option<&UGridItemExt>,
         &mut ComputedSize, &mut Transform
     )>,
 ) {
     for solved in solved_children.iter() {
-        if let Ok((_, _, _, _, _, _, mut computed, mut transform)) = 
+        if let Ok((_, _, _, _, _, _, _, _, _, _, _, _, mut computed, mut transform)) = 
             nodes_query.get_mut(solved.entity) 
         {
             computed.width = solved.result.size.x;
@@ -317,18 +347,41 @@ fn map_uval_to_mode(val: UVal) -> SolverSizeMode {
     }
 }
 
-fn translate_config(layout: &ULayout, node: &UNode) -> SolverConfig {
+fn translate_config(
+    layout: &ULayout,
+    node: &UNode,
+    box_align: Option<&UBoxAlignContainer>,
+    flex_ext: Option<&UFlexContainerExt>,
+    grid_ext: Option<&UGridContainerExt>,
+) -> SolverConfig {
     SolverConfig {
         layout: *layout,
         gap: layout.gap,
+        row_gap: box_align.and_then(|v| v.row_gap),
+        column_gap: box_align.and_then(|v| v.column_gap),
         padding: node.padding,
         grid_columns: layout.grid_columns,
+        justify_items: box_align.map(|v| v.justify_items),
+        align_content: box_align.map(|v| v.align_content),
+        flex_wrap: flex_ext.map(|v| v.wrap).unwrap_or(UFlexWrap::NoWrap),
+        flex_align_content: flex_ext.and_then(|v| v.align_content),
+        grid_template_columns: grid_ext.map(|v| v.template_columns.clone()).unwrap_or_default(),
+        grid_template_rows: grid_ext.map(|v| v.template_rows.clone()).unwrap_or_default(),
+        grid_auto_flow: grid_ext.map(|v| v.auto_flow).unwrap_or(UGridAutoFlow::Row),
+        grid_auto_rows: grid_ext.map(|v| v.auto_rows).unwrap_or(UTrackSize::Auto),
+        grid_auto_columns: grid_ext.map(|v| v.auto_columns).unwrap_or(UTrackSize::Auto),
         width_mode: map_uval_to_mode(node.width),
         height_mode: map_uval_to_mode(node.height),
     }
 }
 
-fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
+fn translate_spec(
+    node: &UNode,
+    uself: Option<&USelf>,
+    box_align_self: Option<&UBoxAlignSelf>,
+    flex_item_ext: Option<&UFlexItemExt>,
+    grid_item_ext: Option<&UGridItemExt>,
+) -> SolverSpec {
     let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
         match dim {
             UVal::Px(v) => (SolverSizeMode::Fixed, v, 0.0),
@@ -354,6 +407,37 @@ fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
             None, 0,
         )
     };
+    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) =
+        if let Some(ext) = box_align_self {
+            (
+                ext.align_self,
+                if ext.justify_self == UAlignSelfExt::Auto { None } else { Some(ext.justify_self) },
+                ext.justify_overflow,
+                ext.align_overflow,
+            )
+        } else {
+            (None, None, UOverflowPosition::Unsafe, UOverflowPosition::Unsafe)
+        };
+    let (flex_grow, flex_shrink, flex_basis) = if let Some(ext) = flex_item_ext {
+        (
+            Some(ext.flex_grow.max(0.0)),
+            Some(ext.flex_shrink.max(0.0)),
+            Some(ext.flex_basis),
+        )
+    } else {
+        (None, None, None)
+    };
+    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) =
+        if let Some(ext) = grid_item_ext {
+            (
+                ext.column_start,
+                ext.column_span.max(1),
+                ext.row_start,
+                ext.row_span.max(1),
+            )
+        } else {
+            (None, 1, None, 1)
+        };
 
     SolverSpec {
         width_mode: w_mode, width_val: w_val, width_flex: w_flex,
@@ -361,6 +445,17 @@ fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         position_type: pos_type,
         left: l, right: r, top: t, bottom: b,
         align_self: align,
+        align_self_ext,
+        justify_self_ext,
+        justify_overflow,
+        align_overflow,
+        flex_grow,
+        flex_shrink,
+        flex_basis,
+        grid_column_start,
+        grid_column_span,
+        grid_row_start,
+        grid_row_span,
         order,
     }
 }

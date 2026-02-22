@@ -15,7 +15,7 @@ pub fn upward_measure_pass_cached(
     
     mut params: ParamSet<(
         Query<(&IntrinsicSize, &UNode, Option<&USelf>)>,
-        Query<(Entity, &UNode, &LayoutDepth, Option<&Children>, Option<&ULayout>, &mut IntrinsicSize)>,
+        Query<(Entity, &UNode, &LayoutDepth, Option<&Children>, Option<&ULayout>, Option<&UBoxAlignContainer>, &mut IntrinsicSize)>,
     )>,
 ) {
     let start = std::time::Instant::now();
@@ -33,27 +33,27 @@ pub fn upward_measure_pass_cached(
             layer_entities.iter()
                 .filter_map(|&entity| {
                     q_parents.get(entity).ok()
-                        .map(|(e, node, _, children, layout, _)| {
+                        .map(|(e, node, _, children, layout, box_align, _)| {
                             let kids: Vec<Entity> = children.map(|c| c.iter().collect()).unwrap_or_default();
                             
                             let self_dirty = cache.is_dirty(entity);
                             let children_dirty = kids.iter().any(|child| cache.is_dirty(*child));
                             let effectively_dirty = self_dirty || children_dirty;
 
-                            (e, node.clone(), kids, layout.cloned(), effectively_dirty)
+                            (e, node.clone(), kids, layout.cloned(), box_align.copied(), effectively_dirty)
                         })
                 })
                 .collect()
         };
 
-        for (entity, node_spec, children, layout_opt, is_dirty) in layer_work_items {
+        for (entity, node_spec, children, layout_opt, box_align_opt, is_dirty) in layer_work_items {
             
             // 1. محاولة استخدام الكاش
             let mut used_cache = false;
 
             if !is_dirty {
                 if let Some(cached) = cache.get_cached_intrinsic(entity) {
-                    if let Ok((_, _, _, _, _, mut intrinsic)) = params.p1().get_mut(entity) {
+                    if let Ok((_, _, _, _, _, _, mut intrinsic)) = params.p1().get_mut(entity) {
                         *intrinsic = cached;
                         used_cache = true;
                     }
@@ -75,7 +75,12 @@ pub fn upward_measure_pass_cached(
                 let direction = layout_opt.as_ref()
                     .map(|l| l.flex_direction)
                     .unwrap_or(UFlexDirection::Row);
-                let gap = layout_opt.as_ref().map(|l| l.gap).unwrap_or(0.0);
+                let legacy_gap = layout_opt.as_ref().map(|l| l.gap).unwrap_or(0.0);
+                let gap = if matches!(direction, UFlexDirection::Row | UFlexDirection::RowReverse) {
+                    box_align_opt.and_then(|v| v.column_gap).unwrap_or(legacy_gap)
+                } else {
+                    box_align_opt.and_then(|v| v.row_gap).unwrap_or(legacy_gap)
+                };
                 
                 let mut accum_main: f32 = 0.0;
                 let mut max_cross: f32 = 0.0;
@@ -134,7 +139,7 @@ pub fn upward_measure_pass_cached(
             let v_pad = node_spec.padding.height_sum();
 
             let mut q_write = params.p1();
-            if let Ok((_, _, _, _, _, mut intrinsic)) = q_write.get_mut(entity) {
+            if let Ok((_, _, _, _, _, _, mut intrinsic)) = q_write.get_mut(entity) {
                 
                 let new_width = match node_spec.width {
                     UVal::Px(v) => v,

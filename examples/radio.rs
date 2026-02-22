@@ -59,7 +59,7 @@ fn setup_radio_demo(mut commands: Commands) {
                 ..default()
             },
         )).with_children(|examples| {
-            examples.spawn(URadioGroup::new());
+            examples.spawn((URadioGroup::new(),UInteraction::default()));
             // === مثال 1: Radio Group - اختيار الحجم ===
             create_radio_group_section(
                 examples,
@@ -176,7 +176,7 @@ fn create_radio_group_section<F>(
             group = group.with_default(def);
         }
         
-        section.spawn(group).with_children(|group_parent| {
+        section.spawn((group,UInteraction::default())).with_children(|group_parent| {
             for (value, label) in options {
                 create_radio_with_label(
                     group_parent,

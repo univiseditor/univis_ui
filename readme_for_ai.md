@@ -154,6 +154,8 @@ Item-level:
 - `URadioButton`, `URadioGroup`
 - `USeekBar`
 - `UTextField`
+- `UDragValue`
+- `USelect`
 
 ### 8.3 Scroll
 - `UScrollContainer`
@@ -163,6 +165,12 @@ Item-level:
 - Toggle: `ToggleChangedEvent`
 - Radio: `RadioButtonChangedEvent`
 - SeekBar: `SeekBarChangedEvent`
+- DragValue:
+  - `DragValueChangedEvent`
+  - `DragValueCommitEvent`
+- Select:
+  - `SelectChangedEvent`
+  - `SelectOpenStateChangedEvent`
 - TextField:
   - `TextFieldChangedEvent`
   - `TextFieldSubmitEvent`
@@ -224,6 +232,9 @@ AI agents should account for these current repo realities:
 - Container entities: `UNode + ULayout`.
 - Child overrides: add `USelf` and/or extended align components.
 - For interactive nodes: include `UInteraction` or widget components that require pickability.
+- For single-choice inputs:
+  - Use `USelect` for compact or long option lists.
+  - Use `URadioGroup` for short lists that should remain always visible.
 
 ### Step D: Optional Feature Activation
 - Text field: `UnivisTextFieldPlugin`.
@@ -241,6 +252,8 @@ cargo run --release --example hello_world
 cargo run --release --example interaction
 cargo run --release --example masonry
 cargo run --release --example css_alignment_showcase
+cargo run --release --example drag_value
+cargo run --release --example select
 cargo run --release --example layout_case_flex_wrap
 cargo run --release --example layout_case_grid_tracks
 cargo run --release --example layout_case_grid_auto_flow

@@ -141,11 +141,14 @@ fn setup(mut commands: Commands) {
 - `UTextField`
 - `UScrollContainer`
 - `UBadge`, `UTag`
+- `UDragValue`
+- `USelect`
 
 ### Widget Notes
 - `UnivisUiPlugin` installs the core widget plugin set.
 - If you use text field features heavily, ensure `UnivisTextFieldPlugin` is added.
 - For scrolling behavior, add `scroll_interaction_system` in your app schedule.
+- `USelect` supports mouse interaction and basic keyboard navigation.
 
 ## Style And Icons
 - Embedded fonts (Inter, Adwaita Sans, Fira Sans)
@@ -179,6 +182,8 @@ cargo run --release --example card_profile
 cargo run --release --example border_light_3d
 cargo run --release --example sci_fi
 cargo run --release --example css_alignment_showcase
+cargo run --release --example drag_value
+cargo run --release --example select
 ```
 
 ### New Layout Case Examples

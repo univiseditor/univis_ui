@@ -4,6 +4,10 @@
 This document is optimized for AI agents that generate, review, or refactor code using `univis_ui`.
 It is not a marketing document; it is an operational specification based on the current repository state.
 
+The repository contains two mdBook editions for long-form docs:
+- Arabic edition: `book/`
+- English edition: `book_en/`
+
 ## 2. Package Metadata
 - Crate: `univis_ui`
 - Current version in repo: `0.1.2`
@@ -143,6 +147,7 @@ Item-level:
 ### 8.1 Display/Visual Widgets
 - `UTextLabel`
 - `UImage`
+- `UPanel`
 - `UBadge`, `UTag`
 - `UProgressBar`
 
@@ -159,9 +164,17 @@ Item-level:
 
 ### 8.3 Scroll
 - `UScrollContainer`
-- Runtime logic system: `scroll_interaction_system`
+- Plugin: `UnivisScrollViewPlugin`
 
-### 8.4 Widget Events (Bevy messages)
+### 8.4 Resizable Panel (Opt-in)
+- Add `UPanelWindow` on the same entity as `UPanel`.
+- Behavior in current scope:
+  - resize by borders/corners only
+  - no move behavior
+  - no bring-to-front behavior
+  - cursor icon updates only for panel resize handles
+
+### 8.5 Widget Events (Bevy messages)
 - Toggle: `ToggleChangedEvent`
 - Radio: `RadioButtonChangedEvent`
 - SeekBar: `SeekBarChangedEvent`
@@ -220,8 +233,8 @@ AI agents should account for these current repo realities:
    - If text field behavior is required, add `UnivisTextFieldPlugin` explicitly.
 2. `UnivisWidgetPlugin` does **not** register `UnivisBadgePlugin`.
    - If dynamic badge styling systems are required, add plugin explicitly.
-3. Scroll behavior is a standalone system (`scroll_interaction_system`), not a dedicated plugin.
-   - Add it manually in `Update`.
+3. Scroll behavior is provided by `UnivisScrollViewPlugin` (already included in `UnivisWidgetPlugin`).
+   - Add it manually only if you are composing plugins selectively.
 4. `src/widget/menu.rs` is currently empty (placeholder).
 5. Picking backend queries `Camera2d`; interaction path is centered around 2D camera setup.
 
@@ -246,7 +259,7 @@ AI agents should account for these current repo realities:
 ### Step D: Optional Feature Activation
 - Text field: `UnivisTextFieldPlugin`.
 - Badge update systems: `UnivisBadgePlugin`.
-- Scroll: `.add_systems(Update, scroll_interaction_system)`.
+- Scroll: `.add_plugins(UnivisScrollViewPlugin)` when not using full `UnivisUiPlugin`.
 
 ### Step E: Event Consumption
 Use `MessageReader<T>` for widget events and handle updates in `Update` systems.
@@ -259,6 +272,7 @@ cargo run --release --example hello_world
 cargo run --release --example interaction
 cargo run --release --example masonry
 cargo run --release --example panel_divider
+cargo run --release --example panel_window
 cargo run --release --example drag_value
 cargo run --release --example select
 cargo run --release --example layout_case_flex_wrap
@@ -282,7 +296,7 @@ fn main() {
         // Optional, only if needed:
         // .add_plugins(UnivisTextFieldPlugin)
         // .add_plugins(UnivisBadgePlugin)
-        // .add_systems(Update, scroll_interaction_system)
+        // .add_plugins(UnivisScrollViewPlugin)
         .add_systems(Startup, setup)
         .run();
 }

@@ -77,6 +77,24 @@ fn setup(mut commands: Commands) {
 }
 ```
 
+## Project Book
+This repository includes two mdBook editions:
+- Arabic: `book/`
+- English: `book_en/`
+English chapters are being translated incrementally while keeping full chapter parity.
+
+Build it:
+```bash
+mdbook build book
+mdbook build book_en
+```
+
+Serve locally:
+```bash
+mdbook serve book -n 127.0.0.1 -p 3000
+mdbook serve book_en -n 127.0.0.1 -p 3001
+```
+
 ## Spaces And Roots
 ### Screen Space
 - Use `Camera2d`
@@ -144,6 +162,7 @@ fn setup(mut commands: Commands) {
 - `UProgressBar`
 - `UTextField`
 - `UScrollContainer`
+- `UPanel`
 - `UBadge`, `UTag`
 - `UDragValue`
 - `USelect`
@@ -152,8 +171,28 @@ fn setup(mut commands: Commands) {
 - `UnivisUiPlugin` installs the core widget plugin set.
 - If you use text field features heavily, ensure `UnivisTextFieldPlugin` is added.
 - If you rely on dynamic `UBadge` / `UTag` styling updates, add `UnivisBadgePlugin` explicitly.
-- For scrolling behavior, add `scroll_interaction_system` in your app schedule.
+- Scroll behavior is provided by `UnivisScrollViewPlugin` (included by `UnivisUiPlugin`).
 - `USelect` supports mouse interaction and basic keyboard navigation.
+
+### Resizable Panel Borders
+`UPanelWindow` enables opt-in border resize zones for `UPanel` (edges + corners).
+Scope in this release:
+- resize only (no move / no bring-to-front)
+- cursor icon changes only on panel resize zones
+
+```rust
+commands.spawn((
+    UPanel::glass(),
+    UPanelWindow::default()
+        .with_min_size(240.0, 160.0)
+        .with_border_hit_thickness(8.0),
+    UNode {
+        width: UVal::Px(420.0),
+        height: UVal::Px(260.0),
+        ..default()
+    },
+));
+```
 
 ## Style And Icons
 - Embedded fonts (Inter, Adwaita Sans, Fira Sans)
@@ -189,6 +228,7 @@ cargo run --release --example card_profile
 cargo run --release --example border_light_3d
 cargo run --release --example sci_fi
 cargo run --release --example panel_divider
+cargo run --release --example panel_window
 cargo run --release --example drag_value
 cargo run --release --example select
 ```

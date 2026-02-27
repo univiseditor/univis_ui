@@ -99,15 +99,18 @@ fn setup(mut commands: Commands) {
                                 display: UDisplay::Grid,
                                 grid_columns: 1,
                                 align_items: UAlignItems::Center,
-                                ..default()
-                            },
-                            UGridContainerExt {
-                                template_columns: vec![UTrackSize::Px(140.0)],
-                                template_rows: vec![UTrackSize::Px(100.0)],
-                                ..default()
-                            },
-                            UBoxAlignContainer {
-                                justify_items: UAlignItemsExt::Center,
+                                container_ext: ULayoutContainerExt {
+                                    box_align: ULayoutBoxAlignContainer {
+                                        justify_items: Some(UAlignItemsExt::Center),
+                                        ..default()
+                                    },
+                                    grid: ULayoutGridContainer {
+                                        template_columns: vec![UTrackSize::Px(140.0)],
+                                        template_rows: vec![UTrackSize::Px(100.0)],
+                                        ..default()
+                                    },
+                                    ..default()
+                                },
                                 ..default()
                             },
                         ))
@@ -120,11 +123,17 @@ fn setup(mut commands: Commands) {
                                     border_radius: UCornerRadius::all(8.0),
                                     ..default()
                                 },
-                                UBoxAlignSelf {
-                                    justify_self: UAlignSelfExt::Center,
-                                    align_self: Some(UAlignSelfExt::Center),
-                                    justify_overflow: overflow_mode,
-                                    align_overflow: overflow_mode,
+                                USelf {
+                                    item_ext: ULayoutItemExt {
+                                        box_align: ULayoutBoxAlignSelf {
+                                            justify_self: Some(UAlignSelfExt::Center),
+                                            align_self: Some(UAlignSelfExt::Center),
+                                            justify_overflow: overflow_mode,
+                                            align_overflow: overflow_mode,
+                                        },
+                                        ..default()
+                                    },
+                                    ..default()
                                 },
                             ));
                         });

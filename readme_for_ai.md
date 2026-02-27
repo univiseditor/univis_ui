@@ -39,8 +39,8 @@ When `UWorldRoot.is_3d = true`, `auto_propagate_ui3d` can attach `UI3d` marker t
 
 ### 4.3 Node + Layout + Child Override
 - `UNode`: size/box/visual base (`width`, `height`, `padding`, `margin`, `background_color`, `border_radius`, `shape_mode`).
-- `ULayout`: container algorithm and alignment.
-- `USelf`: per-child overrides (`align_self`, positional offsets, `position_type`, `order`).
+- `ULayout`: container algorithm and alignment, plus `container_ext`.
+- `USelf`: per-child overrides (`align_self`, positional offsets, `position_type`, `order`) plus `item_ext`.
 
 ### 4.4 Size Units
 `UVal` supports:
@@ -66,37 +66,37 @@ When `UWorldRoot.is_3d = true`, `auto_propagate_ui3d` can attach `UI3d` marker t
 
 ### 5.3 Extended Alignment / CSS-like Controls
 Container-level:
-- `UBoxAlignContainer`
-  - `justify_items`
-  - `align_content`
+- `ULayout.container_ext.box_align` (`ULayoutBoxAlignContainer`)
+  - `justify_items: Option<UAlignItemsExt>`
+  - `align_content: Option<UContentAlignExt>`
   - `row_gap: Option<f32>`
   - `column_gap: Option<f32>`
 
 Item-level:
-- `UBoxAlignSelf`
-  - `justify_self`
-  - `align_self`
+- `USelf.item_ext.box_align` (`ULayoutBoxAlignSelf`)
+  - `justify_self: Option<UAlignSelfExt>`
+  - `align_self: Option<UAlignSelfExt>`
   - `justify_overflow: UOverflowPosition::{Safe, Unsafe}`
   - `align_overflow: UOverflowPosition::{Safe, Unsafe}`
 
 ### 5.4 Flex Extensions
-- `UFlexContainerExt`
+- `ULayout.container_ext.flex` (`ULayoutFlexContainer`)
   - `wrap: UFlexWrap::{NoWrap, Wrap, WrapReverse}`
   - `align_content`
-- `UFlexItemExt`
-  - `flex_grow`
-  - `flex_shrink`
-  - `flex_basis: UVal`
+- `USelf.item_ext.flex` (`ULayoutFlexItem`)
+  - `flex_grow: Option<f32>`
+  - `flex_shrink: Option<f32>`
+  - `flex_basis: Option<UVal>`
 
 ### 5.5 Grid Extensions
-- `UGridContainerExt`
+- `ULayout.container_ext.grid` (`ULayoutGridContainer`)
   - `template_columns: Vec<UTrackSize>`
   - `template_rows: Vec<UTrackSize>`
   - `auto_flow: UGridAutoFlow::{Row, Column}`
   - `auto_rows: UTrackSize`
   - `auto_columns: UTrackSize`
 - `UTrackSize::{Px, Fr, Auto}`
-- `UGridItemExt`
+- `USelf.item_ext.grid` (`ULayoutGridItem`)
   - `column_start`, `column_span`
   - `row_start`, `row_span`
 
@@ -237,7 +237,7 @@ AI agents should account for these current repo realities:
 
 ### Step C: Build Hierarchy
 - Container entities: `UNode + ULayout`.
-- Child overrides: add `USelf` and/or extended align components.
+- Child overrides: add `USelf` and configure `USelf.item_ext.*` when needed.
 - For interactive nodes: include `UInteraction` or widget components that require pickability.
 - For single-choice inputs:
   - Use `USelect` for compact or long option lists.

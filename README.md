@@ -90,8 +90,8 @@ fn setup(mut commands: Commands) {
 ## Layout Model
 ### Primary Components
 - `UNode`: size, padding, margin, background, border radius, shape mode
-- `ULayout`: display algorithm + axis alignment + gaps + grid columns
-- `USelf`: per-child overrides (`align_self`, absolute positioning, order)
+- `ULayout`: display algorithm + axis alignment + gaps + grid columns + `container_ext`
+- `USelf`: per-child overrides (`align_self`, absolute positioning, order) + `item_ext`
 
 ### Units
 - `UVal::Px(f32)`
@@ -109,10 +109,14 @@ fn setup(mut commands: Commands) {
 - `UDisplay::None`
 
 ### Extended Controls (New)
-- Container-level alignment: `UBoxAlignContainer`
-- Item-level alignment: `UBoxAlignSelf`
-- Flex extensions: `UFlexContainerExt`, `UFlexItemExt`
-- Grid extensions: `UGridContainerExt`, `UGridItemExt`
+- Container-level alignment/flex/grid: `ULayout.container_ext`
+  - `box_align: ULayoutBoxAlignContainer`
+  - `flex: ULayoutFlexContainer`
+  - `grid: ULayoutGridContainer`
+- Item-level alignment/flex/grid: `USelf.item_ext`
+  - `box_align: ULayoutBoxAlignSelf`
+  - `flex: ULayoutFlexItem`
+  - `grid: ULayoutGridItem`
 - Grid track sizing: `UTrackSize::{Px, Fr, Auto}`
 - Grid auto flow: `UGridAutoFlow::{Row, Column}`
 

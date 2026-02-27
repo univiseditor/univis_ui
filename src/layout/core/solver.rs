@@ -342,7 +342,7 @@ pub fn solve_flex_layout(
 
     // Receive actual size from the placer
     let used_size_from_placer = final_size_with_indices(
-        config.layout,
+        config.layout.clone(),
         items,
         &normal_indices,
         &axis, 
@@ -397,9 +397,6 @@ pub fn solve_flex_layout(
 pub fn translate_spec(
     node: &UNode,
     uself: Option<&USelf>,
-    box_align_self: Option<&UBoxAlignSelf>,
-    flex_item_ext: Option<&UFlexItemExt>,
-    grid_item_ext: Option<&UGridItemExt>,
 ) -> SolverSpec {
     let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
         match dim {
@@ -420,33 +417,37 @@ pub fn translate_spec(
     } else {
         (UPositionType::Relative, UVal::Auto, UVal::Auto, UVal::Auto, UVal::Auto, None, 0)
     };
-    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) =
-        if let Some(ext) = box_align_self {
-            (
-                ext.align_self,
-                if ext.justify_self == UAlignSelfExt::Auto { None } else { Some(ext.justify_self) },
-                ext.justify_overflow,
-                ext.align_overflow,
-            )
-        } else {
-            (None, None, UOverflowPosition::Unsafe, UOverflowPosition::Unsafe)
-        };
-    let (flex_grow, flex_shrink, flex_basis) = if let Some(ext) = flex_item_ext {
-        (Some(ext.flex_grow.max(0.0)), Some(ext.flex_shrink.max(0.0)), Some(ext.flex_basis))
+    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) = if let Some(u) = uself
+    {
+        (
+            u.item_ext.box_align.align_self,
+            u.item_ext.box_align.justify_self,
+            u.item_ext.box_align.justify_overflow,
+            u.item_ext.box_align.align_overflow,
+        )
+    } else {
+        (None, None, UOverflowPosition::Unsafe, UOverflowPosition::Unsafe)
+    };
+    let (flex_grow, flex_shrink, flex_basis) = if let Some(u) = uself {
+        (
+            u.item_ext.flex.flex_grow.map(|v| v.max(0.0)),
+            u.item_ext.flex.flex_shrink.map(|v| v.max(0.0)),
+            u.item_ext.flex.flex_basis,
+        )
     } else {
         (None, None, None)
     };
-    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) =
-        if let Some(ext) = grid_item_ext {
-            (
-                ext.column_start,
-                ext.column_span.max(1),
-                ext.row_start,
-                ext.row_span.max(1),
-            )
-        } else {
-            (None, 1, None, 1)
-        };
+    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) = if let Some(u) = uself
+    {
+        (
+            u.item_ext.grid.column_start,
+            u.item_ext.grid.column_span.max(1),
+            u.item_ext.grid.row_start,
+            u.item_ext.grid.row_span.max(1),
+        )
+    } else {
+        (None, 1, None, 1)
+    };
 
     SolverSpec {
         width_mode: w_mode, width_val: w_val, width_flex: w_flex,
@@ -559,32 +560,31 @@ mod tests {
         };
         let uself = USelf {
             align_self: UAlignSelf::Center,
+            item_ext: ULayoutItemExt {
+                box_align: ULayoutBoxAlignSelf {
+                    justify_self: Some(UAlignSelfExt::End),
+                    align_self: Some(UAlignSelfExt::Start),
+                    justify_overflow: UOverflowPosition::Safe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                },
+                flex: ULayoutFlexItem {
+                    flex_grow: Some(2.0),
+                    flex_shrink: Some(0.5),
+                    flex_basis: Some(UVal::Px(30.0)),
+                },
+                grid: ULayoutGridItem {
+                    column_start: Some(2),
+                    column_span: 3,
+                    row_start: Some(1),
+                    row_span: 2,
+                },
+            },
             ..default()
-        };
-        let box_align_self = UBoxAlignSelf {
-            justify_self: UAlignSelfExt::End,
-            align_self: Some(UAlignSelfExt::Start),
-            justify_overflow: UOverflowPosition::Safe,
-            align_overflow: UOverflowPosition::Unsafe,
-        };
-        let flex_item_ext = UFlexItemExt {
-            flex_grow: 2.0,
-            flex_shrink: 0.5,
-            flex_basis: UVal::Px(30.0),
-        };
-        let grid_item_ext = UGridItemExt {
-            column_start: Some(2),
-            column_span: 3,
-            row_start: Some(1),
-            row_span: 2,
         };
 
         let spec = translate_spec(
             &node,
             Some(&uself),
-            Some(&box_align_self),
-            Some(&flex_item_ext),
-            Some(&grid_item_ext),
         );
 
         assert_eq!(spec.align_self, Some(UAlignSelf::Center));

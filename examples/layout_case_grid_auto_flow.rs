@@ -51,20 +51,27 @@ fn setup(mut commands: Commands) {
                         display: UDisplay::Grid,
                         grid_columns: 3,
                         align_items: UAlignItems::Center,
+                        container_ext: ULayoutContainerExt {
+                            box_align: ULayoutBoxAlignContainer {
+                                justify_items: Some(UAlignItemsExt::Center),
+                                row_gap: Some(8.0),
+                                column_gap: Some(12.0),
+                                ..default()
+                            },
+                            grid: ULayoutGridContainer {
+                                template_columns: vec![
+                                    UTrackSize::Fr(1.0),
+                                    UTrackSize::Fr(1.0),
+                                    UTrackSize::Fr(1.0),
+                                ],
+                                template_rows: vec![UTrackSize::Px(54.0), UTrackSize::Px(54.0)],
+                                auto_flow: UGridAutoFlow::Column,
+                                auto_rows: UTrackSize::Px(46.0),
+                                auto_columns: UTrackSize::Fr(1.0),
+                            },
+                            ..default()
+                        },
                         ..default()
-                    },
-                    UBoxAlignContainer {
-                        justify_items: UAlignItemsExt::Center,
-                        row_gap: Some(8.0),
-                        column_gap: Some(12.0),
-                        ..default()
-                    },
-                    UGridContainerExt {
-                        template_columns: vec![UTrackSize::Fr(1.0), UTrackSize::Fr(1.0), UTrackSize::Fr(1.0)],
-                        template_rows: vec![UTrackSize::Px(54.0), UTrackSize::Px(54.0)],
-                        auto_flow: UGridAutoFlow::Column,
-                        auto_rows: UTrackSize::Px(46.0),
-                        auto_columns: UTrackSize::Fr(1.0),
                     },
                 ))
                 .with_children(|grid| {
@@ -78,9 +85,15 @@ fn setup(mut commands: Commands) {
                         });
 
                         if i == 5 {
-                            e.insert(UGridItemExt {
-                                column_span: 2,
-                                row_span: 2,
+                            e.insert(USelf {
+                                item_ext: ULayoutItemExt {
+                                    grid: ULayoutGridItem {
+                                        column_span: 2,
+                                        row_span: 2,
+                                        ..default()
+                                    },
+                                    ..default()
+                                },
                                 ..default()
                             });
                         }

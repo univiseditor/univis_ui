@@ -50,11 +50,14 @@ fn setup(mut commands: Commands) {
                     ULayout {
                         display: UDisplay::Masonry,
                         grid_columns: 4,
-                        ..default()
-                    },
-                    UBoxAlignContainer {
-                        row_gap: Some(10.0),
-                        column_gap: Some(10.0),
+                        container_ext: ULayoutContainerExt {
+                            box_align: ULayoutBoxAlignContainer {
+                                row_gap: Some(10.0),
+                                column_gap: Some(10.0),
+                                ..default()
+                            },
+                            ..default()
+                        },
                         ..default()
                     },
                 ))

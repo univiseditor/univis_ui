@@ -165,29 +165,22 @@ pub fn track_layout_changes(
 ) {
     // 1. معالجة التغييرات
     for (entity, children, node, layout, uself, box_align_container, box_align_self, flex_container_ext, flex_item_ext, grid_container_ext, grid_item_ext, intrinsic) in nodes.iter() {
-        
-        // === المنطق الذكي لكسر الحلقة ===
-        // إذا كان التغيير الوحيد هو في IntrinsicSize...
-        if intrinsic.is_changed() 
-           && !node.is_changed() 
-           && !layout.map_or(false, |l| l.is_changed()) 
-           && !uself.map_or(false, |s| s.is_changed()) 
-           && !box_align_container.map_or(false, |v| v.is_changed())
-           && !box_align_self.map_or(false, |v| v.is_changed())
-           && !flex_container_ext.map_or(false, |v| v.is_changed())
-           && !flex_item_ext.map_or(false, |v| v.is_changed())
-           && !grid_container_ext.map_or(false, |v| v.is_changed())
-           && !grid_item_ext.map_or(false, |v| v.is_changed())
-           && !nodes.contains(entity) // تأكدنا من الفلاتر الأخرى
-        {
-             // ...وتحققنا أن العنصر "حاوية" (له أبناء)
-             if let Some(kids) = children {
-                 if !kids.is_empty() {
-                     // إذن هذا التغيير هو نتيجة حساباتنا السابقة (Output) وليس مدخلاً جديداً
-                     // نتجاهله لمنع التكرار اللانهائي
-                     continue;
-                 }
-             }
+        let intrinsic_only_change =
+            intrinsic.is_changed()
+                && !node.is_changed()
+                && !layout.map_or(false, |l| l.is_changed())
+                && !uself.map_or(false, |s| s.is_changed())
+                && !box_align_container.map_or(false, |v| v.is_changed())
+                && !box_align_self.map_or(false, |v| v.is_changed())
+                && !flex_container_ext.map_or(false, |v| v.is_changed())
+                && !flex_item_ext.map_or(false, |v| v.is_changed())
+                && !grid_container_ext.map_or(false, |v| v.is_changed())
+                && !grid_item_ext.map_or(false, |v| v.is_changed());
+
+        // إذا كان التغيير الوحيد IntrinsicSize على عقدة حاوية، نتجاهله لتفادي
+        // إعادة توسيخ الشجرة بشكل متكرر بسبب مخرجات القياس الداخلية.
+        if intrinsic_only_change && children.is_some_and(|kids| !kids.is_empty()) {
+            continue;
         }
 
         // في جميع الحالات الأخرى، نعتبر العنصر متسخاً

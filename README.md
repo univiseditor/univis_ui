@@ -35,7 +35,7 @@ univis_ui = "0.1.2"
 ```
 
 ## Quick Start
-```rust,no_run
+```rust
 use bevy::prelude::*;
 use univis_ui::prelude::*;
 
@@ -147,6 +147,7 @@ fn setup(mut commands: Commands) {
 ### Widget Notes
 - `UnivisUiPlugin` installs the core widget plugin set.
 - If you use text field features heavily, ensure `UnivisTextFieldPlugin` is added.
+- If you rely on dynamic `UBadge` / `UTag` styling updates, add `UnivisBadgePlugin` explicitly.
 - For scrolling behavior, add `scroll_interaction_system` in your app schedule.
 - `USelect` supports mouse interaction and basic keyboard navigation.
 
@@ -183,7 +184,7 @@ cargo run --release --example layout_cache
 cargo run --release --example card_profile
 cargo run --release --example border_light_3d
 cargo run --release --example sci_fi
-cargo run --release --example css_alignment_showcase
+cargo run --release --example panel_divider
 cargo run --release --example drag_value
 cargo run --release --example select
 ```

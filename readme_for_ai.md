@@ -258,7 +258,7 @@ Stable commands for sampling coverage:
 cargo run --release --example hello_world
 cargo run --release --example interaction
 cargo run --release --example masonry
-cargo run --release --example css_alignment_showcase
+cargo run --release --example panel_divider
 cargo run --release --example drag_value
 cargo run --release --example select
 cargo run --release --example layout_case_flex_wrap

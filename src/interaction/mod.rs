@@ -5,13 +5,11 @@ use crate::prelude::*;
 pub mod math;
 pub mod picking;
 pub mod feedback;
-pub mod inputfield;
 
 pub mod prelude {
     pub use crate::interaction::{
         feedback::*,
         picking::*,
-        inputfield::*,
         UnivisInteractionPlugin,
     };
 }
@@ -21,7 +19,7 @@ pub struct UnivisInteractionPlugin;
 impl Plugin for UnivisInteractionPlugin {
     fn build(&self, app: &mut App) {
 
-        app.add_plugins(UnivisInputFieldPlugin);
+        // app.add_plugins(UnivisInputFieldPlugin);
         // 1. إضافة Backend الالتقاط (حساب من أين يمر الماوس)
         app.add_systems(PreUpdate, univis_picking_backend);
         
@@ -31,5 +29,6 @@ impl Plugin for UnivisInteractionPlugin {
         app.add_observer(feedback::on_pointer_out);
         app.add_observer(feedback::on_pointer_press);
         app.add_observer(feedback::on_pointer_release);
+        app.add_observer(feedback::on_pointer_click);
     }
 }

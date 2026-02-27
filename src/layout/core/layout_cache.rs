@@ -153,23 +153,20 @@ pub fn track_layout_changes(
 ) {
     // 1. معالجة التغييرات
     for (entity, children, node, layout, uself, intrinsic) in nodes.iter() {
-        
-        // === المنطق الذكي لكسر الحلقة ===
-        // إذا كان التغيير الوحيد هو في IntrinsicSize...
-        if intrinsic.is_changed() 
-           && !node.is_changed() 
-           && !layout.map_or(false, |l| l.is_changed()) 
-           && !uself.map_or(false, |s| s.is_changed()) 
-           && !nodes.contains(entity) // تأكدنا من الفلاتر الأخرى
-        {
-             // ...وتحققنا أن العنصر "حاوية" (له أبناء)
-             if let Some(kids) = children {
-                 if !kids.is_empty() {
-                     // إذن هذا التغيير هو نتيجة حساباتنا السابقة (Output) وليس مدخلاً جديداً
-                     // نتجاهله لمنع التكرار اللانهائي
-                     continue;
-                 }
-             }
+        let change_flags = LayoutChangeFlags {
+            intrinsic_changed: intrinsic.is_changed(),
+            node_changed: node.is_changed(),
+            layout_changed: layout.map_or(false, |l| l.is_changed()),
+            uself_changed: uself.map_or(false, |s| s.is_changed()),
+        };
+
+        // إذا كان التغيير الوحيد IntrinsicSize على عقدة حاوية، نتجاهله لتفادي
+        // إعادة توسيخ الشجرة بشكل متكرر بسبب مخرجات القياس الداخلية.
+        if should_skip_intrinsic_only_container_change(
+            change_flags,
+            children.is_some_and(|kids| !kids.is_empty()),
+        ) {
+            continue;
         }
 
         // في جميع الحالات الأخرى، نعتبر العنصر متسخاً
@@ -182,20 +179,52 @@ pub fn track_layout_changes(
     }
 }
 
+#[derive(Clone, Copy)]
+struct LayoutChangeFlags {
+    intrinsic_changed: bool,
+    node_changed: bool,
+    layout_changed: bool,
+    uself_changed: bool,
+}
+
+fn should_skip_intrinsic_only_container_change(flags: LayoutChangeFlags, has_children: bool) -> bool {
+    flags.intrinsic_changed
+        && !flags.node_changed
+        && !flags.layout_changed
+        && !flags.uself_changed
+        && has_children
+}
+
 /// نظام يحدث خريطة العمق عند الحاجة
 pub fn update_depth_cache(
     mut cache: ResMut<LayoutCache>,
     tree_depth: Res<LayoutTreeDepth>,
+    
+    // الاستعلام الكامل لإعادة البناء
     depth_query: Query<(Entity, &LayoutDepth)>,
+    
+    // === [الإضافة الهامة] ===
+    // مراقبة هل تم إضافة مكون LayoutDepth جديد؟
+    // هذا يعني أن هناك عقدة جديدة دخلت النظام
+    added_nodes: Query<Entity, Added<LayoutDepth>>,
+    
+    // مراقبة هل تم حذف عقد؟ (لتنظيف الكاش)
+    mut removed_nodes: RemovedComponents<LayoutDepth>,
 ) {
-    // تحديث فقط إذا تغير العمق الأقصى أو كان Cache فارغاً
-    if tree_depth.max_depth != cache.last_max_depth 
+    // هل تغير الهيكل؟ (إضافة أو حذف عقد)
+    let structure_changed = !added_nodes.is_empty() || removed_nodes.read().count() > 0;
+
+    // شروط إعادة البناء:
+    // 1. تغير الهيكل (عقد جديدة/محذوفة)
+    // 2. تغير العمق الأقصى
+    // 3. الكاش فارغ (أول إطار)
+    if structure_changed 
+        || tree_depth.max_depth != cache.last_max_depth 
         || cache.entities_by_depth.is_empty() 
     {
         cache.rebuild_depth_map(&depth_query, tree_depth.max_depth);
     }
 }
-
 /// Plugin للـ Cache System
 pub struct LayoutCachePlugin;
 
@@ -212,6 +241,60 @@ impl Plugin for LayoutCachePlugin {
                 .chain()
                 .before(upward_measure_pass_cached)
             );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn intrinsic_only_flags() -> LayoutChangeFlags {
+        LayoutChangeFlags {
+            intrinsic_changed: true,
+            node_changed: false,
+            layout_changed: false,
+            uself_changed: false,
+        }
+    }
+
+    #[test]
+    fn intrinsic_only_change_on_container_is_skipped() {
+        assert!(should_skip_intrinsic_only_container_change(
+            intrinsic_only_flags(),
+            true,
+        ));
+    }
+
+    #[test]
+    fn intrinsic_only_change_on_leaf_is_not_skipped() {
+        assert!(!should_skip_intrinsic_only_container_change(
+            intrinsic_only_flags(),
+            false,
+        ));
+    }
+
+    #[test]
+    fn non_intrinsic_change_is_not_skipped() {
+        let mut flags = intrinsic_only_flags();
+        flags.node_changed = true;
+
+        assert!(!should_skip_intrinsic_only_container_change(flags, true));
+    }
+
+    #[test]
+    fn layout_change_is_not_skipped() {
+        let mut flags = intrinsic_only_flags();
+        flags.layout_changed = true;
+
+        assert!(!should_skip_intrinsic_only_container_change(flags, true));
+    }
+
+    #[test]
+    fn uself_change_is_not_skipped() {
+        let mut flags = intrinsic_only_flags();
+        flags.uself_changed = true;
+
+        assert!(!should_skip_intrinsic_only_container_change(flags, true));
     }
 }
 

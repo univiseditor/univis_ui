@@ -75,7 +75,18 @@ pub fn upward_measure_pass_cached(
                 let direction = layout_opt.as_ref()
                     .map(|l| l.flex_direction)
                     .unwrap_or(UFlexDirection::Row);
-                let gap = layout_opt.as_ref().map(|l| l.gap).unwrap_or(0.0);
+                let legacy_gap = layout_opt.as_ref().map(|l| l.gap).unwrap_or(0.0);
+                let gap = if matches!(direction, UFlexDirection::Row | UFlexDirection::RowReverse) {
+                    layout_opt
+                        .as_ref()
+                        .and_then(|l| l.container_ext.box_align.column_gap)
+                        .unwrap_or(legacy_gap)
+                } else {
+                    layout_opt
+                        .as_ref()
+                        .and_then(|l| l.container_ext.box_align.row_gap)
+                        .unwrap_or(legacy_gap)
+                };
                 
                 let mut accum_main: f32 = 0.0;
                 let mut max_cross: f32 = 0.0;

@@ -18,6 +18,7 @@ pub struct ComputedSize {
     pub local_pos: Vec2, 
 }
 
+
 impl ComputedSize {
     /// Returns the calculated dimensions as a `Vec2`.
     pub fn size(&self) -> Vec2 {
@@ -45,6 +46,14 @@ pub enum UVal {
 impl Default for UVal {
     fn default() -> Self { Self::Px(0.0) }
 }
+
+// impl UVal {
+//     fn get_val(&self) -> f32 {
+//         match &self {
+//             UVal::Flex(f)
+//         }
+//     }
+// }
 
 /// Defines spacing (Padding or Margin) for the four sides of a box.
 #[derive(Reflect, Clone, Copy, Debug, Default, PartialEq)]

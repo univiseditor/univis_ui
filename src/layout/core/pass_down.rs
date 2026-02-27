@@ -126,7 +126,10 @@ pub fn downward_solve_pass_safe(
             let constraints = build_constraints(container_size, &node_data.spec);
 
             // 7. تشغيل Solver
-            let solver_config = translate_config(&node_data.layout, &node_data.spec);
+            let solver_config = translate_config(
+                &node_data.layout,
+                &node_data.spec,
+            );
             let final_size = solve_flex_layout(
                 &solver_config,
                 constraints,
@@ -167,18 +170,18 @@ pub fn downward_solve_pass_safe(
 fn extract_node_data(
     entity: Entity,
     query: &Query<(
-        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
-        Option<&Children>, Option<&USelf>,
+        Entity, &UNode, Option<&ULayout>,
+        &LayoutDepth, Option<&Children>, Option<&USelf>,
         &mut ComputedSize, &mut Transform
     )>,
 ) -> Option<NodeData> {
-    let (_, node, layout_opt, _, children_opt, _, computed, _) = 
+    let (_, node, layout_opt, _, children_opt, _, computed, _) =
         query.get(entity).ok()?;
 
     Some(NodeData {
         
         spec: node.clone(),
-        layout: layout_opt.copied().unwrap_or_default(),
+        layout: layout_opt.cloned().unwrap_or_default(),
         children: children_opt
             .map(|c| c.iter().collect())
             .unwrap_or_default(),
@@ -203,8 +206,8 @@ fn calculate_root_size(
 fn collect_children_layout_data(
     children: &[Entity],
     nodes_query: &Query<(
-        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
-        Option<&Children>, Option<&USelf>,
+        Entity, &UNode, Option<&ULayout>,
+        &LayoutDepth, Option<&Children>, Option<&USelf>,
         &mut ComputedSize, &mut Transform
     )>,
     intrinsic_query: &Query<&IntrinsicSize>,
@@ -214,7 +217,10 @@ fn collect_children_layout_data(
             let (_, node, _, _, _, uself_opt, _, _) = nodes_query.get(child_entity).ok()?;
             let intrinsic = intrinsic_query.get(child_entity).ok()?;
 
-            let mut spec = translate_spec(node, uself_opt.as_deref());
+            let mut spec = translate_spec(
+                node,
+                uself_opt.as_deref(),
+            );
 
             if spec.width_mode == SolverSizeMode::Content {
                 spec.width_val = intrinsic.width;
@@ -276,13 +282,13 @@ fn apply_results_to_children(
     solved_children: &[SolvedChild],
     parent_size: Vec2,
     nodes_query: &mut Query<(
-        Entity, &UNode, Option<&ULayout>, &LayoutDepth,
-        Option<&Children>, Option<&USelf>,
+        Entity, &UNode, Option<&ULayout>,
+        &LayoutDepth, Option<&Children>, Option<&USelf>,
         &mut ComputedSize, &mut Transform
     )>,
 ) {
     for solved in solved_children.iter() {
-        if let Ok((_, _, _, _, _, _, mut computed, mut transform)) = 
+        if let Ok((_, _, _, _, _, _, mut computed, mut transform)) =
             nodes_query.get_mut(solved.entity) 
         {
             computed.width = solved.result.size.x;
@@ -317,18 +323,35 @@ fn map_uval_to_mode(val: UVal) -> SolverSizeMode {
     }
 }
 
-fn translate_config(layout: &ULayout, node: &UNode) -> SolverConfig {
+fn translate_config(
+    layout: &ULayout,
+    node: &UNode,
+) -> SolverConfig {
     SolverConfig {
-        layout: *layout,
+        layout: layout.clone(),
         gap: layout.gap,
+        row_gap: layout.container_ext.box_align.row_gap,
+        column_gap: layout.container_ext.box_align.column_gap,
         padding: node.padding,
         grid_columns: layout.grid_columns,
+        justify_items: layout.container_ext.box_align.justify_items,
+        align_content: layout.container_ext.box_align.align_content,
+        flex_wrap: layout.container_ext.flex.wrap,
+        flex_align_content: layout.container_ext.flex.align_content,
+        grid_template_columns: layout.container_ext.grid.template_columns.clone(),
+        grid_template_rows: layout.container_ext.grid.template_rows.clone(),
+        grid_auto_flow: layout.container_ext.grid.auto_flow,
+        grid_auto_rows: layout.container_ext.grid.auto_rows,
+        grid_auto_columns: layout.container_ext.grid.auto_columns,
         width_mode: map_uval_to_mode(node.width),
         height_mode: map_uval_to_mode(node.height),
     }
 }
 
-fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
+fn translate_spec(
+    node: &UNode,
+    uself: Option<&USelf>,
+) -> SolverSpec {
     let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
         match dim {
             UVal::Px(v) => (SolverSizeMode::Fixed, v, 0.0),
@@ -354,6 +377,37 @@ fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
             None, 0,
         )
     };
+    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) = if let Some(u) = uself
+    {
+        (
+            u.item_ext.box_align.align_self,
+            u.item_ext.box_align.justify_self,
+            u.item_ext.box_align.justify_overflow,
+            u.item_ext.box_align.align_overflow,
+        )
+    } else {
+        (None, None, UOverflowPosition::Unsafe, UOverflowPosition::Unsafe)
+    };
+    let (flex_grow, flex_shrink, flex_basis) = if let Some(u) = uself {
+        (
+            u.item_ext.flex.flex_grow.map(|v| v.max(0.0)),
+            u.item_ext.flex.flex_shrink.map(|v| v.max(0.0)),
+            u.item_ext.flex.flex_basis,
+        )
+    } else {
+        (None, None, None)
+    };
+    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) = if let Some(u) = uself
+    {
+        (
+            u.item_ext.grid.column_start,
+            u.item_ext.grid.column_span.max(1),
+            u.item_ext.grid.row_start,
+            u.item_ext.grid.row_span.max(1),
+        )
+    } else {
+        (None, 1, None, 1)
+    };
 
     SolverSpec {
         width_mode: w_mode, width_val: w_val, width_flex: w_flex,
@@ -361,6 +415,83 @@ fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         position_type: pos_type,
         left: l, right: r, top: t, bottom: b,
         align_self: align,
+        align_self_ext,
+        justify_self_ext,
+        justify_overflow,
+        align_overflow,
+        flex_grow,
+        flex_shrink,
+        flex_basis,
+        grid_column_start,
+        grid_column_span,
+        grid_row_start,
+        grid_row_span,
         order,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn translate_config_reads_container_ext_values() {
+        let layout = ULayout {
+            gap: 5.0,
+            grid_columns: 4,
+            container_ext: ULayoutContainerExt {
+                box_align: ULayoutBoxAlignContainer {
+                    justify_items: Some(UAlignItemsExt::Center),
+                    align_content: Some(UContentAlignExt::SpaceAround),
+                    row_gap: Some(9.0),
+                    column_gap: Some(11.0),
+                },
+                flex: ULayoutFlexContainer {
+                    wrap: UFlexWrap::WrapReverse,
+                    align_content: Some(UContentAlignExt::SpaceEvenly),
+                },
+                grid: ULayoutGridContainer {
+                    template_columns: vec![UTrackSize::Fr(1.0), UTrackSize::Px(100.0)],
+                    template_rows: vec![UTrackSize::Px(42.0)],
+                    auto_flow: UGridAutoFlow::Column,
+                    auto_rows: UTrackSize::Px(60.0),
+                    auto_columns: UTrackSize::Fr(2.0),
+                },
+            },
+            ..default()
+        };
+        let node = UNode::default();
+
+        let cfg = translate_config(&layout, &node);
+
+        assert_eq!(cfg.row_gap, Some(9.0));
+        assert_eq!(cfg.column_gap, Some(11.0));
+        assert_eq!(cfg.justify_items, Some(UAlignItemsExt::Center));
+        assert_eq!(cfg.align_content, Some(UContentAlignExt::SpaceAround));
+        assert_eq!(cfg.flex_wrap, UFlexWrap::WrapReverse);
+        assert_eq!(cfg.flex_align_content, Some(UContentAlignExt::SpaceEvenly));
+        assert_eq!(cfg.grid_auto_flow, UGridAutoFlow::Column);
+        assert_eq!(cfg.grid_auto_rows, UTrackSize::Px(60.0));
+        assert_eq!(cfg.grid_auto_columns, UTrackSize::Fr(2.0));
+        assert_eq!(cfg.grid_template_columns.len(), 2);
+        assert_eq!(cfg.grid_template_rows.len(), 1);
+    }
+
+    #[test]
+    fn translate_spec_without_uself_uses_defaults() {
+        let node = UNode::default();
+
+        let spec = translate_spec(&node, None);
+
+        assert_eq!(spec.position_type, UPositionType::Relative);
+        assert_eq!(spec.order, 0);
+        assert_eq!(spec.align_self, None);
+        assert_eq!(spec.justify_self_ext, None);
+        assert_eq!(spec.align_self_ext, None);
+        assert_eq!(spec.flex_grow, None);
+        assert_eq!(spec.flex_shrink, None);
+        assert_eq!(spec.flex_basis, None);
+        assert_eq!(spec.grid_column_span, 1);
+        assert_eq!(spec.grid_row_span, 1);
     }
 }

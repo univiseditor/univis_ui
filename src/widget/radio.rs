@@ -15,7 +15,7 @@ impl Plugin for UnivisRadioPlugin {
             .add_message::<RadioButtonChangedEvent>()
             .add_systems(Update, (
                 init_radio_visuals,
-                init_radio_group,
+                sync_radio_groups,
                 update_radio_visuals,
                 animate_radio_check,
                 emit_radio_events,
@@ -30,7 +30,7 @@ impl Plugin for UnivisRadioPlugin {
 /// مكون RadioButton الفردي
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
-#[require(UNode, ULayout, Pickable)]
+#[require(UNode, ULayout, Pickable, UInteraction)]
 pub struct URadioButton {
     /// القيمة الفريدة لهذا الزر (في المجموعة)
     pub value: String,
@@ -222,7 +222,9 @@ impl URadioGroup {
 struct RadioRing;
 
 #[derive(Component)]
-struct RadioDot;
+struct RadioDot {
+    base_size: f32,
+}
 
 // =========================================================
 // Systems
@@ -286,11 +288,8 @@ fn init_radio_visuals(
             )).with_children(|ring_parent| {
                 
                 // Dot (النقطة الداخلية)
-                let dot_size = if radio.checked {
-                    radio.size * 0.5
-                } else {
-                    0.0
-                };
+                let dot_size = radio.size * 0.5;
+                let dot_visible = radio.checked && radio.current_scale > 0.01;
                 
                 ring_parent.spawn((
                     UNode {
@@ -300,22 +299,37 @@ fn init_radio_visuals(
                         border_radius: UCornerRadius::all(dot_size / 2.0),
                         ..default()
                     },
-                    RadioDot,
+                    Transform::from_scale(Vec3::splat(radio.current_scale.clamp(0.0, 1.0))),
+                    if dot_visible { Visibility::Inherited } else { Visibility::Hidden },
+                    RadioDot { base_size: dot_size },
                 ));
             });
         });
     }
 }
 
-/// ربط الأزرار مع المجموعة وإعداد التخطيط
-fn init_radio_group(
+fn collect_descendants_recursive(
+    children: &Children,
+    children_query: &Query<&Children>,
+    out: &mut Vec<Entity>,
+) {
+    for child in children.iter() {
+        out.push(child);
+        if let Ok(grand_children) = children_query.get(child) {
+            collect_descendants_recursive(grand_children, children_query, out);
+        }
+    }
+}
+
+/// مزامنة مجموعة الـ Radio مع جميع الأزرار داخلها (حتى لو كانت متداخلة).
+fn sync_radio_groups(
     mut commands: Commands,
-    mut group_query: Query<(Entity, &mut URadioGroup, &Children), Added<URadioGroup>>,
+    mut group_query: Query<(Entity, &mut URadioGroup, &Children)>,
+    children_query: Query<&Children>,
     mut radio_query: Query<&mut URadioButton>,
 ) {
-    for (group_entity, mut group, children) in group_query.iter_mut() {
-        
-        // إضافة UNode و ULayout للـ RadioGroup
+    for (group_entity, mut group, group_children) in group_query.iter_mut() {
+        // الحفاظ على خصائص التخطيط محدثة دائماً
         commands.entity(group_entity).insert((
             UNode {
                 width: UVal::Content,
@@ -330,26 +344,68 @@ fn init_radio_group(
                 ..default()
             },
         ));
-        
-        // مسح القائمة القديمة
-        group.buttons.clear();
-        
-        // جمع كل الأزرار في المجموعة
-        for child in children.iter() {
-            if let Ok(mut radio) = radio_query.get_mut(child) {
-                // ربط الزر مع المجموعة
+
+        let old_buttons = group.buttons.clone();
+
+        let mut descendants = Vec::new();
+        collect_descendants_recursive(group_children, &children_query, &mut descendants);
+
+        let mut new_buttons = Vec::new();
+        let mut first_enabled_value: Option<String> = None;
+        let mut selected_exists = false;
+        let selected_value = group.selected_value.clone();
+
+        for entity in descendants {
+            if let Ok(mut radio) = radio_query.get_mut(entity) {
                 radio.group = Some(group_entity);
-                
-                // إضافة الزر لقائمة المجموعة
-                group.buttons.push(child);
-                
-                // تعيين الحالة الأولية
-                if let Some(ref selected) = group.selected_value {
-                    radio.checked = radio.value == *selected;
-                    radio.current_scale = if radio.checked { 1.0 } else { 0.0 };
+                new_buttons.push(entity);
+
+                if !radio.disabled && first_enabled_value.is_none() {
+                    first_enabled_value = Some(radio.value.clone());
+                }
+
+                if let Some(selected) = selected_value.as_ref() {
+                    if !radio.disabled && radio.value == *selected {
+                        selected_exists = true;
+                    }
                 }
             }
         }
+
+        if group.require_selection {
+            if !selected_exists {
+                group.selected_value = first_enabled_value;
+            }
+        } else if !selected_exists {
+            group.selected_value = None;
+        }
+
+        let final_selected = group.selected_value.clone();
+        for &button_entity in &new_buttons {
+            if let Ok(mut radio) = radio_query.get_mut(button_entity) {
+                let is_selected = final_selected
+                    .as_ref()
+                    .map(|value| *value == radio.value)
+                    .unwrap_or(false);
+                radio.checked = is_selected;
+                radio.current_scale = if is_selected { 1.0 } else { 0.0 };
+            }
+        }
+
+        for old_button in old_buttons {
+            if !new_buttons.contains(&old_button) {
+                if let Ok(mut radio) = radio_query.get_mut(old_button) {
+                    if radio.group == Some(group_entity) {
+                        radio.group = None;
+                        radio.checked = false;
+                        radio.current_scale = 0.0;
+                    }
+                }
+            }
+        }
+
+        group.buttons = new_buttons;
+        group.previous_value = group.selected_value.clone();
     }
 }
 
@@ -405,30 +461,44 @@ fn on_radio_press(
 fn update_radio_visuals(
     radio_query: Query<(&URadioButton, &Children), Changed<URadioButton>>,
     ring_query: Query<&Children, With<RadioRing>>,
-    mut border_query: Query<&mut UBorder, With<RadioRing>>,
-    mut dot_query: Query<&mut UNode, With<RadioDot>>,
+    mut ring_visual_query: Query<(&mut UNode, &mut UBorder), (With<RadioRing>, Without<RadioDot>)>,
+    mut dot_query: Query<(&mut UNode, &mut Transform, &mut Visibility, &mut RadioDot), (With<RadioDot>, Without<RadioRing>)>,
 ) {
     for (radio, children) in radio_query.iter() {
         
         // تحديث لون Ring
         for child in children.iter() {
-            if let Ok(mut border) = border_query.get_mut(child) {
+            if let Ok((mut ring_node, mut border)) = ring_visual_query.get_mut(child) {
+                ring_node.width = UVal::Px(radio.size);
+                ring_node.height = UVal::Px(radio.size);
+                ring_node.border_radius = UCornerRadius::all(radio.size / 2.0);
                 border.color = if radio.checked {
                     radio.ring_checked_color
                 } else {
                     radio.ring_color
                 };
+                border.width = radio.ring_width.max(0.5);
+                border.radius = UCornerRadius::all(radio.size / 2.0);
             }
             
             // تحديث Dot
             if let Ok(ring_children) = ring_query.get(child) {
                 for dot_entity in ring_children.iter() {
-                    if let Ok(mut dot_node) = dot_query.get_mut(dot_entity) {
-                        let target_size = radio.size * 0.5 * radio.current_scale;
-                        
-                        dot_node.width = UVal::Px(target_size);
-                        dot_node.height = UVal::Px(target_size);
-                        dot_node.border_radius = UCornerRadius::all(target_size / 2.0);
+                    if let Ok((mut dot_node, mut dot_transform, mut dot_visibility, mut dot_meta)) = dot_query.get_mut(dot_entity) {
+                        dot_meta.base_size = radio.size * 0.5;
+
+                        dot_node.width = UVal::Px(dot_meta.base_size);
+                        dot_node.height = UVal::Px(dot_meta.base_size);
+                        dot_node.background_color = radio.dot_color;
+                        dot_node.border_radius = UCornerRadius::all(dot_meta.base_size / 2.0);
+
+                        let scale = radio.current_scale.clamp(0.0, 1.0);
+                        dot_transform.scale = Vec3::splat(scale);
+                        *dot_visibility = if radio.checked && scale > 0.01 {
+                            Visibility::Inherited
+                        } else {
+                            Visibility::Hidden
+                        };
                     }
                 }
             }

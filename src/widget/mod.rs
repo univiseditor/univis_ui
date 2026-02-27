@@ -9,12 +9,15 @@ pub mod image;
 pub mod seekbar;
 pub mod checkbox;
 pub mod menu;
-pub mod scrolling;
 pub mod icon_btn;
 pub mod toggle;
 pub mod radio;
 pub mod text_field;
 pub mod scroll_view;
+pub mod divider;
+pub mod panel;
+pub mod drag_value;
+pub mod select;
 
 pub mod prelude {
     pub use crate::widget::{
@@ -31,6 +34,10 @@ pub mod prelude {
         seekbar::*,
         icon_btn::*,
         toggle::*,
+        divider::*,
+        panel::*,
+        drag_value::*,
+        select::*,
     };
 }
 
@@ -51,6 +58,12 @@ impl Plugin for UnivisWidgetPlugin {
          .add_plugins(UnivisIconButtonPlugin)
          .add_plugins(UnivisTogglePlugin)
          .add_plugins(UnivisCheckboxPlugin)
-         .add_plugins(UnivisSeekBarPlugin);
+         .add_plugins(UnivisSeekBarPlugin)
+         .add_plugins(UnivisScrollViewPlugin)
+         .add_plugins(UnivisDividerPlugin)
+         .add_plugins(UnivisPanelPlugin)
+         // NOTE: UnivisBadgePlugin is intentionally optional and must be added explicitly.
+         .add_plugins(UnivisDragValuePlugin)
+         .add_plugins(UnivisSelectPlugin);
     }
 }

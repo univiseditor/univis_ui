@@ -4,7 +4,7 @@ use univis_ui::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins((UnivisUiPlugin,LayoutProfilingPlugin))
+        .add_plugins((UnivisUiPlugin, LayoutProfilingPlugin, UnivisBadgePlugin))
         .add_systems(Startup, setup_profile_card)
         .run();
 }

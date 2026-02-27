@@ -1,3 +1,5 @@
+use bevy::camera::primitives::Aabb;
+use bevy::ecs::relationship::Relationship;
 use bevy::prelude::*;
 use bevy::text::TextLayoutInfo;
 use crate::prelude::*;
@@ -117,7 +119,7 @@ pub fn fit_node_to_text_size(
 
 pub fn sync_text_label_props(
     label_query: Query<(&UTextLabel, &Children), Changed<UTextLabel>>,
-    mut text_query: Query<(&mut Text, &mut TextFont, &mut TextColor, &mut TextLayout), With<TextChildMarker>>,
+    mut text_query: Query<(&mut Text2d, &mut TextFont, &mut TextColor, &mut TextLayout), With<TextChildMarker>>,
 ) {
     for (label, children) in label_query.iter() {
         for &child in children {
@@ -129,6 +131,146 @@ pub fn sync_text_label_props(
             }
         }
     }
+}
+
+pub fn sync_text_clip_visibility(
+    mut text_query: Query<
+        (
+            Entity,
+            &GlobalTransform,
+            Option<&Aabb>,
+            Option<&TextLayoutInfo>,
+            &mut Visibility,
+        ),
+        With<TextChildMarker>,
+    >,
+    parents_query: Query<&ChildOf>,
+    clipper_query: Query<(&GlobalTransform, &ComputedSize, &UClip)>,
+) {
+    for (entity, global_transform, aabb, layout_info, mut visibility) in text_query.iter_mut() {
+        let Some(world_quad) = text_world_quad(global_transform, aabb, layout_info) else {
+            continue;
+        };
+
+        let visible_in_clips =
+            is_quad_fully_inside_active_clippers(entity, &world_quad, &parents_query, &clipper_query);
+
+        *visibility = if visible_in_clips {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+    }
+}
+
+fn text_world_quad(
+    global_transform: &GlobalTransform,
+    aabb: Option<&Aabb>,
+    layout_info: Option<&TextLayoutInfo>,
+) -> Option<[Vec2; 4]> {
+    if let Some(aabb) = aabb {
+        return Some(local_quad_to_world(
+            global_transform,
+            Vec2::new(aabb.center.x, aabb.center.y),
+            Vec2::new(aabb.half_extents.x, aabb.half_extents.y),
+        ));
+    }
+
+    let layout_info = layout_info?;
+    if layout_info.size.x <= 0.0 || layout_info.size.y <= 0.0 {
+        return None;
+    }
+
+    Some(local_quad_to_world(
+        global_transform,
+        Vec2::ZERO,
+        layout_info.size * 0.5,
+    ))
+}
+
+fn local_quad_to_world(
+    global_transform: &GlobalTransform,
+    local_center: Vec2,
+    local_half_extents: Vec2,
+) -> [Vec2; 4] {
+    let transform = global_transform.to_matrix();
+    let local_points = [
+        Vec2::new(
+            local_center.x - local_half_extents.x,
+            local_center.y - local_half_extents.y,
+        ),
+        Vec2::new(
+            local_center.x - local_half_extents.x,
+            local_center.y + local_half_extents.y,
+        ),
+        Vec2::new(
+            local_center.x + local_half_extents.x,
+            local_center.y - local_half_extents.y,
+        ),
+        Vec2::new(
+            local_center.x + local_half_extents.x,
+            local_center.y + local_half_extents.y,
+        ),
+    ];
+
+    [
+        transform
+            .transform_point3(local_points[0].extend(0.0))
+            .truncate(),
+        transform
+            .transform_point3(local_points[1].extend(0.0))
+            .truncate(),
+        transform
+            .transform_point3(local_points[2].extend(0.0))
+            .truncate(),
+        transform
+            .transform_point3(local_points[3].extend(0.0))
+            .truncate(),
+    ]
+}
+
+fn is_quad_fully_inside_active_clippers(
+    entity: Entity,
+    world_quad: &[Vec2; 4],
+    parents_query: &Query<&ChildOf>,
+    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UClip)>,
+) -> bool {
+    let mut current = entity;
+
+    while let Ok(parent) = parents_query.get(current) {
+        current = parent.get();
+
+        let Ok((clip_transform, clip_size, clip)) = clipper_query.get(current) else {
+            continue;
+        };
+
+        if !clip.enabled {
+            continue;
+        }
+
+        let half_size = Vec2::new(clip_size.width, clip_size.height) * 0.5;
+        if !is_quad_inside_oriented_rect(world_quad, clip_transform, half_size) {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn is_quad_inside_oriented_rect(
+    world_quad: &[Vec2; 4],
+    rect_transform: &GlobalTransform,
+    rect_half_size: Vec2,
+) -> bool {
+    let inv = rect_transform.to_matrix().inverse();
+
+    world_quad.iter().all(|world_point| {
+        let local = inv.transform_point3(world_point.extend(0.0)).truncate();
+        local.x >= -rect_half_size.x
+            && local.x <= rect_half_size.x
+            && local.y >= -rect_half_size.y
+            && local.y <= rect_half_size.y
+    })
 }
 
 pub struct UnivisTextPlugin;
@@ -147,6 +289,48 @@ impl Plugin for UnivisTextPlugin {
                     .before(upward_measure_pass_cached) // قبل بدء نظام التخطيط الخاص بك
                     // وأيضاً قبل تحديث المرئيات لضمان أن الخلفية تأخذ الحجم الصحيح في نفس الإطار
                     .before(update_materials_optimized),
+                sync_text_clip_visibility,
             ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quad_inside_oriented_rect_returns_true() {
+        let rect_transform = GlobalTransform::from(Transform::default());
+        let rect_half_size = Vec2::new(50.0, 30.0);
+        let quad = [
+            Vec2::new(-20.0, -10.0),
+            Vec2::new(-20.0, 10.0),
+            Vec2::new(20.0, -10.0),
+            Vec2::new(20.0, 10.0),
+        ];
+
+        assert!(is_quad_inside_oriented_rect(
+            &quad,
+            &rect_transform,
+            rect_half_size,
+        ));
+    }
+
+    #[test]
+    fn quad_outside_oriented_rect_returns_false() {
+        let rect_transform = GlobalTransform::from(Transform::default());
+        let rect_half_size = Vec2::new(50.0, 30.0);
+        let quad = [
+            Vec2::new(-20.0, -10.0),
+            Vec2::new(-20.0, 10.0),
+            Vec2::new(60.0, -10.0),
+            Vec2::new(60.0, 10.0),
+        ];
+
+        assert!(!is_quad_inside_oriented_rect(
+            &quad,
+            &rect_transform,
+            rect_half_size,
+        ));
     }
 }

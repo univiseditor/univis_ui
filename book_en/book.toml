@@ -1,0 +1,22 @@
+[book]
+title = "Univis UI Book (English)"
+authors = ["Univis Contributors"]
+language = "en"
+text-direction = "ltr"
+src = "src"
+
+description = "Comprehensive reference for univis_ui: architecture, APIs, widgets, layout, interaction, rendering, performance, and examples."
+
+[build]
+build-dir = "../target/book/en"
+create-missing = false
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+smart-punctuation = true
+mathjax-support = false
+
+[output.html.fold]
+enable = true
+level = 1

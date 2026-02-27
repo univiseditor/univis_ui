@@ -5,7 +5,6 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(UnivisUiPlugin)
-        .add_systems(Update, scroll_interaction_system)
         .add_systems(Startup, setup_scroll_list)
         .run();
 }
@@ -56,11 +55,6 @@ fn setup_scroll_list(mut commands: Commands) {
                         ..default()
                     },
                     // يجب أن يكون Relative ليتحرك بالنسبة للأب
-                    USelf {
-                        position_type: UPositionType::Relative,
-                        top: UVal::Px(0.0), // القيمة المبدئية
-                        ..default()
-                    },
                 ))
                 .with_children(|list| {
                     // إضافة 20 عنصر

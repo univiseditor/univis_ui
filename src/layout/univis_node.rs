@@ -9,7 +9,22 @@ impl Plugin for UnivisNodePlugin {
             .register_type::<UVal>()
             .register_type::<ULayout>()
             .register_type::<UNode>()
-            .register_type::<ComputedSize>();
+            .register_type::<ComputedSize>()
+            .register_type::<ULayoutContainerExt>()
+            .register_type::<ULayoutBoxAlignContainer>()
+            .register_type::<ULayoutFlexContainer>()
+            .register_type::<ULayoutGridContainer>()
+            .register_type::<ULayoutItemExt>()
+            .register_type::<ULayoutBoxAlignSelf>()
+            .register_type::<ULayoutFlexItem>()
+            .register_type::<ULayoutGridItem>()
+            .register_type::<UAlignSelfExt>()
+            .register_type::<UAlignItemsExt>()
+            .register_type::<UContentAlignExt>()
+            .register_type::<UOverflowPosition>()
+            .register_type::<UFlexWrap>()
+            .register_type::<UTrackSize>()
+            .register_type::<UGridAutoFlow>();
     }
 }
 
@@ -81,7 +96,7 @@ impl Default for UBorder {
 
 /// Layout configuration component.
 /// Controls how children are arranged within this node.
-#[derive(Component, Debug, Clone, Reflect, Copy)]
+#[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component)] // Important for Inspector
 pub struct ULayout {
     /// The layout algorithm to use (Flex, Grid, Masonry...).
@@ -96,7 +111,10 @@ pub struct ULayout {
     pub gap: f32,
     
     /// Number of columns (used for Grid/Masonry layouts).
-    pub grid_columns: u32, 
+    pub grid_columns: u32,
+
+    /// Advanced container-only layout controls.
+    pub container_ext: ULayoutContainerExt,
 }
 
 impl Default for ULayout {
@@ -108,6 +126,7 @@ impl Default for ULayout {
             align_items: UAlignItems::Start,
             gap: 0.0,
             grid_columns: 1, // Default is one column
+            container_ext: ULayoutContainerExt::default(),
         }
     }
 }
@@ -178,40 +197,228 @@ pub enum UDisplay {
     None,
 }
 
-// /// Defines how much an item should grow relative to others to fill available space.
-// /// 0.0 = Do not grow. 1.0 = Take 1 share.
-// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-// #[reflect(Component, Default)]
-// pub struct UFlexGrow(pub f32);
+/// CSS-inspired extended alignment values for self alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UAlignSelfExt {
+    #[default]
+    Auto,
+    Normal,
+    Start,
+    End,
+    Center,
+    Stretch,
+    Baseline,
+    FirstBaseline,
+    LastBaseline,
+    FlexStart,
+    FlexEnd,
+    SelfStart,
+    SelfEnd,
+    Left,
+    Right,
+}
 
-// impl Default for UFlexGrow {
-//     fn default() -> Self {
-//         Self(0.0) // Default is no growth
-//     }
-// }
+/// CSS-inspired extended alignment values for container item alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UAlignItemsExt {
+    #[default]
+    Normal,
+    Start,
+    End,
+    Center,
+    Stretch,
+    Baseline,
+    FirstBaseline,
+    LastBaseline,
+    FlexStart,
+    FlexEnd,
+    SelfStart,
+    SelfEnd,
+    Left,
+    Right,
+}
 
-// impl UFlexGrow {
-//     /// Standard fill (shares space equally).
-//     pub fn fill() -> Self { Self(1.0) }
-    
-//     /// Double growth factor.
-//     pub fn double() -> Self { Self(2.0) }
-// }
+/// CSS-inspired extended alignment values for distributing lines/tracks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UContentAlignExt {
+    #[default]
+    Normal,
+    Start,
+    End,
+    Center,
+    Stretch,
+    SpaceBetween,
+    SpaceAround,
+    SpaceEvenly,
+    FlexStart,
+    FlexEnd,
+}
 
-// // =========================================================
-// // 3. Flex Shrink (Optional)
-// // =========================================================
+/// Overflow position behavior for alignment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UOverflowPosition {
+    Safe,
+    #[default]
+    Unsafe,
+}
 
-// /// Defines the ability of a flex item to shrink if necessary.
-// #[derive(Component, Debug, Copy, Clone, PartialEq, Reflect)]
-// #[reflect(Component, Default)]
-// pub struct UFlexShrink(pub f32);
+/// Flex wrap behavior.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UFlexWrap {
+    #[default]
+    NoWrap,
+    Wrap,
+    WrapReverse,
+}
 
-// impl Default for UFlexShrink {
-//     fn default() -> Self {
-//         Self(1.0) // Shrinkable by default
-//     }
-// }
+/// Grid track sizing.
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
+pub enum UTrackSize {
+    Px(f32),
+    Fr(f32),
+    #[default]
+    Auto,
+}
+
+/// Grid auto-placement flow.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UGridAutoFlow {
+    #[default]
+    Row,
+    Column,
+}
+
+/// Advanced container-only controls nested under [`ULayout`].
+#[derive(Debug, Clone, Reflect, Default)]
+pub struct ULayoutContainerExt {
+    pub box_align: ULayoutBoxAlignContainer,
+    pub flex: ULayoutFlexContainer,
+    pub grid: ULayoutGridContainer,
+}
+
+/// Extended container-level alignment options.
+#[derive(Debug, Clone, Copy, Reflect)]
+pub struct ULayoutBoxAlignContainer {
+    pub justify_items: Option<UAlignItemsExt>,
+    pub align_content: Option<UContentAlignExt>,
+    pub row_gap: Option<f32>,
+    pub column_gap: Option<f32>,
+}
+
+impl Default for ULayoutBoxAlignContainer {
+    fn default() -> Self {
+        Self {
+            justify_items: None,
+            align_content: None,
+            row_gap: None,
+            column_gap: None,
+        }
+    }
+}
+
+/// Extended flex container options.
+#[derive(Debug, Clone, Copy, Reflect)]
+pub struct ULayoutFlexContainer {
+    pub wrap: UFlexWrap,
+    pub align_content: Option<UContentAlignExt>,
+}
+
+impl Default for ULayoutFlexContainer {
+    fn default() -> Self {
+        Self {
+            wrap: UFlexWrap::NoWrap,
+            align_content: None,
+        }
+    }
+}
+
+/// Extended grid container options.
+#[derive(Debug, Clone, Reflect)]
+pub struct ULayoutGridContainer {
+    pub template_columns: Vec<UTrackSize>,
+    pub template_rows: Vec<UTrackSize>,
+    pub auto_flow: UGridAutoFlow,
+    pub auto_rows: UTrackSize,
+    pub auto_columns: UTrackSize,
+}
+
+impl Default for ULayoutGridContainer {
+    fn default() -> Self {
+        Self {
+            template_columns: Vec::new(),
+            template_rows: Vec::new(),
+            auto_flow: UGridAutoFlow::Row,
+            auto_rows: UTrackSize::Auto,
+            auto_columns: UTrackSize::Auto,
+        }
+    }
+}
+
+/// Advanced item-only controls nested under [`USelf`].
+#[derive(Debug, Clone, Copy, Reflect, Default)]
+pub struct ULayoutItemExt {
+    pub box_align: ULayoutBoxAlignSelf,
+    pub flex: ULayoutFlexItem,
+    pub grid: ULayoutGridItem,
+}
+
+/// Extended child-level alignment options.
+#[derive(Debug, Clone, Copy, Reflect)]
+pub struct ULayoutBoxAlignSelf {
+    pub justify_self: Option<UAlignSelfExt>,
+    pub align_self: Option<UAlignSelfExt>,
+    pub justify_overflow: UOverflowPosition,
+    pub align_overflow: UOverflowPosition,
+}
+
+impl Default for ULayoutBoxAlignSelf {
+    fn default() -> Self {
+        Self {
+            justify_self: None,
+            align_self: None,
+            justify_overflow: UOverflowPosition::Unsafe,
+            align_overflow: UOverflowPosition::Unsafe,
+        }
+    }
+}
+
+/// Extended flex item options.
+#[derive(Debug, Clone, Copy, Reflect)]
+pub struct ULayoutFlexItem {
+    pub flex_grow: Option<f32>,
+    pub flex_shrink: Option<f32>,
+    pub flex_basis: Option<UVal>,
+}
+
+impl Default for ULayoutFlexItem {
+    fn default() -> Self {
+        Self {
+            flex_grow: None,
+            flex_shrink: None,
+            flex_basis: None,
+        }
+    }
+}
+
+/// Extended grid item placement options.
+#[derive(Debug, Clone, Copy, Reflect)]
+pub struct ULayoutGridItem {
+    pub column_start: Option<u32>,
+    pub column_span: u32,
+    pub row_start: Option<u32>,
+    pub row_span: u32,
+}
+
+impl Default for ULayoutGridItem {
+    fn default() -> Self {
+        Self {
+            column_start: None,
+            column_span: 1,
+            row_start: None,
+            row_span: 1,
+        }
+    }
+}
 
 /// Self-control component for a child node.
 /// Overrides parent settings (Alignment) or Layout flow (Positioning).
@@ -229,6 +436,8 @@ pub struct USelf {
     /// Layout order (affects Z-index too).
     pub order: i32,
     pub position_type: UPositionType,
+    /// Advanced item-only layout controls.
+    pub item_ext: ULayoutItemExt,
 }
 impl Default for USelf {
     fn default() -> Self {
@@ -239,11 +448,20 @@ impl Default for USelf {
             bottom: UVal::Auto,
             right: UVal::Auto,
             order: 0, 
-            position_type: UPositionType::Relative
+            position_type: UPositionType::Relative,
+            item_ext: ULayoutItemExt::default(),
         }
     }
 }
 
+impl USelf {
+    pub fn get_val(&self) -> f32 {
+        match &self.left {
+            UVal::Px(p) => *p,
+            _ => 0.0
+        }
+    }
+}
 /// Self alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UAlignSelf {

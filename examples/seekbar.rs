@@ -7,7 +7,6 @@ fn main() {
         .add_plugins(UnivisUiPlugin)
         
         .add_systems(Startup, setup_seekbar_demo)
-        .add_systems(Update, handle_seekbar_events)
         .run();
 }
 
@@ -25,6 +24,13 @@ fn setup_seekbar_demo(mut commands: Commands) {
             padding: USides::all(40.0),
             ..default()
         },
+        UClip::enabled(true),
+            UScrollContainer::new(),
+            UInteraction::default(),
+            USelf {
+                position_type: UPositionType::Absolute,
+                ..default()
+            },
         ULayout {
             display: UDisplay::Flex,
             flex_direction: UFlexDirection::Column,
@@ -52,6 +58,7 @@ fn setup_seekbar_demo(mut commands: Commands) {
                 border_radius: UCornerRadius::all(20.0),
                 ..default()
             },
+            
             ULayout {
                 display: UDisplay::Flex,
                 flex_direction: UFlexDirection::Column,
@@ -241,15 +248,3 @@ fn create_rgb_row(
     });
 }
 
-/// معالجة الأحداث
-fn handle_seekbar_events(
-    mut events: MessageReader<SeekBarChangedEvent>,
-) {
-    for event in events.read() {
-        info!(
-            "SeekBar changed - Value: {:.2} (Real: {:.2})",
-            event.value,
-            event.real_value
-        );
-    }
-}

@@ -31,7 +31,7 @@ It uses Signed Distance Field (SDF) materials to render crisp shapes and rounded
 ## Installation
 ```toml
 [dependencies]
-univis_ui = "0.1.2"
+univis_ui = "0.2.0"
 ```
 
 ## Quick Start

@@ -10,7 +10,7 @@ The repository contains two mdBook editions for long-form docs:
 
 ## 2. Package Metadata
 - Crate: `univis_ui`
-- Current version in repo: `0.1.2`
+- Current version in repo: `0.2.0`
 - Rust edition: `2024`
 - Engine dependency: `bevy = 0.17.3`
 - Status: **Alpha** (API/behavior may change)

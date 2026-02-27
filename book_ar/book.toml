@@ -1,0 +1,22 @@
+[book]
+title = "Univis UI Book"
+authors = ["Univis Contributors"]
+language = "ar"
+text-direction = "rtl"
+src = "src"
+
+description = "المرجع الشامل لمشروع univis_ui: المعمارية، APIs، Widgets، التخطيط، التفاعل، الرندر، الأداء، والأمثلة."
+
+[build]
+build-dir = "../target/book/ar"
+create-missing = false
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+smart-punctuation = true
+mathjax-support = false
+
+[output.html.fold]
+enable = true
+level = 1

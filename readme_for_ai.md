@@ -4,6 +4,10 @@
 This document is optimized for AI agents that generate, review, or refactor code using `univis_ui`.
 It is not a marketing document; it is an operational specification based on the current repository state.
 
+The repository contains two mdBook editions for long-form docs:
+- Arabic edition: `book/`
+- English edition: `book_en/`
+
 ## 2. Package Metadata
 - Crate: `univis_ui`
 - Current version in repo: `0.1.2`
@@ -39,8 +43,8 @@ When `UWorldRoot.is_3d = true`, `auto_propagate_ui3d` can attach `UI3d` marker t
 
 ### 4.3 Node + Layout + Child Override
 - `UNode`: size/box/visual base (`width`, `height`, `padding`, `margin`, `background_color`, `border_radius`, `shape_mode`).
-- `ULayout`: container algorithm and alignment.
-- `USelf`: per-child overrides (`align_self`, positional offsets, `position_type`, `order`).
+- `ULayout`: container algorithm and alignment, plus `container_ext`.
+- `USelf`: per-child overrides (`align_self`, positional offsets, `position_type`, `order`) plus `item_ext`.
 
 ### 4.4 Size Units
 `UVal` supports:
@@ -66,37 +70,37 @@ When `UWorldRoot.is_3d = true`, `auto_propagate_ui3d` can attach `UI3d` marker t
 
 ### 5.3 Extended Alignment / CSS-like Controls
 Container-level:
-- `UBoxAlignContainer`
-  - `justify_items`
-  - `align_content`
+- `ULayout.container_ext.box_align` (`ULayoutBoxAlignContainer`)
+  - `justify_items: Option<UAlignItemsExt>`
+  - `align_content: Option<UContentAlignExt>`
   - `row_gap: Option<f32>`
   - `column_gap: Option<f32>`
 
 Item-level:
-- `UBoxAlignSelf`
-  - `justify_self`
-  - `align_self`
+- `USelf.item_ext.box_align` (`ULayoutBoxAlignSelf`)
+  - `justify_self: Option<UAlignSelfExt>`
+  - `align_self: Option<UAlignSelfExt>`
   - `justify_overflow: UOverflowPosition::{Safe, Unsafe}`
   - `align_overflow: UOverflowPosition::{Safe, Unsafe}`
 
 ### 5.4 Flex Extensions
-- `UFlexContainerExt`
+- `ULayout.container_ext.flex` (`ULayoutFlexContainer`)
   - `wrap: UFlexWrap::{NoWrap, Wrap, WrapReverse}`
   - `align_content`
-- `UFlexItemExt`
-  - `flex_grow`
-  - `flex_shrink`
-  - `flex_basis: UVal`
+- `USelf.item_ext.flex` (`ULayoutFlexItem`)
+  - `flex_grow: Option<f32>`
+  - `flex_shrink: Option<f32>`
+  - `flex_basis: Option<UVal>`
 
 ### 5.5 Grid Extensions
-- `UGridContainerExt`
+- `ULayout.container_ext.grid` (`ULayoutGridContainer`)
   - `template_columns: Vec<UTrackSize>`
   - `template_rows: Vec<UTrackSize>`
   - `auto_flow: UGridAutoFlow::{Row, Column}`
   - `auto_rows: UTrackSize`
   - `auto_columns: UTrackSize`
 - `UTrackSize::{Px, Fr, Auto}`
-- `UGridItemExt`
+- `USelf.item_ext.grid` (`ULayoutGridItem`)
   - `column_start`, `column_span`
   - `row_start`, `row_span`
 
@@ -143,6 +147,7 @@ Item-level:
 ### 8.1 Display/Visual Widgets
 - `UTextLabel`
 - `UImage`
+- `UPanel`
 - `UBadge`, `UTag`
 - `UProgressBar`
 
@@ -159,9 +164,17 @@ Item-level:
 
 ### 8.3 Scroll
 - `UScrollContainer`
-- Runtime logic system: `scroll_interaction_system`
+- Plugin: `UnivisScrollViewPlugin`
 
-### 8.4 Widget Events (Bevy messages)
+### 8.4 Resizable Panel (Opt-in)
+- Add `UPanelWindow` on the same entity as `UPanel`.
+- Behavior in current scope:
+  - resize by borders/corners only
+  - no move behavior
+  - no bring-to-front behavior
+  - cursor icon updates only for panel resize handles
+
+### 8.5 Widget Events (Bevy messages)
 - Toggle: `ToggleChangedEvent`
 - Radio: `RadioButtonChangedEvent`
 - SeekBar: `SeekBarChangedEvent`
@@ -220,8 +233,8 @@ AI agents should account for these current repo realities:
    - If text field behavior is required, add `UnivisTextFieldPlugin` explicitly.
 2. `UnivisWidgetPlugin` does **not** register `UnivisBadgePlugin`.
    - If dynamic badge styling systems are required, add plugin explicitly.
-3. Scroll behavior is a standalone system (`scroll_interaction_system`), not a dedicated plugin.
-   - Add it manually in `Update`.
+3. Scroll behavior is provided by `UnivisScrollViewPlugin` (already included in `UnivisWidgetPlugin`).
+   - Add it manually only if you are composing plugins selectively.
 4. `src/widget/menu.rs` is currently empty (placeholder).
 5. Picking backend queries `Camera2d`; interaction path is centered around 2D camera setup.
 
@@ -237,7 +250,7 @@ AI agents should account for these current repo realities:
 
 ### Step C: Build Hierarchy
 - Container entities: `UNode + ULayout`.
-- Child overrides: add `USelf` and/or extended align components.
+- Child overrides: add `USelf` and configure `USelf.item_ext.*` when needed.
 - For interactive nodes: include `UInteraction` or widget components that require pickability.
 - For single-choice inputs:
   - Use `USelect` for compact or long option lists.
@@ -246,7 +259,7 @@ AI agents should account for these current repo realities:
 ### Step D: Optional Feature Activation
 - Text field: `UnivisTextFieldPlugin`.
 - Badge update systems: `UnivisBadgePlugin`.
-- Scroll: `.add_systems(Update, scroll_interaction_system)`.
+- Scroll: `.add_plugins(UnivisScrollViewPlugin)` when not using full `UnivisUiPlugin`.
 
 ### Step E: Event Consumption
 Use `MessageReader<T>` for widget events and handle updates in `Update` systems.
@@ -258,7 +271,8 @@ Stable commands for sampling coverage:
 cargo run --release --example hello_world
 cargo run --release --example interaction
 cargo run --release --example masonry
-cargo run --release --example css_alignment_showcase
+cargo run --release --example panel_divider
+cargo run --release --example panel_window
 cargo run --release --example drag_value
 cargo run --release --example select
 cargo run --release --example layout_case_flex_wrap
@@ -282,7 +296,7 @@ fn main() {
         // Optional, only if needed:
         // .add_plugins(UnivisTextFieldPlugin)
         // .add_plugins(UnivisBadgePlugin)
-        // .add_systems(Update, scroll_interaction_system)
+        // .add_plugins(UnivisScrollViewPlugin)
         .add_systems(Startup, setup)
         .run();
 }

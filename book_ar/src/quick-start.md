@@ -1,0 +1,62 @@
+# البدء السريع
+
+## 1) إضافة الحزمة
+
+```toml
+[dependencies]
+univis_ui = "0.1.2"
+```
+
+## 2) تطبيق بسيط
+
+```rust,no_run
+use bevy::prelude::*;
+use univis_ui::prelude::*;
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(UnivisUiPlugin)
+        .add_systems(Startup, setup)
+        .run();
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2d);
+
+    commands
+        .spawn((
+            UScreenRoot,
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                background_color: Color::srgb(0.08, 0.1, 0.14),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::Center,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .with_children(|root| {
+            root.spawn(UTextLabel::new("Hello Univis UI"));
+        });
+}
+```
+
+## 3) ماذا يضيف `UnivisUiPlugin`؟
+
+- Interaction: `UnivisInteractionPlugin`
+- Core node/layout: `UnivisNodePlugin` + `UnivisLayoutPlugin`
+- Style/fonts/icons: `UnivisUiStylePlugin`
+- Widgets: `UnivisWidgetPlugin`
+
+## 4) ملاحظات مهمة مباشرة
+
+- `UnivisWidgetPlugin` لا يضيف `UnivisTextFieldPlugin` تلقائيًا.
+- `UnivisWidgetPlugin` لا يضيف `UnivisBadgePlugin` تلقائيًا.
+- `UnivisScrollViewPlugin` مضاف تلقائيًا داخل `UnivisWidgetPlugin`.
+
+إذا أردت تشغيل ميزات إضافية اختيارية عند تركيبك الجزئي للـ plugins، أضفها يدويًا.

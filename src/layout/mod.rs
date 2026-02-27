@@ -42,12 +42,14 @@ impl Plugin for UnivisLayoutPlugin {
         .register_type::<USelf>()
         .register_type::<UAlignSelf>()
         .register_type::<UPosition>()
-        .register_type::<UBoxAlignContainer>()
-        .register_type::<UBoxAlignSelf>()
-        .register_type::<UFlexContainerExt>()
-        .register_type::<UFlexItemExt>()
-        .register_type::<UGridContainerExt>()
-        .register_type::<UGridItemExt>()
+        .register_type::<ULayoutContainerExt>()
+        .register_type::<ULayoutBoxAlignContainer>()
+        .register_type::<ULayoutFlexContainer>()
+        .register_type::<ULayoutGridContainer>()
+        .register_type::<ULayoutItemExt>()
+        .register_type::<ULayoutBoxAlignSelf>()
+        .register_type::<ULayoutFlexItem>()
+        .register_type::<ULayoutGridItem>()
         .register_type::<UAlignSelfExt>()
         .register_type::<UAlignItemsExt>()
         .register_type::<UContentAlignExt>()
@@ -72,7 +74,6 @@ impl Plugin for UnivisLayoutPlugin {
              // 2. Pass Up: Calculate intrinsic sizes (Children -> Parent).
              upward_measure_pass_cached,
              // 3. Pass Down: Enforce constraints and determine final positions (Parent -> Children).
-             downward_solve_pass_safe,
              downward_solve_pass_safe,
          ).chain());
 

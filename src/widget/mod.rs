@@ -59,8 +59,10 @@ impl Plugin for UnivisWidgetPlugin {
          .add_plugins(UnivisTogglePlugin)
          .add_plugins(UnivisCheckboxPlugin)
          .add_plugins(UnivisSeekBarPlugin)
+         .add_plugins(UnivisScrollViewPlugin)
          .add_plugins(UnivisDividerPlugin)
          .add_plugins(UnivisPanelPlugin)
+         // NOTE: UnivisBadgePlugin is intentionally optional and must be added explicitly.
          .add_plugins(UnivisDragValuePlugin)
          .add_plugins(UnivisSelectPlugin);
     }

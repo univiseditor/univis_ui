@@ -51,24 +51,27 @@ fn setup(mut commands: Commands) {
                         display: UDisplay::Grid,
                         grid_columns: 4,
                         align_items: UAlignItems::Stretch,
-                        ..default()
-                    },
-                    UBoxAlignContainer {
-                        justify_items: UAlignItemsExt::Center,
-                        row_gap: Some(10.0),
-                        column_gap: Some(10.0),
-                        ..default()
-                    },
-                    UGridContainerExt {
-                        template_columns: vec![
-                            UTrackSize::Fr(1.0),
-                            UTrackSize::Px(120.0),
-                            UTrackSize::Fr(1.0),
-                            UTrackSize::Fr(2.0),
-                        ],
-                        template_rows: vec![UTrackSize::Px(76.0), UTrackSize::Px(76.0)],
-                        auto_rows: UTrackSize::Px(62.0),
-                        auto_columns: UTrackSize::Fr(1.0),
+                        container_ext: ULayoutContainerExt {
+                            box_align: ULayoutBoxAlignContainer {
+                                justify_items: Some(UAlignItemsExt::Center),
+                                row_gap: Some(10.0),
+                                column_gap: Some(10.0),
+                                ..default()
+                            },
+                            grid: ULayoutGridContainer {
+                                template_columns: vec![
+                                    UTrackSize::Fr(1.0),
+                                    UTrackSize::Px(120.0),
+                                    UTrackSize::Fr(1.0),
+                                    UTrackSize::Fr(2.0),
+                                ],
+                                template_rows: vec![UTrackSize::Px(76.0), UTrackSize::Px(76.0)],
+                                auto_rows: UTrackSize::Px(62.0),
+                                auto_columns: UTrackSize::Fr(1.0),
+                                ..default()
+                            },
+                            ..default()
+                        },
                         ..default()
                     },
                 ))
@@ -81,15 +84,21 @@ fn setup(mut commands: Commands) {
                             border_radius: UCornerRadius::all(8.0),
                             ..default()
                         },
-                        UGridItemExt {
-                            column_span: 2,
+                        USelf {
+                            item_ext: ULayoutItemExt {
+                                box_align: ULayoutBoxAlignSelf {
+                                    justify_self: Some(UAlignSelfExt::End),
+                                    align_self: Some(UAlignSelfExt::Center),
+                                    justify_overflow: UOverflowPosition::Safe,
+                                    align_overflow: UOverflowPosition::Safe,
+                                },
+                                grid: ULayoutGridItem {
+                                    column_span: 2,
+                                    ..default()
+                                },
+                                ..default()
+                            },
                             ..default()
-                        },
-                        UBoxAlignSelf {
-                            justify_self: UAlignSelfExt::End,
-                            align_self: Some(UAlignSelfExt::Center),
-                            justify_overflow: UOverflowPosition::Safe,
-                            align_overflow: UOverflowPosition::Safe,
                         },
                     ));
 
@@ -101,9 +110,15 @@ fn setup(mut commands: Commands) {
                             border_radius: UCornerRadius::all(8.0),
                             ..default()
                         },
-                        UGridItemExt {
-                            column_start: Some(4),
-                            row_start: Some(1),
+                        USelf {
+                            item_ext: ULayoutItemExt {
+                                grid: ULayoutGridItem {
+                                    column_start: Some(4),
+                                    row_start: Some(1),
+                                    ..default()
+                                },
+                                ..default()
+                            },
                             ..default()
                         },
                     ));
@@ -116,10 +131,16 @@ fn setup(mut commands: Commands) {
                             border_radius: UCornerRadius::all(8.0),
                             ..default()
                         },
-                        UGridItemExt {
-                            column_start: Some(2),
-                            column_span: 3,
-                            row_start: Some(2),
+                        USelf {
+                            item_ext: ULayoutItemExt {
+                                grid: ULayoutGridItem {
+                                    column_start: Some(2),
+                                    column_span: 3,
+                                    row_start: Some(2),
+                                    ..default()
+                                },
+                                ..default()
+                            },
                             ..default()
                         },
                     ));

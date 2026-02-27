@@ -52,15 +52,18 @@ fn setup(mut commands: Commands) {
                         flex_direction: UFlexDirection::Row,
                         align_items: UAlignItems::Stretch,
                         justify_content: UJustifyContent::Start,
-                        ..default()
-                    },
-                    UFlexContainerExt {
-                        wrap: UFlexWrap::Wrap,
-                        align_content: Some(UContentAlignExt::SpaceAround),
-                    },
-                    UBoxAlignContainer {
-                        row_gap: Some(14.0),
-                        column_gap: Some(10.0),
+                        container_ext: ULayoutContainerExt {
+                            box_align: ULayoutBoxAlignContainer {
+                                row_gap: Some(14.0),
+                                column_gap: Some(10.0),
+                                ..default()
+                            },
+                            flex: ULayoutFlexContainer {
+                                wrap: UFlexWrap::Wrap,
+                                align_content: Some(UContentAlignExt::SpaceAround),
+                            },
+                            ..default()
+                        },
                         ..default()
                     },
                 ))
@@ -75,19 +78,31 @@ fn setup(mut commands: Commands) {
                         });
 
                         if i == 2 {
-                            item.insert(UFlexItemExt {
-                                flex_grow: 1.0,
-                                flex_shrink: 1.0,
-                                flex_basis: UVal::Px(180.0),
+                            item.insert(USelf {
+                                item_ext: ULayoutItemExt {
+                                    flex: ULayoutFlexItem {
+                                        flex_grow: Some(1.0),
+                                        flex_shrink: Some(1.0),
+                                        flex_basis: Some(UVal::Px(180.0)),
+                                    },
+                                    ..default()
+                                },
+                                ..default()
                             });
                         }
 
                         if i == 5 {
-                            item.insert(UBoxAlignSelf {
-                                justify_self: UAlignSelfExt::Center,
-                                align_self: Some(UAlignSelfExt::Center),
-                                justify_overflow: UOverflowPosition::Safe,
-                                align_overflow: UOverflowPosition::Safe,
+                            item.insert(USelf {
+                                item_ext: ULayoutItemExt {
+                                    box_align: ULayoutBoxAlignSelf {
+                                        justify_self: Some(UAlignSelfExt::Center),
+                                        align_self: Some(UAlignSelfExt::Center),
+                                        justify_overflow: UOverflowPosition::Safe,
+                                        align_overflow: UOverflowPosition::Safe,
+                                    },
+                                    ..default()
+                                },
+                                ..default()
                             });
                         }
                     }

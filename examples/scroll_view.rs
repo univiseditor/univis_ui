@@ -5,7 +5,6 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(UnivisUiPlugin)
-        .add_systems(Update, scroll_interaction_system)
         .add_systems(Startup, setup_scroll_list)
         .run();
 }

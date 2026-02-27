@@ -27,7 +27,7 @@
 //!
 //! ```rust,no_run
 //! use bevy::prelude::*;
-//! use univis::prelude::*;
+//! use univis_ui::prelude::*;
 //!
 //! fn main() {
 //!     App::new()
@@ -79,7 +79,7 @@ pub mod style;
 ///
 /// It is recommended to import this module to get started:
 /// ```rust
-/// use univis::prelude::*;
+/// use univis_ui::prelude::*;
 /// ```
 pub mod prelude {
     // Layout System
@@ -112,7 +112,7 @@ use crate::{prelude::*, style::UnivisUiStylePlugin, widget::UnivisWidgetPlugin};
 ///
 /// ```rust
 /// # use bevy::prelude::*;
-/// # use univis::UnivisUiPlugin;
+/// # use univis_ui::UnivisUiPlugin;
 /// App::new()
 ///     .add_plugins(DefaultPlugins)
 ///     .add_plugins(UnivisUiPlugin)

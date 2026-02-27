@@ -132,6 +132,9 @@ struct TextFieldTextLabel;
 #[derive(Component)]
 struct TextFieldCursor;
 
+#[derive(Component)]
+struct TextFieldPressedThisFrame;
+
 // =========================================================
 // Systems
 // =========================================================
@@ -227,11 +230,15 @@ fn init_textfield_visuals(
 // ✅ Observer للنقر
 fn on_textfield_click(
     trigger: On<Pointer<Press>>,
+    mut commands: Commands,
     mut textfield_query: Query<(Entity, &mut UTextField)>,
 ) {
+    let pressed_entity = trigger.entity.entity();
+
     // إلغاء التركيز من جميع الحقول
     for (entity, mut textfield) in textfield_query.iter_mut() {
-        if entity == trigger.entity.entity() {
+        if entity == pressed_entity {
+            commands.entity(entity).insert(TextFieldPressedThisFrame);
             if !textfield.disabled && !textfield.readonly {
                 textfield.focused = true;
                 textfield.cursor_visible = true;
@@ -245,23 +252,23 @@ fn on_textfield_click(
 
 // ✅ نظام جديد: إلغاء التركيز عند النقر خارج TextField
 fn handle_global_unfocus(
-    mut textfield_query: Query<&mut UTextField>,
+    mut commands: Commands,
+    mut textfield_query: Query<(Entity, &mut UTextField, Option<&TextFieldPressedThisFrame>)>,
     mouse_button: Res<ButtonInput<MouseButton>>,
-    interaction_query: Query<&UInteraction>,
 ) {
     if !mouse_button.just_pressed(MouseButton::Left) {
         return;
     }
 
-    // التحقق: هل تم النقر على أي TextField؟
-    let clicked_on_textfield = interaction_query.iter().any(|interaction| {
-        matches!(interaction, UInteraction::Pressed)
-    });
-
-    // إذا لم يتم النقر على أي TextField، ألغِ التركيز
-    if !clicked_on_textfield {
-        for mut textfield in textfield_query.iter_mut() {
+    for (entity, mut textfield, pressed_this_frame) in textfield_query.iter_mut() {
+        if pressed_this_frame.is_none() {
             textfield.focused = false;
+        }
+
+        if pressed_this_frame.is_some() {
+            commands
+                .entity(entity)
+                .remove::<TextFieldPressedThisFrame>();
         }
     }
 }
@@ -503,4 +510,58 @@ pub struct TextFieldChangedEvent {
 pub struct TextFieldSubmitEvent {
     pub entity: Entity,
     pub text: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn handle_global_unfocus_blurs_only_non_pressed_textfields() {
+        let mut app = App::new();
+        app.insert_resource(ButtonInput::<MouseButton>::default());
+        app.add_systems(Update, handle_global_unfocus);
+
+        let keep_focused = app.world_mut().spawn((
+            UTextField {
+                focused: true,
+                ..default()
+            },
+            TextFieldPressedThisFrame,
+        )).id();
+        let should_blur = app.world_mut().spawn(UTextField {
+            focused: true,
+            ..default()
+        }).id();
+
+        app.world_mut()
+            .resource_mut::<ButtonInput<MouseButton>>()
+            .press(MouseButton::Left);
+
+        app.update();
+
+        assert!(app.world().get::<UTextField>(keep_focused).unwrap().focused);
+        assert!(!app.world().get::<UTextField>(should_blur).unwrap().focused);
+        assert!(
+            app.world()
+                .get::<TextFieldPressedThisFrame>(keep_focused)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn handle_global_unfocus_does_nothing_without_new_left_click() {
+        let mut app = App::new();
+        app.insert_resource(ButtonInput::<MouseButton>::default());
+        app.add_systems(Update, handle_global_unfocus);
+
+        let field = app.world_mut().spawn(UTextField {
+            focused: true,
+            ..default()
+        }).id();
+
+        app.update();
+
+        assert!(app.world().get::<UTextField>(field).unwrap().focused);
+    }
 }

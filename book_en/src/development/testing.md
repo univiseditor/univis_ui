@@ -23,6 +23,25 @@ mdbook build book_ar
 mdbook build book_en
 ```
 
+## للأجهزة الضعيفة (تشغيل تسلسلي)
+
+```bash
+# كل اختبارات lib واحدة واحدة
+./scripts/test_lib_serial_release.sh
+
+# كل الأمثلة واحدة واحدة
+./scripts/check_examples_serial_release.sh
+
+# التحقق الكامل: lib tests + examples
+./scripts/verify_serial_release.sh
+```
+
+لتمرير أمثلة محددة فقط:
+
+```bash
+./scripts/check_examples_serial_release.sh hello_world interaction select
+```
+
 ## استراتيجية عملية قبل الدمج
 
 1. شغل اختبارات الوحدة الخاصة بالتعديل.

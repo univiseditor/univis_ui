@@ -16,7 +16,7 @@ This page lists current, code-verified constraints so setup guidance remains exp
 
 ## Placeholder / Incomplete Surfaces
 
-- `src/widget/menu.rs` is currently an empty placeholder module.
+- `src/widget/menu.rs` is currently an empty internal placeholder module (not exposed in the public widget API).
 
 ## Verification Sources
 

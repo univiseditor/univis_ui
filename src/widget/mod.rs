@@ -12,7 +12,7 @@ pub mod progress;
 pub mod image;
 pub mod seekbar;
 pub mod checkbox;
-pub mod menu;
+mod menu; // Internal placeholder module; not part of public API yet.
 pub mod icon_btn;
 pub mod toggle;
 pub mod radio;

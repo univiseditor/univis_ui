@@ -16,7 +16,7 @@
 
 ## أسطح Placeholder / غير مكتملة
 
-- الملف `src/widget/menu.rs` ما يزال placeholder فارغًا.
+- الملف `src/widget/menu.rs` ما يزال placeholder داخليًا فارغًا (غير معرّض ضمن الـ API العامة للـ widgets).
 
 ## مصادر التحقق
 

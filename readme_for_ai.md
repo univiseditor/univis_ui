@@ -234,7 +234,7 @@ AI agents should account for these current repo realities:
    - If dynamic badge styling systems are required, add plugin explicitly.
 3. Scroll behavior is provided by `UnivisScrollViewPlugin` (already included in `UnivisWidgetPlugin`).
    - Add it manually only if you are composing plugins selectively.
-4. `src/widget/menu.rs` is currently empty (placeholder).
+4. `src/widget/menu.rs` is currently an empty internal placeholder module (not exposed in the public widget API).
 5. Picking backend and `UPanelWindow` resize currently query `Camera2d`; interaction path is centered around 2D camera setup.
 
 ## 13. Recommended AI Codegen Workflow

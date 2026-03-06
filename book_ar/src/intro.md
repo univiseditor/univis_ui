@@ -28,13 +28,13 @@
 
 ```bash
 cargo install mdbook
-mdbook build book      # النسخة العربية
+mdbook build book_ar   # النسخة العربية
 mdbook build book_en   # النسخة الإنجليزية
 ```
 
 للمعاينة الحية:
 
 ```bash
-mdbook serve book -n 127.0.0.1 -p 3000        # عربي
+mdbook serve book_ar -n 127.0.0.1 -p 3000     # عربي
 mdbook serve book_en -n 127.0.0.1 -p 3001     # إنجليزي
 ```

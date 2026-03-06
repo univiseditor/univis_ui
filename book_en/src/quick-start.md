@@ -55,8 +55,9 @@ fn setup(mut commands: Commands) {
 
 ## 4) Important Notes
 
-- `UnivisWidgetPlugin` does not auto-register `UnivisTextFieldPlugin`.
+- `UnivisWidgetPlugin` does not auto-register `UnivisTextFieldPlugin`; add it explicitly when using `UTextField`.
 - `UnivisWidgetPlugin` does not auto-register `UnivisBadgePlugin`.
 - `UnivisScrollViewPlugin` is included by default in `UnivisWidgetPlugin`.
+- Picking backend and `UPanelWindow` resize currently rely on `Camera2d` queries.
 
 If you compose plugins manually, add optional plugins explicitly when needed.

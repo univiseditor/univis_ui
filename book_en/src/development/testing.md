@@ -19,7 +19,7 @@ cargo check --release --examples
 
 ```bash
 cargo doc --no-deps
-mdbook build book
+mdbook build book_ar
 mdbook build book_en
 ```
 

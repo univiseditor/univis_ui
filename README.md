@@ -79,19 +79,19 @@ fn setup(mut commands: Commands) {
 
 ## Project Book
 This repository includes two mdBook editions:
-- Arabic: `book/`
+- Arabic: `book_ar/`
 - English: `book_en/`
 English chapters are being translated incrementally while keeping full chapter parity.
 
 Build it:
 ```bash
-mdbook build book
+mdbook build book_ar
 mdbook build book_en
 ```
 
 Serve locally:
 ```bash
-mdbook serve book -n 127.0.0.1 -p 3000
+mdbook serve book_ar -n 127.0.0.1 -p 3000
 mdbook serve book_en -n 127.0.0.1 -p 3001
 ```
 
@@ -126,6 +126,10 @@ mdbook serve book_en -n 127.0.0.1 -p 3001
 - `UDisplay::Radial`
 - `UDisplay::None`
 
+### Runtime Scheduling
+- `UnivisLayoutPlugin` runs this `PostUpdate` chain:
+  `update_layout_hierarchy` -> `upward_measure_pass_cached` -> `downward_solve_pass_safe`
+
 ### Extended Controls (New)
 - Container-level alignment/flex/grid: `ULayout.container_ext`
   - `box_align: ULayoutBoxAlignContainer`
@@ -150,6 +154,11 @@ mdbook serve book_en -n 127.0.0.1 -p 3001
 - Pointer observers for over/out/press/release/click
 - Picking backend performs SDF hit-tests and respects clipping ancestors
 
+### Current Limitations
+- `univis_picking_backend` currently queries `Camera2d`.
+- `UPanelWindow` resize interaction currently queries `Camera2d`.
+- For reliable interaction behavior, spawn `Camera2d` in the active UI scene.
+
 ## Built-in Widgets
 - `UTextLabel`
 - `UImage`
@@ -169,7 +178,7 @@ mdbook serve book_en -n 127.0.0.1 -p 3001
 
 ### Widget Notes
 - `UnivisUiPlugin` installs the core widget plugin set.
-- If you use text field features heavily, ensure `UnivisTextFieldPlugin` is added.
+- `UTextField` behavior/events require adding `UnivisTextFieldPlugin` explicitly.
 - If you rely on dynamic `UBadge` / `UTag` styling updates, add `UnivisBadgePlugin` explicitly.
 - Scroll behavior is provided by `UnivisScrollViewPlugin` (included by `UnivisUiPlugin`).
 - `USelect` supports mouse interaction and basic keyboard navigation.

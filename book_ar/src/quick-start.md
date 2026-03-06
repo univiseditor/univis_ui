@@ -55,8 +55,9 @@ fn setup(mut commands: Commands) {
 
 ## 4) ملاحظات مهمة مباشرة
 
-- `UnivisWidgetPlugin` لا يضيف `UnivisTextFieldPlugin` تلقائيًا.
+- `UnivisWidgetPlugin` لا يضيف `UnivisTextFieldPlugin` تلقائيًا؛ أضفه يدويًا عند استخدام `UTextField`.
 - `UnivisWidgetPlugin` لا يضيف `UnivisBadgePlugin` تلقائيًا.
 - `UnivisScrollViewPlugin` مضاف تلقائيًا داخل `UnivisWidgetPlugin`.
+- مسار الالتقاط `picking` وتغيير حجم `UPanelWindow` يعتمدان حاليًا على استعلامات `Camera2d`.
 
 إذا أردت تشغيل ميزات إضافية اختيارية عند تركيبك الجزئي للـ plugins، أضفها يدويًا.

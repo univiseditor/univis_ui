@@ -29,13 +29,13 @@ This book is the full operational reference for the project. It covers:
 
 ```bash
 cargo install mdbook
-mdbook build book      # Arabic edition
+mdbook build book_ar   # Arabic edition
 mdbook build book_en   # English edition
 ```
 
 Serve locally:
 
 ```bash
-mdbook serve book -n 127.0.0.1 -p 3000        # Arabic
+mdbook serve book_ar -n 127.0.0.1 -p 3000     # Arabic
 mdbook serve book_en -n 127.0.0.1 -p 3001     # English
 ```

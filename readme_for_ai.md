@@ -5,7 +5,7 @@ This document is optimized for AI agents that generate, review, or refactor code
 It is not a marketing document; it is an operational specification based on the current repository state.
 
 The repository contains two mdBook editions for long-form docs:
-- Arabic edition: `book/`
+- Arabic edition: `book_ar/`
 - English edition: `book_en/`
 
 ## 2. Package Metadata
@@ -221,7 +221,6 @@ Item-level:
 1. `update_layout_hierarchy`
 2. `upward_measure_pass_cached`
 3. `downward_solve_pass_safe`
-4. `downward_solve_pass_safe` (currently registered twice)
 
 ### 11.2 Interaction Plugin
 - `univis_picking_backend` in `PreUpdate`
@@ -236,7 +235,7 @@ AI agents should account for these current repo realities:
 3. Scroll behavior is provided by `UnivisScrollViewPlugin` (already included in `UnivisWidgetPlugin`).
    - Add it manually only if you are composing plugins selectively.
 4. `src/widget/menu.rs` is currently empty (placeholder).
-5. Picking backend queries `Camera2d`; interaction path is centered around 2D camera setup.
+5. Picking backend and `UPanelWindow` resize currently query `Camera2d`; interaction path is centered around 2D camera setup.
 
 ## 13. Recommended AI Codegen Workflow
 ### Step A: Bootstrap
@@ -257,7 +256,7 @@ AI agents should account for these current repo realities:
   - Use `URadioGroup` for short lists that should remain always visible.
 
 ### Step D: Optional Feature Activation
-- Text field: `UnivisTextFieldPlugin`.
+- Text field behavior/events: `UnivisTextFieldPlugin` (required when using `UTextField`).
 - Badge update systems: `UnivisBadgePlugin`.
 - Scroll: `.add_plugins(UnivisScrollViewPlugin)` when not using full `UnivisUiPlugin`.
 

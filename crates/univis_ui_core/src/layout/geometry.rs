@@ -47,13 +47,19 @@ impl Default for UVal {
     fn default() -> Self { Self::Px(0.0) }
 }
 
-// impl UVal {
-//     fn get_val(&self) -> f32 {
-//         match &self {
-//             UVal::Flex(f)
-//         }
-//     }
-// }
+impl UVal {
+    pub fn resolve(&self, base: f32) -> Option<f32> {
+        match *self {
+            UVal::Px(v) => Some(v),
+            UVal::Percent(p) => Some(p * base),
+            UVal::Content | UVal::Auto | UVal::Flex(_) => None,
+        }
+    }
+
+    pub fn resolve_or_zero(&self, base: f32) -> f32 {
+        self.resolve(base).unwrap_or(0.0)
+    }
+}
 
 /// Defines spacing (Padding or Margin) for the four sides of a box.
 #[derive(Reflect, Clone, Copy, Debug, Default, PartialEq)]

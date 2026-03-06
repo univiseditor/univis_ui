@@ -1,138 +1,77 @@
-//! # Univis UI
+//! # Univis UI Facade
 //!
-//! **Univis** is a high-performance, SDF-based world-space UI library designed for the [Bevy Game Engine](https://bevyengine.org/).
-//!
-//! Unlike standard raster-based UI frameworks, Univis renders interface elements using **Signed Distance Fields (SDF)**
-//! directly on meshes. This approach ensures **infinite resolution** (crisp edges without pixelation) at any zoom level
-//! or camera angle, making it the ideal choice for:
-//!
-//! - **Diegetic UI:** Interfaces that exist within the game world (e.g., computer screens, holograms).
-//! - **Sci-Fi HUDs:** Complex, glowing, and animated heads-up displays.
-//! - **VR/AR:** Interfaces requiring high clarity and depth interaction.
-//!
-//! ## Key Features
-//!
-//! - **Infinite Resolution:** SDF rendering provides perfect anti-aliasing and rounded corners.
-//! - **Advanced Layout Engine:** A powerful, single-pass layout solver supporting:
-//!   - **Flexbox:** Standard row/column layouts.
-//!   - **Grid:** 2D grid arrangements.
-//!   - **Masonry:** Pinterest-style packing.
-//!   - **Radial:** Circular layouts for sci-fi menus.
-//! - **ECS-Native:** Fully integrated with Bevy's ECS. All UI elements are standard Entities with Components.
-//! - **Physics Ready:** Elements interact with 3D lighting, depth, and physics (if configured).
-//!
-//! ## Quick Start
-//!
-//! Add the [`UnivisUiPlugin`] to your App to initialize the library.
-//!
-//! ```rust,no_run
-//! use bevy::prelude::*;
-//! use univis_ui::prelude::*;
-//!
-//! fn main() {
-//!     App::new()
-//!         .add_plugins(DefaultPlugins)
-//!         .add_plugins(UnivisUiPlugin) // Initialize Univis
-//!         .add_systems(Startup, setup_ui)
-//!         .run();
-//! }
-//!
-//! fn setup_ui(mut commands: Commands) {
-//!     // Create a World Space Root
-//!     commands.spawn((
-//!         UWorldRoot {
-//!             size: Vec2::new(800.0, 600.0),
-//!             resolution_scale: 1.0,
-//!         },
-//!         // Main Container
-//!         UNode {
-//!             width: UVal::Percent(1.0),
-//!             height: UVal::Percent(1.0),
-//!             background_color: Color::srgb(0.1, 0.1, 0.1),
-//!             padding: USides::all(20.0),
-//!             ..default()
-//!         },
-//!         ULayout {
-//!             display: UDisplay::Flex,
-//!             align_items: UAlignItems::Center,
-//!             justify_content: UJustifyContent::Center,
-//!             ..default()
-//!         }
-//!     )).with_children(|parent| {
-//!         // Add a Label
-//!         parent.spawn(UTextLabel {
-//!             text: "Hello Univis!".into(),
-//!             font_size: 32.0,
-//!             color: Color::WHITE,
-//!             ..default()
-//!         });
-//!     });
-//! }
-//! ```
-
-pub mod widget;
-pub mod layout;
-pub mod interaction;
-pub mod style;
-
-/// A convenient module that exports the most commonly used types and traits.
-///
-/// It is recommended to import this module to get started:
-/// ```rust
-/// use univis_ui::prelude::*;
-/// ```
-pub mod prelude {
-    // Layout System
-    pub use crate::layout::prelude::*;
-
-    // Widgets (Buttons, Text, Checkboxes, etc.)
-    pub use crate::widget::prelude::*;
-    
-    // Interaction System (Picking, Hover, Click)
-    pub use crate::interaction::prelude::*;
-    // Style
-    pub use crate::style::prelude::*;
-    
-    // The Main Plugin
-    pub use crate::UnivisUiPlugin;
-}
+//! This crate is the unified entry point that composes all `univis_ui_*`
+//! crates while preserving the existing `UnivisUiPlugin` and `prelude` UX.
 
 use bevy::prelude::*;
-use crate::{prelude::*, style::UnivisUiStylePlugin, widget::UnivisWidgetPlugin};
+use univis_ui_core::layout::univis_node::UnivisNodePlugin;
+use univis_ui_core::style::UnivisUiStylePlugin;
+use univis_ui_interaction::interaction::UnivisInteractionPlugin;
+use univis_ui_layout::layout::UnivisLayoutPlugin;
+use univis_ui_render::layout::render::UnivisRenderPlugin;
+use univis_ui_widgets::widget::UnivisWidgetPlugin;
 
-/// The main plugin for the Univis UI library.
-///
-/// This plugin initializes all necessary subsystems, including:
-/// - **Interaction:** Picking events (Hover, Click, Drag).
-/// - **Rendering:** Mesh generation and SDF shader pipelines.
-/// - **Layout:** The flex/grid solver engine.
-/// - **Widgets:** Systems for Sliders, Checkboxes, Text, etc.
-///
-/// # Example
-///
-/// ```rust
-/// # use bevy::prelude::*;
-/// # use univis_ui::UnivisUiPlugin;
-/// App::new()
-///     .add_plugins(DefaultPlugins)
-///     .add_plugins(UnivisUiPlugin)
-///     .run();
-/// ```
+pub use univis_ui_core as core_crate;
+pub use univis_ui_interaction as interaction_crate;
+pub use univis_ui_layout as layout_crate;
+pub use univis_ui_render as render_crate;
+pub use univis_ui_widgets as widgets_crate;
+
+pub mod style {
+    pub use univis_ui_core::style::*;
+}
+
+pub mod interaction {
+    pub use univis_ui_interaction::interaction::*;
+}
+
+pub mod widget {
+    pub use univis_ui_widgets::widget::*;
+}
+
+pub mod render {
+    pub use univis_ui_render::layout::render::*;
+}
+
+pub mod layout {
+    pub use univis_ui_core::layout::components;
+    pub use univis_ui_core::layout::geometry;
+    pub use univis_ui_core::layout::layout_system;
+    pub use univis_ui_core::layout::pbr;
+    pub use univis_ui_core::layout::univis_node;
+    pub use univis_ui_layout::layout::algorithms;
+    pub use univis_ui_layout::layout::core;
+    pub use univis_ui_layout::layout::pipeline;
+    pub use univis_ui_layout::layout::profiling;
+    pub use univis_ui_layout::layout::UnivisLayoutPlugin;
+    pub use univis_ui_render::layout::render;
+
+    pub mod prelude {
+        pub use univis_ui_core::prelude::*;
+        pub use univis_ui_layout::prelude::*;
+        pub use univis_ui_render::prelude::*;
+    }
+}
+
+pub mod prelude {
+    pub use crate::UnivisUiPlugin;
+    pub use univis_ui_core::prelude::*;
+    pub use univis_ui_interaction::prelude::*;
+    pub use univis_ui_layout::prelude::*;
+    pub use univis_ui_render::prelude::*;
+    pub use univis_ui_widgets::prelude::*;
+}
+
 pub struct UnivisUiPlugin;
 
 impl Plugin for UnivisUiPlugin {
     fn build(&self, app: &mut App) {
         app
-
-            // Core Systems
             .add_plugins(UnivisInteractionPlugin)
-            .add_plugins(UnivisNodePlugin)  // Core Node & Material Management
-            .add_plugins(UnivisLayoutPlugin) // Layout Solver
-            
-            // Style
+            .add_plugins(UnivisNodePlugin)
+            .add_plugins(UnivisLayoutPlugin)
+            .add_plugins(UnivisRenderPlugin)
             .add_plugins(UnivisUiStylePlugin)
-            
-            // Built-in Widgets
             .add_plugins(UnivisWidgetPlugin);
     }
 }

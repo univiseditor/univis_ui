@@ -12,5 +12,20 @@ keywords = ["bevy", "ui", "sdf", "gamedev", "hud"]
 categories = ["game-development", "gui", "rendering"]
 exclude = [".github/*"] # Exclude heavy assets from the published crate
 
+[workspace]
+members = [
+    ".",
+    "crates/univis_ui_core",
+    "crates/univis_ui_layout",
+    "crates/univis_ui_render",
+    "crates/univis_ui_interaction",
+    "crates/univis_ui_widgets",
+]
+
 [dependencies]
 bevy = "0.17.3"
+univis_ui_core = { path = "crates/univis_ui_core", version = "0.2.0" }
+univis_ui_layout = { path = "crates/univis_ui_layout", version = "0.2.0" }
+univis_ui_render = { path = "crates/univis_ui_render", version = "0.2.0" }
+univis_ui_interaction = { path = "crates/univis_ui_interaction", version = "0.2.0" }
+univis_ui_widgets = { path = "crates/univis_ui_widgets", version = "0.2.0" }

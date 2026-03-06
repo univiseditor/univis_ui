@@ -239,7 +239,6 @@ impl Plugin for LayoutCachePlugin {
                     update_depth_cache,
                 )
                 .chain()
-                .before(upward_measure_pass_cached)
             );
     }
 }

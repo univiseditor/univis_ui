@@ -282,15 +282,14 @@ impl Plugin for UnivisTextPlugin {
             .add_systems(Update, (
                 init_text_label_container,
                 sync_text_label_props,
-                
-                // النظام الجديد لفرض الحجم
-                fit_node_to_text_size
-                    // .after(bevy::text::TextSystem::UpdateLayout) // بعد حساب حجم النص
-                    .before(upward_measure_pass_cached) // قبل بدء نظام التخطيط الخاص بك
-                    // وأيضاً قبل تحديث المرئيات لضمان أن الخلفية تأخذ الحجم الصحيح في نفس الإطار
-                    .before(update_materials_optimized),
                 sync_text_clip_visibility,
-            ));
+            ))
+            .add_systems(
+                PostUpdate,
+                fit_node_to_text_size
+                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .before(UnivisPostUpdateSet::LayoutMeasure),
+            );
     }
 }
 

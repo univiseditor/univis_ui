@@ -15,6 +15,20 @@
 - Small refactors to reduce API noise and naming issues.
 - Runtime warnings for optional widget plugin misconfiguration.
 - Serial release validation tooling for low-resource machines.
+- Workspace split into public crates with facade compatibility.
+
+## Migration Notes
+
+- Project now uses a workspace with public crates:
+- `univis_ui_core`
+- `univis_ui_layout`
+- `univis_ui_render`
+- `univis_ui_interaction`
+- `univis_ui_widgets`
+- `univis_ui` remains a facade crate and still exposes `UnivisUiPlugin` and `univis_ui::prelude::*`.
+- Existing facade-based apps should continue to work without import changes.
+- Advanced users can compose plugins directly from split crates.
+- Suggested publish order: `core` -> `layout` -> `render` -> `interaction` -> `widgets` -> `univis_ui`.
 
 ## Highlights
 

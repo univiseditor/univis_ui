@@ -56,28 +56,29 @@ struct MissingOptionalWidgetPluginWarnings {
 
 impl Plugin for UnivisWidgetPlugin {
     fn build(&self, app: &mut bevy::app::App) {
-        app 
-         .register_type::<UImage>()
-         .add_systems(Update, (
-            sync_image_geometry
-               .before(update_materials_optimized) 
-               .before(upward_measure_pass_cached),
-            warn_on_missing_optional_widget_plugins,
-         ))
-         .add_plugins(UnivisTextPlugin)
-         .add_plugins(UnivisProgressPlugin)
-         .add_plugins(UnivisButtonPlugin)
-         .add_plugins(UnivisRadioPlugin)
-         .add_plugins(UnivisIconButtonPlugin)
-         .add_plugins(UnivisTogglePlugin)
-         .add_plugins(UnivisCheckboxPlugin)
-         .add_plugins(UnivisSeekBarPlugin)
-         .add_plugins(UnivisScrollViewPlugin)
-         .add_plugins(UnivisDividerPlugin)
-         .add_plugins(UnivisPanelPlugin)
-         // NOTE: UnivisBadgePlugin is intentionally optional and must be added explicitly.
-         .add_plugins(UnivisDragValuePlugin)
-         .add_plugins(UnivisSelectPlugin);
+        app
+            .register_type::<UImage>()
+            .add_systems(Update, warn_on_missing_optional_widget_plugins)
+            .add_systems(
+                PostUpdate,
+                sync_image_geometry
+                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .before(UnivisPostUpdateSet::LayoutMeasure),
+            )
+            .add_plugins(UnivisTextPlugin)
+            .add_plugins(UnivisProgressPlugin)
+            .add_plugins(UnivisButtonPlugin)
+            .add_plugins(UnivisRadioPlugin)
+            .add_plugins(UnivisIconButtonPlugin)
+            .add_plugins(UnivisTogglePlugin)
+            .add_plugins(UnivisCheckboxPlugin)
+            .add_plugins(UnivisSeekBarPlugin)
+            .add_plugins(UnivisScrollViewPlugin)
+            .add_plugins(UnivisDividerPlugin)
+            .add_plugins(UnivisPanelPlugin)
+            // NOTE: UnivisBadgePlugin is intentionally optional and must be added explicitly.
+            .add_plugins(UnivisDragValuePlugin)
+            .add_plugins(UnivisSelectPlugin);
     }
 }
 

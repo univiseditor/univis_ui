@@ -50,6 +50,7 @@ fn setup(mut commands: Commands) {
 
 - Interaction: `UnivisInteractionPlugin`
 - Core node/layout: `UnivisNodePlugin` + `UnivisLayoutPlugin`
+- Rendering: `UnivisRenderPlugin`
 - Style/fonts/icons: `UnivisUiStylePlugin`
 - Widgets: `UnivisWidgetPlugin`
 
@@ -61,3 +62,26 @@ fn setup(mut commands: Commands) {
 - مسار الالتقاط `picking` وتغيير حجم `UPanelWindow` يعتمدان حاليًا على استعلامات `Camera2d`.
 
 إذا أردت تشغيل ميزات إضافية اختيارية عند تركيبك الجزئي للـ plugins، أضفها يدويًا.
+
+## 5) وضع Direct Crates (متقدم)
+
+```rust,no_run
+use bevy::prelude::*;
+use univis_ui_core::prelude::*;
+use univis_ui_layout::layout::UnivisLayoutPlugin;
+use univis_ui_render::layout::render::UnivisRenderPlugin;
+use univis_ui_interaction::interaction::UnivisInteractionPlugin;
+use univis_ui_widgets::widget::UnivisWidgetPlugin;
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(UnivisInteractionPlugin)
+        .add_plugins(UnivisNodePlugin)
+        .add_plugins(UnivisLayoutPlugin)
+        .add_plugins(UnivisRenderPlugin)
+        .add_plugins(UnivisUiStylePlugin)
+        .add_plugins(UnivisWidgetPlugin)
+        .run();
+}
+```

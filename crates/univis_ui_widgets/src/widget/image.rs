@@ -1,58 +1,6 @@
 use bevy::prelude::*;
 use crate::prelude::*;
 
-#[derive(Component, Reflect, Clone)]
-#[reflect(Component)]
-#[require(UNode, ULayout, Visibility)] 
-pub struct UImage {
-    pub texture: Handle<Image>,
-    pub color: Color,
-    
-    // --- الحقول الجديدة ---
-    /// العرض المطلوب. Auto تعني "استخدم حجم الصورة الأصلي".
-    pub width: UVal,
-    /// الارتفاع المطلوب. Auto تعني "استخدم حجم الصورة الأصلي".
-    pub height: UVal,
-    /// نصف القطر. إذا تم تحديده، سيفرض نفسه على UNode.
-    pub radius: Option<UCornerRadius>,
-}
-
-impl Default for UImage {
-    fn default() -> Self {
-        Self {
-            texture: Handle::default(),
-            color: Color::WHITE,
-            // الافتراضي: الحجم التلقائي (حجم الصورة)
-            width: UVal::Auto, 
-            height: UVal::Auto,
-            radius: None,
-        }
-    }
-}
-
-impl UImage {
-    /// إنشاء صورة سريعة
-    pub fn new(texture: Handle<Image>) -> Self {
-        Self {
-            texture,
-            ..default()
-        }
-    }
-
-    /// تحديد حجم مخصص
-    pub fn with_size(mut self, width: UVal, height: UVal) -> Self {
-        self.width = width;
-        self.height = height;
-        self
-    }
-
-    /// تحديد زوايا دائرية
-    pub fn with_radius(mut self, radius: UCornerRadius) -> Self {
-        self.radius = Some(radius);
-        self
-    }
-}
-
 pub fn sync_image_geometry(
     // نراقب تغيرات UImage أو UNode
     mut query: Query<(&UImage, &mut UNode), Or<(Changed<UImage>, Changed<UNode>)>>,

@@ -11,7 +11,7 @@ cargo test --release <test_name> --lib
 ## تحقق البناء
 
 ```bash
-cargo check --release
+cargo check --workspace --all-targets
 cargo check --release --examples
 ```
 
@@ -34,6 +34,11 @@ mdbook build book_en
 
 # التحقق الكامل: lib tests + examples
 ./scripts/verify_serial_release.sh
+
+# تحقق تسلسلي لحزمة محددة داخل workspace
+./scripts/test_lib_serial_release.sh -p univis_ui_layout
+./scripts/check_examples_serial_release.sh -p univis_ui
+./scripts/verify_serial_release.sh -p univis_ui
 ```
 
 لتمرير أمثلة محددة فقط:
@@ -45,6 +50,6 @@ mdbook build book_en
 ## استراتيجية عملية قبل الدمج
 
 1. شغل اختبارات الوحدة الخاصة بالتعديل.
-2. شغل `cargo check --release`.
+2. شغل `cargo check --workspace --all-targets`.
 3. شغل `cargo check --release --examples`.
 4. جرّب مثال واحد على الأقل مرتبط بالتعديل.

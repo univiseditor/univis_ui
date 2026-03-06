@@ -34,6 +34,24 @@ It uses Signed Distance Field (SDF) materials to render crisp shapes and rounded
 univis_ui = "0.2.0"
 ```
 
+### Direct Crate Mode (Advanced)
+```toml
+[dependencies]
+univis_ui_core = "0.2.0"
+univis_ui_layout = "0.2.0"
+univis_ui_render = "0.2.0"
+univis_ui_interaction = "0.2.0"
+univis_ui_widgets = "0.2.0"
+```
+
+## Workspace Crates
+- `univis_ui_core`: shared types, roots, style/theme, schedule labels.
+- `univis_ui_layout`: hierarchy/measure/solve engine + algorithms/cache/profiling.
+- `univis_ui_render`: SDF materials/shaders and material sync path.
+- `univis_ui_interaction`: picking backend + interaction feedback.
+- `univis_ui_widgets`: built-in widgets and optional-widget warnings.
+- `univis_ui` (facade): unified entrypoint and compatibility prelude.
+
 ## Quick Start
 ```rust
 use bevy::prelude::*;
@@ -74,6 +92,28 @@ fn setup(mut commands: Commands) {
                 ..default()
             });
         });
+}
+```
+
+Direct-crate composition is also available when you do not want the full facade:
+```rust
+use bevy::prelude::*;
+use univis_ui_core::prelude::*;
+use univis_ui_layout::layout::UnivisLayoutPlugin;
+use univis_ui_render::layout::render::UnivisRenderPlugin;
+use univis_ui_interaction::interaction::UnivisInteractionPlugin;
+use univis_ui_widgets::widget::UnivisWidgetPlugin;
+
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(UnivisInteractionPlugin)
+        .add_plugins(UnivisNodePlugin)
+        .add_plugins(UnivisLayoutPlugin)
+        .add_plugins(UnivisRenderPlugin)
+        .add_plugins(UnivisUiStylePlugin)
+        .add_plugins(UnivisWidgetPlugin)
+        .run();
 }
 ```
 

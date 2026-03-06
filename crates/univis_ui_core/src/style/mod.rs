@@ -46,18 +46,18 @@ impl FromWorld for Theme {
             text: TextStyles {
                 font: Fonts {
                     inter_regular: asset_server.load(
-                "embedded://univis_ui/style/assets/fonts/Inter-Regular.ttf"),
+                "embedded://univis_ui_core/style/assets/fonts/Inter-Regular.ttf"),
                     adwaita_sans_regular: asset_server.load(
-                        "embedded://univis_ui/style/assets/fonts/AdwaitaSans-Regular.ttf"
+                        "embedded://univis_ui_core/style/assets/fonts/AdwaitaSans-Regular.ttf"
                     ),
                     fira_sans_regular: asset_server.load(
-                        "embedded://univis_ui/style/assets/fonts/FiraSans-Regular.ttf"
+                        "embedded://univis_ui_core/style/assets/fonts/FiraSans-Regular.ttf"
                     )
                 }
             },
             icon: IconStyles {
                 font: asset_server.load(
-                "embedded://univis_ui/style/assets/icons/Lucide.ttf")
+                "embedded://univis_ui_core/style/assets/icons/Lucide.ttf")
             },           
         }
     }

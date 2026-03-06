@@ -15,7 +15,7 @@ This book is the full operational reference for the project. It covers:
 ## Scope
 
 - This book documents the **actual repository state**.
-- Chapters reference concrete paths in `src/` and `examples/`.
+- Chapters reference concrete paths in `crates/*/src/` and `examples/`.
 - If code and docs diverge, treat the source code as the ground truth.
 - English translation is incremental; structure is complete, while some chapter bodies may still be Arabic.
 

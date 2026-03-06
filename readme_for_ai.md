@@ -14,14 +14,24 @@ The repository contains two mdBook editions for long-form docs:
 - Rust edition: `2024`
 - Engine dependency: `bevy = 0.17.3`
 - Status: **Alpha** (API/behavior may change)
+- Workspace split (public crates):
+  - `univis_ui_core`
+  - `univis_ui_layout`
+  - `univis_ui_render`
+  - `univis_ui_interaction`
+  - `univis_ui_widgets`
+- Source layout:
+  - facade crate: `src/lib.rs`
+  - split crates: `crates/*/src/*`
 
 ## 3. Top-Level Architecture
 `UnivisUiPlugin` composes these subsystems:
 1. `UnivisInteractionPlugin`
 2. `UnivisNodePlugin`
 3. `UnivisLayoutPlugin`
-4. `UnivisUiStylePlugin`
-5. `UnivisWidgetPlugin`
+4. `UnivisRenderPlugin`
+5. `UnivisUiStylePlugin`
+6. `UnivisWidgetPlugin`
 
 Operational consequence:
 - In most apps, `add_plugins(UnivisUiPlugin)` is the single entry point.
@@ -109,8 +119,8 @@ Item-level:
 - 2D material: `UNodeMaterial`
 - 3D material: `UNodeMaterial3d`
 - Embedded shaders:
-  - `layout/render/shaders/unode.wgsl`
-  - `layout/render/shaders/unode_3d.wgsl`
+  - `crates/univis_ui_render/src/layout/render/shaders/unode.wgsl`
+  - `crates/univis_ui_render/src/layout/render/shaders/unode_3d.wgsl`
 
 ### 6.2 2D vs 3D UI
 - 2D path is default.
@@ -234,7 +244,7 @@ AI agents should account for these current repo realities:
    - If dynamic badge styling systems are required, add plugin explicitly.
 3. Scroll behavior is provided by `UnivisScrollViewPlugin` (already included in `UnivisWidgetPlugin`).
    - Add it manually only if you are composing plugins selectively.
-4. `src/widget/menu.rs` is currently an empty internal placeholder module (not exposed in the public widget API).
+4. `crates/univis_ui_widgets/src/widget/menu.rs` is currently an empty internal placeholder module (not exposed in the public widget API).
 5. Picking backend and `UPanelWindow` resize currently query `Camera2d`; interaction path is centered around 2D camera setup.
 
 ## 13. Recommended AI Codegen Workflow

@@ -3,9 +3,13 @@ use crate::prelude::*;
 
 pub struct UnivisBadgePlugin;
 
+#[derive(Resource, Default)]
+pub(crate) struct BadgePluginInstalled;
+
 impl Plugin for UnivisBadgePlugin {
     fn build(&self, app: &mut App) {
         app
+            .init_resource::<BadgePluginInstalled>()
             .register_type::<UBadge>()
             .add_systems(Update, update_badge_visuals);
     }

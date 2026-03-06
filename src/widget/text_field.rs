@@ -3,9 +3,13 @@ use crate::prelude::*;
 
 pub struct UnivisTextFieldPlugin;
 
+#[derive(Resource, Default)]
+pub(crate) struct TextFieldPluginInstalled;
+
 impl Plugin for UnivisTextFieldPlugin {
     fn build(&self, app: &mut App) {
         app
+            .init_resource::<TextFieldPluginInstalled>()
             .register_type::<UTextField>()
             .add_message::<TextFieldChangedEvent>()
             .add_message::<TextFieldSubmitEvent>()

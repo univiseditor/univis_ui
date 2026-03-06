@@ -95,6 +95,14 @@ mdbook serve book_ar -n 127.0.0.1 -p 3000
 mdbook serve book_en -n 127.0.0.1 -p 3001
 ```
 
+Reference pages:
+- [Plugin truth table (EN)](book_en/src/architecture/plugin-truth-table.md)
+- [Plugin truth table (AR)](book_ar/src/architecture/plugin-truth-table.md)
+- [Interaction support matrix (EN)](book_en/src/interaction/support-matrix.md)
+- [Interaction support matrix (AR)](book_ar/src/interaction/support-matrix.md)
+- [Current limitations (EN)](book_en/src/development/current-limitations.md)
+- [Current limitations (AR)](book_ar/src/development/current-limitations.md)
+
 ## Spaces And Roots
 ### Screen Space
 - Use `Camera2d`

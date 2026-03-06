@@ -29,3 +29,8 @@
 ## ملاحظة
 
 التفاعل يعتمد على وجود `UInteraction` على الكيان الهدف.
+
+## مراجع مرتبطة
+
+- [مصفوفة دعم التفاعل (Screen/World/3D)](support-matrix.md)
+- [القيود الحالية](../development/current-limitations.md)

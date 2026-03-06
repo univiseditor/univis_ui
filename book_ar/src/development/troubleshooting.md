@@ -33,3 +33,7 @@
 - تأكد من إضافة `UPanelWindow` مع `UPanel`.
 - افحص `min_width/min_height` و`border_hit_thickness`.
 - تأكد أن الواجهة ضمن مساحة قابلة للالتقاط من الكاميرا الحالية.
+
+## مراجع مرتبطة
+
+- [القيود الحالية](current-limitations.md)

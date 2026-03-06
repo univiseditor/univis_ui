@@ -64,3 +64,7 @@
   - `UnivisBadgePlugin`
 
 > السبب: الحفاظ على اختيارية بعض السلوكيات وعدم فرضها على كل تطبيق.
+
+## مرجع سريع
+
+- راجع أيضًا: [Plugin Truth Table](plugin-truth-table.md)

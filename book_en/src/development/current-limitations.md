@@ -18,11 +18,6 @@ This page lists current, code-verified constraints so setup guidance remains exp
 
 - `src/widget/menu.rs` is currently an empty placeholder module.
 
-## Naming Inconsistency
-
-- Layout module name is currently `geomerty` in code paths/exports.
-- This is a known cleanup target and may be renamed in a future breaking cleanup.
-
 ## Verification Sources
 
 - `src/interaction/picking.rs`

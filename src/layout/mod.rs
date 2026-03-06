@@ -1,5 +1,5 @@
 pub mod univis_node;
-pub mod geomerty;
+pub mod geometry;
 pub mod layout_system;
 pub mod core;
 pub mod render;
@@ -11,7 +11,7 @@ pub mod profiling;
 /// Import this module to get access to nodes, geometry types, and the layout plugin.
 pub mod prelude {
     pub use crate::layout::univis_node::*;
-    pub use crate::layout::geomerty::*;
+    pub use crate::layout::geometry::*;
     pub use crate::layout::layout_system::*;
     pub use crate::layout::core::prelude::*;
     pub use crate::layout::render::prelude::*;

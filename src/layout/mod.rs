@@ -22,7 +22,7 @@ pub mod prelude {
 }
 
 use bevy::prelude::*;
-pub use crate::layout::prelude::*;
+use crate::layout::prelude::*;
 
 /// The core Bevy Plugin that initializes the Univis Layout Engine.
 ///

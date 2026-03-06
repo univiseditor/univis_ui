@@ -52,3 +52,9 @@ cargo run --release --example <name>
 2. انتقل إلى `widgets` و`interaction`.
 3. ثم راجع `layout_case_*` حسب النمط المطلوب.
 4. أخيرًا افحص `sci_fi` كحالة مركبة كبيرة.
+
+## تقارير مرتبطة
+
+- [Example Validation Report](../development/example-validation.md)
+- [Compatibility Matrix](../development/compatibility-matrix.md)
+- [Smoke Test Plan](../development/smoke-test-plan.md)

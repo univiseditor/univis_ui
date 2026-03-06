@@ -36,5 +36,8 @@
   - [جدول الأنواع العامة](api/public-types.md)
 - [التطوير والمساهمة](development/contributing.md)
   - [الاختبارات والتحقق](development/testing.md)
+  - [تقرير التحقق من الأمثلة](development/example-validation.md)
+  - [مصفوفة التوافق](development/compatibility-matrix.md)
+  - [خطة Smoke Tests](development/smoke-test-plan.md)
   - [القيود الحالية](development/current-limitations.md)
   - [استكشاف الأخطاء](development/troubleshooting.md)

@@ -36,5 +36,8 @@
   - [Public Types Table](api/public-types.md)
 - [Development and Contribution](development/contributing.md)
   - [Testing and Validation](development/testing.md)
+  - [Example Validation Report](development/example-validation.md)
+  - [Compatibility Matrix](development/compatibility-matrix.md)
+  - [Smoke Test Plan](development/smoke-test-plan.md)
   - [Current Limitations](development/current-limitations.md)
   - [Troubleshooting](development/troubleshooting.md)

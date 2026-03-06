@@ -55,3 +55,8 @@
 
 - This report confirms compile viability via `cargo check --release --example ...`.
 - Runtime behavior still requires manual windowed smoke checks for interaction and visual correctness.
+
+## Runtime Smoke Status
+
+- March 6, 2026: Deferred/skipped for this cycle by request (machine/resource constraints).
+- Planned smoke command set remains documented in [Smoke Test Plan](smoke-test-plan.md).

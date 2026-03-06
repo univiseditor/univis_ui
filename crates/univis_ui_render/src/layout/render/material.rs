@@ -74,7 +74,7 @@ impl Default for UNodeMaterial {
 
 impl Material2d for UNodeMaterial {
     fn fragment_shader() -> ShaderRef {
-        "embedded://univis_ui/layout/render/shaders/unode.wgsl".into()
+        "embedded://univis_ui_render/layout/render/shaders/unode.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode2d {

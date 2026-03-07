@@ -1,0 +1,11 @@
+[package]
+name = "univis_ui_style"
+version = "0.2.0-alpha.1"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Theme, fonts, and icons for Univis UI."
+repository = "https://github.com/univiseditor/univis_ui"
+homepage = "https://github.com/univiseditor/univis_ui"
+
+[dependencies]
+bevy = "0.18.1"

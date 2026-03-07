@@ -1,11 +1,11 @@
 use bevy::prelude::*;
-use univis_ui::prelude::*;
+use univis_ui_engine::prelude::*;
 
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(UnivisUiPlugin)
+        .add_plugins(UnivisEnginePlugin)
         .add_systems(Startup, masonry_gallery_test)
         .run();
 }

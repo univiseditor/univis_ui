@@ -2,7 +2,7 @@ use bevy::ecs::relationship::Relationship;
 use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
 use bevy::window::{CursorIcon, PrimaryWindow, SystemCursorIcon, Window};
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 pub struct UnivisPanelPlugin;
 

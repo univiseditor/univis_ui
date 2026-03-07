@@ -36,9 +36,15 @@ mdbook build book_en
 ./scripts/verify_serial_release.sh
 
 # تحقق تسلسلي لحزمة محددة داخل workspace
-./scripts/test_lib_serial_release.sh -p univis_ui_layout
+./scripts/test_lib_serial_release.sh -p univis_ui_engine
 ./scripts/check_examples_serial_release.sh -p univis_ui
 ./scripts/verify_serial_release.sh -p univis_ui
+
+# تحقق alpha قبل النشر: check + lib tests + examples + package
+./scripts/verify_alpha_release.sh
+
+# إنشاء حزم alpha فقط بدون verify
+./scripts/package_alpha_serial.sh --no-verify
 ```
 
 لتمرير أمثلة محددة فقط:

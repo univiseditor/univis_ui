@@ -1,5 +1,5 @@
 use bevy::{input::{ButtonState, keyboard::*}, prelude::*};
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 pub struct UnivisTextFieldPlugin;
 

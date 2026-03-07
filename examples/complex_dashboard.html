@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>complex_dashboard (HTML Reference)</title>
+  <style>
+    :root {
+      --bg-0: #0c0f18;
+      --bg-1: #151b2a;
+      --panel: rgba(22, 30, 45, 0.82);
+      --panel-solid: #1a2334;
+      --panel-border: rgba(230, 242, 255, 0.22);
+      --muted: #aeb9cf;
+      --text: #f6f8ff;
+      --blue: #3e8df4;
+      --green: #34c978;
+      --orange: #e3ae3a;
+      --chip-info: #3aa0ff;
+      --chip-warn: #d2a63c;
+      --chip-ok: #2fbc67;
+      --row: rgba(33, 42, 58, 0.8);
+      --shadow: 0 18px 36px rgba(0, 0, 0, 0.45);
+      --radius-lg: 18px;
+      --radius-md: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 0%, #1c2540 0%, transparent 55%),
+        radial-gradient(900px 700px at 100% 20%, #1d2d44 0%, transparent 45%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-0));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .stage {
+      width: min(1400px, 100%);
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    .panel h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0.3px;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(235, 243, 255, 0.22);
+      margin: 12px 0;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .chip.info { background: var(--chip-info); }
+    .chip.warn { background: var(--chip-warn); color: #1d1a10; }
+    .chip.ok { background: var(--chip-ok); }
+
+    .section-title {
+      margin: 10px 0 8px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .row {
+      background: var(--row);
+      border-radius: var(--radius-md);
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .row label {
+      font-size: 15px;
+      color: #f2f5ff;
+    }
+
+    select, input[type="text"], input[type="range"] {
+      border: 1px solid #51617d;
+      background: #1f2739;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 220px;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.15);
+      accent-color: #5c9dff;
+    }
+
+    .meter {
+      width: 220px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: inherit;
+    }
+
+    .fill.cpu { width: 62%; background: var(--green); }
+    .fill.gpu { width: 48%; background: var(--blue); }
+    .fill.vram { width: 72%; background: var(--orange); }
+
+    .btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: #2f7feb; }
+    .btn-secondary { background: #6b7382; }
+
+    .preview-shell {
+      background: var(--panel-solid);
+      border-radius: 20px;
+      padding: 20px;
+      margin-top: 12px;
+    }
+
+    .card {
+      background: #2b2f55;
+      border-radius: 22px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 13px;
+    }
+
+    .avatar {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e8f2ff, #90a0c4);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.08);
+    }
+
+    .name {
+      font-size: 25px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .handle {
+      font-size: 14px;
+      color: #b3bdd1;
+    }
+
+    .stats {
+      width: 100%;
+      background: rgba(8, 12, 20, 0.33);
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      text-align: center;
+      padding: 10px 8px;
+      gap: 6px;
+    }
+
+    .stats strong {
+      display: block;
+      font-size: 27px;
+    }
+
+    .stats span {
+      color: #a0abc2;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 1180px) {
+      .stage {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="panel">
+      <h1>Complex Dashboard Stress Test</h1>
+      <div class="subtitle">HTML reference matching the Rust example layout</div>
+      <div class="divider"></div>
+
+      <div class="chips">
+        <span class="chip ok">Live</span>
+        <span class="chip info">UI2D</span>
+        <span class="chip warn">Cached Layout</span>
+      </div>
+
+      <div class="divider"></div>
+      <h2 class="section-title">Display Settings</h2>
+
+      <div class="row">
+        <label>Quality</label>
+        <select>
+          <option>Low</option>
+          <option>Medium</option>
+          <option selected>High</option>
+          <option>Ultra</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label>Theme</label>
+        <select>
+          <option selected>Nebula</option>
+          <option>Ocean</option>
+          <option>Graphite</option>
+          <option>Forest</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label>Enable VSync</label>
+        <input type="checkbox" checked>
+      </div>
+
+      <div class="row">
+        <label>High quality shadows</label>
+        <input type="checkbox" checked>
+      </div>
+
+      <div class="row">
+        <label>Enable post-processing</label>
+        <input type="checkbox" checked>
+      </div>
+
+      <div class="divider"></div>
+      <h2 class="section-title">Runtime Metrics</h2>
+
+      <div class="row"><label>CPU</label><div class="meter"><div class="fill cpu"></div></div></div>
+      <div class="row"><label>GPU</label><div class="meter"><div class="fill gpu"></div></div></div>
+      <div class="row"><label>VRAM</label><div class="meter"><div class="fill vram"></div></div></div>
+
+      <div class="divider"></div>
+      <h2 class="section-title">Advanced Tuning</h2>
+
+      <div class="row"><label>Exposure</label><input type="range" value="55"></div>
+      <div class="row"><label>Sharpness</label><input type="range" value="35"></div>
+      <div class="row"><label>Bloom</label><input type="range" value="45"></div>
+
+      <div class="btns">
+        <button class="btn-primary">Apply</button>
+        <button class="btn-secondary">Reset</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h1>Live Preview</h1>
+      <div class="subtitle">Reference card used for layout consistency checks</div>
+      <div class="divider"></div>
+
+      <div class="preview-shell">
+        <article class="card">
+          <div class="avatar"></div>
+          <div class="name">Univis QA Runner</div>
+          <div class="handle">@layout-regression</div>
+
+          <div class="chips">
+            <span class="chip info">Flex</span>
+            <span class="chip warn">Cache</span>
+            <span class="chip ok">Interaction</span>
+          </div>
+
+          <div class="stats">
+            <div><strong>87</strong><span>Checks</span></div>
+            <div><strong>0</strong><span>Regressions</span></div>
+            <div><strong>99.4%</strong><span>Pass</span></div>
+          </div>
+
+          <div class="btns" style="width:100%;">
+            <button class="btn-primary">Inspect</button>
+            <button class="btn-secondary">Export</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

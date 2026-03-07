@@ -1,6 +1,6 @@
 [package]
 name = "univis_ui"
-version = "0.2.0"
+version = "0.2.0-alpha.1"
 edition = "2024" # Rust 2024 edition is appropriate for modern development
 description = "A high-performance, SDF-based hybrid world-space UI framework for the Bevy game engine."
 authors = ["abdellah-haffout <abdellahhaffout9@gmail.com>"]
@@ -15,17 +15,15 @@ exclude = [".github/*"] # Exclude heavy assets from the published crate
 [workspace]
 members = [
     ".",
-    "crates/univis_ui_core",
-    "crates/univis_ui_layout",
-    "crates/univis_ui_render",
+    "crates/univis_ui_engine",
+    "crates/univis_ui_style",
     "crates/univis_ui_interaction",
     "crates/univis_ui_widgets",
 ]
 
 [dependencies]
-bevy = "0.17.3"
-univis_ui_core = { path = "crates/univis_ui_core", version = "0.2.0" }
-univis_ui_layout = { path = "crates/univis_ui_layout", version = "0.2.0" }
-univis_ui_render = { path = "crates/univis_ui_render", version = "0.2.0" }
-univis_ui_interaction = { path = "crates/univis_ui_interaction", version = "0.2.0" }
-univis_ui_widgets = { path = "crates/univis_ui_widgets", version = "0.2.0" }
+bevy = "0.18.1"
+univis_ui_engine = { path = "crates/univis_ui_engine", version = "0.2.0-alpha.1" }
+univis_ui_style = { path = "crates/univis_ui_style", version = "0.2.0-alpha.1" }
+univis_ui_interaction = { path = "crates/univis_ui_interaction", version = "0.2.0-alpha.1" }
+univis_ui_widgets = { path = "crates/univis_ui_widgets", version = "0.2.0-alpha.1" }

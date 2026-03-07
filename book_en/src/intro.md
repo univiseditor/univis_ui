@@ -22,7 +22,7 @@ This book is the full operational reference for the project. It covers:
 ## Requirements
 
 - Rust (recent stable toolchain)
-- Bevy `0.17.3` (via `Cargo.toml`)
+- Bevy `0.18.1` (via `Cargo.toml`)
 - Basic ECS knowledge is recommended
 
 ## Build Books

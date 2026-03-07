@@ -4,7 +4,7 @@
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0"
+univis_ui = "0.2.0-alpha.1"
 ```
 
 ## 2) تطبيق بسيط
@@ -49,8 +49,7 @@ fn setup(mut commands: Commands) {
 ## 3) ماذا يضيف `UnivisUiPlugin`؟
 
 - Interaction: `UnivisInteractionPlugin`
-- Core node/layout: `UnivisNodePlugin` + `UnivisLayoutPlugin`
-- Rendering: `UnivisRenderPlugin`
+- المحرك: `UnivisEnginePlugin`
 - Style/fonts/icons: `UnivisUiStylePlugin`
 - Widgets: `UnivisWidgetPlugin`
 
@@ -67,20 +66,18 @@ fn setup(mut commands: Commands) {
 
 ```rust,no_run
 use bevy::prelude::*;
-use univis_ui_core::prelude::*;
-use univis_ui_layout::layout::UnivisLayoutPlugin;
-use univis_ui_render::layout::render::UnivisRenderPlugin;
+use univis_ui_engine::prelude::*;
+use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_interaction::interaction::UnivisInteractionPlugin;
+use univis_ui_style::style::UnivisUiStylePlugin;
 use univis_ui_widgets::widget::UnivisWidgetPlugin;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(UnivisInteractionPlugin)
-        .add_plugins(UnivisNodePlugin)
-        .add_plugins(UnivisLayoutPlugin)
-        .add_plugins(UnivisRenderPlugin)
         .add_plugins(UnivisUiStylePlugin)
+        .add_plugins(UnivisEnginePlugin)
+        .add_plugins(UnivisInteractionPlugin)
         .add_plugins(UnivisWidgetPlugin)
         .run();
 }

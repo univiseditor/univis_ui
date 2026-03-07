@@ -1,9 +1,9 @@
 use bevy::{post_process::bloom::Bloom, prelude::*};
-use univis_ui::prelude::*;
+use univis_ui_engine::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins,UnivisUiPlugin))
+        .add_plugins((DefaultPlugins,UnivisEnginePlugin))
         .add_systems(Startup, setup)
         .run();
 }

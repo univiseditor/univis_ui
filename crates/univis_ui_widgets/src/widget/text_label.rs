@@ -2,7 +2,7 @@ use bevy::camera::primitives::Aabb;
 use bevy::ecs::relationship::Relationship;
 use bevy::prelude::*;
 use bevy::text::TextLayoutInfo;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]

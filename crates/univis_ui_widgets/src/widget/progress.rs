@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 // 1. المكون
 #[derive(Component, Reflect)]

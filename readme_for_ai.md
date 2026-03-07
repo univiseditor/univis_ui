@@ -10,14 +10,13 @@ The repository contains two mdBook editions for long-form docs:
 
 ## 2. Package Metadata
 - Crate: `univis_ui`
-- Current version in repo: `0.2.0`
+- Current version in repo: `0.2.0-alpha.1`
 - Rust edition: `2024`
-- Engine dependency: `bevy = 0.17.3`
+- Engine dependency: `bevy = 0.18.1`
 - Status: **Alpha** (API/behavior may change)
 - Workspace split (public crates):
-  - `univis_ui_core`
-  - `univis_ui_layout`
-  - `univis_ui_render`
+  - `univis_ui_engine`
+  - `univis_ui_style`
   - `univis_ui_interaction`
   - `univis_ui_widgets`
 - Source layout:
@@ -26,12 +25,15 @@ The repository contains two mdBook editions for long-form docs:
 
 ## 3. Top-Level Architecture
 `UnivisUiPlugin` composes these subsystems:
-1. `UnivisInteractionPlugin`
-2. `UnivisNodePlugin`
-3. `UnivisLayoutPlugin`
-4. `UnivisRenderPlugin`
-5. `UnivisUiStylePlugin`
-6. `UnivisWidgetPlugin`
+1. `UnivisUiStylePlugin`
+2. `UnivisEnginePlugin`
+3. `UnivisInteractionPlugin`
+4. `UnivisWidgetPlugin`
+
+`UnivisEnginePlugin` is the low-level runtime bundle and installs:
+1. `UnivisNodePlugin`
+2. `UnivisLayoutPlugin`
+3. `UnivisRenderPlugin`
 
 Operational consequence:
 - In most apps, `add_plugins(UnivisUiPlugin)` is the single entry point.
@@ -119,8 +121,8 @@ Item-level:
 - 2D material: `UNodeMaterial`
 - 3D material: `UNodeMaterial3d`
 - Embedded shaders:
-  - `crates/univis_ui_render/src/layout/render/shaders/unode.wgsl`
-  - `crates/univis_ui_render/src/layout/render/shaders/unode_3d.wgsl`
+  - `crates/univis_ui_engine/src/layout/render/shaders/unode.wgsl`
+  - `crates/univis_ui_engine/src/layout/render/shaders/unode_3d.wgsl`
 
 ### 6.2 2D vs 3D UI
 - 2D path is default.
@@ -226,8 +228,8 @@ Item-level:
     - `F12`: cycle overlay position
 
 ## 11. System Scheduling Snapshot
-### 11.1 Layout Plugin
-`UnivisLayoutPlugin` schedules in `PostUpdate` chain:
+### 11.1 Engine / Layout Scheduling
+`UnivisEnginePlugin` includes `UnivisLayoutPlugin`, which schedules this `PostUpdate` chain:
 1. `update_layout_hierarchy`
 2. `upward_measure_pass_cached`
 3. `downward_solve_pass_safe`

@@ -1,6 +1,6 @@
 [package]
 name = "univis_ui_interaction"
-version = "0.2.0"
+version = "0.2.0-alpha.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Interaction and picking backend for Univis UI."
@@ -8,5 +8,5 @@ repository = "https://github.com/univiseditor/univis_ui"
 homepage = "https://github.com/univiseditor/univis_ui"
 
 [dependencies]
-bevy = "0.17.3"
-univis_ui_core = { path = "../univis_ui_core", version = "0.2.0" }
+bevy = "0.18.1"
+univis_ui_engine = { path = "../univis_ui_engine", version = "0.2.0-alpha.1" }

@@ -1,7 +1,7 @@
 use bevy::ecs::relationship::Relationship;
 use bevy::prelude::*;
 use bevy::picking::backend::prelude::*;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 use super::math::sd_rounded_box;
 
 /// دالة دقيقة للتحقق من القص باستخدام المصفوفات

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 use crate::widget::{
     badge::BadgePluginInstalled,
     text_field::TextFieldPluginInstalled,

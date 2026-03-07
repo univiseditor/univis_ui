@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use univis_ui::prelude::*;
+use univis_ui::{layout::profiling::LayoutProfilingPlugin, prelude::*};
 
 fn main() {
     App::new()

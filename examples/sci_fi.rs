@@ -4,7 +4,7 @@ use univis_ui::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins((UnivisUiPlugin,LayoutProfilingPlugin))
+        .add_plugins(UnivisUiPlugin)
         .add_systems(Startup, setup_sci_fi_hud)
         .add_systems(Update, (animate_holo_pulse, animate_sim_data))
         .run();

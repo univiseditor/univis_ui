@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 use bevy::input::mouse::MouseWheel;
 
 pub struct UnivisScrollViewPlugin;

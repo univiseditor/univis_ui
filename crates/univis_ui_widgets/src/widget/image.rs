@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::prelude::*;
+use crate::internal_prelude::*;
 
 pub fn sync_image_geometry(
     // نراقب تغيرات UImage أو UNode

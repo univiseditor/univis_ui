@@ -1,14 +1,13 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub fn sync_image_geometry(
     // نراقب تغيرات UImage أو UNode
     mut query: Query<(&UImage, &mut UNode), Or<(Changed<UImage>, Changed<UNode>)>>,
     // نحتاج الوصول للأصول لمعرفة حجم الصورة الحقيقي
-    images: Res<Assets<Image>>, 
+    images: Res<Assets<Image>>,
 ) {
     for (ui_image, mut node) in query.iter_mut() {
-        
         // 1. مزامنة نصف القطر (إذا وجد)
         if let Some(r) = ui_image.radius {
             if node.border_radius != r {
@@ -19,7 +18,7 @@ pub fn sync_image_geometry(
         // 2. منطق حساب الحجم
         // هل نحتاج للبحث عن الحجم الأصلي للصورة؟
         let needs_native_size = ui_image.width == UVal::Auto || ui_image.height == UVal::Auto;
-        
+
         let mut native_size = Vec2::ZERO;
         if needs_native_size {
             if let Some(img) = images.get(&ui_image.texture) {
@@ -30,7 +29,13 @@ pub fn sync_image_geometry(
 
         // 3. تطبيق العرض (Width)
         let target_width = match ui_image.width {
-            UVal::Auto => if native_size.x > 0.0 { UVal::Px(native_size.x) } else { UVal::Auto },
+            UVal::Auto => {
+                if native_size.x > 0.0 {
+                    UVal::Px(native_size.x)
+                } else {
+                    UVal::Auto
+                }
+            }
             other => other,
         };
 
@@ -40,7 +45,13 @@ pub fn sync_image_geometry(
 
         // 4. تطبيق الارتفاع (Height)
         let target_height = match ui_image.height {
-            UVal::Auto => if native_size.y > 0.0 { UVal::Px(native_size.y) } else { UVal::Auto },
+            UVal::Auto => {
+                if native_size.y > 0.0 {
+                    UVal::Px(native_size.y)
+                } else {
+                    UVal::Auto
+                }
+            }
             other => other,
         };
 

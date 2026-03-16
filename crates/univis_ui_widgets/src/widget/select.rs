@@ -1,27 +1,30 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisSelectPlugin;
 
 impl Plugin for UnivisSelectPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<USelect>()
+        app.register_type::<USelect>()
             .register_type::<USelectOption>()
             .add_message::<SelectChangedEvent>()
             .add_message::<SelectOpenStateChangedEvent>()
             .init_resource::<ActiveSelect>()
-            .add_systems(Update, (
-                init_select_visuals,
-                enforce_select_invariants,
-                handle_select_trigger_interaction,
-                handle_select_option_interaction,
-                handle_select_keyboard,
-                close_select_on_outside_click,
-                sync_select_dropdown_tree,
-                update_select_visuals,
-                emit_select_events,
-            ).chain());
+            .add_systems(
+                Update,
+                (
+                    init_select_visuals,
+                    enforce_select_invariants,
+                    handle_select_trigger_interaction,
+                    handle_select_option_interaction,
+                    handle_select_keyboard,
+                    close_select_on_outside_click,
+                    sync_select_dropdown_tree,
+                    update_select_visuals,
+                    emit_select_events,
+                )
+                    .chain(),
+            );
     }
 }
 
@@ -489,8 +492,7 @@ fn handle_select_keyboard(
     }
 
     if keyboard.just_pressed(KeyCode::ArrowDown) {
-        select.highlighted_index =
-            next_enabled_index(&select.options, select.highlighted_index, 1);
+        select.highlighted_index = next_enabled_index(&select.options, select.highlighted_index, 1);
     }
 
     if keyboard.just_pressed(KeyCode::ArrowUp) {
@@ -596,8 +598,17 @@ fn update_select_visuals(
         ),
     >,
     mut trigger_query: Query<
-        (&UInteraction, &mut UNode, &mut UBorder, &mut UInteractionColors),
-        (With<SelectTrigger>, Without<SelectOptionRow>, Without<SelectDropdown>),
+        (
+            &UInteraction,
+            &mut UNode,
+            &mut UBorder,
+            &mut UInteractionColors,
+        ),
+        (
+            With<SelectTrigger>,
+            Without<SelectOptionRow>,
+            Without<SelectDropdown>,
+        ),
     >,
     mut value_label_query: Query<
         &mut UTextLabel,
@@ -616,8 +627,18 @@ fn update_select_visuals(
         ),
     >,
     mut dropdown_query: Query<
-        (&SelectDropdown, &mut UNode, &mut UBorder, &mut UClip, &Children),
-        (With<SelectDropdown>, Without<SelectTrigger>, Without<SelectOptionRow>),
+        (
+            &SelectDropdown,
+            &mut UNode,
+            &mut UBorder,
+            &mut UClip,
+            &Children,
+        ),
+        (
+            With<SelectDropdown>,
+            Without<SelectTrigger>,
+            Without<SelectOptionRow>,
+        ),
     >,
     mut row_query: Query<
         (
@@ -627,7 +648,11 @@ fn update_select_visuals(
             &mut UInteractionColors,
             &Children,
         ),
-        (With<SelectOptionRow>, Without<SelectTrigger>, Without<SelectDropdown>),
+        (
+            With<SelectOptionRow>,
+            Without<SelectTrigger>,
+            Without<SelectDropdown>,
+        ),
     >,
     mut option_label_query: Query<
         &mut UTextLabel,
@@ -700,8 +725,13 @@ fn update_select_visuals(
         }
 
         if let Some(dropdown_entity) = runtime.dropdown_entity {
-            if let Ok((dropdown, mut dropdown_node, mut dropdown_border, mut clip, dropdown_children)) =
-                dropdown_query.get_mut(dropdown_entity)
+            if let Ok((
+                dropdown,
+                mut dropdown_node,
+                mut dropdown_border,
+                mut clip,
+                dropdown_children,
+            )) = dropdown_query.get_mut(dropdown_entity)
             {
                 if dropdown.select != _entity {
                     continue;
@@ -841,7 +871,9 @@ fn spawn_dropdown(commands: &mut Commands, select_entity: Entity, select: &USele
                     radius: UCornerRadius::all(8.0),
                     offset: 0.0,
                 },
-                UClip { enabled: should_clip },
+                UClip {
+                    enabled: should_clip,
+                },
                 ULayout {
                     display: UDisplay::Flex,
                     flex_direction: UFlexDirection::Column,

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 // 1. المكون
 #[derive(Component, Reflect)]
@@ -12,18 +12,18 @@ pub struct UProgressBar {
 
 impl Default for UProgressBar {
     fn default() -> Self {
-        Self { value: 0.5, bar_color: Color::srgb(0.2, 0.8, 0.2) }
+        Self {
+            value: 0.5,
+            bar_color: Color::srgb(0.2, 0.8, 0.2),
+        }
     }
 }
-
-
 
 pub struct UnivisProgressPlugin;
 
 impl Plugin for UnivisProgressPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(Update, update_progress_bars);
+        app.add_systems(Update, update_progress_bars);
     }
 }
 
@@ -40,7 +40,7 @@ fn update_progress_bars(
     for (entity, bar, children_opt) in query.iter() {
         // تأكد من تهيئة الحاوية (الأب)
         commands.entity(entity).insert(UNode {
-            height: UVal::Px(10.0), // ارتفاع افتراضي
+            height: UVal::Px(10.0),    // ارتفاع افتراضي
             width: UVal::Percent(1.0), // عرض كامل
             background_color: Color::BLACK.with_alpha(0.3),
             border_radius: UCornerRadius::all(5.0),
@@ -49,7 +49,7 @@ fn update_progress_bars(
         });
 
         let mut fill_found = false;
-        
+
         // ابحث عن الطفل المسؤول عن الامتلاء
         if let Some(children) = children_opt {
             for &child in children {
@@ -58,10 +58,14 @@ fn update_progress_bars(
                     let clamped = bar.value.clamp(0.0, 1.0);
                     node.width = UVal::Percent(clamped);
                     node.background_color = bar.bar_color;
-                    
+
                     // إخفاء الشريط إذا كانت القيمة 0
-                    *vis = if clamped > 0.001 { Visibility::Inherited } else { Visibility::Hidden };
-                    
+                    *vis = if clamped > 0.001 {
+                        Visibility::Inherited
+                    } else {
+                        Visibility::Hidden
+                    };
+
                     fill_found = true;
                     break;
                 }

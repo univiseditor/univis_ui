@@ -1,15 +1,14 @@
+use crate::internal_prelude::*;
 use bevy::ecs::relationship::Relationship;
 use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
 use bevy::window::{CursorIcon, PrimaryWindow, SystemCursorIcon, Window};
-use crate::internal_prelude::*;
 
 pub struct UnivisPanelPlugin;
 
 impl Plugin for UnivisPanelPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UPanel>()
+        app.register_type::<UPanel>()
             .register_type::<UPanelWindow>()
             .add_systems(
                 Update,
@@ -217,10 +216,7 @@ fn sync_panel_visuals(
     }
 }
 
-fn init_panel_window_handles(
-    mut commands: Commands,
-    query: Query<Entity, Added<UPanelWindow>>,
-) {
+fn init_panel_window_handles(mut commands: Commands, query: Query<Entity, Added<UPanelWindow>>) {
     for panel_entity in query.iter() {
         commands
             .entity(panel_entity)
@@ -255,7 +251,12 @@ fn init_panel_window_handles(
 fn sync_panel_resize_handles(
     panel_query: Query<
         (Entity, &UPanelWindow, &ComputedSize, &Children),
-        Or<(Added<UPanelWindow>, Changed<UPanelWindow>, Changed<ComputedSize>, Changed<Children>)>,
+        Or<(
+            Added<UPanelWindow>,
+            Changed<UPanelWindow>,
+            Changed<ComputedSize>,
+            Changed<Children>,
+        )>,
     >,
     mut handle_query: Query<(&PanelResizeHandle, &mut UNode, &mut USelf), With<PanelResizeChrome>>,
 ) {
@@ -280,8 +281,18 @@ fn sync_panel_resize_handles(
 
             let (left, top, w, h) = match meta.edge {
                 PanelResizeEdge::N => (thickness, 0.0, inner_width, thickness),
-                PanelResizeEdge::S => (thickness, (height - thickness).max(0.0), inner_width, thickness),
-                PanelResizeEdge::E => ((width - thickness).max(0.0), thickness, thickness, inner_height),
+                PanelResizeEdge::S => (
+                    thickness,
+                    (height - thickness).max(0.0),
+                    inner_width,
+                    thickness,
+                ),
+                PanelResizeEdge::E => (
+                    (width - thickness).max(0.0),
+                    thickness,
+                    thickness,
+                    inner_height,
+                ),
                 PanelResizeEdge::W => (0.0, thickness, thickness, inner_height),
                 PanelResizeEdge::NE => ((width - thickness).max(0.0), 0.0, thickness, thickness),
                 PanelResizeEdge::NW => (0.0, 0.0, thickness, thickness),
@@ -390,8 +401,10 @@ fn handle_panel_window_resize(
         };
 
         let mut rect = PanelRect {
-            width: uval_px(node.width).unwrap_or(computed.width.max(panel_window.min_width.max(1.0))),
-            height: uval_px(node.height).unwrap_or(computed.height.max(panel_window.min_height.max(1.0))),
+            width: uval_px(node.width)
+                .unwrap_or(computed.width.max(panel_window.min_width.max(1.0))),
+            height: uval_px(node.height)
+                .unwrap_or(computed.height.max(panel_window.min_height.max(1.0))),
             left: uval_px(uself.left).unwrap_or(0.0),
             top: uval_px(uself.top).unwrap_or(0.0),
         };
@@ -539,16 +552,15 @@ fn cursor_in_parent_space(
     let window = windows.single().ok()?;
     let cursor_screen = window.cursor_position()?;
     let (camera, camera_transform) = cameras.single().ok()?;
-    let ray = camera.viewport_to_world(camera_transform, cursor_screen).ok()?;
+    let ray = camera
+        .viewport_to_world(camera_transform, cursor_screen)
+        .ok()?;
     let cursor_world = ray.origin.truncate();
 
     if let Some(parent) = parent {
         let parent_transform = parent_global_query.get(parent.get()).ok()?;
         let inv = parent_transform.to_matrix().inverse();
-        return Some(
-            inv.transform_point3(cursor_world.extend(0.0))
-                .truncate(),
-        );
+        return Some(inv.transform_point3(cursor_world.extend(0.0)).truncate());
     }
 
     Some(cursor_world)
@@ -644,14 +656,38 @@ mod tests {
 
     #[test]
     fn panel_resize_edge_to_cursor_icon() {
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::N), SystemCursorIcon::NsResize);
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::S), SystemCursorIcon::NsResize);
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::E), SystemCursorIcon::EwResize);
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::W), SystemCursorIcon::EwResize);
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::NE), SystemCursorIcon::NeswResize);
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::SW), SystemCursorIcon::NeswResize);
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::NW), SystemCursorIcon::NwseResize);
-        assert_eq!(cursor_icon_for_edge(PanelResizeEdge::SE), SystemCursorIcon::NwseResize);
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::N),
+            SystemCursorIcon::NsResize
+        );
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::S),
+            SystemCursorIcon::NsResize
+        );
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::E),
+            SystemCursorIcon::EwResize
+        );
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::W),
+            SystemCursorIcon::EwResize
+        );
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::NE),
+            SystemCursorIcon::NeswResize
+        );
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::SW),
+            SystemCursorIcon::NeswResize
+        );
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::NW),
+            SystemCursorIcon::NwseResize
+        );
+        assert_eq!(
+            cursor_icon_for_edge(PanelResizeEdge::SE),
+            SystemCursorIcon::NwseResize
+        );
     }
 
     #[test]

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 // =========================================================
 // نسخة Owned آمنة من SolverItem
@@ -54,7 +54,7 @@ pub fn downward_solve_pass_safe(
     tree_depth: Res<LayoutTreeDepth>,
     cache: Res<LayoutCache>,
     mut profiler: Option<ResMut<LayoutProfiler>>, // إضافة Profiler اختياري
-    
+
     mut nodes: Query<(
         Entity,
         &UNode,
@@ -63,24 +63,22 @@ pub fn downward_solve_pass_safe(
         Option<&Children>,
         Option<&USelf>,
         &mut ComputedSize,
-        &mut Transform
+        &mut Transform,
     )>,
-    
+
     intrinsic_query: Query<&IntrinsicSize>,
     root_query: Query<&UWorldRoot>,
     window_query: Query<&Window>,
 ) {
     let start = std::time::Instant::now();
-    
+
     for depth in 0..=tree_depth.max_depth {
-        
         // استخدام Cache
         let Some(layer_entities) = cache.get_entities_at_depth(depth) else {
             continue;
         };
 
         for &entity in layer_entities {
-            
             // 1. استخراج البيانات
             let Some(node_data) = extract_node_data(entity, &nodes) else {
                 continue;
@@ -90,7 +88,10 @@ pub fn downward_solve_pass_safe(
             let container_size = if depth == 0 {
                 calculate_root_size(entity, &root_query, &window_query)
             } else {
-                Vec2::new(node_data.computed_size.width, node_data.computed_size.height)
+                Vec2::new(
+                    node_data.computed_size.width,
+                    node_data.computed_size.height,
+                )
             };
 
             // تحديث الجذر
@@ -102,18 +103,15 @@ pub fn downward_solve_pass_safe(
             }
 
             // 3. جمع بيانات الأطفال
-            let children_layout_data = collect_children_layout_data(
-                &node_data.children,
-                &nodes,
-                &intrinsic_query,
-            );
+            let children_layout_data =
+                collect_children_layout_data(&node_data.children, &nodes, &intrinsic_query);
 
             if children_layout_data.is_empty() {
                 continue;
             }
 
             // 4. تحويل إلى Solver (الطريقة الآمنة)
-            let (mut solver_items_owned, entities_map) = 
+            let (mut solver_items_owned, entities_map) =
                 prepare_solver_data_safe(children_layout_data);
 
             // 5. تحويل مؤقت إلى SolverItem
@@ -126,15 +124,8 @@ pub fn downward_solve_pass_safe(
             let constraints = build_constraints(container_size, &node_data.spec);
 
             // 7. تشغيل Solver
-            let solver_config = translate_config(
-                &node_data.layout,
-                &node_data.spec,
-            );
-            let final_size = solve_flex_layout(
-                &solver_config,
-                constraints,
-                &mut solver_items_refs,
-            );
+            let solver_config = translate_config(&node_data.layout, &node_data.spec);
+            let final_size = solve_flex_layout(&solver_config, constraints, &mut solver_items_refs);
 
             // 8. تحديث حجم الحاوية
             if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
@@ -156,7 +147,7 @@ pub fn downward_solve_pass_safe(
             apply_results_to_children(&solved_children, final_size, &mut nodes);
         }
     }
-    
+
     // تحديث Profiler
     if let Some(ref mut prof) = profiler {
         prof.downward_pass_time = start.elapsed().as_secs_f64() * 1000.0;
@@ -170,21 +161,22 @@ pub fn downward_solve_pass_safe(
 fn extract_node_data(
     entity: Entity,
     query: &Query<(
-        Entity, &UNode, Option<&ULayout>,
-        &LayoutDepth, Option<&Children>, Option<&USelf>,
-        &mut ComputedSize, &mut Transform
+        Entity,
+        &UNode,
+        Option<&ULayout>,
+        &LayoutDepth,
+        Option<&Children>,
+        Option<&USelf>,
+        &mut ComputedSize,
+        &mut Transform,
     )>,
 ) -> Option<NodeData> {
-    let (_, node, layout_opt, _, children_opt, _, computed, _) =
-        query.get(entity).ok()?;
+    let (_, node, layout_opt, _, children_opt, _, computed, _) = query.get(entity).ok()?;
 
     Some(NodeData {
-        
         spec: node.clone(),
         layout: layout_opt.cloned().unwrap_or_default(),
-        children: children_opt
-            .map(|c| c.iter().collect())
-            .unwrap_or_default(),
+        children: children_opt.map(|c| c.iter().collect()).unwrap_or_default(),
         computed_size: *computed,
     })
 }
@@ -206,21 +198,24 @@ fn calculate_root_size(
 fn collect_children_layout_data(
     children: &[Entity],
     nodes_query: &Query<(
-        Entity, &UNode, Option<&ULayout>,
-        &LayoutDepth, Option<&Children>, Option<&USelf>,
-        &mut ComputedSize, &mut Transform
+        Entity,
+        &UNode,
+        Option<&ULayout>,
+        &LayoutDepth,
+        Option<&Children>,
+        Option<&USelf>,
+        &mut ComputedSize,
+        &mut Transform,
     )>,
     intrinsic_query: &Query<&IntrinsicSize>,
 ) -> Vec<ChildLayoutData> {
-    children.iter()
+    children
+        .iter()
         .filter_map(|&child_entity| {
             let (_, node, _, _, _, uself_opt, _, _) = nodes_query.get(child_entity).ok()?;
             let intrinsic = intrinsic_query.get(child_entity).ok()?;
 
-            let mut spec = translate_spec(
-                node,
-                uself_opt.as_deref(),
-            );
+            let mut spec = translate_spec(node, uself_opt.as_deref());
 
             if spec.width_mode == SolverSizeMode::Content {
                 spec.width_val = intrinsic.width;
@@ -242,27 +237,23 @@ fn collect_children_layout_data(
 fn prepare_solver_data_safe(
     children_data: Vec<ChildLayoutData>,
 ) -> (Vec<SolverItemOwned>, Vec<Entity>) {
-    
     let mut entities_map = Vec::new();
     let mut solver_items = Vec::new();
-    
+
     for child_data in children_data {
         entities_map.push(child_data.entity);
-        
+
         solver_items.push(SolverItemOwned {
             spec: child_data.spec,
             result: Box::new(SolverResult::default()),
             margin: child_data.margin,
         });
     }
-    
+
     (solver_items, entities_map)
 }
 
-fn build_constraints(
-    container_size: Vec2,
-    node_spec: &UNode,
-) -> BoxConstraints {
+fn build_constraints(container_size: Vec2, node_spec: &UNode) -> BoxConstraints {
     let mut constraints = BoxConstraints::tight(container_size);
 
     if matches!(node_spec.width, UVal::Auto | UVal::Content) {
@@ -282,14 +273,19 @@ fn apply_results_to_children(
     solved_children: &[SolvedChild],
     parent_size: Vec2,
     nodes_query: &mut Query<(
-        Entity, &UNode, Option<&ULayout>,
-        &LayoutDepth, Option<&Children>, Option<&USelf>,
-        &mut ComputedSize, &mut Transform
+        Entity,
+        &UNode,
+        Option<&ULayout>,
+        &LayoutDepth,
+        Option<&Children>,
+        Option<&USelf>,
+        &mut ComputedSize,
+        &mut Transform,
     )>,
 ) {
     for solved in solved_children.iter() {
         if let Ok((_, _, _, _, _, _, mut computed, mut transform)) =
-            nodes_query.get_mut(solved.entity) 
+            nodes_query.get_mut(solved.entity)
         {
             computed.width = solved.result.size.x;
             computed.height = solved.result.size.y;
@@ -297,14 +293,11 @@ fn apply_results_to_children(
             let child_w = solved.result.size.x;
             let child_h = solved.result.size.y;
 
-            transform.translation.x = (-parent_size.x / 2.0) 
-                + solved.result.pos.x 
-                + (child_w / 2.0);
-                
-            transform.translation.y = (parent_size.y / 2.0) 
-                - solved.result.pos.y 
-                - (child_h / 2.0);
-            
+            transform.translation.x =
+                (-parent_size.x / 2.0) + solved.result.pos.x + (child_w / 2.0);
+
+            transform.translation.y = (parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0);
+
             transform.translation.z = 0.1;
         }
     }
@@ -323,10 +316,7 @@ fn map_uval_to_mode(val: UVal) -> SolverSizeMode {
     }
 }
 
-fn translate_config(
-    layout: &ULayout,
-    node: &UNode,
-) -> SolverConfig {
+fn translate_config(layout: &ULayout, node: &UNode) -> SolverConfig {
     SolverConfig {
         layout: layout.clone(),
         gap: layout.gap,
@@ -348,10 +338,7 @@ fn translate_config(
     }
 }
 
-fn translate_spec(
-    node: &UNode,
-    uself: Option<&USelf>,
-) -> SolverSpec {
+fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
     let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
         match dim {
             UVal::Px(v) => (SolverSizeMode::Fixed, v, 0.0),
@@ -366,28 +353,45 @@ fn translate_spec(
 
     let (pos_type, l, r, t, b, align, order) = if let Some(u) = uself {
         (
-            u.position_type, u.left, u.right, u.top, u.bottom,
-            if u.align_self == UAlignSelf::Auto { None } else { Some(u.align_self) },
+            u.position_type,
+            u.left,
+            u.right,
+            u.top,
+            u.bottom,
+            if u.align_self == UAlignSelf::Auto {
+                None
+            } else {
+                Some(u.align_self)
+            },
             u.order,
         )
     } else {
         (
             UPositionType::Relative,
-            UVal::Auto, UVal::Auto, UVal::Auto, UVal::Auto,
-            None, 0,
+            UVal::Auto,
+            UVal::Auto,
+            UVal::Auto,
+            UVal::Auto,
+            None,
+            0,
         )
     };
-    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) = if let Some(u) = uself
-    {
-        (
-            u.item_ext.box_align.align_self,
-            u.item_ext.box_align.justify_self,
-            u.item_ext.box_align.justify_overflow,
-            u.item_ext.box_align.align_overflow,
-        )
-    } else {
-        (None, None, UOverflowPosition::Unsafe, UOverflowPosition::Unsafe)
-    };
+    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) =
+        if let Some(u) = uself {
+            (
+                u.item_ext.box_align.align_self,
+                u.item_ext.box_align.justify_self,
+                u.item_ext.box_align.justify_overflow,
+                u.item_ext.box_align.align_overflow,
+            )
+        } else {
+            (
+                None,
+                None,
+                UOverflowPosition::Unsafe,
+                UOverflowPosition::Unsafe,
+            )
+        };
     let (flex_grow, flex_shrink, flex_basis) = if let Some(u) = uself {
         (
             u.item_ext.flex.flex_grow.map(|v| v.max(0.0)),
@@ -397,23 +401,30 @@ fn translate_spec(
     } else {
         (None, None, None)
     };
-    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) = if let Some(u) = uself
-    {
-        (
-            u.item_ext.grid.column_start,
-            u.item_ext.grid.column_span.max(1),
-            u.item_ext.grid.row_start,
-            u.item_ext.grid.row_span.max(1),
-        )
-    } else {
-        (None, 1, None, 1)
-    };
+    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) =
+        if let Some(u) = uself {
+            (
+                u.item_ext.grid.column_start,
+                u.item_ext.grid.column_span.max(1),
+                u.item_ext.grid.row_start,
+                u.item_ext.grid.row_span.max(1),
+            )
+        } else {
+            (None, 1, None, 1)
+        };
 
     SolverSpec {
-        width_mode: w_mode, width_val: w_val, width_flex: w_flex,
-        height_mode: h_mode, height_val: h_val, height_flex: h_flex,
+        width_mode: w_mode,
+        width_val: w_val,
+        width_flex: w_flex,
+        height_mode: h_mode,
+        height_val: h_val,
+        height_flex: h_flex,
         position_type: pos_type,
-        left: l, right: r, top: t, bottom: b,
+        left: l,
+        right: r,
+        top: t,
+        bottom: b,
         align_self: align,
         align_self_ext,
         justify_self_ext,

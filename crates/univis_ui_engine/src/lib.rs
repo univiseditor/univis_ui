@@ -35,7 +35,7 @@ pub mod prelude {
     pub use crate::layout::layout_system::{UScreenRoot, UWorldRoot};
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;
-    pub use crate::{layout::prelude::*, UnivisEnginePlugin};
+    pub use crate::{UnivisEnginePlugin, layout::prelude::*};
 }
 
 pub struct UnivisEnginePlugin;

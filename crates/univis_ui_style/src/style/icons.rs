@@ -1,5 +1,5 @@
 //! Icons
-//! 
+//!
 pub struct Icon;
 impl Icon {
     pub const TYPE: &str = "\u{e198}";

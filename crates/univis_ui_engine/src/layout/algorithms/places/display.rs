@@ -1,5 +1,5 @@
-use bevy::math::Vec2;
 use crate::internal_prelude::*;
+use bevy::math::Vec2;
 
 fn map_legacy_align_items(align: UAlignItems) -> UAlignItemsExt {
     match align {
@@ -40,9 +40,17 @@ fn map_items_ext_to_self_ext(align: UAlignItemsExt) -> UAlignSelfExt {
 
 fn canonical_align_self(value: UAlignSelfExt) -> UAlignSelfExt {
     match value {
-        UAlignSelfExt::Auto | UAlignSelfExt::Normal | UAlignSelfExt::Baseline | UAlignSelfExt::FirstBaseline | UAlignSelfExt::LastBaseline => UAlignSelfExt::Start,
-        UAlignSelfExt::FlexStart | UAlignSelfExt::SelfStart | UAlignSelfExt::Left => UAlignSelfExt::Start,
-        UAlignSelfExt::FlexEnd | UAlignSelfExt::SelfEnd | UAlignSelfExt::Right => UAlignSelfExt::End,
+        UAlignSelfExt::Auto
+        | UAlignSelfExt::Normal
+        | UAlignSelfExt::Baseline
+        | UAlignSelfExt::FirstBaseline
+        | UAlignSelfExt::LastBaseline => UAlignSelfExt::Start,
+        UAlignSelfExt::FlexStart | UAlignSelfExt::SelfStart | UAlignSelfExt::Left => {
+            UAlignSelfExt::Start
+        }
+        UAlignSelfExt::FlexEnd | UAlignSelfExt::SelfEnd | UAlignSelfExt::Right => {
+            UAlignSelfExt::End
+        }
         other => other,
     }
 }
@@ -76,7 +84,9 @@ fn resolve_cross_align(spec: &SolverSpec, container_align: UAlignItems) -> UAlig
         }
     }
 
-    canonical_align_self(map_items_ext_to_self_ext(map_legacy_align_items(container_align)))
+    canonical_align_self(map_items_ext_to_self_ext(map_legacy_align_items(
+        container_align,
+    )))
 }
 
 fn resolve_justify_self(spec: &SolverSpec, ctx: &PlacementContext) -> UAlignSelfExt {
@@ -140,7 +150,11 @@ fn resolve_track_sizes(
     gap: f32,
     required_min: usize,
 ) -> Vec<f32> {
-    let base_count = if template.is_empty() { fallback_count.max(1) } else { template.len() };
+    let base_count = if template.is_empty() {
+        fallback_count.max(1)
+    } else {
+        template.len()
+    };
     let mut track_defs = if template.is_empty() {
         vec![auto_track; base_count]
     } else {
@@ -152,7 +166,11 @@ fn resolve_track_sizes(
     }
 
     let count = track_defs.len();
-    let total_gap = if count > 1 { (count as f32 - 1.0) * gap } else { 0.0 };
+    let total_gap = if count > 1 {
+        (count as f32 - 1.0) * gap
+    } else {
+        0.0
+    };
     let distributable = (available_space - total_gap).max(0.0);
 
     let mut fixed_sum = 0.0;
@@ -252,7 +270,8 @@ impl LayoutPlacer for FlexPlacer {
             return Vec2::ZERO;
         }
 
-        let content_main = (ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end).max(0.0);
+        let content_main =
+            (ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end).max(0.0);
         let wrap_enabled = ctx.flex_wrap != UFlexWrap::NoWrap;
 
         let mut lines: Vec<FlexLine> = Vec::new();
@@ -263,7 +282,8 @@ impl LayoutPlacer for FlexPlacer {
         for i in 0..items.len() {
             let item = &items[i];
             let (child_main, child_cross) = axis.from_world(item.result.size);
-            let (m_main_start, m_main_end, m_cross_start, m_cross_end) = axis.extract_margin_sides(item.margin);
+            let (m_main_start, m_main_end, m_cross_start, m_cross_end) =
+                axis.extract_margin_sides(item.margin);
             let item_main_span = child_main + m_main_start + m_main_end;
             let item_cross_span = child_cross + m_cross_start + m_cross_end;
             let tentative = if i == line_start {
@@ -328,7 +348,10 @@ impl LayoutPlacer for FlexPlacer {
             UContentAlignExt::End | UContentAlignExt::FlexEnd => (free_cross, ctx.cross_gap),
             UContentAlignExt::SpaceBetween => {
                 if line_count > 1 {
-                    (0.0, ctx.cross_gap + (free_cross / (line_count as f32 - 1.0)))
+                    (
+                        0.0,
+                        ctx.cross_gap + (free_cross / (line_count as f32 - 1.0)),
+                    )
                 } else {
                     (0.0, ctx.cross_gap)
                 }
@@ -357,8 +380,9 @@ impl LayoutPlacer for FlexPlacer {
 
         if ctx.flex_wrap == UFlexWrap::WrapReverse {
             for i in 0..line_count {
-                line_starts[i] =
-                    ctx.container_cross_size - ctx.padding_cross_start - ((line_starts[i] - ctx.padding_cross_start) + line_sizes[i]);
+                line_starts[i] = ctx.container_cross_size
+                    - ctx.padding_cross_start
+                    - ((line_starts[i] - ctx.padding_cross_start) + line_sizes[i]);
             }
         }
 
@@ -377,7 +401,10 @@ impl LayoutPlacer for FlexPlacer {
                 UJustifyContent::End => (ctx.padding_main_start + free_main, 0.0),
                 UJustifyContent::SpaceBetween => {
                     if line_items > 1 {
-                        (ctx.padding_main_start, free_main / (line_items as f32 - 1.0))
+                        (
+                            ctx.padding_main_start,
+                            free_main / (line_items as f32 - 1.0),
+                        )
                     } else {
                         (ctx.padding_main_start, 0.0)
                     }
@@ -395,7 +422,8 @@ impl LayoutPlacer for FlexPlacer {
 
             for item in items.iter_mut().take(line.end).skip(line.start) {
                 let (child_main, mut child_cross) = axis.from_world(item.result.size);
-                let (m_main_start, m_main_end, m_cross_start, m_cross_end) = axis.extract_margin_sides(item.margin);
+                let (m_main_start, m_main_end, m_cross_start, m_cross_end) =
+                    axis.extract_margin_sides(item.margin);
 
                 let cross_align = resolve_cross_align(&item.spec, ctx.align_items);
                 let (_, cross_mode, _) = {
@@ -404,14 +432,17 @@ impl LayoutPlacer for FlexPlacer {
                     (main_mode, cross_mode, ())
                 };
 
-                if canonical_align_self(cross_align) == UAlignSelfExt::Stretch && cross_mode != SolverSizeMode::Fixed {
+                if canonical_align_self(cross_align) == UAlignSelfExt::Stretch
+                    && cross_mode != SolverSizeMode::Fixed
+                {
                     child_cross = (line_sizes[line_idx] - m_cross_start - m_cross_end).max(0.0);
                     item.result.size = axis.to_world(child_main, child_cross);
                 }
 
                 let occupied_cross = child_cross + m_cross_start + m_cross_end;
                 let free_cross_in_line = line_sizes[line_idx] - occupied_cross;
-                let cross_offset = alignment_offset(cross_align, free_cross_in_line, item.spec.align_overflow);
+                let cross_offset =
+                    alignment_offset(cross_align, free_cross_in_line, item.spec.align_overflow);
                 let pos_cross = line_starts[line_idx] + m_cross_start + cross_offset;
 
                 let mut pos_main = main_cursor + m_main_start;
@@ -422,7 +453,10 @@ impl LayoutPlacer for FlexPlacer {
                 item.result.pos = axis.to_world(pos_main, pos_cross);
                 let item_span = m_main_start + child_main + m_main_end;
 
-                if matches!(ctx.justify_content, UJustifyContent::SpaceEvenly | UJustifyContent::SpaceAround) {
+                if matches!(
+                    ctx.justify_content,
+                    UJustifyContent::SpaceEvenly | UJustifyContent::SpaceAround
+                ) {
                     main_cursor += item_span + step_extra;
                 } else {
                     main_cursor += item_span + ctx.main_gap + step_extra;
@@ -432,7 +466,12 @@ impl LayoutPlacer for FlexPlacer {
             }
         }
 
-        let total_cross_used: f32 = line_sizes.iter().sum::<f32>() + if line_count > 1 { (line_count as f32 - 1.0) * ctx.cross_gap } else { 0.0 };
+        let total_cross_used: f32 = line_sizes.iter().sum::<f32>()
+            + if line_count > 1 {
+                (line_count as f32 - 1.0) * ctx.cross_gap
+            } else {
+                0.0
+            };
         let calculated_cross = total_cross_used + (ctx.padding_cross_start * 2.0);
         let calculated_main = max_main_used + ctx.padding_main_start + ctx.padding_main_end;
 
@@ -450,7 +489,8 @@ impl LayoutPlacer for GridPlacer {
             return Vec2::ZERO;
         }
 
-        let available_main = (ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end).max(0.0);
+        let available_main =
+            (ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end).max(0.0);
         let available_cross = (ctx.container_cross_size - ctx.padding_cross_start * 2.0).max(0.0);
 
         let fallback_cols = self.columns.max(ctx.grid_columns as usize).max(1);
@@ -479,8 +519,15 @@ impl LayoutPlacer for GridPlacer {
         for item in items.iter() {
             let col_span = item.spec.grid_column_span.max(1) as usize;
             let row_span = item.spec.grid_row_span.max(1) as usize;
-            let fixed_col = item.spec.grid_column_start.map(|v| v.saturating_sub(1) as usize).map(|v| v.min(cols.saturating_sub(1)));
-            let fixed_row = item.spec.grid_row_start.map(|v| v.saturating_sub(1) as usize);
+            let fixed_col = item
+                .spec
+                .grid_column_start
+                .map(|v| v.saturating_sub(1) as usize)
+                .map(|v| v.min(cols.saturating_sub(1)));
+            let fixed_row = item
+                .spec
+                .grid_row_start
+                .map(|v| v.saturating_sub(1) as usize);
             let is_fully_auto = fixed_col.is_none() && fixed_row.is_none();
 
             let mut found = None;
@@ -514,7 +561,9 @@ impl LayoutPlacer for GridPlacer {
                                 }
                             } else {
                                 for col in first_col..cols {
-                                    if can_place_span(&occupancy, row, col, row_span, col_span, cols) {
+                                    if can_place_span(
+                                        &occupancy, row, col, row_span, col_span, cols,
+                                    ) {
                                         found = Some((row, col));
                                         break;
                                     }
@@ -533,7 +582,8 @@ impl LayoutPlacer for GridPlacer {
                             ensure_grid_rows(&mut occupancy, search_rows + row_span, cols);
                             if let Some(fc) = fixed_col {
                                 for row in fixed_row.unwrap_or(0)..(search_rows + row_span) {
-                                    if can_place_span(&occupancy, row, fc, row_span, col_span, cols) {
+                                    if can_place_span(&occupancy, row, fc, row_span, col_span, cols)
+                                    {
                                         found = Some((row, fc));
                                         break;
                                     }
@@ -541,7 +591,9 @@ impl LayoutPlacer for GridPlacer {
                             } else {
                                 for col in 0..cols {
                                     for row in fixed_row.unwrap_or(0)..(search_rows + row_span) {
-                                        if can_place_span(&occupancy, row, col, row_span, col_span, cols) {
+                                        if can_place_span(
+                                            &occupancy, row, col, row_span, col_span, cols,
+                                        ) {
                                             found = Some((row, col));
                                             break;
                                         }
@@ -603,7 +655,8 @@ impl LayoutPlacer for GridPlacer {
 
         for (idx, item) in items.iter_mut().enumerate() {
             let (row, col, row_span, col_span) = placements[idx];
-            let (m_main_start, m_main_end, m_cross_start, m_cross_end) = axis.extract_margin_sides(item.margin);
+            let (m_main_start, m_main_end, m_cross_start, m_cross_end) =
+                axis.extract_margin_sides(item.margin);
 
             let cell_main_start = ctx.padding_main_start + col_starts[col];
             let cell_cross_start = ctx.padding_cross_start + row_starts[row];
@@ -636,7 +689,9 @@ impl LayoutPlacer for GridPlacer {
             {
                 justify_self = UAlignSelfExt::Stretch;
             }
-            if canonical_align_self(justify_self) == UAlignSelfExt::Stretch && main_mode != SolverSizeMode::Fixed {
+            if canonical_align_self(justify_self) == UAlignSelfExt::Stretch
+                && main_mode != SolverSizeMode::Fixed
+            {
                 child_main = (cell_main_size - m_main_start - m_main_end).max(0.0);
             }
 
@@ -653,7 +708,9 @@ impl LayoutPlacer for GridPlacer {
             {
                 align_self = UAlignSelfExt::Stretch;
             }
-            if canonical_align_self(align_self) == UAlignSelfExt::Stretch && cross_mode != SolverSizeMode::Fixed {
+            if canonical_align_self(align_self) == UAlignSelfExt::Stretch
+                && cross_mode != SolverSizeMode::Fixed
+            {
                 child_cross = (cell_cross_size - m_cross_start - m_cross_end).max(0.0);
             }
 
@@ -671,8 +728,21 @@ impl LayoutPlacer for GridPlacer {
             item.result.pos = axis.to_world(pos_main, pos_cross);
         }
 
-        let total_main = col_sizes.iter().sum::<f32>() + if cols > 1 { (cols as f32 - 1.0) * ctx.main_gap } else { 0.0 } + ctx.padding_main_start + ctx.padding_main_end;
-        let total_cross = row_sizes.iter().sum::<f32>() + if rows > 1 { (rows as f32 - 1.0) * ctx.cross_gap } else { 0.0 } + (ctx.padding_cross_start * 2.0);
+        let total_main = col_sizes.iter().sum::<f32>()
+            + if cols > 1 {
+                (cols as f32 - 1.0) * ctx.main_gap
+            } else {
+                0.0
+            }
+            + ctx.padding_main_start
+            + ctx.padding_main_end;
+        let total_cross = row_sizes.iter().sum::<f32>()
+            + if rows > 1 {
+                (rows as f32 - 1.0) * ctx.cross_gap
+            } else {
+                0.0
+            }
+            + (ctx.padding_cross_start * 2.0);
 
         Vec2::new(total_main, total_cross)
     }
@@ -688,16 +758,24 @@ impl LayoutPlacer for StackPlacer {
 
         for (i, item) in items.iter_mut().enumerate() {
             let (child_main, child_cross) = axis.from_world(item.result.size);
-            let (m_main_start, m_main_end, m_cross_start, m_cross_end) = axis.extract_margin_sides(item.margin);
+            let (m_main_start, m_main_end, m_cross_start, m_cross_end) =
+                axis.extract_margin_sides(item.margin);
 
             let total_child_main = child_main + m_main_start + m_main_end;
-            let free_main = (ctx.container_main_size - (ctx.padding_main_start + ctx.padding_main_end) - total_child_main).max(0.0);
+            let free_main = (ctx.container_main_size
+                - (ctx.padding_main_start + ctx.padding_main_end)
+                - total_child_main)
+                .max(0.0);
             let center_main = ctx.padding_main_start + (free_main * 0.5) + m_main_start;
 
             let align_self = resolve_cross_align(&item.spec, ctx.align_items);
             let occupied_cross = child_cross + m_cross_start + m_cross_end;
-            let free_cross = (ctx.container_cross_size - (ctx.padding_cross_start * 2.0) - occupied_cross).max(0.0);
-            let center_cross = ctx.padding_cross_start + m_cross_start + alignment_offset(align_self, free_cross, item.spec.align_overflow);
+            let free_cross =
+                (ctx.container_cross_size - (ctx.padding_cross_start * 2.0) - occupied_cross)
+                    .max(0.0);
+            let center_cross = ctx.padding_cross_start
+                + m_cross_start
+                + alignment_offset(align_self, free_cross, item.spec.align_overflow);
 
             let offset = i as f32 * offset_step;
             item.result.pos = axis.to_world(center_main + offset, center_cross + offset);
@@ -706,7 +784,10 @@ impl LayoutPlacer for StackPlacer {
             max_cross_used = max_cross_used.max(center_cross + offset + child_cross + m_cross_end);
         }
 
-        Vec2::new(max_main_used + ctx.padding_main_end, max_cross_used + ctx.padding_cross_start)
+        Vec2::new(
+            max_main_used + ctx.padding_main_end,
+            max_cross_used + ctx.padding_cross_start,
+        )
     }
 }
 
@@ -721,13 +802,15 @@ impl LayoutPlacer for MasonryPlacer {
         }
 
         let total_gaps = (self.columns as f32 - 1.0) * ctx.main_gap;
-        let available_width = (ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end).max(0.0);
+        let available_width =
+            (ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end).max(0.0);
         let col_width = (available_width - total_gaps).max(0.0) / self.columns as f32;
 
         let mut col_heights = vec![ctx.padding_cross_start; self.columns];
 
         for item in items.iter_mut() {
-            let (m_main_start, m_main_end, m_cross_start, m_cross_end) = axis.extract_margin_sides(item.margin);
+            let (m_main_start, m_main_end, m_cross_start, m_cross_end) =
+                axis.extract_margin_sides(item.margin);
 
             let (shortest_col_idx, &current_y) = col_heights
                 .iter()
@@ -735,7 +818,9 @@ impl LayoutPlacer for MasonryPlacer {
                 .min_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
                 .unwrap();
 
-            let pos_main = ctx.padding_main_start + (shortest_col_idx as f32 * (col_width + ctx.main_gap)) + m_main_start;
+            let pos_main = ctx.padding_main_start
+                + (shortest_col_idx as f32 * (col_width + ctx.main_gap))
+                + m_main_start;
             let pos_cross = current_y + m_cross_start;
             item.result.pos = axis.to_world(pos_main, pos_cross);
 
@@ -743,11 +828,18 @@ impl LayoutPlacer for MasonryPlacer {
             let new_main = (col_width - m_main_start - m_main_end).max(0.0);
             item.result.size = axis.to_world(new_main, child_cross);
 
-            col_heights[shortest_col_idx] += m_cross_start + child_cross + m_cross_end + ctx.cross_gap;
+            col_heights[shortest_col_idx] +=
+                m_cross_start + child_cross + m_cross_end + ctx.cross_gap;
         }
 
-        let max_height = *col_heights.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-        Vec2::new(ctx.container_main_size, max_height + ctx.padding_cross_start)
+        let max_height = *col_heights
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap();
+        Vec2::new(
+            ctx.container_main_size,
+            max_height + ctx.padding_cross_start,
+        )
     }
 }
 
@@ -766,7 +858,8 @@ impl LayoutPlacer for RadialPlacer {
 
         let min_dim = w.min(h);
         let radius = if min_dim < 50.0 {
-            let total_item_width: f32 = items.iter().map(|i| axis.from_world(i.result.size).0).sum();
+            let total_item_width: f32 =
+                items.iter().map(|i| axis.from_world(i.result.size).0).sum();
             (total_item_width * 1.5 / std::f32::consts::TAU).max(100.0)
         } else {
             (min_dim * 0.5) - 20.0
@@ -880,7 +973,11 @@ mod tests {
     #[test]
     fn track_resolution_uses_fr_distribution() {
         let tracks = resolve_track_sizes(
-            &[UTrackSize::Px(100.0), UTrackSize::Fr(1.0), UTrackSize::Fr(2.0)],
+            &[
+                UTrackSize::Px(100.0),
+                UTrackSize::Fr(1.0),
+                UTrackSize::Fr(2.0),
+            ],
             3,
             UTrackSize::Auto,
             400.0,
@@ -943,14 +1040,35 @@ mod tests {
 
     #[test]
     fn wrap_and_align_content_center_pushes_lines_down() {
-        let mut r1 = SolverResult { size: Vec2::new(70.0, 20.0), pos: Vec2::ZERO };
-        let mut r2 = SolverResult { size: Vec2::new(70.0, 20.0), pos: Vec2::ZERO };
-        let mut r3 = SolverResult { size: Vec2::new(70.0, 20.0), pos: Vec2::ZERO };
+        let mut r1 = SolverResult {
+            size: Vec2::new(70.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r2 = SolverResult {
+            size: Vec2::new(70.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r3 = SolverResult {
+            size: Vec2::new(70.0, 20.0),
+            pos: Vec2::ZERO,
+        };
         let spec = default_spec();
         let mut items = vec![
-            SolverItem { spec, result: &mut r1, margin: USides::default() },
-            SolverItem { spec, result: &mut r2, margin: USides::default() },
-            SolverItem { spec, result: &mut r3, margin: USides::default() },
+            SolverItem {
+                spec,
+                result: &mut r1,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec,
+                result: &mut r2,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec,
+                result: &mut r3,
+                margin: USides::default(),
+            },
         ];
 
         let mut ctx = base_ctx();
@@ -972,12 +1090,26 @@ mod tests {
 
     #[test]
     fn row_gap_is_applied_between_wrapped_lines() {
-        let mut r1 = SolverResult { size: Vec2::new(70.0, 10.0), pos: Vec2::ZERO };
-        let mut r2 = SolverResult { size: Vec2::new(70.0, 10.0), pos: Vec2::ZERO };
+        let mut r1 = SolverResult {
+            size: Vec2::new(70.0, 10.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r2 = SolverResult {
+            size: Vec2::new(70.0, 10.0),
+            pos: Vec2::ZERO,
+        };
         let spec = default_spec();
         let mut items = vec![
-            SolverItem { spec, result: &mut r1, margin: USides::default() },
-            SolverItem { spec, result: &mut r2, margin: USides::default() },
+            SolverItem {
+                spec,
+                result: &mut r1,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec,
+                result: &mut r2,
+                margin: USides::default(),
+            },
         ];
 
         let mut ctx = base_ctx();
@@ -1024,9 +1156,18 @@ mod tests {
 
     #[test]
     fn grid_span_affects_auto_placement() {
-        let mut r1 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
-        let mut r2 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
-        let mut r3 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
+        let mut r1 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r2 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r3 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
 
         let mut s1 = default_spec();
         s1.grid_column_span = 2;
@@ -1034,9 +1175,21 @@ mod tests {
         let s3 = default_spec();
 
         let mut items = vec![
-            SolverItem { spec: s1, result: &mut r1, margin: USides::default() },
-            SolverItem { spec: s2, result: &mut r2, margin: USides::default() },
-            SolverItem { spec: s3, result: &mut r3, margin: USides::default() },
+            SolverItem {
+                spec: s1,
+                result: &mut r1,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: s2,
+                result: &mut r2,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: s3,
+                result: &mut r3,
+                margin: USides::default(),
+            },
         ];
 
         let mut ctx = base_ctx();
@@ -1056,11 +1209,26 @@ mod tests {
 
     #[test]
     fn grid_auto_flow_row_is_sparse_no_backfill() {
-        let mut r1 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
-        let mut r2 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
-        let mut r3 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
-        let mut r4 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
-        let mut r5 = SolverResult { size: Vec2::new(20.0, 20.0), pos: Vec2::ZERO };
+        let mut r1 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r2 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r3 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r4 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
+        let mut r5 = SolverResult {
+            size: Vec2::new(20.0, 20.0),
+            pos: Vec2::ZERO,
+        };
 
         let mut s1 = default_spec();
         s1.grid_column_span = 2;
@@ -1073,11 +1241,31 @@ mod tests {
         let s5 = default_spec();
 
         let mut items = vec![
-            SolverItem { spec: s1, result: &mut r1, margin: USides::default() },
-            SolverItem { spec: s2, result: &mut r2, margin: USides::default() },
-            SolverItem { spec: s3, result: &mut r3, margin: USides::default() },
-            SolverItem { spec: s4, result: &mut r4, margin: USides::default() },
-            SolverItem { spec: s5, result: &mut r5, margin: USides::default() },
+            SolverItem {
+                spec: s1,
+                result: &mut r1,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: s2,
+                result: &mut r2,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: s3,
+                result: &mut r3,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: s4,
+                result: &mut r4,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: s5,
+                result: &mut r5,
+                margin: USides::default(),
+            },
         ];
 
         let mut ctx = base_ctx();

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 // --- ComputedSize ---
 
@@ -15,9 +15,8 @@ pub struct ComputedSize {
     /// The calculated height of the node in logical pixels.
     pub height: f32,
     /// The local position of the node relative to its parent's center.
-    pub local_pos: Vec2, 
+    pub local_pos: Vec2,
 }
-
 
 impl ComputedSize {
     /// Returns the calculated dimensions as a `Vec2`.
@@ -40,11 +39,13 @@ pub enum UVal {
     /// Automatic sizing (fills remaining space or adapts to context).
     Auto,
     /// Flex grow factor. Takes a share of the remaining space.
-    Flex(f32)
+    Flex(f32),
 }
 
 impl Default for UVal {
-    fn default() -> Self { Self::Px(0.0) }
+    fn default() -> Self {
+        Self::Px(0.0)
+    }
 }
 
 impl UVal {
@@ -76,7 +77,12 @@ impl USides {
     /// # Example
     /// `padding: USides::all(10.0)`
     pub fn all(val: f32) -> Self {
-        Self { left: val, right: val, top: val, bottom: val }
+        Self {
+            left: val,
+            right: val,
+            top: val,
+            bottom: val,
+        }
     }
 
     /// Creates spacing for horizontal and vertical axes separately.
@@ -84,71 +90,71 @@ impl USides {
     /// `row`: Applied to Left/Right.
     /// `column`: Applied to Top/Bottom.
     pub fn axes(row: f32, column: f32) -> Self {
-        Self { 
-            left: row, 
-            right: row, 
-            top: column, 
-            bottom: column 
+        Self {
+            left: row,
+            right: row,
+            top: column,
+            bottom: column,
         }
     }
 
     /// Creates spacing for the horizontal axis (Left + Right) only.
     pub fn row(val: f32) -> Self {
-        Self { 
-            left: val, 
-            right: val, 
-            top: 0.0, 
-            bottom: 0.0 
+        Self {
+            left: val,
+            right: val,
+            top: 0.0,
+            bottom: 0.0,
         }
     }
 
     /// Creates spacing for the vertical axis (Top + Bottom) only.
     pub fn column(val: f32) -> Self {
-        Self { 
-            left: 0.0, 
-            right: 0.0, 
-            top: val, 
-            bottom: val 
+        Self {
+            left: 0.0,
+            right: 0.0,
+            top: val,
+            bottom: val,
         }
     }
 
     /// Creates spacing for the bottom side only.
     pub fn bottom(val: f32) -> Self {
-        Self { 
-            left: 0.0, 
-            right: 0.0, 
-            top: 0.0, 
-            bottom: val 
+        Self {
+            left: 0.0,
+            right: 0.0,
+            top: 0.0,
+            bottom: val,
         }
     }
 
     /// Creates spacing for the top side only.
     pub fn top(val: f32) -> Self {
-        Self { 
-            left: 0.0, 
-            right: 0.0, 
-            top: val, 
-            bottom: 0.0 
+        Self {
+            left: 0.0,
+            right: 0.0,
+            top: val,
+            bottom: 0.0,
         }
     }
 
     /// Creates spacing for the left side only.
     pub fn left(val: f32) -> Self {
-        Self { 
-            left: val, 
-            right: 0.0, 
-            top: 0.0, 
-            bottom: 0.0 
+        Self {
+            left: val,
+            right: 0.0,
+            top: 0.0,
+            bottom: 0.0,
         }
     }
 
     /// Creates spacing for the right side only.
     pub fn right(val: f32) -> Self {
-        Self { 
-            left: 0.0, 
-            right: val, 
-            top: 0.0, 
-            bottom: 0.0 
+        Self {
+            left: 0.0,
+            right: val,
+            top: 0.0,
+            bottom: 0.0,
         }
     }
 
@@ -177,16 +183,31 @@ pub struct UCornerRadius {
 impl UCornerRadius {
     /// Sets all corners to the same radius value.
     pub fn all(val: f32) -> Self {
-        Self { top_left: val, top_right: val, bottom_right: val, bottom_left: val }
+        Self {
+            top_left: val,
+            top_right: val,
+            bottom_right: val,
+            bottom_left: val,
+        }
     }
     /// Sets only the top corners (Top-Left, Top-Right). Useful for tabs.
     pub fn top(val: f32) -> Self {
-        Self { top_left: val, top_right: val, bottom_right: 0.0, bottom_left: 0.0 }
+        Self {
+            top_left: val,
+            top_right: val,
+            bottom_right: 0.0,
+            bottom_left: 0.0,
+        }
     }
 
     /// Sets only the bottom corners.
     pub fn bottom(val: f32) -> Self {
-        Self { top_left: 0.0, top_right: 0.0, bottom_right: val, bottom_left: val }
+        Self {
+            top_left: 0.0,
+            top_right: 0.0,
+            bottom_right: val,
+            bottom_left: val,
+        }
     }
 }
 
@@ -195,7 +216,6 @@ pub struct AxisPadding {
     pub main: f32,  // Sum of padding on the main axis
     pub cross: f32, // Sum of padding on the cross axis
 }
-
 
 /// A helper struct to abstract Main/Cross axis logic.
 /// Allows writing a single algorithm for both Row and Column directions.
@@ -210,7 +230,10 @@ impl AxisHelper {
 
     /// هل الاتجاه معكوس؟
     pub fn is_reverse(&self) -> bool {
-        matches!(self.axis, UFlexDirection::RowReverse | UFlexDirection::ColumnReverse)
+        matches!(
+            self.axis,
+            UFlexDirection::RowReverse | UFlexDirection::ColumnReverse
+        )
     }
 
     /// هل هو صف (أفقي)؟
@@ -236,9 +259,19 @@ impl AxisHelper {
 
     pub fn extract_constraints(&self, constraints: BoxConstraints) -> (f32, f32, f32, f32) {
         if self.is_row() {
-            (constraints.min_width, constraints.max_width, constraints.min_height, constraints.max_height)
+            (
+                constraints.min_width,
+                constraints.max_width,
+                constraints.min_height,
+                constraints.max_height,
+            )
         } else {
-            (constraints.min_height, constraints.max_height, constraints.min_width, constraints.max_width)
+            (
+                constraints.min_height,
+                constraints.max_height,
+                constraints.min_width,
+                constraints.max_width,
+            )
         }
     }
 
@@ -265,7 +298,7 @@ impl AxisHelper {
             (margin.top, margin.bottom, margin.left, margin.right)
         }
     }
-    
+
     // ... باقي الدوال (get_main_spec, get_cross_spec) تستخدم نفس منطق is_row()
     pub fn get_main_spec(&self, spec: &SolverSpec) -> (SolverSizeMode, f32, f32) {
         if self.is_row() {

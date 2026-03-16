@@ -1,12 +1,11 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisButtonPlugin;
 
 impl Plugin for UnivisButtonPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UButton>()
+        app.register_type::<UButton>()
             .add_systems(Update, attach_button_observers);
     }
 }
@@ -47,21 +46,20 @@ fn attach_button_observers(
     query: Query<(Entity, &UButton), Without<ButtonObserved>>,
 ) {
     for (entity, button) in query.iter() {
-        commands.entity(entity)
-            .insert((
-                UNode {
-                    padding: button.padding,
-                    background_color: button.background,
-                    border_radius: button.border_radius,
-                    ..default()
-                },
-                UInteractionColors {
-                    normal: button.background,
-                    hovered: button.hover_color,
-                    pressed: button.pressed_color,
-                },
-                ButtonObserved,
-            ));
+        commands.entity(entity).insert((
+            UNode {
+                padding: button.padding,
+                background_color: button.background,
+                border_radius: button.border_radius,
+                ..default()
+            },
+            UInteractionColors {
+                normal: button.background,
+                hovered: button.hover_color,
+                pressed: button.pressed_color,
+            },
+            ButtonObserved,
+        ));
     }
 }
 

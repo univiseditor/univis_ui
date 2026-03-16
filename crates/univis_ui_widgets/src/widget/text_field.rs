@@ -1,5 +1,8 @@
-use bevy::{input::{ButtonState, keyboard::*}, prelude::*};
 use crate::internal_prelude::*;
+use bevy::{
+    input::{ButtonState, keyboard::*},
+    prelude::*,
+};
 
 pub struct UnivisTextFieldPlugin;
 
@@ -8,19 +11,22 @@ pub(crate) struct TextFieldPluginInstalled;
 
 impl Plugin for UnivisTextFieldPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<TextFieldPluginInstalled>()
+        app.init_resource::<TextFieldPluginInstalled>()
             .register_type::<UTextField>()
             .add_message::<TextFieldChangedEvent>()
             .add_message::<TextFieldSubmitEvent>()
-            .add_systems(Update, (
-                init_textfield_visuals,
-                handle_global_unfocus,  // ✅ نظام جديد
-                handle_textfield_input,
-                update_textfield_visuals,
-                animate_textfield_cursor,
-                emit_textfield_events,
-            ).chain());
+            .add_systems(
+                Update,
+                (
+                    init_textfield_visuals,
+                    handle_global_unfocus, // ✅ نظام جديد
+                    handle_textfield_input,
+                    update_textfield_visuals,
+                    animate_textfield_cursor,
+                    emit_textfield_events,
+                )
+                    .chain(),
+            );
     }
 }
 
@@ -99,7 +105,7 @@ impl UTextField {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     pub fn with_text(mut self, text: impl Into<String>) -> Self {
         let text = text.into();
         self.cursor_position = text.len();
@@ -107,23 +113,23 @@ impl UTextField {
         self.previous_text = text;
         self
     }
-    
+
     pub fn with_placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
-    
+
     pub fn with_size(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
         self
     }
-    
+
     pub fn with_max_length(mut self, max: usize) -> Self {
         self.max_length = Some(max);
         self
     }
-    
+
     pub fn input_type(mut self, input_type: TextFieldInputType) -> Self {
         self.input_type = input_type;
         self
@@ -148,19 +154,18 @@ fn init_textfield_visuals(
     query: Query<(Entity, &UTextField), Added<UTextField>>,
 ) {
     for (entity, textfield) in query.iter() {
-        
         let border_color = if textfield.focused {
             textfield.border_focused_color
         } else {
             textfield.border_color
         };
-        
+
         let bg_color = if textfield.focused {
             textfield.background_focused_color
         } else {
             textfield.background_color
         };
-        
+
         commands.entity(entity).insert((
             UNode {
                 width: UVal::Px(textfield.width),
@@ -185,9 +190,9 @@ fn init_textfield_visuals(
                 ..default()
             },
         ));
-        
+
         commands.entity(entity).observe(on_textfield_click);
-        
+
         commands.entity(entity).with_children(|parent| {
             let display_text = if textfield.text.is_empty() {
                 &textfield.placeholder
@@ -196,13 +201,13 @@ fn init_textfield_visuals(
             } else {
                 &textfield.text
             };
-            
+
             let text_color = if textfield.text.is_empty() {
                 textfield.placeholder_color
             } else {
                 textfield.text_color
             };
-            
+
             parent.spawn((
                 UTextLabel {
                     text: display_text.to_string(),
@@ -213,7 +218,7 @@ fn init_textfield_visuals(
                 },
                 TextFieldTextLabel,
             ));
-            
+
             if textfield.focused {
                 parent.spawn((
                     UNode {
@@ -288,20 +293,19 @@ fn handle_textfield_input(
             break;
         }
     }
-    
-    let Some(mut textfield) = focused_textfield else { return };
 
-    
+    let Some(mut textfield) = focused_textfield else {
+        return;
+    };
+
     for event in keyboard_events.read() {
         if event.state != ButtonState::Pressed {
             continue;
         }
 
-        
-        
         match &event.logical_key {
             Key::Enter => {}
-            
+
             Key::Backspace => {
                 let textfi = textfield.cursor_position;
                 if textfield.cursor_position > 0 && !textfield.text.is_empty() {
@@ -309,63 +313,61 @@ fn handle_textfield_input(
                     textfield.cursor_position -= 1;
                 }
             }
-            
+
             Key::Delete => {
                 let textfi = textfield.cursor_position;
                 if textfield.cursor_position < textfield.text.len() {
                     textfield.text.remove(textfi);
                 }
             }
-            
+
             Key::ArrowLeft => {
                 if textfield.cursor_position > 0 {
                     textfield.cursor_position -= 1;
                 }
             }
-            
+
             Key::ArrowRight => {
                 if textfield.cursor_position < textfield.text.len() {
                     textfield.cursor_position += 1;
                 }
             }
-            
+
             Key::Home => {
                 textfield.cursor_position = 0;
             }
-            
+
             Key::End => {
                 textfield.cursor_position = textfield.text.len();
             }
-            
+
             Key::Character(char_str) => {
                 if let Some(max) = textfield.max_length {
                     if textfield.text.len() >= max {
                         continue;
                     }
                 }
-                
+
                 let valid = match textfield.input_type {
-                    TextFieldInputType::Number => {
-                        char_str.chars().all(|c| c.is_numeric() || c == '.' || c == '-')
-                    }
-                    TextFieldInputType::Email => {
-                        char_str.chars().all(|c| {
-                            c.is_alphanumeric() || c == '@' || c == '.' || c == '_' || c == '-'
-                        })
-                    }
+                    TextFieldInputType::Number => char_str
+                        .chars()
+                        .all(|c| c.is_numeric() || c == '.' || c == '-'),
+                    TextFieldInputType::Email => char_str.chars().all(|c| {
+                        c.is_alphanumeric() || c == '@' || c == '.' || c == '_' || c == '-'
+                    }),
                     _ => true,
                 };
-                
+
                 if valid {
                     let textfi = textfield.cursor_position;
                     textfield.text.insert_str(textfi, char_str);
                     textfield.cursor_position += char_str.len();
                 }
             }
-            
+
             _ => {}
         }
-        
+
         textfield.cursor_visible = true;
         textfield.cursor_blink_timer = 0.0;
     }
@@ -380,7 +382,6 @@ fn update_textfield_visuals(
     mut commands: Commands,
 ) {
     for (entity, textfield, children) in textfield_query.iter() {
-        
         // تحديث الـ Node الرئيسي
         if let Ok(mut node) = node_query.get_mut(entity) {
             node.background_color = if textfield.focused {
@@ -389,7 +390,7 @@ fn update_textfield_visuals(
                 textfield.background_color
             };
         }
-        
+
         // تحديث Border
         if let Ok(mut border) = border_query.get_mut(entity) {
             border.color = if textfield.focused {
@@ -398,7 +399,7 @@ fn update_textfield_visuals(
                 textfield.border_color
             };
         }
-        
+
         // تحديث النص
         for child in children.iter() {
             if let Ok(mut text_label) = text_query.get_mut(child) {
@@ -409,7 +410,7 @@ fn update_textfield_visuals(
                 } else {
                     &textfield.text
                 };
-                
+
                 text_label.text = display_text.to_string();
                 text_label.color = if textfield.text.is_empty() {
                     textfield.placeholder_color
@@ -418,10 +419,10 @@ fn update_textfield_visuals(
                 };
             }
         }
-        
+
         // إدارة Cursor
         let has_cursor = children.iter().any(|c| cursor_query.get(c).is_ok());
-        
+
         if textfield.focused && !has_cursor {
             commands.entity(entity).with_children(|parent| {
                 parent.spawn((
@@ -455,13 +456,13 @@ fn animate_textfield_cursor(
         if !textfield.focused {
             continue;
         }
-        
+
         textfield.cursor_blink_timer += time.delta_secs();
-        
+
         if textfield.cursor_blink_timer >= textfield.cursor_blink_speed {
             textfield.cursor_blink_timer = 0.0;
             textfield.cursor_visible = !textfield.cursor_visible;
-            
+
             for child in children.iter() {
                 if let Ok(mut visibility) = cursor_query.get_mut(child) {
                     *visibility = if textfield.cursor_visible {
@@ -487,10 +488,10 @@ fn emit_textfield_events(
                 entity,
                 text: textfield.text.clone(),
             });
-            
+
             textfield.previous_text = textfield.text.clone();
         }
-        
+
         if textfield.focused && keyboard.just_pressed(KeyCode::Enter) {
             submit_events.write(TextFieldSubmitEvent {
                 entity,
@@ -526,17 +527,23 @@ mod tests {
         app.insert_resource(ButtonInput::<MouseButton>::default());
         app.add_systems(Update, handle_global_unfocus);
 
-        let keep_focused = app.world_mut().spawn((
-            UTextField {
+        let keep_focused = app
+            .world_mut()
+            .spawn((
+                UTextField {
+                    focused: true,
+                    ..default()
+                },
+                TextFieldPressedThisFrame,
+            ))
+            .id();
+        let should_blur = app
+            .world_mut()
+            .spawn(UTextField {
                 focused: true,
                 ..default()
-            },
-            TextFieldPressedThisFrame,
-        )).id();
-        let should_blur = app.world_mut().spawn(UTextField {
-            focused: true,
-            ..default()
-        }).id();
+            })
+            .id();
 
         app.world_mut()
             .resource_mut::<ButtonInput<MouseButton>>()
@@ -559,10 +566,13 @@ mod tests {
         app.insert_resource(ButtonInput::<MouseButton>::default());
         app.add_systems(Update, handle_global_unfocus);
 
-        let field = app.world_mut().spawn(UTextField {
-            focused: true,
-            ..default()
-        }).id();
+        let field = app
+            .world_mut()
+            .spawn(UTextField {
+                focused: true,
+                ..default()
+            })
+            .id();
 
         app.update();
 

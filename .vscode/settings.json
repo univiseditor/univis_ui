@@ -1,0 +1,11 @@
+{
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.cargo.buildScripts.enable": true,
+    "rust-analyzer.linkedProjects": [
+        "Cargo.toml",
+        "crates/univis_ui_engine/Cargo.toml",
+        "crates/univis_ui_style/Cargo.toml",
+        "crates/univis_ui_interaction/Cargo.toml",
+        "crates/univis_ui_widgets/Cargo.toml"
+    ]
+}

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 // =========================================================
 // Plugin
@@ -9,14 +9,12 @@ pub struct UnivisTogglePlugin;
 
 impl Plugin for UnivisTogglePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UToggle>()
+        app.register_type::<UToggle>()
             .add_message::<ToggleChangedEvent>()
-            .add_systems(Update, (
-                init_toggle_visuals,
-                animate_toggle_knob,
-                sync_toggle_colors,
-            ).chain())
+            .add_systems(
+                Update,
+                (init_toggle_visuals, animate_toggle_knob, sync_toggle_colors).chain(),
+            )
             .add_observer(update_toggle_state);
     }
 }
@@ -32,23 +30,23 @@ impl Plugin for UnivisTogglePlugin {
 pub struct UToggle {
     /// الحالة الحالية
     pub checked: bool,
-    
+
     /// الحالة السابقة (للكشف عن التغييرات)
     previous_checked: bool,
-    
+
     // --- الأبعاد ---
     pub width: f32,
     pub height: f32,
-    
+
     // --- الألوان ---
     pub track_color_off: Color,
     pub track_color_on: Color,
     pub knob_color: Color,
-    
+
     // --- الحركة ---
     pub animation_speed: f32,
     pub current_offset: f32, // موضع الزر الحالي (0.0 = يسار، 1.0 = يمين)
-    
+
     // --- خيارات إضافية ---
     pub disabled: bool,
 }
@@ -75,7 +73,7 @@ impl UToggle {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// تعيين الحالة الأولية
     pub fn with_checked(mut self, checked: bool) -> Self {
         self.checked = checked;
@@ -83,7 +81,7 @@ impl UToggle {
         self.current_offset = if checked { 1.0 } else { 0.0 };
         self
     }
-    
+
     /// تخصيص الألوان
     pub fn with_colors(mut self, off: Color, on: Color, knob: Color) -> Self {
         self.track_color_off = off;
@@ -91,20 +89,20 @@ impl UToggle {
         self.knob_color = knob;
         self
     }
-    
+
     /// تخصيص الحجم
     pub fn with_size(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
         self
     }
-    
+
     /// تعطيل Toggle
     pub fn disabled(mut self) -> Self {
         self.disabled = true;
         self
     }
-    
+
     /// أنماط جاهزة
     pub fn ios_style() -> Self {
         Self {
@@ -117,7 +115,7 @@ impl UToggle {
             ..default()
         }
     }
-    
+
     pub fn material_style() -> Self {
         Self {
             width: 52.0,
@@ -129,7 +127,7 @@ impl UToggle {
             ..default()
         }
     }
-    
+
     pub fn sci_fi_style() -> Self {
         Self {
             width: 70.0,
@@ -155,41 +153,21 @@ struct ToggleKnob;
 // =========================================================
 
 /// إنشاء الهيكل البصري للـ Toggle
-fn init_toggle_visuals(
-    mut commands: Commands,
-    query: Query<(Entity, &UToggle), Added<UToggle>>,
-) {
+fn init_toggle_visuals(mut commands: Commands, query: Query<(Entity, &UToggle), Added<UToggle>>) {
     for (entity, toggle) in query.iter() {
-        
         let track_color = if toggle.checked {
             toggle.track_color_on
         } else {
             toggle.track_color_off
         };
-        
-        commands.entity(entity).insert((
-            UNode {
-                width: UVal::Px(toggle.width),
-                height: UVal::Px(toggle.height),
-                background_color: Color::NONE,
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                align_items: UAlignItems::Center,
-                ..default()
-            },
-            UInteraction::default(),
-        )).with_children(|parent| {
-            // Track (المسار/الخلفية)
-            parent.spawn((
+
+        commands
+            .entity(entity)
+            .insert((
                 UNode {
                     width: UVal::Px(toggle.width),
                     height: UVal::Px(toggle.height),
-                    background_color: track_color,
-                    border_radius: UCornerRadius::all(toggle.height / 2.0),
-                    padding: USides::all(2.0),
+                    background_color: Color::NONE,
                     ..default()
                 },
                 ULayout {
@@ -198,34 +176,55 @@ fn init_toggle_visuals(
                     align_items: UAlignItems::Center,
                     ..default()
                 },
-                ToggleTrack,
-            )).with_children(|track_parent| {
-                // Knob (الزر المتحرك)
-                let knob_size = toggle.height - 4.0;
-                let initial_x = if toggle.checked {
-                    toggle.width - knob_size - 4.0
-                } else {
-                    2.0
-                };
-                
-                track_parent.spawn((
-                    UNode {
-                        width: UVal::Px(knob_size),
-                        height: UVal::Px(knob_size),
-                        background_color: toggle.knob_color,
-                        border_radius: UCornerRadius::all(knob_size / 2.0),
-                        ..default()
-                    },
-                    USelf {
-                        position_type: UPositionType::Absolute,
-                        left: UVal::Px(initial_x),
-                        top: UVal::Px(2.0),
-                        ..default()
-                    },
-                    ToggleKnob,
-                ));
+                UInteraction::default(),
+            ))
+            .with_children(|parent| {
+                // Track (المسار/الخلفية)
+                parent
+                    .spawn((
+                        UNode {
+                            width: UVal::Px(toggle.width),
+                            height: UVal::Px(toggle.height),
+                            background_color: track_color,
+                            border_radius: UCornerRadius::all(toggle.height / 2.0),
+                            padding: USides::all(2.0),
+                            ..default()
+                        },
+                        ULayout {
+                            display: UDisplay::Flex,
+                            flex_direction: UFlexDirection::Row,
+                            align_items: UAlignItems::Center,
+                            ..default()
+                        },
+                        ToggleTrack,
+                    ))
+                    .with_children(|track_parent| {
+                        // Knob (الزر المتحرك)
+                        let knob_size = toggle.height - 4.0;
+                        let initial_x = if toggle.checked {
+                            toggle.width - knob_size - 4.0
+                        } else {
+                            2.0
+                        };
+
+                        track_parent.spawn((
+                            UNode {
+                                width: UVal::Px(knob_size),
+                                height: UVal::Px(knob_size),
+                                background_color: toggle.knob_color,
+                                border_radius: UCornerRadius::all(knob_size / 2.0),
+                                ..default()
+                            },
+                            USelf {
+                                position_type: UPositionType::Absolute,
+                                left: UVal::Px(initial_x),
+                                top: UVal::Px(2.0),
+                                ..default()
+                            },
+                            ToggleKnob,
+                        ));
+                    });
             });
-        });
     }
 }
 
@@ -233,16 +232,14 @@ fn init_toggle_visuals(
 fn update_toggle_state(
     events: On<Pointer<Click>>,
     mut toggle_query: Query<(&mut UToggle, &UInteraction)>,
-    
 ) {
     if let Ok((mut toggle, _inter)) = toggle_query.get_mut(events.entity.entity()) {
         if toggle.disabled {
             return;
         }
-            // عند النقر
-            toggle.previous_checked = toggle.checked;
-            toggle.checked = !toggle.checked;
-        
+        // عند النقر
+        toggle.previous_checked = toggle.checked;
+        toggle.checked = !toggle.checked;
     }
 }
 
@@ -254,27 +251,27 @@ fn animate_toggle_knob(
     mut knob_query: Query<&mut USelf, With<ToggleKnob>>,
 ) {
     for (mut toggle, children) in toggle_query.iter_mut() {
-        
         // الهدف النهائي
         let target_offset = if toggle.checked { 1.0 } else { 0.0 };
-        
+
         // الفرق
         let diff = target_offset - toggle.current_offset;
-        
+
         // إذا كان الفرق صغير جداً، اعتبره وصل
         if diff.abs() < 0.01 {
             toggle.current_offset = target_offset;
             continue;
         }
-        
+
         // الحركة السلسة (Lerp)
         let delta = time.delta_secs() * toggle.animation_speed;
         toggle.current_offset += diff * delta;
-        
+
         // تطبيق على الـ Knob
-        let track_entity = children.iter()
+        let track_entity = children
+            .iter()
             .find(|&child| track_query.get(child).is_ok());
-        
+
         if let Some(track) = track_entity {
             if let Ok(track_children) = track_query.get(track) {
                 for knob_entity in track_children.iter() {
@@ -282,7 +279,7 @@ fn animate_toggle_knob(
                         let knob_size = toggle.height - 4.0;
                         let max_offset = toggle.width - knob_size - 4.0;
                         let new_x = 2.0 + (toggle.current_offset * (max_offset - 2.0));
-                        
+
                         uself.left = UVal::Px(new_x);
                     }
                 }
@@ -297,13 +294,12 @@ fn sync_toggle_colors(
     mut track_query: Query<&mut UNode, With<ToggleTrack>>,
 ) {
     for (toggle, children) in toggle_query.iter() {
-        
         let target_color = if toggle.checked {
             toggle.track_color_on
         } else {
             toggle.track_color_off
         };
-        
+
         // تحديث لون Track
         for child in children.iter() {
             if let Ok(mut node) = track_query.get_mut(child) {
@@ -339,4 +335,3 @@ pub fn emit_toggle_events(
         }
     }
 }
-

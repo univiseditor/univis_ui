@@ -54,8 +54,7 @@ pub struct UnivisUiPlugin;
 
 impl Plugin for UnivisUiPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(UnivisUiStylePlugin)
+        app.add_plugins(UnivisUiStylePlugin)
             .add_plugins(UnivisEnginePlugin)
             .add_plugins(UnivisInteractionPlugin)
             .add_plugins(UnivisWidgetPlugin);

@@ -1,12 +1,11 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisIconButtonPlugin;
 
 impl Plugin for UnivisIconButtonPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UIconButton>()
+        app.register_type::<UIconButton>()
             .add_systems(Update, attach_icon_button_observers);
     }
 }
@@ -58,7 +57,8 @@ fn attach_icon_button_observers(
     font_icon: Res<Theme>,
 ) {
     for (entity, button) in query.iter() {
-        commands.entity(entity)
+        commands
+            .entity(entity)
             .insert((
                 UNode {
                     width: button.width,
@@ -79,8 +79,9 @@ fn attach_icon_button_observers(
                     ..default()
                 },
                 ButtonObserved,
-            )).with_children(|icon| {
-                icon.spawn((                    
+            ))
+            .with_children(|icon| {
+                icon.spawn((
                     UNode::default(),
                     TextColor(button.icon_color),
                     Text2d::new(button.icon),
@@ -91,7 +92,7 @@ fn attach_icon_button_observers(
                     },
                 ));
             });
-        }
+    }
 }
 
 // --- Helper Functions ---

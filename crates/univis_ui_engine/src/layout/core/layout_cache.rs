@@ -1,21 +1,21 @@
-use bevy::{ecs::relationship::Relationship, platform::collections::*, prelude::*};
 use crate::internal_prelude::*;
+use bevy::{ecs::relationship::Relationship, platform::collections::*, prelude::*};
 
 /// نظام تخزين مؤقت للتخطيط - يقلل الحسابات المتكررة
 #[derive(Resource, Default)]
 pub struct LayoutCache {
     /// تخزين الأحجام الجوهرية المحسوبة
     intrinsic_sizes: HashMap<Entity, IntrinsicSize>,
-    
+
     /// العقد التي تغيرت وتحتاج إعادة حساب
     dirty_nodes: HashSet<Entity>,
-    
+
     /// العقد حسب العمق (لتجنب Filter في كل إطار)
     entities_by_depth: HashMap<usize, Vec<Entity>>,
-    
+
     /// رقم الإطار الحالي (للتتبع)
     frame_count: u64,
-    
+
     /// آخر عمق أقصى معروف
     last_max_depth: usize,
 }
@@ -27,14 +27,10 @@ impl LayoutCache {
     }
 
     /// تحديث قائمة العقد حسب العمق
-    pub fn rebuild_depth_map(
-        &mut self,
-        query: &Query<(Entity, &LayoutDepth)>,
-        max_depth: usize,
-    ) {
+    pub fn rebuild_depth_map(&mut self, query: &Query<(Entity, &LayoutDepth)>, max_depth: usize) {
         // مسح الخريطة القديمة
         self.entities_by_depth.clear();
-        
+
         // إعادة بناء
         for (entity, depth) in query.iter() {
             self.entities_by_depth
@@ -42,7 +38,7 @@ impl LayoutCache {
                 .or_insert_with(Vec::new)
                 .push(entity);
         }
-        
+
         self.last_max_depth = max_depth;
     }
 
@@ -58,16 +54,12 @@ impl LayoutCache {
     }
 
     /// تعليم عقدة وكل أبنائها كمتسخة
-    pub fn mark_dirty_recursive(
-        &mut self,
-        entity: Entity,
-        children_query: &Query<&Children>,
-    ) {
+    pub fn mark_dirty_recursive(&mut self, entity: Entity, children_query: &Query<&Children>) {
         // فقط إذا لم تكن متسخة مسبقاً (تجنب infinite recursion)
         if !self.dirty_nodes.insert(entity) {
             return; // العقدة كانت متسخة مسبقاً، توقف
         }
-        
+
         if let Ok(children) = children_query.get(entity) {
             for child in children.iter() {
                 self.mark_dirty_recursive(child, children_query);
@@ -79,11 +71,7 @@ impl LayoutCache {
     ///
     /// هذا ضروري لأن قياس الحاويات يعتمد على أحجام الأبناء، وأي تغيير في ابن
     /// يجب أن يُعيد قياس السلسلة الصاعدة كاملة.
-    pub fn mark_dirty_ancestors(
-        &mut self,
-        entity: Entity,
-        parents_query: &Query<&ChildOf>,
-    ) {
+    pub fn mark_dirty_ancestors(&mut self, entity: Entity, parents_query: &Query<&ChildOf>) {
         let mut current = entity;
 
         while let Ok(parent) = parents_query.get(current) {
@@ -126,12 +114,12 @@ impl LayoutCache {
     pub fn current_frame(&self) -> u64 {
         self.frame_count
     }
-    
+
     /// عدد العقد المتسخة
     pub fn dirty_count(&self) -> usize {
         self.dirty_nodes.len()
     }
-    
+
     /// نسبة العقد المتسخة
     pub fn dirty_ratio(&self, total_nodes: usize) -> f32 {
         if total_nodes == 0 {
@@ -144,7 +132,7 @@ impl LayoutCache {
 /// نظام يراقب التغييرات ويحدث الـ Cache
 pub fn track_layout_changes(
     mut cache: ResMut<LayoutCache>,
-    
+
     // نستخدم Ref لنتمكن من فحص is_changed() لكل مكون على حدة
     nodes: Query<
         (
@@ -162,9 +150,9 @@ pub fn track_layout_changes(
             Changed<USelf>,
             Changed<Children>,
             Changed<IntrinsicSize>,
-        )>
+        )>,
     >,
-    
+
     added_nodes: Query<Entity, Added<UNode>>,
     children_query: Query<&Children>,
     parents_query: Query<&ChildOf>,
@@ -191,7 +179,7 @@ pub fn track_layout_changes(
         cache.mark_dirty_recursive(entity, &children_query);
         cache.mark_dirty_ancestors(entity, &parents_query);
     }
-    
+
     // 2. معالجة العناصر الجديدة
     for entity in added_nodes.iter() {
         cache.mark_dirty(entity);
@@ -207,7 +195,10 @@ struct LayoutChangeFlags {
     uself_changed: bool,
 }
 
-fn should_skip_intrinsic_only_container_change(flags: LayoutChangeFlags, has_children: bool) -> bool {
+fn should_skip_intrinsic_only_container_change(
+    flags: LayoutChangeFlags,
+    has_children: bool,
+) -> bool {
     flags.intrinsic_changed
         && !flags.node_changed
         && !flags.layout_changed
@@ -219,15 +210,15 @@ fn should_skip_intrinsic_only_container_change(flags: LayoutChangeFlags, has_chi
 pub fn update_depth_cache(
     mut cache: ResMut<LayoutCache>,
     tree_depth: Res<LayoutTreeDepth>,
-    
+
     // الاستعلام الكامل لإعادة البناء
     depth_query: Query<(Entity, &LayoutDepth)>,
-    
+
     // === [الإضافة الهامة] ===
     // مراقبة هل تم إضافة مكون LayoutDepth جديد؟
     // هذا يعني أن هناك عقدة جديدة دخلت النظام
     added_nodes: Query<Entity, Added<LayoutDepth>>,
-    
+
     // مراقبة هل تم حذف عقد؟ (لتنظيف الكاش)
     mut removed_nodes: RemovedComponents<LayoutDepth>,
 ) {
@@ -238,9 +229,9 @@ pub fn update_depth_cache(
     // 1. تغير الهيكل (عقد جديدة/محذوفة)
     // 2. تغير العمق الأقصى
     // 3. الكاش فارغ (أول إطار)
-    if structure_changed 
-        || tree_depth.max_depth != cache.last_max_depth 
-        || cache.entities_by_depth.is_empty() 
+    if structure_changed
+        || tree_depth.max_depth != cache.last_max_depth
+        || cache.entities_by_depth.is_empty()
     {
         cache.rebuild_depth_map(&depth_query, tree_depth.max_depth);
     }
@@ -250,16 +241,8 @@ pub struct LayoutCachePlugin;
 
 impl Plugin for LayoutCachePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<LayoutCache>()
-            .add_systems(
-                Update,
-                (
-                    track_layout_changes,
-                    update_depth_cache,
-                )
-                .chain()
-            );
+        app.init_resource::<LayoutCache>()
+            .add_systems(Update, (track_layout_changes, update_depth_cache).chain());
     }
 }
 

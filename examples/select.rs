@@ -126,11 +126,7 @@ fn make_options(items: &[(&str, &str, bool)]) -> Vec<USelectOption> {
         .iter()
         .map(|(label, value, disabled)| {
             let option = USelectOption::new(*label, *value);
-            if *disabled {
-                option.disabled()
-            } else {
-                option
-            }
+            if *disabled { option.disabled() } else { option }
         })
         .collect()
 }

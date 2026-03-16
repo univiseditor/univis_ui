@@ -3,28 +3,26 @@ use univis_ui::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins,UnivisUiPlugin))
+        .add_plugins((DefaultPlugins, UnivisUiPlugin))
         .add_systems(Startup, setup)
         .run();
 }
 
-fn setup(mut commands: Commands){
+fn setup(mut commands: Commands) {
     commands.spawn(Camera2d);
-    commands.spawn(UScreenRoot)
-        .with_children(|root| {
-            // root.spawn((
-            //     UIconButton {
-            //         width: UVal::Px(40.0),
-            //         height: UVal::Px(40.0),
-            //         icon: Icon::CODESANDBOX,
-            //         icon_size: 30.0,
-            //         ..Default::default()
-            //     },
-            // ));
+    commands.spawn(UScreenRoot).with_children(|root| {
+        // root.spawn((
+        //     UIconButton {
+        //         width: UVal::Px(40.0),
+        //         height: UVal::Px(40.0),
+        //         icon: Icon::CODESANDBOX,
+        //         icon_size: 30.0,
+        //         ..Default::default()
+        //     },
+        // ));
 
-            root.spawn((
+        root.spawn((
             UCheckbox {
-                
                 // label: Some("Hello".to_string()),
                 checked: true,
                 ..default()
@@ -35,10 +33,9 @@ fn setup(mut commands: Commands){
             //     hovered: Color::srgb(0.1, 0.1, 0.1),
             //     // pressed: Color::srgb(0.2, 0.2, 0.2),
 
-                
             // },
             // هام: لتفعيل التقاط النقر
-            // Pickable::default(), 
+            // Pickable::default(),
         ));
         root.spawn(UToggle::material_style());
         // إضافة مراقب للنقر (Observer Pattern - Bevy 0.15+)
@@ -60,5 +57,4 @@ fn setup(mut commands: Commands){
         //     },
         // ));
     });
-        
 }

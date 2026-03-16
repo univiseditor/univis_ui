@@ -1,16 +1,18 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisCheckboxPlugin;
 
 impl Plugin for UnivisCheckboxPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UCheckbox>()
-            .add_systems(Update, (
-                init_checkbox,      // بناء الشكل عند الإنشاء
-                // update_checkbox_visuals // تحديث الألوان والظهور
-            ))
+        app.register_type::<UCheckbox>()
+            .add_systems(
+                Update,
+                (
+                    init_checkbox, // بناء الشكل عند الإنشاء
+                                   // update_checkbox_visuals // تحديث الألوان والظهور
+                ),
+            )
             .add_observer(toggle_checkbox_handler);
     }
 }
@@ -24,7 +26,7 @@ impl Plugin for UnivisCheckboxPlugin {
 pub struct UCheckbox {
     pub checked: bool,
     pub label: Option<String>,
-    
+
     // --- Style Config ---
     pub size: f32,
     pub checked_color: Color,
@@ -56,37 +58,34 @@ fn init_checkbox(
     _asset_server: Res<AssetServer>, // لتحميل خط افتراضي
 ) {
     for (entity, checkbox) in query.iter() {
-        
         // إعداد الحاوية الرئيسية (Row Layout)
         commands.entity(entity).insert((
             UNode {
                 // الحجم يتحدد بالمحتوى (المربع + النص)
                 width: UVal::Content,
                 height: UVal::Content,
-                padding: USides::all(4.0), // مساحة للنقر
+                padding: USides::all(4.0),     // مساحة للنقر
                 background_color: Color::NONE, // خلفية شفافة للحاوية الكلية
                 ..default()
-            }, 
+            },
             ULayout {
                 align_items: UAlignItems::Center, // محاذاة النص مع المربع
                 justify_content: UJustifyContent::Center,
                 gap: 8.0, // مسافة بين المربع والنص
                 ..default()
             },
-            
         ));
 
         commands.entity(entity).with_children(|parent| {
-
             let color;
             let border_color;
             if checkbox.checked {
-               color =  checkbox.checked_color;
-               border_color = checkbox.border_color;
+                color = checkbox.checked_color;
+                border_color = checkbox.border_color;
             } else {
                 border_color = checkbox.border_color;
                 color = checkbox.unchecked_color;
-                }
+            }
 
             // أ) المربع نفسه (The Box)
             parent.spawn((
@@ -97,7 +96,6 @@ fn init_checkbox(
                     background_color: color,
                     ..default()
                 },
-                
                 UBorder {
                     width: 2.0,
                     color: border_color,
@@ -132,10 +130,9 @@ fn toggle_checkbox_handler(
     let entity = trigger.entity.entity();
     if let Ok((mut checkbox, child)) = parent_query.get_mut(entity) {
         checkbox.checked = !checkbox.checked;
-        
+
         for &child in child {
-            
-            if let Ok((mut node,mut border)) = box_query.get_mut(child) {
+            if let Ok((mut node, mut border)) = box_query.get_mut(child) {
                 if checkbox.checked {
                     node.background_color = checkbox.checked_color;
                     border.color = checkbox.checked_color; // إخفاء الحدود عند التحديد (ستايل حديث)
@@ -155,7 +152,7 @@ impl UCheckbox {
             ..default()
         }
     }
-    
+
     pub fn checked(mut self, state: bool) -> Self {
         self.checked = state;
         self

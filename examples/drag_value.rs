@@ -124,18 +124,14 @@ fn handle_drag_value_events(
     for ev in changed_events.read() {
         info!(
             "changed: entity={:?} value={:.4} normalized={:.4}",
-            ev.entity,
-            ev.value,
-            ev.normalized
+            ev.entity, ev.value, ev.normalized
         );
     }
 
     for ev in commit_events.read() {
         info!(
             "commit: entity={:?} value={:.4} normalized={:.4}",
-            ev.entity,
-            ev.value,
-            ev.normalized
+            ev.entity, ev.value, ev.normalized
         );
     }
 }

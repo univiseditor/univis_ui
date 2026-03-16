@@ -14,68 +14,72 @@ fn setup(mut commands: Commands) {
 
     // 2. إنشاء "جذر" للواجهة (Canvas)
     // هذا الكيان يحدد حجم مساحة العمل
-    commands.spawn((
-        UWorldRoot {
-            size: Vec2::new(800.0, 600.0), // حجم اللوحة
-            ..default()
-        },
-        // 3. إضافة خصائص الشكل (UNode)
-        UNode {
-            width: UVal::Percent(1.0),  // عرض كامل
-            height: UVal::Percent(1.0), // ارتفاع كامل
-            background_color: Color::srgb(0.1, 0.1, 0.15),
-            ..default()
-        },
-        // 4. إضافة خصائص التخطيط (ULayout)
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::Center, // توسيط المحتوى
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    ))
-    .with_children(|parent| {
-        // 5. إضافة عنصر ابن (زر/بطاقة)
-        parent.spawn((
+    commands
+        .spawn((
+            UWorldRoot {
+                size: Vec2::new(800.0, 600.0), // حجم اللوحة
+                ..default()
+            },
+            // 3. إضافة خصائص الشكل (UNode)
             UNode {
-                width: UVal::Px(300.0),
-                height: UVal::Px(100.0),
-                background_color: Color::srgb(0.2, 0.6, 1.0),
-                border_radius: UCornerRadius::all(20.0), // زوايا دائرية
-                padding: USides::all(10.0),
+                width: UVal::Percent(1.0),  // عرض كامل
+                height: UVal::Percent(1.0), // ارتفاع كامل
+                background_color: Color::srgb(0.1, 0.1, 0.15),
                 ..default()
             },
-
-            UPbr {
-            metallic: 0.0,  // معدني
-            roughness: 0.0, // لامع
-            emissive: LinearRgba::new(10.0, 10.0, 10.0, 1.0), // توهج خفيف
-        },
+            // 4. إضافة خصائص التخطيط (ULayout)
             ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::Center, // توسيط المحتوى
                 align_items: UAlignItems::Center,
-                justify_content: UJustifyContent::Center,
                 ..default()
             },
-            // إضافة حدود متوهجة
-            UBorder {
-                width: 4.0,
-                color: Color::WHITE,
-                ..default()
-            }
-        )).with_children(|card| {
-            // 6. إضافة نص
-            card.spawn((UTextLabel {
-                text: "Hello, Univis!".into(),
-                font_size: 32.0,
-                color: Color::WHITE,
-                autosize: true, // النص يضبط حجم الحاوية تلقائياً
-                ..default()
-            },
-            UPbr {
-            metallic: 0.0,  // معدني
-            roughness: 0.0, // لامع
-            emissive: LinearRgba::new(10.0, 10.0, 10.0, 1.0), // توهج خفيف
-        },));
+        ))
+        .with_children(|parent| {
+            // 5. إضافة عنصر ابن (زر/بطاقة)
+            parent
+                .spawn((
+                    UNode {
+                        width: UVal::Px(300.0),
+                        height: UVal::Px(100.0),
+                        background_color: Color::srgb(0.2, 0.6, 1.0),
+                        border_radius: UCornerRadius::all(20.0), // زوايا دائرية
+                        padding: USides::all(10.0),
+                        ..default()
+                    },
+                    UPbr {
+                        metallic: 0.0,                                    // معدني
+                        roughness: 0.0,                                   // لامع
+                        emissive: LinearRgba::new(10.0, 10.0, 10.0, 1.0), // توهج خفيف
+                    },
+                    ULayout {
+                        align_items: UAlignItems::Center,
+                        justify_content: UJustifyContent::Center,
+                        ..default()
+                    },
+                    // إضافة حدود متوهجة
+                    UBorder {
+                        width: 4.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
+                ))
+                .with_children(|card| {
+                    // 6. إضافة نص
+                    card.spawn((
+                        UTextLabel {
+                            text: "Hello, Univis!".into(),
+                            font_size: 32.0,
+                            color: Color::WHITE,
+                            autosize: true, // النص يضبط حجم الحاوية تلقائياً
+                            ..default()
+                        },
+                        UPbr {
+                            metallic: 0.0,                                    // معدني
+                            roughness: 0.0,                                   // لامع
+                            emissive: LinearRgba::new(10.0, 10.0, 10.0, 1.0), // توهج خفيف
+                        },
+                    ));
+                });
         });
-    });
 }

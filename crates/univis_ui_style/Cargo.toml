@@ -8,4 +8,4 @@ repository = "https://github.com/univiseditor/univis_ui"
 homepage = "https://github.com/univiseditor/univis_ui"
 
 [dependencies]
-bevy = "0.18.1"
+bevy = { workspace = true }

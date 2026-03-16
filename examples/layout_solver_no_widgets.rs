@@ -1,7 +1,7 @@
 use bevy::prelude::*;
+use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::internal::ComputedSize;
 use univis_ui_engine::prelude::*;
-use univis_ui_engine::UnivisEnginePlugin;
 
 #[derive(Component)]
 struct CenterProbe;
@@ -241,116 +241,153 @@ fn spawn_right_reference_column(parent: &mut ChildSpawnerCommands) {
             },
         ))
         .with_children(|right| {
-            right.spawn((
-                UNode {
-                    width: UVal::Percent(1.0),
-                    height: UVal::Flex(1.0),
-                    padding: USides::all(18.0),
-                    background_color: Color::srgb(0.2, 0.22, 0.38),
-                    border_radius: UCornerRadius::all(20.0),
-                    ..default()
-                },
-                ULayout {
-                    display: UDisplay::Flex,
-                    flex_direction: UFlexDirection::Column,
-                    align_items: UAlignItems::Center,
-                    gap: 12.0,
-                    ..default()
-                },
-            ))
-            .with_children(|card| {
-                card.spawn((
-                    UNode {
-                        width: UVal::Px(92.0),
-                        height: UVal::Px(92.0),
-                        background_color: Color::srgb(0.73, 0.78, 0.9),
-                        border_radius: UCornerRadius::all(46.0),
-                        ..default()
-                    },
-                    UBorder {
-                        color: Color::WHITE,
-                        width: 2.0,
-                        offset: 5.0,
-                        radius: UCornerRadius::all(46.0),
-                    },
-                ));
-
-                card.spawn(UNode {
-                    width: UVal::Px(240.0),
-                    height: UVal::Px(30.0),
-                    background_color: Color::srgba(0.95, 0.96, 1.0, 0.86),
-                    border_radius: UCornerRadius::all(6.0),
-                    ..default()
-                });
-
-                card.spawn(UNode {
-                    width: UVal::Px(170.0),
-                    height: UVal::Px(18.0),
-                    background_color: Color::srgba(0.74, 0.78, 0.88, 0.75),
-                    border_radius: UCornerRadius::all(5.0),
-                    ..default()
-                });
-
-                card.spawn((
+            right
+                .spawn((
                     UNode {
                         width: UVal::Percent(1.0),
-                        height: UVal::Auto,
+                        height: UVal::Flex(1.0),
+                        padding: USides::all(18.0),
+                        background_color: Color::srgb(0.2, 0.22, 0.38),
+                        border_radius: UCornerRadius::all(20.0),
                         ..default()
                     },
                     ULayout {
                         display: UDisplay::Flex,
-                        flex_direction: UFlexDirection::Row,
-                        justify_content: UJustifyContent::Center,
-                        gap: 8.0,
-                        ..default()
-                    },
-                ))
-                .with_children(|tags| {
-                    for color in [
-                        Color::srgb(0.28, 0.66, 0.96),
-                        Color::srgb(0.86, 0.68, 0.22),
-                        Color::srgb(0.24, 0.76, 0.4),
-                    ] {
-                        tags.spawn(UNode {
-                            width: UVal::Px(56.0),
-                            height: UVal::Px(22.0),
-                            background_color: color,
-                            border_radius: UCornerRadius::all(11.0),
-                            ..default()
-                        });
-                    }
-                });
-
-                card.spawn((
-                    UNode {
-                        width: UVal::Percent(1.0),
-                        height: UVal::Px(90.0),
-                        padding: USides::all(8.0),
-                        background_color: Color::srgba(0.08, 0.09, 0.15, 0.4),
-                        border_radius: UCornerRadius::all(12.0),
-                        ..default()
-                    },
-                    ULayout {
-                        display: UDisplay::Flex,
-                        flex_direction: UFlexDirection::Row,
-                        justify_content: UJustifyContent::SpaceBetween,
+                        flex_direction: UFlexDirection::Column,
                         align_items: UAlignItems::Center,
-                        gap: 8.0,
+                        gap: 12.0,
                         ..default()
                     },
                 ))
-                .with_children(|stats| {
-                    for i in 0..3 {
-                        stats.spawn((
+                .with_children(|card| {
+                    card.spawn((
+                        UNode {
+                            width: UVal::Px(92.0),
+                            height: UVal::Px(92.0),
+                            background_color: Color::srgb(0.73, 0.78, 0.9),
+                            border_radius: UCornerRadius::all(46.0),
+                            ..default()
+                        },
+                        UBorder {
+                            color: Color::WHITE,
+                            width: 2.0,
+                            offset: 5.0,
+                            radius: UCornerRadius::all(46.0),
+                        },
+                    ));
+
+                    card.spawn(UNode {
+                        width: UVal::Px(240.0),
+                        height: UVal::Px(30.0),
+                        background_color: Color::srgba(0.95, 0.96, 1.0, 0.86),
+                        border_radius: UCornerRadius::all(6.0),
+                        ..default()
+                    });
+
+                    card.spawn(UNode {
+                        width: UVal::Px(170.0),
+                        height: UVal::Px(18.0),
+                        background_color: Color::srgba(0.74, 0.78, 0.88, 0.75),
+                        border_radius: UCornerRadius::all(5.0),
+                        ..default()
+                    });
+
+                    card.spawn((
+                        UNode {
+                            width: UVal::Percent(1.0),
+                            height: UVal::Auto,
+                            ..default()
+                        },
+                        ULayout {
+                            display: UDisplay::Flex,
+                            flex_direction: UFlexDirection::Row,
+                            justify_content: UJustifyContent::Center,
+                            gap: 8.0,
+                            ..default()
+                        },
+                    ))
+                    .with_children(|tags| {
+                        for color in [
+                            Color::srgb(0.28, 0.66, 0.96),
+                            Color::srgb(0.86, 0.68, 0.22),
+                            Color::srgb(0.24, 0.76, 0.4),
+                        ] {
+                            tags.spawn(UNode {
+                                width: UVal::Px(56.0),
+                                height: UVal::Px(22.0),
+                                background_color: color,
+                                border_radius: UCornerRadius::all(11.0),
+                                ..default()
+                            });
+                        }
+                    });
+
+                    card.spawn((
+                        UNode {
+                            width: UVal::Percent(1.0),
+                            height: UVal::Px(90.0),
+                            padding: USides::all(8.0),
+                            background_color: Color::srgba(0.08, 0.09, 0.15, 0.4),
+                            border_radius: UCornerRadius::all(12.0),
+                            ..default()
+                        },
+                        ULayout {
+                            display: UDisplay::Flex,
+                            flex_direction: UFlexDirection::Row,
+                            justify_content: UJustifyContent::SpaceBetween,
+                            align_items: UAlignItems::Center,
+                            gap: 8.0,
+                            ..default()
+                        },
+                    ))
+                    .with_children(|stats| {
+                        for i in 0..3 {
+                            stats.spawn((
+                                UNode {
+                                    width: UVal::Flex(1.0),
+                                    height: UVal::Px(70.0),
+                                    background_color: Color::srgb(
+                                        0.18 + i as f32 * 0.02,
+                                        0.2 + i as f32 * 0.02,
+                                        0.28 + i as f32 * 0.02,
+                                    ),
+                                    border_radius: UCornerRadius::all(8.0),
+                                    ..default()
+                                },
+                                USelf {
+                                    item_ext: ULayoutItemExt {
+                                        flex: ULayoutFlexItem {
+                                            flex_grow: Some(1.0),
+                                            ..default()
+                                        },
+                                        ..default()
+                                    },
+                                    ..default()
+                                },
+                            ));
+                        }
+                    });
+
+                    card.spawn((
+                        UNode {
+                            width: UVal::Percent(1.0),
+                            height: UVal::Auto,
+                            ..default()
+                        },
+                        ULayout {
+                            display: UDisplay::Flex,
+                            flex_direction: UFlexDirection::Row,
+                            gap: 8.0,
+                            ..default()
+                        },
+                    ))
+                    .with_children(|actions| {
+                        actions.spawn((
                             UNode {
                                 width: UVal::Flex(1.0),
-                                height: UVal::Px(70.0),
-                                background_color: Color::srgb(
-                                    0.18 + i as f32 * 0.02,
-                                    0.2 + i as f32 * 0.02,
-                                    0.28 + i as f32 * 0.02,
-                                ),
-                                border_radius: UCornerRadius::all(8.0),
+                                height: UVal::Px(44.0),
+                                background_color: Color::srgb(0.21, 0.5, 0.92),
+                                border_radius: UCornerRadius::all(9.0),
                                 ..default()
                             },
                             USelf {
@@ -364,97 +401,61 @@ fn spawn_right_reference_column(parent: &mut ChildSpawnerCommands) {
                                 ..default()
                             },
                         ));
-                    }
-                });
 
-                card.spawn((
-                    UNode {
-                        width: UVal::Percent(1.0),
-                        height: UVal::Auto,
-                        ..default()
-                    },
-                    ULayout {
-                        display: UDisplay::Flex,
-                        flex_direction: UFlexDirection::Row,
-                        gap: 8.0,
-                        ..default()
-                    },
-                ))
-                .with_children(|actions| {
-                    actions.spawn((
-                        UNode {
-                            width: UVal::Flex(1.0),
-                            height: UVal::Px(44.0),
-                            background_color: Color::srgb(0.21, 0.5, 0.92),
-                            border_radius: UCornerRadius::all(9.0),
-                            ..default()
-                        },
-                        USelf {
-                            item_ext: ULayoutItemExt {
-                                flex: ULayoutFlexItem {
-                                    flex_grow: Some(1.0),
+                        actions.spawn((
+                            UNode {
+                                width: UVal::Flex(1.0),
+                                height: UVal::Px(44.0),
+                                background_color: Color::srgb(0.45, 0.47, 0.52),
+                                border_radius: UCornerRadius::all(9.0),
+                                ..default()
+                            },
+                            USelf {
+                                item_ext: ULayoutItemExt {
+                                    flex: ULayoutFlexItem {
+                                        flex_grow: Some(1.0),
+                                        ..default()
+                                    },
                                     ..default()
                                 },
                                 ..default()
                             },
-                            ..default()
-                        },
-                    ));
+                        ));
+                    });
 
-                    actions.spawn((
+                    // Absolute corner probes to exercise out-of-flow math.
+                    card.spawn((
                         UNode {
-                            width: UVal::Flex(1.0),
-                            height: UVal::Px(44.0),
-                            background_color: Color::srgb(0.45, 0.47, 0.52),
+                            width: UVal::Px(18.0),
+                            height: UVal::Px(18.0),
+                            background_color: Color::srgb(0.98, 0.35, 0.35),
                             border_radius: UCornerRadius::all(9.0),
                             ..default()
                         },
                         USelf {
-                            item_ext: ULayoutItemExt {
-                                flex: ULayoutFlexItem {
-                                    flex_grow: Some(1.0),
-                                    ..default()
-                                },
-                                ..default()
-                            },
+                            position_type: UPositionType::Absolute,
+                            right: UVal::Px(12.0),
+                            top: UVal::Px(12.0),
+                            ..default()
+                        },
+                    ));
+
+                    card.spawn((
+                        UNode {
+                            width: UVal::Px(18.0),
+                            height: UVal::Px(18.0),
+                            background_color: Color::srgb(0.35, 0.98, 0.68),
+                            border_radius: UCornerRadius::all(9.0),
+                            ..default()
+                        },
+                        USelf {
+                            position_type: UPositionType::Absolute,
+                            left: UVal::Px(12.0),
+                            bottom: UVal::Px(12.0),
                             ..default()
                         },
                     ));
                 });
-
-                // Absolute corner probes to exercise out-of-flow math.
-                card.spawn((
-                    UNode {
-                        width: UVal::Px(18.0),
-                        height: UVal::Px(18.0),
-                        background_color: Color::srgb(0.98, 0.35, 0.35),
-                        border_radius: UCornerRadius::all(9.0),
-                        ..default()
-                    },
-                    USelf {
-                        position_type: UPositionType::Absolute,
-                        right: UVal::Px(12.0),
-                        top: UVal::Px(12.0),
-                        ..default()
-                    },
-                ));
-
-                card.spawn((
-                    UNode {
-                        width: UVal::Px(18.0),
-                        height: UVal::Px(18.0),
-                        background_color: Color::srgb(0.35, 0.98, 0.68),
-                        border_radius: UCornerRadius::all(9.0),
-                        ..default()
-                    },
-                    USelf {
-                        position_type: UPositionType::Absolute,
-                        left: UVal::Px(12.0),
-                        bottom: UVal::Px(12.0),
-                        ..default()
-                    },
-                ));
-            });
         });
 }
 
@@ -549,8 +550,9 @@ fn spawn_grid_tile(
 
 fn animate_pulses(time: Res<Time>, mut query: Query<(&mut UNode, &Pulse)>) {
     for (mut node, pulse) in query.iter_mut() {
-        let value = (pulse.base + pulse.amp * (time.elapsed_secs() * pulse.speed + pulse.phase).sin())
-            .max(4.0);
+        let value = (pulse.base
+            + pulse.amp * (time.elapsed_secs() * pulse.speed + pulse.phase).sin())
+        .max(4.0);
         match pulse.axis {
             PulseAxis::Width => node.width = UVal::Px(value),
             PulseAxis::Height => node.height = UVal::Px(value),

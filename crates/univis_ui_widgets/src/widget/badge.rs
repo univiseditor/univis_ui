@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisBadgePlugin;
 
@@ -8,8 +8,7 @@ pub(crate) struct BadgePluginInstalled;
 
 impl Plugin for UnivisBadgePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<BadgePluginInstalled>()
+        app.init_resource::<BadgePluginInstalled>()
             .register_type::<UBadge>()
             .add_systems(Update, update_badge_visuals);
     }
@@ -53,10 +52,7 @@ impl Default for UBadge {
 
 // --- الأنظمة (Systems) ---
 
-fn update_badge_visuals(
-    mut commands: Commands,
-    query: Query<(Entity, &UBadge), Changed<UBadge>>,
-) {
+fn update_badge_visuals(mut commands: Commands, query: Query<(Entity, &UBadge), Changed<UBadge>>) {
     for (entity, badge) in query.iter() {
         let (bg_color, padding, border_radius) = match badge.style {
             BadgeStyle::Primary => (

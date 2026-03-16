@@ -6,10 +6,6 @@ pub mod solver;
 
 pub mod prelude {
     pub use crate::layout::core::{
-        hierarchy::*,
-        layout_cache::*,
-        pass_down::*,
-        pass_up::*,
-        solver::*,
+        hierarchy::*, layout_cache::*, pass_down::*, pass_up::*, solver::*,
     };
 }

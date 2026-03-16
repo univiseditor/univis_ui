@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use univis_ui_engine::prelude::*;
 
-
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -177,8 +176,8 @@ fn spawn_left_column(parent: &mut ChildSpawnerCommands) {
             ))
             .with_children(|masonry| {
                 let heights = [
-                    58.0, 90.0, 66.0, 108.0, 52.0, 82.0, 64.0, 96.0, 72.0, 60.0, 88.0, 54.0,
-                    102.0, 70.0, 80.0, 62.0,
+                    58.0, 90.0, 66.0, 108.0, 52.0, 82.0, 64.0, 96.0, 72.0, 60.0, 88.0, 54.0, 102.0,
+                    70.0, 80.0, 62.0,
                 ];
                 for (i, h) in heights.iter().enumerate() {
                     masonry.spawn(UNode {
@@ -379,19 +378,21 @@ fn spawn_center_column(parent: &mut ChildSpawnerCommands) {
                                 row.spawn(UNode {
                                     width: UVal::Px(36.0),
                                     height: UVal::Px(14.0),
-                                    background_color: Color::srgb(0.38 + i as f32 * 0.06, 0.7, 0.95),
+                                    background_color: Color::srgb(
+                                        0.38 + i as f32 * 0.06,
+                                        0.7,
+                                        0.95,
+                                    ),
                                     border_radius: UCornerRadius::all(6.0),
                                     ..default()
                                 });
-                                row.spawn((
-                                    UNode {
-                                        width: UVal::Px(180.0),
-                                        height: UVal::Px(12.0),
-                                        background_color: Color::srgba(0.85, 0.9, 1.0, 0.66),
-                                        border_radius: UCornerRadius::all(6.0),
-                                        ..default()
-                                    },
-                                ));
+                                row.spawn((UNode {
+                                    width: UVal::Px(180.0),
+                                    height: UVal::Px(12.0),
+                                    background_color: Color::srgba(0.85, 0.9, 1.0, 0.66),
+                                    border_radius: UCornerRadius::all(6.0),
+                                    ..default()
+                                },));
                                 row.spawn(UNode {
                                     width: UVal::Px(24.0),
                                     height: UVal::Px(12.0),

@@ -1,10 +1,10 @@
 use bevy::mesh::MeshVertexBufferLayoutRef;
 use bevy::pbr::{MaterialPipeline, MaterialPipelineKey};
 use bevy::prelude::*;
-use bevy::render::render_resource::{AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError};
+use bevy::render::render_resource::{
+    AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError,
+};
 use bevy::shader::ShaderRef;
-
-
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct UNodeMaterial3d {
@@ -33,11 +33,11 @@ pub struct UNodeMaterial3d {
     pub roughness: f32,
     #[uniform(0)]
     pub use_texture: u32,
-    
+
     // --- الحقل الجديد ---
     // 0 = Round, 1 = Cut
     #[uniform(0)]
-    pub shape_mode: u32, 
+    pub shape_mode: u32,
 
     // --- الملمس ---
     #[texture(1)]

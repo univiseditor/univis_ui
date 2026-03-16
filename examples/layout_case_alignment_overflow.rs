@@ -87,56 +87,57 @@ fn setup(mut commands: Commands) {
                             ..default()
                         });
 
-                        panel.spawn((
-                            UNode {
-                                width: UVal::Percent(1.0),
-                                height: UVal::Flex(1.0),
-                                background_color: Color::srgb(0.09, 0.11, 0.15),
-                                border_radius: UCornerRadius::all(10.0),
-                                ..default()
-                            },
-                            ULayout {
-                                display: UDisplay::Grid,
-                                grid_columns: 1,
-                                align_items: UAlignItems::Center,
-                                container_ext: ULayoutContainerExt {
-                                    box_align: ULayoutBoxAlignContainer {
-                                        justify_items: Some(UAlignItemsExt::Center),
-                                        ..default()
-                                    },
-                                    grid: ULayoutGridContainer {
-                                        template_columns: vec![UTrackSize::Px(140.0)],
-                                        template_rows: vec![UTrackSize::Px(100.0)],
-                                        ..default()
-                                    },
-                                    ..default()
-                                },
-                                ..default()
-                            },
-                        ))
-                        .with_children(|grid| {
-                            grid.spawn((
+                        panel
+                            .spawn((
                                 UNode {
-                                    width: UVal::Px(220.0),
-                                    height: UVal::Px(60.0),
-                                    background_color: color,
-                                    border_radius: UCornerRadius::all(8.0),
+                                    width: UVal::Percent(1.0),
+                                    height: UVal::Flex(1.0),
+                                    background_color: Color::srgb(0.09, 0.11, 0.15),
+                                    border_radius: UCornerRadius::all(10.0),
                                     ..default()
                                 },
-                                USelf {
-                                    item_ext: ULayoutItemExt {
-                                        box_align: ULayoutBoxAlignSelf {
-                                            justify_self: Some(UAlignSelfExt::Center),
-                                            align_self: Some(UAlignSelfExt::Center),
-                                            justify_overflow: overflow_mode,
-                                            align_overflow: overflow_mode,
+                                ULayout {
+                                    display: UDisplay::Grid,
+                                    grid_columns: 1,
+                                    align_items: UAlignItems::Center,
+                                    container_ext: ULayoutContainerExt {
+                                        box_align: ULayoutBoxAlignContainer {
+                                            justify_items: Some(UAlignItemsExt::Center),
+                                            ..default()
+                                        },
+                                        grid: ULayoutGridContainer {
+                                            template_columns: vec![UTrackSize::Px(140.0)],
+                                            template_rows: vec![UTrackSize::Px(100.0)],
+                                            ..default()
                                         },
                                         ..default()
                                     },
                                     ..default()
                                 },
-                            ));
-                        });
+                            ))
+                            .with_children(|grid| {
+                                grid.spawn((
+                                    UNode {
+                                        width: UVal::Px(220.0),
+                                        height: UVal::Px(60.0),
+                                        background_color: color,
+                                        border_radius: UCornerRadius::all(8.0),
+                                        ..default()
+                                    },
+                                    USelf {
+                                        item_ext: ULayoutItemExt {
+                                            box_align: ULayoutBoxAlignSelf {
+                                                justify_self: Some(UAlignSelfExt::Center),
+                                                align_self: Some(UAlignSelfExt::Center),
+                                                justify_overflow: overflow_mode,
+                                                align_overflow: overflow_mode,
+                                            },
+                                            ..default()
+                                        },
+                                        ..default()
+                                    },
+                                ));
+                            });
                     });
                 }
             });

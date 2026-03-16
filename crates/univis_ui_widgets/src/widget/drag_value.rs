@@ -1,20 +1,23 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisDragValuePlugin;
 
 impl Plugin for UnivisDragValuePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UDragValue>()
+        app.register_type::<UDragValue>()
             .add_message::<DragValueChangedEvent>()
             .add_message::<DragValueCommitEvent>()
-            .add_systems(Update, (
-                init_drag_value_visuals,
-                handle_drag_value_interaction,
-                update_drag_value_visuals,
-                emit_drag_value_events,
-            ).chain());
+            .add_systems(
+                Update,
+                (
+                    init_drag_value_visuals,
+                    handle_drag_value_interaction,
+                    update_drag_value_visuals,
+                    emit_drag_value_events,
+                )
+                    .chain(),
+            );
     }
 }
 

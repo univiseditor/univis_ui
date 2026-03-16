@@ -3,8 +3,8 @@ use bevy::{asset::embedded_asset, prelude::*};
 pub mod icons;
 
 pub mod prelude {
-    pub use crate::style::icons::*;
     pub use crate::style::Theme;
+    pub use crate::style::icons::*;
 }
 
 pub struct UnivisUiStylePlugin;
@@ -26,17 +26,17 @@ pub struct Theme {
 }
 
 pub struct TextStyles {
-    pub font: Fonts
+    pub font: Fonts,
 }
 
 pub struct IconStyles {
-    pub font: Handle<Font>
+    pub font: Handle<Font>,
 }
 
 pub struct Fonts {
     pub inter_regular: Handle<Font>,
     pub adwaita_sans_regular: Handle<Font>,
-    pub fira_sans_regular: Handle<Font>
+    pub fira_sans_regular: Handle<Font>,
 }
 
 impl FromWorld for Theme {
@@ -45,20 +45,18 @@ impl FromWorld for Theme {
         Theme {
             text: TextStyles {
                 font: Fonts {
-                    inter_regular: asset_server.load(
-                "embedded://univis_ui_style/style/assets/fonts/Inter-Regular.ttf"),
+                    inter_regular: asset_server
+                        .load("embedded://univis_ui_style/style/assets/fonts/Inter-Regular.ttf"),
                     adwaita_sans_regular: asset_server.load(
-                        "embedded://univis_ui_style/style/assets/fonts/AdwaitaSans-Regular.ttf"
+                        "embedded://univis_ui_style/style/assets/fonts/AdwaitaSans-Regular.ttf",
                     ),
-                    fira_sans_regular: asset_server.load(
-                        "embedded://univis_ui_style/style/assets/fonts/FiraSans-Regular.ttf"
-                    )
-                }
+                    fira_sans_regular: asset_server
+                        .load("embedded://univis_ui_style/style/assets/fonts/FiraSans-Regular.ttf"),
+                },
             },
             icon: IconStyles {
-                font: asset_server.load(
-                "embedded://univis_ui_style/style/assets/icons/Lucide.ttf")
-            },           
+                font: asset_server.load("embedded://univis_ui_style/style/assets/icons/Lucide.ttf"),
+            },
         }
     }
 }

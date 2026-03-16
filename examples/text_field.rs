@@ -34,27 +34,20 @@ fn setup_ui(mut commands: Commands) {
         ))
         .with_children(|parent| {
             // Text Field 1
-            parent.spawn((
-                UTextField::new()
-                    .with_placeholder("text...")
-                    .with_size(300.0, 50.0),
-            ));
+            parent.spawn((UTextField::new()
+                .with_placeholder("text...")
+                .with_size(300.0, 50.0),));
 
             // Text Field 2
-            parent.spawn((
-                UTextField::new()
-                    .with_placeholder("email")
-                    .input_type(TextFieldInputType::Email)
-                    .with_size(300.0, 50.0),
-            ));
-            
-            parent.spawn((
-                UTextField::new()
-                    .with_placeholder("password")
-                    .input_type(TextFieldInputType::Password)
-                    .with_size(300.0, 50.0),
-            ));
-            
+            parent.spawn((UTextField::new()
+                .with_placeholder("email")
+                .input_type(TextFieldInputType::Email)
+                .with_size(300.0, 50.0),));
+
+            parent.spawn((UTextField::new()
+                .with_placeholder("password")
+                .input_type(TextFieldInputType::Password)
+                .with_size(300.0, 50.0),));
         });
 }
 

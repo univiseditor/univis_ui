@@ -1,7 +1,7 @@
+use crate::internal_prelude::*;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use crate::internal_prelude::*;
 use std::cmp::Ordering;
 use std::time::Instant;
 
@@ -157,7 +157,11 @@ impl LayoutProfiler {
         }
 
         let p = percentile.clamp(0.0, 100.0) / 100.0;
-        let mut values: Vec<f64> = self.frame_history.iter().map(|s| s.total_layout_ms).collect();
+        let mut values: Vec<f64> = self
+            .frame_history
+            .iter()
+            .map(|s| s.total_layout_ms)
+            .collect();
         values.sort_by(safe_partial_cmp);
 
         let idx = ((values.len() - 1) as f64 * p).round() as usize;
@@ -256,7 +260,11 @@ pub fn profile_upward_pass(
     if start_time.is_none() {
         *start_time = Some(Instant::now());
     } else {
-        profiler.upward_pass_time = start_time.expect("timer should exist").elapsed().as_secs_f64() * 1000.0;
+        profiler.upward_pass_time = start_time
+            .expect("timer should exist")
+            .elapsed()
+            .as_secs_f64()
+            * 1000.0;
         *start_time = None;
     }
 }
@@ -269,7 +277,11 @@ pub fn profile_downward_pass(
     if start_time.is_none() {
         *start_time = Some(Instant::now());
     } else {
-        profiler.downward_pass_time = start_time.expect("timer should exist").elapsed().as_secs_f64() * 1000.0;
+        profiler.downward_pass_time = start_time
+            .expect("timer should exist")
+            .elapsed()
+            .as_secs_f64()
+            * 1000.0;
         *start_time = None;
     }
 }
@@ -282,7 +294,11 @@ pub fn profile_material_update(
     if start_time.is_none() {
         *start_time = Some(Instant::now());
     } else {
-        profiler.material_update_time = start_time.expect("timer should exist").elapsed().as_secs_f64() * 1000.0;
+        profiler.material_update_time = start_time
+            .expect("timer should exist")
+            .elapsed()
+            .as_secs_f64()
+            * 1000.0;
         *start_time = None;
     }
 }
@@ -307,10 +323,7 @@ pub fn collect_node_stats(
         profiler.cache_misses = profiler.total_nodes;
     }
 
-    profiler.visible_nodes = visible
-        .iter()
-        .filter(|v| **v != Visibility::Hidden)
-        .count();
+    profiler.visible_nodes = visible.iter().filter(|v| **v != Visibility::Hidden).count();
 }
 
 /// Record per-frame timing and FPS snapshots.
@@ -449,7 +462,10 @@ pub fn display_profiler_overlay(
             );
         }
 
-        let sample_count = settings.graph_samples.max(2).min(profiler.frame_history.len());
+        let sample_count = settings
+            .graph_samples
+            .max(2)
+            .min(profiler.frame_history.len());
         if sample_count >= 2 {
             let slice = &profiler.frame_history[profiler.frame_history.len() - sample_count..];
             let frame_budget = frame_budget_ms(settings.target_fps);
@@ -459,7 +475,8 @@ pub fn display_profiler_overlay(
                 .fold(frame_budget, f64::max)
                 .max(1.0);
 
-            let budget_y = graph_bottom + ((frame_budget / max_ms) as f32).clamp(0.0, 1.0) * graph_height;
+            let budget_y =
+                graph_bottom + ((frame_budget / max_ms) as f32).clamp(0.0, 1.0) * graph_height;
             gizmos.line_2d(
                 Vec2::new(graph_left, budget_y),
                 Vec2::new(graph_left + graph_width, budget_y),
@@ -555,7 +572,10 @@ fn setup_profiler_overlay(mut commands: Commands, theme: Res<Theme>) {
 fn update_profiler_overlay_text(
     profiler: Res<LayoutProfiler>,
     settings: Res<ProfilerSettings>,
-    mut query: Query<(&mut Text2d, &mut Transform, &mut Visibility, &mut TextColor), With<ProfilerOverlayText>>,
+    mut query: Query<
+        (&mut Text2d, &mut Transform, &mut Visibility, &mut TextColor),
+        With<ProfilerOverlayText>,
+    >,
     windows: Query<&Window>,
 ) {
     let Ok(window) = windows.single() else {
@@ -749,8 +769,7 @@ pub struct LayoutProfilingPlugin;
 
 impl Plugin for LayoutProfilingPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<LayoutProfiler>()
+        app.init_resource::<LayoutProfiler>()
             .init_resource::<ProfilerSettings>()
             .add_plugins(FrameTimeDiagnosticsPlugin::default())
             .add_systems(Startup, setup_profiler_overlay)

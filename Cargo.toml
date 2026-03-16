@@ -20,10 +20,43 @@ members = [
     "crates/univis_ui_interaction",
     "crates/univis_ui_widgets",
 ]
+resolver = "3"
+
+[workspace.dependencies]
+bevy = { version = "0.18.1", default-features = false, features = [
+    "default_app",
+    "default_platform",
+    "common_api",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_sprite",
+    "bevy_sprite_render",
+    "bevy_gizmos_render",
+    "bevy_pbr",
+    "bevy_picking",
+    "keyboard",
+    "mouse",
+] }
+
+[features]
+default = []
+example_bloom = ["bevy/bevy_post_process"]
 
 [dependencies]
-bevy = "0.18.1"
+bevy = { workspace = true }
 univis_ui_engine = { path = "crates/univis_ui_engine", version = "0.2.0-alpha.1" }
 univis_ui_style = { path = "crates/univis_ui_style", version = "0.2.0-alpha.1" }
 univis_ui_interaction = { path = "crates/univis_ui_interaction", version = "0.2.0-alpha.1" }
 univis_ui_widgets = { path = "crates/univis_ui_widgets", version = "0.2.0-alpha.1" }
+
+[[example]]
+name = "border_light_3d"
+required-features = ["example_bloom"]
+
+[[example]]
+name = "card_profile"
+required-features = ["example_bloom"]
+
+[[example]]
+name = "sci_fi"
+required-features = ["example_bloom"]

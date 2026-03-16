@@ -80,26 +80,27 @@ fn spawn_control_panel(root: &mut ChildSpawnerCommands) {
 
         panel.spawn(UDivider::horizontal().with_thickness(2.0));
 
-        panel.spawn((
-            UNode {
-                width: UVal::Percent(1.0),
-                height: UVal::Auto,
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                justify_content: UJustifyContent::Start,
-                align_items: UAlignItems::Center,
-                gap: 8.0,
-                ..default()
-            },
-        ))
-        .with_children(|row| {
-            spawn_badge(row, "Live", BadgeStyle::Success);
-            spawn_badge(row, "UI2D", BadgeStyle::Info);
-            spawn_badge(row, "Cached Layout", BadgeStyle::Warning);
-        });
+        panel
+            .spawn((
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Auto,
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    justify_content: UJustifyContent::Start,
+                    align_items: UAlignItems::Center,
+                    gap: 8.0,
+                    ..default()
+                },
+            ))
+            .with_children(|row| {
+                spawn_badge(row, "Live", BadgeStyle::Success);
+                spawn_badge(row, "UI2D", BadgeStyle::Info);
+                spawn_badge(row, "Cached Layout", BadgeStyle::Warning);
+            });
 
         panel.spawn(UDivider::horizontal().with_thickness(1.0));
 
@@ -138,33 +139,34 @@ fn spawn_control_panel(root: &mut ChildSpawnerCommands) {
                 .with_size(260.0, 38.0),
         );
 
-        panel.spawn((
-            UNode {
-                width: UVal::Percent(1.0),
-                height: UVal::Auto,
-                padding: USides::axes(12.0, 8.0),
-                background_color: Color::srgba(0.18, 0.21, 0.27, 0.72),
-                border_radius: UCornerRadius::all(10.0),
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                justify_content: UJustifyContent::SpaceBetween,
-                align_items: UAlignItems::Center,
-                gap: 12.0,
-                ..default()
-            },
-        ))
-        .with_children(|row| {
-            row.spawn(UTextLabel {
-                text: "Enable VSync".to_string(),
-                font_size: 16.0,
-                color: Color::WHITE,
-                ..default()
+        panel
+            .spawn((
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Auto,
+                    padding: USides::axes(12.0, 8.0),
+                    background_color: Color::srgba(0.18, 0.21, 0.27, 0.72),
+                    border_radius: UCornerRadius::all(10.0),
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    justify_content: UJustifyContent::SpaceBetween,
+                    align_items: UAlignItems::Center,
+                    gap: 12.0,
+                    ..default()
+                },
+            ))
+            .with_children(|row| {
+                row.spawn(UTextLabel {
+                    text: "Enable VSync".to_string(),
+                    font_size: 16.0,
+                    color: Color::WHITE,
+                    ..default()
+                });
+                row.spawn(UToggle::material_style().with_checked(true));
             });
-            row.spawn(UToggle::material_style().with_checked(true));
-        });
 
         panel.spawn(UCheckbox::new("High quality shadows").checked(true));
         panel.spawn(UCheckbox::new("Enable post-processing").checked(true));
@@ -251,70 +253,73 @@ fn spawn_control_panel(root: &mut ChildSpawnerCommands) {
                 .with_decimals(2),
         );
 
-        panel.spawn((
-            UNode {
-                width: UVal::Percent(1.0),
-                height: UVal::Auto,
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                gap: 10.0,
-                ..default()
-            },
-        ))
-        .with_children(|actions| {
-            actions.spawn((
-                UButton::primary(),
-                USelf {
-                    item_ext: ULayoutItemExt {
-                        flex: ULayoutFlexItem {
-                            flex_grow: Some(1.0),
-                            ..default()
-                        },
-                        ..default()
-                    },
+        panel
+            .spawn((
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Auto,
                     ..default()
                 },
                 ULayout {
-                    justify_content: UJustifyContent::Center,
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    gap: 10.0,
                     ..default()
                 },
             ))
-            .with_children(|btn| {
-                btn.spawn(UTextLabel {
-                    text: "Apply".to_string(),
-                    font_size: 16.0,
-                    ..default()
-                });
-            });
+            .with_children(|actions| {
+                actions
+                    .spawn((
+                        UButton::primary(),
+                        USelf {
+                            item_ext: ULayoutItemExt {
+                                flex: ULayoutFlexItem {
+                                    flex_grow: Some(1.0),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            ..default()
+                        },
+                        ULayout {
+                            justify_content: UJustifyContent::Center,
+                            ..default()
+                        },
+                    ))
+                    .with_children(|btn| {
+                        btn.spawn(UTextLabel {
+                            text: "Apply".to_string(),
+                            font_size: 16.0,
+                            ..default()
+                        });
+                    });
 
-            actions.spawn((
-                UButton::secondary(),
-                USelf {
-                    item_ext: ULayoutItemExt {
-                        flex: ULayoutFlexItem {
-                            flex_grow: Some(1.0),
+                actions
+                    .spawn((
+                        UButton::secondary(),
+                        USelf {
+                            item_ext: ULayoutItemExt {
+                                flex: ULayoutFlexItem {
+                                    flex_grow: Some(1.0),
+                                    ..default()
+                                },
+                                ..default()
+                            },
                             ..default()
                         },
-                        ..default()
-                    },
-                    ..default()
-                },
-                ULayout {
-                    justify_content: UJustifyContent::Center,
-                    ..default()
-                },
-            ))
-            .with_children(|btn| {
-                btn.spawn(UTextLabel {
-                    text: "Reset".to_string(),
-                    font_size: 16.0,
-                    ..default()
-                });
+                        ULayout {
+                            justify_content: UJustifyContent::Center,
+                            ..default()
+                        },
+                    ))
+                    .with_children(|btn| {
+                        btn.spawn(UTextLabel {
+                            text: "Reset".to_string(),
+                            font_size: 16.0,
+                            ..default()
+                        });
+                    });
             });
-        });
     });
 }
 
@@ -345,159 +350,162 @@ fn spawn_preview_panel(root: &mut ChildSpawnerCommands) {
 
         panel.spawn(UDivider::horizontal().with_thickness(2.0));
 
-        panel.spawn((
-            UNode {
-                width: UVal::Percent(1.0),
-                height: UVal::Px(540.0),
-                background_color: Color::srgb(0.16, 0.18, 0.28),
-                border_radius: UCornerRadius::all(22.0),
-                padding: USides::all(22.0),
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                justify_content: UJustifyContent::Start,
-                align_items: UAlignItems::Center,
-                gap: 14.0,
-                ..default()
-            },
-        ))
-        .with_children(|card| {
-            card.spawn((
+        panel
+            .spawn((
                 UNode {
-                    width: UVal::Px(92.0),
-                    height: UVal::Px(92.0),
-                    background_color: Color::srgb(0.78, 0.83, 0.95),
-                    border_radius: UCornerRadius::all(46.0),
+                    width: UVal::Percent(1.0),
+                    height: UVal::Px(540.0),
+                    background_color: Color::srgb(0.16, 0.18, 0.28),
+                    border_radius: UCornerRadius::all(22.0),
+                    padding: USides::all(22.0),
                     ..default()
                 },
-                UBorder {
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Column,
+                    justify_content: UJustifyContent::Start,
+                    align_items: UAlignItems::Center,
+                    gap: 14.0,
+                    ..default()
+                },
+            ))
+            .with_children(|card| {
+                card.spawn((
+                    UNode {
+                        width: UVal::Px(92.0),
+                        height: UVal::Px(92.0),
+                        background_color: Color::srgb(0.78, 0.83, 0.95),
+                        border_radius: UCornerRadius::all(46.0),
+                        ..default()
+                    },
+                    UBorder {
+                        color: Color::WHITE,
+                        width: 2.0,
+                        offset: 6.0,
+                        ..default()
+                    },
+                ));
+
+                card.spawn(UTextLabel {
+                    text: "Univis QA Runner".to_string(),
+                    font_size: 26.0,
                     color: Color::WHITE,
-                    width: 2.0,
-                    offset: 6.0,
                     ..default()
-                },
-            ));
+                });
 
-            card.spawn(UTextLabel {
-                text: "Univis QA Runner".to_string(),
-                font_size: 26.0,
-                color: Color::WHITE,
-                ..default()
-            });
+                card.spawn(UTextLabel {
+                    text: "@layout-regression".to_string(),
+                    font_size: 14.0,
+                    color: Color::srgb(0.66, 0.7, 0.8),
+                    ..default()
+                });
 
-            card.spawn(UTextLabel {
-                text: "@layout-regression".to_string(),
-                font_size: 14.0,
-                color: Color::srgb(0.66, 0.7, 0.8),
-                ..default()
-            });
-
-            card.spawn((
-                UNode {
-                    width: UVal::Percent(1.0),
-                    ..default()
-                },
-                ULayout {
-                    display: UDisplay::Flex,
-                    flex_direction: UFlexDirection::Row,
-                    justify_content: UJustifyContent::Center,
-                    gap: 8.0,
-                    ..default()
-                },
-            ))
-            .with_children(|tags| {
-                spawn_badge(tags, "Flex", BadgeStyle::Info);
-                spawn_badge(tags, "Cache", BadgeStyle::Warning);
-                spawn_badge(tags, "Interaction", BadgeStyle::Success);
-            });
-
-            card.spawn((
-                UNode {
-                    width: UVal::Percent(1.0),
-                    padding: USides::axes(0.0, 10.0),
-                    background_color: Color::srgba(0.05, 0.06, 0.1, 0.35),
-                    border_radius: UCornerRadius::all(12.0),
-                    ..default()
-                },
-                ULayout {
-                    display: UDisplay::Flex,
-                    flex_direction: UFlexDirection::Row,
-                    justify_content: UJustifyContent::SpaceEvenly,
-                    ..default()
-                },
-            ))
-            .with_children(|stats| {
-                spawn_stat(stats, "87", "Checks");
-                spawn_stat(stats, "0", "Regressions");
-                spawn_stat(stats, "99.4%", "Pass");
-            });
-
-            card.spawn((
-                UNode {
-                    width: UVal::Percent(1.0),
-                    ..default()
-                },
-                ULayout {
-                    display: UDisplay::Flex,
-                    flex_direction: UFlexDirection::Row,
-                    gap: 8.0,
-                    ..default()
-                },
-            ))
-            .with_children(|actions| {
-                actions.spawn((
-                    UButton::primary(),
-                    USelf {
-                        item_ext: ULayoutItemExt {
-                            flex: ULayoutFlexItem {
-                                flex_grow: Some(1.0),
-                                ..default()
-                            },
-                            ..default()
-                        },
+                card.spawn((
+                    UNode {
+                        width: UVal::Percent(1.0),
                         ..default()
                     },
                     ULayout {
+                        display: UDisplay::Flex,
+                        flex_direction: UFlexDirection::Row,
                         justify_content: UJustifyContent::Center,
+                        gap: 8.0,
                         ..default()
                     },
                 ))
-                .with_children(|btn| {
-                    btn.spawn(UTextLabel {
-                        text: "Inspect".to_string(),
-                        font_size: 15.0,
-                        ..default()
-                    });
+                .with_children(|tags| {
+                    spawn_badge(tags, "Flex", BadgeStyle::Info);
+                    spawn_badge(tags, "Cache", BadgeStyle::Warning);
+                    spawn_badge(tags, "Interaction", BadgeStyle::Success);
                 });
 
-                actions.spawn((
-                    UButton::secondary(),
-                    USelf {
-                        item_ext: ULayoutItemExt {
-                            flex: ULayoutFlexItem {
-                                flex_grow: Some(1.0),
-                                ..default()
-                            },
-                            ..default()
-                        },
+                card.spawn((
+                    UNode {
+                        width: UVal::Percent(1.0),
+                        padding: USides::axes(0.0, 10.0),
+                        background_color: Color::srgba(0.05, 0.06, 0.1, 0.35),
+                        border_radius: UCornerRadius::all(12.0),
                         ..default()
                     },
                     ULayout {
-                        justify_content: UJustifyContent::Center,
+                        display: UDisplay::Flex,
+                        flex_direction: UFlexDirection::Row,
+                        justify_content: UJustifyContent::SpaceEvenly,
                         ..default()
                     },
                 ))
-                .with_children(|btn| {
-                    btn.spawn(UTextLabel {
-                        text: "Export".to_string(),
-                        font_size: 15.0,
+                .with_children(|stats| {
+                    spawn_stat(stats, "87", "Checks");
+                    spawn_stat(stats, "0", "Regressions");
+                    spawn_stat(stats, "99.4%", "Pass");
+                });
+
+                card.spawn((
+                    UNode {
+                        width: UVal::Percent(1.0),
                         ..default()
-                    });
+                    },
+                    ULayout {
+                        display: UDisplay::Flex,
+                        flex_direction: UFlexDirection::Row,
+                        gap: 8.0,
+                        ..default()
+                    },
+                ))
+                .with_children(|actions| {
+                    actions
+                        .spawn((
+                            UButton::primary(),
+                            USelf {
+                                item_ext: ULayoutItemExt {
+                                    flex: ULayoutFlexItem {
+                                        flex_grow: Some(1.0),
+                                        ..default()
+                                    },
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            ULayout {
+                                justify_content: UJustifyContent::Center,
+                                ..default()
+                            },
+                        ))
+                        .with_children(|btn| {
+                            btn.spawn(UTextLabel {
+                                text: "Inspect".to_string(),
+                                font_size: 15.0,
+                                ..default()
+                            });
+                        });
+
+                    actions
+                        .spawn((
+                            UButton::secondary(),
+                            USelf {
+                                item_ext: ULayoutItemExt {
+                                    flex: ULayoutFlexItem {
+                                        flex_grow: Some(1.0),
+                                        ..default()
+                                    },
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            ULayout {
+                                justify_content: UJustifyContent::Center,
+                                ..default()
+                            },
+                        ))
+                        .with_children(|btn| {
+                            btn.spawn(UTextLabel {
+                                text: "Export".to_string(),
+                                font_size: 15.0,
+                                ..default()
+                            });
+                        });
                 });
             });
-        });
     });
 }
 
@@ -621,7 +629,14 @@ fn spawn_progress_row(
 
 fn spawn_badge(parent: &mut ChildSpawnerCommands, text: &str, style: BadgeStyle) {
     parent
-        .spawn((UBadge { style, size: BadgeSize::Small }, UNode::default(), ULayout::default()))
+        .spawn((
+            UBadge {
+                style,
+                size: BadgeSize::Small,
+            },
+            UNode::default(),
+            ULayout::default(),
+        ))
         .with_children(|badge| {
             badge.spawn(UTextLabel {
                 text: text.to_string(),
@@ -658,7 +673,10 @@ fn spawn_stat(parent: &mut ChildSpawnerCommands, value: &str, label: &str) {
         });
 }
 
-fn animate_progress_bars(time: Res<Time>, mut query: Query<(&mut UProgressBar, &AnimatedProgress)>) {
+fn animate_progress_bars(
+    time: Res<Time>,
+    mut query: Query<(&mut UProgressBar, &AnimatedProgress)>,
+) {
     for (mut bar, anim) in query.iter_mut() {
         let wave = (time.elapsed_secs() * anim.speed + anim.phase).sin();
         bar.value = (anim.mid + anim.amp * wave).clamp(0.0, 1.0);

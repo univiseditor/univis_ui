@@ -15,25 +15,25 @@ pub struct UNodeMaterial {
 
     // Group 2: Mixed
     #[uniform(0)]
-    pub size: Vec2,         // 8 bytes (Offset 48)
-    
+    pub size: Vec2, // 8 bytes (Offset 48)
+
     // Group 3: Floats
     #[uniform(0)]
-    pub border_width: f32,  // 4 bytes (Offset 56)
+    pub border_width: f32, // 4 bytes (Offset 56)
     #[uniform(0)]
     pub border_offset: f32, // 4 bytes (Offset 60)
     #[uniform(0)]
-    pub softness: f32,      // 4 bytes (Offset 64)
+    pub softness: f32, // 4 bytes (Offset 64)
 
     // Group 4: Integers (u32)
     #[uniform(0)]
-    pub shape_mode: u32,    // 4 bytes (Offset 68)
+    pub shape_mode: u32, // 4 bytes (Offset 68)
     #[uniform(0)]
-    pub use_texture: u32,   // 4 bytes (Offset 72)
-    
+    pub use_texture: u32, // 4 bytes (Offset 72)
+
     // الحشو النهائي لإغلاق الكتلة عند 80 بايت
     #[uniform(0)]
-    pub _pad: f32,          // 4 bytes (Offset 76)
+    pub _pad: f32, // 4 bytes (Offset 76)
 
     // Textures
     #[texture(1)]
@@ -43,11 +43,11 @@ pub struct UNodeMaterial {
     #[uniform(0)]
     pub clip_center: Vec2, // موقع مركز القص في العالم
     #[uniform(0)]
-    pub clip_size: Vec2,   // حجم منطقة القص
+    pub clip_size: Vec2, // حجم منطقة القص
     #[uniform(0)]
     pub clip_radius: Vec4, // زوايا منطقة القص (SDF يدعم قص دائري!)
     #[uniform(0)]
-    pub use_clip: u32,     // 0 = لا قص، 1 = يوجد قص
+    pub use_clip: u32, // 0 = لا قص، 1 = يوجد قص
 }
 
 impl Default for UNodeMaterial {

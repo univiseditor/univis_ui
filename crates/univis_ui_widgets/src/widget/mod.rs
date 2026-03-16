@@ -1,47 +1,44 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
-use crate::widget::{
-    badge::BadgePluginInstalled,
-    text_field::TextFieldPluginInstalled,
-};
+use crate::widget::{badge::BadgePluginInstalled, text_field::TextFieldPluginInstalled};
+use bevy::prelude::*;
 
-pub mod button;
-pub mod text_label;
 pub mod badge;
-pub mod progress;
-pub mod image;
-pub mod seekbar;
+pub mod button;
 pub mod checkbox;
-mod menu; // Internal placeholder module; not part of public API yet.
-pub mod icon_btn;
-pub mod toggle;
-pub mod radio;
-pub mod text_field;
-pub mod scroll_view;
 pub mod divider;
-pub mod panel;
 pub mod drag_value;
+pub mod icon_btn;
+pub mod image;
+mod menu; // Internal placeholder module; not part of public API yet.
+pub mod panel;
+pub mod progress;
+pub mod radio;
+pub mod scroll_view;
+pub mod seekbar;
 pub mod select;
+pub mod text_field;
+pub mod text_label;
+pub mod toggle;
 
 pub mod prelude {
     pub use crate::widget::{
-        text_label::*,
         badge::*,
-        progress::*,
         button::*,
-        image::*,
-        text_field::*,
         checkbox::*,
+        divider::*,
+        drag_value::*,
+        icon_btn::*,
+        image::*,
+        panel::*,
+        progress::*,
         radio::*,
         // menu::*,
         scroll_view::*,
         seekbar::*,
-        icon_btn::*,
-        toggle::*,
-        divider::*,
-        panel::*,
-        drag_value::*,
         select::*,
+        text_field::*,
+        text_label::*,
+        toggle::*,
     };
 }
 
@@ -56,8 +53,7 @@ struct MissingOptionalWidgetPluginWarnings {
 
 impl Plugin for UnivisWidgetPlugin {
     fn build(&self, app: &mut bevy::app::App) {
-        app
-            .register_type::<UImage>()
+        app.register_type::<UImage>()
             .add_systems(Update, warn_on_missing_optional_widget_plugins)
             .add_systems(
                 PostUpdate,
@@ -100,10 +96,7 @@ fn warn_on_missing_optional_widget_plugins(
         warnings.text_field_missing_plugin = true;
     }
 
-    if badge_plugin.is_none()
-        && !warnings.badge_missing_plugin
-        && !added_badges.is_empty()
-    {
+    if badge_plugin.is_none() && !warnings.badge_missing_plugin && !added_badges.is_empty() {
         bevy::log::warn!(
             "UBadge detected, but UnivisBadgePlugin is not added. Add .add_plugins(UnivisBadgePlugin) to enable badge visual update systems."
         );

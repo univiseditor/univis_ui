@@ -8,7 +8,7 @@ use crate::internal_prelude::*;
 /// It typically takes its size automatically from the window dimensions.
 #[derive(Component, Default)]
 #[require(UNode)]
-pub struct UScreenRoot; 
+pub struct UScreenRoot;
 
 /// Marker for World Space UI Root.
 ///
@@ -17,10 +17,10 @@ pub struct UScreenRoot;
 #[derive(Component)]
 #[require(UNode)]
 pub struct UWorldRoot {
-    pub size: Vec2, 
+    pub size: Vec2,
     pub is_3d: bool,
     /// Scaling factor for text resolution/quality relative to the size.
-    pub resolution_scale: f32, 
+    pub resolution_scale: f32,
 }
 
 impl Default for UWorldRoot {
@@ -35,14 +35,14 @@ impl Default for UWorldRoot {
 
 pub fn auto_propagate_ui3d(
     mut commands: Commands,
-    
+
     // 1. مراقبة الجذور (Roots) التي تغيرت إعداداتها
     root_query: Query<(Entity, &UWorldRoot), (Changed<UWorldRoot>, Without<UI3d>)>,
-    
+
     // 2. مراقبة الأبناء (Children) الذين ليس لديهم UI3d بعد
     // نبحث عن أي UNode له أب، ولكن ينقصه مكون UI3d
     child_query: Query<(Entity, &ChildOf), (With<UNode>, Without<UI3d>)>,
-    
+
     // 3. استعلام للتحقق مما إذا كان الأب يمتلك UI3d
     parent_check: Query<&UI3d>,
 ) {

@@ -1,8 +1,8 @@
-use bevy::ecs::relationship::Relationship;
-use bevy::prelude::*;
-use bevy::picking::backend::prelude::*;
-use crate::internal_prelude::*;
 use super::math::sd_rounded_box;
+use crate::internal_prelude::*;
+use bevy::ecs::relationship::Relationship;
+use bevy::picking::backend::prelude::*;
+use bevy::prelude::*;
 
 /// دالة دقيقة للتحقق من القص باستخدام المصفوفات
 fn is_clipped_by_ancestors(
@@ -22,7 +22,7 @@ fn is_clipped_by_ancestors(
                 // 1. التحويل من العالم (World) إلى المحلي (Local) الخاص بالأب القاطع
                 let transform_matrix = transform.to_matrix();
                 let inverse_matrix = transform_matrix.inverse();
-                
+
                 // تحويل النقطة
                 let cursor_in_clipper_space = inverse_matrix
                     .transform_point3(cursor_world_pos.extend(0.0))
@@ -57,7 +57,7 @@ fn is_ancestor_of(
     parents_query: &Query<&ChildOf>,
 ) -> bool {
     let mut current = potential_descendant;
-    
+
     // نصعد في الشجرة حتى نجد الأب أو نصل للجذر
     while let Ok(parent) = parents_query.get(current) {
         current = parent.get();
@@ -65,41 +65,44 @@ fn is_ancestor_of(
             return true;
         }
     }
-    
+
     false
 }
 
 pub fn univis_picking_backend(
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(Entity, &Camera, &GlobalTransform), With<Camera2d>>,
-    
-    nodes_query: Query<(
-        Entity, 
-        &UNode, 
-        &GlobalTransform, 
-        &ComputedSize, 
-        Option<&LayoutDepth>,
-    ), With<UInteraction>>,
-    
+
+    nodes_query: Query<
+        (
+            Entity,
+            &UNode,
+            &GlobalTransform,
+            &ComputedSize,
+            Option<&LayoutDepth>,
+        ),
+        With<UInteraction>,
+    >,
+
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
 
     mut output: MessageWriter<PointerHits>,
 ) {
-    let Ok((cam_entity, camera, cam_transform)) = cameras.single() else { 
-        return; 
+    let Ok((cam_entity, camera, cam_transform)) = cameras.single() else {
+        return;
     };
 
     for (pointer_id, pointer_loc) in pointers.iter() {
-        let Some(location) = pointer_loc.location() else { 
-            continue; 
+        let Some(location) = pointer_loc.location() else {
+            continue;
         };
-        
-        let Ok(ray) = camera.viewport_to_world(cam_transform, location.position) else { 
-            continue; 
+
+        let Ok(ray) = camera.viewport_to_world(cam_transform, location.position) else {
+            continue;
         };
-        
-        let cursor_pos_world = ray.origin.truncate(); 
+
+        let cursor_pos_world = ray.origin.truncate();
 
         // المرحلة 1: جمع كل الـ hits المحتملة
         let mut all_hits: Vec<(Entity, HitData, f32)> = Vec::new();
@@ -110,7 +113,7 @@ pub fn univis_picking_backend(
             let inverse_matrix = transform_matrix.inverse();
             let cursor_pos_local = inverse_matrix
                 .transform_point3(cursor_pos_world.extend(0.0))
-                .truncate(); 
+                .truncate();
 
             let half_size = Vec2::new(size.width, size.height) * 0.5;
             let radius_vec = Vec4::new(
@@ -124,13 +127,9 @@ pub fn univis_picking_backend(
 
             if dist <= 0.0 {
                 // التحقق من القص
-                if is_clipped_by_ancestors(
-                    entity, 
-                    cursor_pos_world, 
-                    &parents_query, 
-                    &clipper_query
-                ) {
-                    continue; 
+                if is_clipped_by_ancestors(entity, cursor_pos_world, &parents_query, &clipper_query)
+                {
+                    continue;
                 }
 
                 // حساب العمق
@@ -139,9 +138,9 @@ pub fn univis_picking_backend(
                 let final_depth = tree_depth * 1000.0 + z_depth;
 
                 all_hits.push((
-                    entity, 
+                    entity,
                     HitData {
-                        camera: cam_entity, 
+                        camera: cam_entity,
                         depth: final_depth,
                         position: Some(cursor_pos_world.extend(0.0)),
                         normal: Some(Vec3::Z),
@@ -181,7 +180,7 @@ pub fn univis_picking_backend(
             output.write(PointerHits {
                 pointer: *pointer_id,
                 picks: filtered_hits,
-                order: 0.0, 
+                order: 0.0,
             });
         }
     }

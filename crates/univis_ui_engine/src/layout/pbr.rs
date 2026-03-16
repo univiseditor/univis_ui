@@ -7,10 +7,10 @@ use bevy::prelude::*;
 pub struct UPbr {
     /// مدى "معدنية" السطح (0.0 = بلاستيك/خشب، 1.0 = معدن).
     pub metallic: f32,
-    
+
     /// مدى خشونة السطح (0.0 = مرآة لامعة، 1.0 = سطح خشن باهت).
     pub roughness: f32,
-    
+
     /// لون التوهج الذاتي (Glow). مفيد جداً لشاشات الخيال العلمي.
     pub emissive: LinearRgba,
 }

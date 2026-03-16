@@ -28,7 +28,10 @@ impl Default for UImage {
 
 impl UImage {
     pub fn new(texture: Handle<Image>) -> Self {
-        Self { texture, ..default() }
+        Self {
+            texture,
+            ..default()
+        }
     }
 
     pub fn with_size(mut self, width: UVal, height: UVal) -> Self {

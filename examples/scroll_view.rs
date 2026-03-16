@@ -68,10 +68,7 @@ fn setup_scroll_list(mut commands: Commands) {
                             ..default()
                         },))
                             .with_children(|item| {
-                                item.spawn((
-                                    UTextLabel::new(format!("Item #{}", i + 1).as_str()),
-                                    
-                                ));
+                                item.spawn((UTextLabel::new(format!("Item #{}", i + 1).as_str()),));
                             });
                     }
                 });

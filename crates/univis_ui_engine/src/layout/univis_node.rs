@@ -1,12 +1,11 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisNodePlugin;
 
 impl Plugin for UnivisNodePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UVal>()
+        app.register_type::<UVal>()
             .register_type::<ULayout>()
             .register_type::<UNode>()
             .register_type::<ComputedSize>()
@@ -32,30 +31,30 @@ impl Plugin for UnivisNodePlugin {
 pub enum UShapeMode {
     #[default]
     Round,
-    Cut, 
+    Cut,
 }
 
 /// The core component for any UI node.
 /// Defines sizing, spacing, appearance (color/radius), and layout behavior.
 #[derive(Component, Clone, Reflect)]
-#[require(Transform, Visibility, ComputedSize, ULayout, IntrinsicSize)] 
+#[require(Transform, Visibility, ComputedSize, ULayout, IntrinsicSize)]
 pub struct UNode {
     /// Preferred width of the node.
     pub width: UVal,
     /// Preferred height of the node.
     pub height: UVal,
-    
+
     /// Inner spacing (affects children placement).
     pub padding: USides,
     /// Outer spacing (affects placement relative to parent/siblings).
     pub margin: USides,
-    
+
     /// Background color of the node.
     pub background_color: Color,
     /// Corner radius for rounded rectangles (independent corners).
     pub border_radius: UCornerRadius,
 
-    pub shape_mode: UShapeMode, 
+    pub shape_mode: UShapeMode,
 }
 
 impl Default for UNode {
@@ -109,7 +108,7 @@ pub struct ULayout {
     pub align_items: UAlignItems,
     /// Gap between items.
     pub gap: f32,
-    
+
     /// Number of columns (used for Grid/Masonry layouts).
     pub grid_columns: u32,
 
@@ -174,14 +173,14 @@ pub enum UFlexDirection {
 }
 
 /// Distribution of space along the Main Axis.
-#[derive(Debug, Clone, Copy, PartialEq,Default ,Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Reflect)]
 pub enum UJustifyContent {
     #[default]
     Start,
     Center,
     End,
     SpaceBetween,
-    Stretch, 
+    Stretch,
     SpaceAround,
     SpaceEvenly,
 }
@@ -427,12 +426,12 @@ impl Default for ULayoutGridItem {
 pub struct USelf {
     /// Self alignment overriding parent's `align_items`.
     pub align_self: UAlignSelf,
-    
+
     /// Positioning offsets (Works for Relative and Absolute).
-    pub left: UVal,    
-    pub top: UVal,    
-    pub bottom: UVal,    
-    pub right: UVal,    
+    pub left: UVal,
+    pub top: UVal,
+    pub bottom: UVal,
+    pub right: UVal,
     /// Layout order (affects Z-index too).
     pub order: i32,
     pub position_type: UPositionType,
@@ -441,13 +440,13 @@ pub struct USelf {
 }
 impl Default for USelf {
     fn default() -> Self {
-        Self { 
-            align_self: UAlignSelf::Auto, 
+        Self {
+            align_self: UAlignSelf::Auto,
             left: UVal::Auto,
             top: UVal::Auto,
             bottom: UVal::Auto,
             right: UVal::Auto,
-            order: 0, 
+            order: 0,
             position_type: UPositionType::Relative,
             item_ext: ULayoutItemExt::default(),
         }
@@ -458,14 +457,14 @@ impl USelf {
     pub fn get_val(&self) -> f32 {
         match &self.left {
             UVal::Px(p) => *p,
-            _ => 0.0
+            _ => 0.0,
         }
     }
 }
 /// Self alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UAlignSelf {
-    Auto,    // Inherit from parent
+    Auto, // Inherit from parent
     Start,
     Center,
     End,

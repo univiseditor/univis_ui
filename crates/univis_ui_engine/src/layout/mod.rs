@@ -4,31 +4,32 @@ pub mod core;
 pub mod geometry;
 pub mod image;
 pub mod layout_system;
-pub mod pipeline;
 pub mod pbr;
+pub mod pipeline;
 pub mod profiling;
 pub mod render;
 pub mod solver_types;
 pub mod univis_node;
 
 pub mod prelude {
+    pub use crate::layout::UnivisLayoutPlugin;
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
     pub use crate::layout::image::UImage;
     pub use crate::layout::layout_system::{UScreenRoot, UWorldRoot};
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;
-    pub use crate::layout::UnivisLayoutPlugin;
 }
 
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::asset::AssetEventSystems;
+use bevy::prelude::*;
+use bevy::sprite::update_text2d_layout;
 
 pub struct UnivisLayoutPlugin;
 
 impl Plugin for UnivisLayoutPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<USelf>()
+        app.register_type::<USelf>()
             .register_type::<UAlignSelf>()
             .register_type::<UPosition>()
             .register_type::<ULayoutContainerExt>()
@@ -58,6 +59,18 @@ impl Plugin for UnivisLayoutPlugin {
                     UnivisPostUpdateSet::RenderSync,
                 )
                     .chain(),
+            )
+            .configure_sets(
+                PostUpdate,
+                (
+                    UnivisPostUpdateSet::WidgetSync,
+                    UnivisPostUpdateSet::LayoutHierarchy,
+                    UnivisPostUpdateSet::LayoutMeasure,
+                    UnivisPostUpdateSet::LayoutSolve,
+                    UnivisPostUpdateSet::RenderSync,
+                )
+                    .after(update_text2d_layout)
+                    .before(AssetEventSystems),
             )
             .add_systems(
                 PostUpdate,

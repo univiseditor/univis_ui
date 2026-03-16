@@ -1,12 +1,11 @@
-use bevy::prelude::*;
 use crate::internal_prelude::*;
+use bevy::prelude::*;
 
 pub struct UnivisDividerPlugin;
 
 impl Plugin for UnivisDividerPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UDivider>()
+        app.register_type::<UDivider>()
             .register_type::<UDividerOrientation>()
             .add_systems(Update, sync_divider_visuals);
     }

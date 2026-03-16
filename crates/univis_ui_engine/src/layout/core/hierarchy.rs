@@ -1,5 +1,5 @@
+use crate::internal_prelude::*;
 use bevy::prelude::*;
-use crate::internal_prelude::*; 
 
 /// System to update the `LayoutDepth` component for all UI nodes.
 ///

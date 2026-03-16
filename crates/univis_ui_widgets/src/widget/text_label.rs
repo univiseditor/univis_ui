@@ -1,12 +1,42 @@
-use bevy::camera::primitives::Aabb;
-use bevy::ecs::relationship::Relationship;
-use bevy::prelude::*;
-use bevy::text::TextLayoutInfo;
 use crate::internal_prelude::*;
+use bevy::asset::{Asset, AssetEvent, AssetId, Assets, RenderAssetUsages, embedded_asset};
+use bevy::color::LinearRgba;
+use bevy::ecs::relationship::Relationship;
+use bevy::image::{DynamicTextureAtlasBuilder, ImageSampler, TextureAtlasLayout};
+use bevy::mesh::{Indices, Mesh, Mesh2d, PrimitiveTopology};
+use bevy::prelude::*;
+use bevy::reflect::TypePath;
+use bevy::render::render_resource::{AsBindGroup, Extent3d, TextureDimension, TextureFormat};
+use bevy::shader::ShaderRef;
+use bevy::sprite_render::{AlphaMode2d, Material2d, Material2dPlugin, MeshMaterial2d};
+use bevy::text::{
+    ComputedTextBlock, CosmicFontSystem, FontHinting, LineBreak, LineHeight, TextBounds, TextFont,
+    TextLayout, TextPipeline,
+};
+use std::collections::{HashMap, HashSet};
+use univis_ui_engine::internal::IntrinsicSize;
+use univis_ui_engine::layout::core::layout_cache::LayoutCache;
+
+const DEFAULT_TEXT_RENDER_SCALE: f32 = 8.0;
+const DEFAULT_TEXT_EDGE_SOFTNESS: f32 = 0.75;
+const TEXT_SDF_PADDING: u32 = 12;
+const TEXT_SDF_ATLAS_SIZE: u32 = 1024;
+const TEXT_RENDER_Z: f32 = 0.1;
+const DISTANCE_FIELD_INF: f32 = 1.0e20;
+const DEFAULT_ELLIPSIS: &str = "...";
+
+#[derive(Debug, Reflect, Clone, Copy, PartialEq, Eq, Default)]
+#[reflect(Default, Debug, Clone, PartialEq)]
+pub enum UTextOverflow {
+    Visible,
+    Clip,
+    #[default]
+    Ellipsis,
+}
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-#[require(UNode, ULayout, Visibility)] 
+#[require(UNode, ULayout, Visibility, ComputedTextBlock, UTextLabelLayoutCache)]
 pub struct UTextLabel {
     pub text: String,
     pub font_size: f32,
@@ -16,7 +46,135 @@ pub struct UTextLabel {
     pub linebreak: LineBreak,
     /// هل يجب أن يفرض النص حجمه على UNode؟
     /// إذا كان true، سيتم تحديث width/height للـ UNode تلقائياً.
-    pub autosize: bool, 
+    pub autosize: bool,
+    /// عامل رفع دقة rasterization للنص مع الحفاظ على نفس الحجم النهائي في العالم.
+    pub render_scale: f32,
+    /// كيف يتصرف النص عندما لا تكفي المساحة المتاحة.
+    pub overflow: UTextOverflow,
+    /// عدد الأسطر الأقصى قبل القص أو إضافة ellipsis.
+    pub max_lines: Option<usize>,
+}
+
+#[derive(Component, Reflect, Default, Debug, Clone)]
+#[reflect(Component)]
+pub struct UTextLabelLayoutCache {
+    pub measured_size: Vec2,
+    pub min_content_size: Vec2,
+    pub max_content_size: Vec2,
+    pub displayed_text: String,
+    pub line_count: usize,
+    pub overflowed: bool,
+    pub dirty: bool,
+}
+
+#[derive(Component)]
+pub struct TextChildMarker;
+
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct TextRenderPageMarker {
+    texture_id: AssetId<Image>,
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+struct UTextLabelSdfMaterial {
+    #[uniform(0)]
+    color: LinearRgba,
+    #[uniform(0)]
+    clip_radius: Vec4,
+    #[uniform(0)]
+    clip_center: Vec2,
+    #[uniform(0)]
+    clip_size: Vec2,
+    #[uniform(0)]
+    edge_softness: f32,
+    #[uniform(0)]
+    use_clip: u32,
+    #[uniform(0)]
+    _pad: Vec2,
+    #[texture(1)]
+    #[sampler(2)]
+    texture: Handle<Image>,
+}
+
+impl Material2d for UTextLabelSdfMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "embedded://univis_ui_widgets/widget/shaders/text_label_sdf.wgsl".into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
+    }
+}
+
+#[derive(Resource, Default)]
+struct UTextLabelAtlasCache {
+    pages_by_font: HashMap<UTextLabelAtlasKey, Vec<UTextLabelAtlasPage>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct UTextLabelAtlasKey {
+    font_id: AssetId<Font>,
+    font_size_bits: u32,
+    font_weight: u16,
+    flags_bits: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct UTextLabelGlyphKey {
+    glyph_id: u16,
+    x_bin_bits: u32,
+    y_bin_bits: u32,
+}
+
+struct UTextLabelAtlasPage {
+    texture: Handle<Image>,
+    texture_atlas: Handle<TextureAtlasLayout>,
+    builder: DynamicTextureAtlasBuilder,
+    glyphs: HashMap<UTextLabelGlyphKey, UTextLabelGlyphAtlasInfo>,
+}
+
+#[derive(Clone)]
+struct UTextLabelGlyphAtlasInfo {
+    texture: Handle<Image>,
+    texture_atlas: Handle<TextureAtlasLayout>,
+    glyph_index: usize,
+    offset: IVec2,
+}
+
+#[derive(Clone, Debug)]
+struct TextGlyphQuad {
+    center: Vec2,
+    size: Vec2,
+    uv_min: Vec2,
+    uv_max: Vec2,
+}
+
+#[derive(Clone)]
+struct TextPageBatch {
+    texture: Handle<Image>,
+    quads: Vec<TextGlyphQuad>,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct LocalClipRect {
+    min: Vec2,
+    max: Vec2,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+struct MaterialClipInfo {
+    center: Vec2,
+    size: Vec2,
+    radius: Vec4,
+    use_clip: u32,
+}
+
+#[derive(Clone, Debug, Default)]
+struct MeasuredTextInfo {
+    size: Vec2,
+    min_content_size: Vec2,
+    max_content_size: Vec2,
+    line_count: usize,
 }
 
 impl Default for UTextLabel {
@@ -28,7 +186,10 @@ impl Default for UTextLabel {
             font: Handle::default(),
             justify: Justify::Left,
             linebreak: LineBreak::NoWrap,
-            autosize: true, // افتراضياً، النص يتحكم بالحجم
+            autosize: true,
+            render_scale: DEFAULT_TEXT_RENDER_SCALE,
+            overflow: UTextOverflow::Ellipsis,
+            max_lines: None,
         }
     }
 }
@@ -40,207 +201,1063 @@ impl UTextLabel {
             ..default()
         }
     }
+
+    pub fn with_render_scale(mut self, render_scale: f32) -> Self {
+        self.render_scale = render_scale;
+        self
+    }
+
+    pub fn with_overflow(mut self, overflow: UTextOverflow) -> Self {
+        self.overflow = overflow;
+        self
+    }
+
+    pub fn with_max_lines(mut self, max_lines: usize) -> Self {
+        self.max_lines = Some(max_lines);
+        self
+    }
 }
 
-#[derive(Component)]
-pub struct TextChildMarker;
+fn resolved_render_scale(render_scale: f32) -> f32 {
+    if render_scale.is_finite() && render_scale >= 1.0 {
+        render_scale
+    } else {
+        1.0
+    }
+}
 
-pub fn init_text_label_container(
-    mut commands: Commands,
-    query: Query<(Entity, &UTextLabel), Added<UTextLabel>>,
+fn label_text_layout(label: &UTextLabel) -> TextLayout {
+    TextLayout {
+        justify: label.justify,
+        linebreak: label.linebreak,
+    }
+}
+
+fn label_text_font(label: &UTextLabel) -> TextFont {
+    TextFont {
+        font: label.font.clone(),
+        font_size: label.font_size,
+        ..default()
+    }
+}
+
+fn constrained_node_dimension(spec: &UVal, computed: f32, padding: f32) -> Option<f32> {
+    match spec {
+        UVal::Px(value) => Some((*value - padding).max(0.0)),
+        _ if computed > 0.0 => Some((computed - padding).max(0.0)),
+        _ => None,
+    }
+}
+
+fn node_uses_intrinsic_dimension(spec: &UVal) -> bool {
+    matches!(spec, UVal::Content | UVal::Auto)
+}
+
+fn measured_text_outer_size(node: &UNode, layout_cache: &UTextLabelLayoutCache) -> Vec2 {
+    Vec2::new(
+        layout_cache.measured_size.x.max(0.0) + node.padding.width_sum(),
+        layout_cache.measured_size.y.max(0.0) + node.padding.height_sum(),
+    )
+}
+
+fn desired_text_label_intrinsic_size(
+    node: &UNode,
+    layout_cache: &UTextLabelLayoutCache,
+    current: IntrinsicSize,
+) -> IntrinsicSize {
+    let outer_size = measured_text_outer_size(node, layout_cache);
+
+    IntrinsicSize {
+        width: if node_uses_intrinsic_dimension(&node.width) {
+            outer_size.x
+        } else {
+            current.width
+        },
+        height: if node_uses_intrinsic_dimension(&node.height) {
+            outer_size.y
+        } else {
+            current.height
+        },
+    }
+}
+
+fn label_measure_bounds(
+    label: &UTextLabel,
+    node: &UNode,
+    computed_size: Option<&ComputedSize>,
+) -> TextBounds {
+    let computed_width = computed_size.map_or(0.0, |size| size.width);
+    let computed_height = computed_size.map_or(0.0, |size| size.height);
+
+    let constrain_width = !label.autosize
+        && (label.linebreak != LineBreak::NoWrap
+            || label.overflow != UTextOverflow::Visible
+            || label.max_lines.is_some());
+    let constrain_height = !label.autosize;
+
+    let width = if constrain_width {
+        constrained_node_dimension(&node.width, computed_width, node.padding.width_sum())
+    } else {
+        None
+    };
+
+    let height = if constrain_height {
+        constrained_node_dimension(&node.height, computed_height, node.padding.height_sum())
+    } else {
+        None
+    };
+
+    TextBounds { width, height }
+}
+
+fn measure_layout_for_text(
+    entity: Entity,
+    text: &str,
+    text_font: &TextFont,
+    text_layout: &TextLayout,
+    text_color: Color,
+    bounds: TextBounds,
+    fonts: &Assets<Font>,
+    text_pipeline: &mut TextPipeline,
+    computed: &mut ComputedTextBlock,
+    font_system: &mut CosmicFontSystem,
+) -> Result<MeasuredTextInfo, ()> {
+    let mut measure = text_pipeline
+        .create_text_measure(
+            entity,
+            fonts,
+            std::iter::once((
+                entity,
+                0,
+                text,
+                text_font,
+                text_color,
+                LineHeight::default(),
+            )),
+            1.0,
+            text_layout,
+            computed,
+            font_system,
+            FontHinting::Disabled,
+        )
+        .map_err(|_| ())?;
+
+    let size = measure.compute_size(bounds, computed, font_system);
+    let line_count = computed.buffer().layout_runs().count();
+
+    Ok(MeasuredTextInfo {
+        size,
+        min_content_size: measure.min,
+        max_content_size: measure.max,
+        line_count,
+    })
+}
+
+fn resolve_final_measured_text(
+    entity: Entity,
+    label: &UTextLabel,
+    text_font: &TextFont,
+    text_layout: &TextLayout,
+    text_color: Color,
+    bounds: TextBounds,
+    fonts: &Assets<Font>,
+    text_pipeline: &mut TextPipeline,
+    computed: &mut ComputedTextBlock,
+    font_system: &mut CosmicFontSystem,
+    measured: MeasuredTextInfo,
+) -> Result<(String, MeasuredTextInfo, bool), ()> {
+    let mut final_text = label.text.clone();
+    let mut final_measured = measured;
+
+    if !text_fits_constraints(&final_measured, bounds, label)
+        && label.overflow == UTextOverflow::Ellipsis
+        && has_overflow_constraints(bounds, label)
+    {
+        let (displayed_text, _) = build_ellipsized_text(
+            entity,
+            label,
+            text_font,
+            text_layout,
+            text_color,
+            bounds,
+            fonts,
+            text_pipeline,
+            computed,
+            font_system,
+        )?;
+        final_text = displayed_text;
+        final_measured = measure_layout_for_text(
+            entity,
+            final_text.as_str(),
+            text_font,
+            text_layout,
+            text_color,
+            bounds,
+            fonts,
+            text_pipeline,
+            computed,
+            font_system,
+        )?;
+    }
+
+    let overflowed =
+        final_text != label.text || !text_fits_constraints(&final_measured, bounds, label);
+
+    Ok((final_text, final_measured, overflowed))
+}
+
+fn text_fits_constraints(
+    measured: &MeasuredTextInfo,
+    bounds: TextBounds,
+    label: &UTextLabel,
+) -> bool {
+    let width_ok = bounds
+        .width
+        .map_or(true, |width| measured.size.x <= width + 0.5);
+    let height_ok = bounds
+        .height
+        .map_or(true, |height| measured.size.y <= height + 0.5);
+    let lines_ok = label
+        .max_lines
+        .map_or(true, |max_lines| measured.line_count <= max_lines);
+
+    width_ok && height_ok && lines_ok
+}
+
+fn has_overflow_constraints(bounds: TextBounds, label: &UTextLabel) -> bool {
+    bounds.width.is_some() || bounds.height.is_some() || label.max_lines.is_some()
+}
+
+fn text_char_boundaries(text: &str) -> Vec<usize> {
+    let mut boundaries = Vec::with_capacity(text.chars().count() + 1);
+    boundaries.push(0);
+    for (idx, ch) in text.char_indices() {
+        boundaries.push(idx + ch.len_utf8());
+    }
+    boundaries
+}
+
+fn build_ellipsized_text(
+    entity: Entity,
+    label: &UTextLabel,
+    text_font: &TextFont,
+    text_layout: &TextLayout,
+    text_color: Color,
+    bounds: TextBounds,
+    fonts: &Assets<Font>,
+    text_pipeline: &mut TextPipeline,
+    computed: &mut ComputedTextBlock,
+    font_system: &mut CosmicFontSystem,
+) -> Result<(String, MeasuredTextInfo), ()> {
+    let ellipsis_only = measure_layout_for_text(
+        entity,
+        DEFAULT_ELLIPSIS,
+        text_font,
+        text_layout,
+        text_color,
+        bounds,
+        fonts,
+        text_pipeline,
+        computed,
+        font_system,
+    )?;
+
+    if !text_fits_constraints(&ellipsis_only, bounds, label) {
+        let empty = measure_layout_for_text(
+            entity,
+            "",
+            text_font,
+            text_layout,
+            text_color,
+            bounds,
+            fonts,
+            text_pipeline,
+            computed,
+            font_system,
+        )?;
+        return Ok((String::new(), empty));
+    }
+
+    let boundaries = text_char_boundaries(&label.text);
+    let total_chars = boundaries.len().saturating_sub(1);
+    if total_chars == 0 {
+        return Ok((DEFAULT_ELLIPSIS.to_string(), ellipsis_only));
+    }
+
+    let mut best_text = DEFAULT_ELLIPSIS.to_string();
+    let mut best_measured = ellipsis_only;
+    let mut low = 0usize;
+    let mut high = total_chars;
+
+    while low < high {
+        let mid = (low + high + 1) / 2;
+        let prefix_end = boundaries[mid];
+        let mut candidate = String::with_capacity(prefix_end + DEFAULT_ELLIPSIS.len());
+        candidate.push_str(&label.text[..prefix_end]);
+        candidate.push_str(DEFAULT_ELLIPSIS);
+
+        let measured = measure_layout_for_text(
+            entity,
+            &candidate,
+            text_font,
+            text_layout,
+            text_color,
+            bounds,
+            fonts,
+            text_pipeline,
+            computed,
+            font_system,
+        )?;
+
+        if text_fits_constraints(&measured, bounds, label) {
+            best_text = candidate;
+            best_measured = measured;
+            low = mid;
+        } else {
+            high = mid.saturating_sub(1);
+        }
+    }
+
+    Ok((best_text, best_measured))
+}
+
+pub fn measure_text_label_layout(
+    mut font_events: MessageReader<AssetEvent<Font>>,
+    fonts: Res<Assets<Font>>,
+    mut text_pipeline: ResMut<TextPipeline>,
+    mut font_system: ResMut<CosmicFontSystem>,
+    mut query: Query<(
+        Entity,
+        Ref<UTextLabel>,
+        Ref<UNode>,
+        Ref<ComputedSize>,
+        &mut ComputedTextBlock,
+        &mut UTextLabelLayoutCache,
+    )>,
 ) {
-    for (entity, label) in query.iter() {
-        commands.entity(entity).with_children(|parent| {
-            parent.spawn((
-                // Text2d, // علامة النص في Bevy 0.17
-                Text2d(label.text.clone()),
-                TextFont {
-                    font: label.font.clone(),
-                    font_size: label.font_size,
-                    ..default()
-                },
-                TextColor(label.color),
-                TextLayout {
-                    justify: label.justify,
-                    linebreak: label.linebreak,
-                    ..default()
-                },
-                // موقع النص بالنسبة للأب (الحاوية)
-                // Z=0.1 لضمان ظهوره فوق خلفية UNode
-                Transform::from_xyz(0.0, 0.0, 0.1), 
-                TextChildMarker,
-                // ملاحظة: لا نعطي الطفل UNode، هو مجرد عارض للنص
-            ));
-        });
+    let mut changed_fonts = HashSet::new();
+    for event in font_events.read() {
+        match *event {
+            AssetEvent::Added { id }
+            | AssetEvent::Modified { id }
+            | AssetEvent::LoadedWithDependencies { id }
+            | AssetEvent::Removed { id }
+            | AssetEvent::Unused { id } => {
+                changed_fonts.insert(id);
+            }
+        }
+    }
+
+    for (entity, label, node, computed_size, mut computed, mut cache) in query.iter_mut() {
+        let font_changed = changed_fonts.contains(&label.font.id());
+        if !(label.is_changed()
+            || node.is_changed()
+            || computed_size.is_changed()
+            || cache.dirty
+            || font_changed)
+        {
+            continue;
+        }
+
+        let text_font = label_text_font(&label);
+        let text_layout = label_text_layout(&label);
+        let text_color = label.color;
+        let bounds = label_measure_bounds(&label, &node, Some(&computed_size));
+
+        match measure_layout_for_text(
+            entity,
+            label.text.as_str(),
+            &text_font,
+            &text_layout,
+            text_color,
+            bounds,
+            &fonts,
+            &mut text_pipeline,
+            &mut computed,
+            &mut font_system,
+        ) {
+            Ok(measured) => {
+                let Ok((final_text, final_measured, overflowed)) = resolve_final_measured_text(
+                    entity,
+                    &label,
+                    &text_font,
+                    &text_layout,
+                    text_color,
+                    bounds,
+                    &fonts,
+                    &mut text_pipeline,
+                    &mut computed,
+                    &mut font_system,
+                    measured,
+                ) else {
+                    cache.measured_size = Vec2::ZERO;
+                    cache.min_content_size = Vec2::ZERO;
+                    cache.max_content_size = Vec2::ZERO;
+                    cache.displayed_text.clear();
+                    cache.line_count = 0;
+                    cache.overflowed = false;
+                    cache.dirty = false;
+                    continue;
+                };
+
+                cache.min_content_size = final_measured.min_content_size;
+                cache.max_content_size = final_measured.max_content_size;
+                cache.measured_size = final_measured.size;
+                cache.displayed_text = final_text;
+                cache.line_count = final_measured.line_count;
+                cache.overflowed = overflowed;
+                cache.dirty = false;
+            }
+            Err(_) => {
+                cache.measured_size = Vec2::ZERO;
+                cache.min_content_size = Vec2::ZERO;
+                cache.max_content_size = Vec2::ZERO;
+                cache.displayed_text.clear();
+                cache.line_count = 0;
+                cache.overflowed = false;
+                cache.dirty = false;
+            }
+        }
     }
 }
 
 pub fn fit_node_to_text_size(
-    // 1. استعلام للأباء (الحاويات)
-    mut parent_query: Query<(&UTextLabel, &mut UNode, &Children)>,
-    // 2. استعلام للأطفال (للحصول على حجم النص المحسوب)
-    child_query: Query<&TextLayoutInfo, With<TextChildMarker>>,
+    mut parent_query: Query<(&UTextLabel, &mut UNode, &UTextLabelLayoutCache)>,
 ) {
-    for (label, mut node, children) in parent_query.iter_mut() {
-        // ننفذ فقط إذا كانت خاصية التحجيم التلقائي مفعلة
-        if !label.autosize { continue; }
-
-        for &child in children {
-            if let Ok(info) = child_query.get(child) {
-                let text_size = info.size;
-
-                // نتأكد أن النص تم حسابه فعلاً
-                if text_size.x == 0.0 && text_size.y == 0.0 { continue; }
-
-                // 1. حساب البادينغ الحالي من الـ UNode
-                let h_pad = node.padding.width_sum();
-                let v_pad = node.padding.height_sum();
-
-                // 2. الحجم الكلي المطلوب = حجم النص + البادينغ
-                let target_width = text_size.x + h_pad;
-                let target_height = text_size.y + v_pad;
-
-                // 3. تحديث UNode مباشرة (Pixel Values)
-                // نستخدم هامش خطأ بسيط (Epsilon) لتجنب التحديث المستمر إذا لم يتغير شيء
-                let current_w = match node.width { UVal::Px(v) => v, _ => -1.0 };
-                let current_h = match node.height { UVal::Px(v) => v, _ => -1.0 };
-
-                if (current_w - target_width).abs() > 0.1 {
-                    node.width = UVal::Px(target_width);
-                }
-                
-                if (current_h - target_height).abs() > 0.1 {
-                    node.height = UVal::Px(target_height);
-                }
-            }
-        }
-    }
-}
-
-pub fn sync_text_label_props(
-    label_query: Query<(&UTextLabel, &Children), Changed<UTextLabel>>,
-    mut text_query: Query<(&mut Text2d, &mut TextFont, &mut TextColor, &mut TextLayout), With<TextChildMarker>>,
-) {
-    for (label, children) in label_query.iter() {
-        for &child in children {
-            if let Ok((mut text, mut font, mut color, mut _layout)) = text_query.get_mut(child) {
-                if **text != label.text { **text = label.text.clone(); }
-                if font.font_size != label.font_size { font.font_size = label.font_size; }
-                if color.0 != label.color { color.0 = label.color; }
-                // ... باقي الخصائص
-            }
-        }
-    }
-}
-
-pub fn sync_text_clip_visibility(
-    mut text_query: Query<
-        (
-            Entity,
-            &GlobalTransform,
-            Option<&Aabb>,
-            Option<&TextLayoutInfo>,
-            &mut Visibility,
-        ),
-        With<TextChildMarker>,
-    >,
-    parents_query: Query<&ChildOf>,
-    clipper_query: Query<(&GlobalTransform, &ComputedSize, &UClip)>,
-) {
-    for (entity, global_transform, aabb, layout_info, mut visibility) in text_query.iter_mut() {
-        let Some(world_quad) = text_world_quad(global_transform, aabb, layout_info) else {
+    for (label, mut node, layout_cache) in parent_query.iter_mut() {
+        if !label.autosize {
             continue;
+        }
+
+        let outer_size = measured_text_outer_size(&node, layout_cache);
+        let target_width = outer_size.x;
+        let target_height = outer_size.y;
+
+        let current_w = match node.width {
+            UVal::Px(v) => v,
+            _ => -1.0,
+        };
+        let current_h = match node.height {
+            UVal::Px(v) => v,
+            _ => -1.0,
         };
 
-        let visible_in_clips =
-            is_quad_fully_inside_active_clippers(entity, &world_quad, &parents_query, &clipper_query);
-
-        *visibility = if visible_in_clips {
-            Visibility::Inherited
-        } else {
-            Visibility::Hidden
-        };
+        if (current_w - target_width).abs() > 0.1 {
+            node.width = UVal::Px(target_width);
+        }
+        if (current_h - target_height).abs() > 0.1 {
+            node.height = UVal::Px(target_height);
+        }
     }
 }
 
-fn text_world_quad(
-    global_transform: &GlobalTransform,
-    aabb: Option<&Aabb>,
-    layout_info: Option<&TextLayoutInfo>,
-) -> Option<[Vec2; 4]> {
-    if let Some(aabb) = aabb {
-        return Some(local_quad_to_world(
-            global_transform,
-            Vec2::new(aabb.center.x, aabb.center.y),
-            Vec2::new(aabb.half_extents.x, aabb.half_extents.y),
-        ));
+pub fn sync_text_label_intrinsic_size(
+    mut query: Query<
+        (&UNode, &UTextLabelLayoutCache, &mut IntrinsicSize),
+        Or<(
+            Added<UTextLabel>,
+            Changed<UNode>,
+            Changed<UTextLabelLayoutCache>,
+        )>,
+    >,
+) {
+    for (node, layout_cache, mut intrinsic) in query.iter_mut() {
+        if layout_cache.dirty {
+            continue;
+        }
+
+        let target = desired_text_label_intrinsic_size(node, layout_cache, *intrinsic);
+        if (intrinsic.width - target.width).abs() > 0.1
+            || (intrinsic.height - target.height).abs() > 0.1
+        {
+            *intrinsic = target;
+        }
+    }
+}
+
+fn extract_mask_alpha(data: &[u8], width: usize, height: usize) -> Vec<u8> {
+    let pixel_count = width * height;
+    match data.len() {
+        len if len == pixel_count => data.to_vec(),
+        len if len == pixel_count * 4 => data.chunks_exact(4).map(|px| px[3]).collect(),
+        len if len == pixel_count * 3 => data
+            .chunks_exact(3)
+            .map(|px| ((u16::from(px[0]) + u16::from(px[1]) + u16::from(px[2])) / 3) as u8)
+            .collect(),
+        _ => vec![0; pixel_count],
+    }
+}
+
+fn squared_distance_transform_1d(f: &[f32], d: &mut [f32], v: &mut [usize], z: &mut [f32]) {
+    let n = f.len();
+    if n == 0 {
+        return;
     }
 
-    let layout_info = layout_info?;
-    if layout_info.size.x <= 0.0 || layout_info.size.y <= 0.0 {
+    let mut k = 0usize;
+    v[0] = 0;
+    z[0] = -DISTANCE_FIELD_INF;
+    z[1] = DISTANCE_FIELD_INF;
+
+    for q in 1..n {
+        let mut s;
+        loop {
+            let p = v[k];
+            s = ((f[q] + (q * q) as f32) - (f[p] + (p * p) as f32)) / (2.0 * (q - p) as f32);
+            if s > z[k] || k == 0 {
+                break;
+            }
+            k -= 1;
+        }
+
+        if s <= z[k] && k == 0 {
+            z[1] = DISTANCE_FIELD_INF;
+            v[0] = q;
+            continue;
+        }
+
+        k += 1;
+        v[k] = q;
+        z[k] = s;
+        z[k + 1] = DISTANCE_FIELD_INF;
+    }
+
+    k = 0;
+    for q in 0..n {
+        while z[k + 1] < q as f32 {
+            k += 1;
+        }
+        let p = v[k];
+        d[q] = (q as f32 - p as f32).powi(2) + f[p];
+    }
+}
+
+fn distance_transform(mask: &[bool], width: usize, height: usize) -> Vec<f32> {
+    let mut grid = vec![0.0; width * height];
+    for (dst, &is_feature) in grid.iter_mut().zip(mask.iter()) {
+        *dst = if is_feature { 0.0 } else { DISTANCE_FIELD_INF };
+    }
+
+    let mut tmp = vec![0.0; width * height];
+    let mut input = vec![0.0; width.max(height)];
+    let mut output = vec![0.0; width.max(height)];
+    let mut v = vec![0usize; width.max(height)];
+    let mut z = vec![0.0; width.max(height) + 1];
+
+    for x in 0..width {
+        for y in 0..height {
+            input[y] = grid[y * width + x];
+        }
+        squared_distance_transform_1d(
+            &input[..height],
+            &mut output[..height],
+            &mut v[..height],
+            &mut z[..=height],
+        );
+        for y in 0..height {
+            tmp[y * width + x] = output[y];
+        }
+    }
+
+    let mut out = vec![0.0; width * height];
+    for y in 0..height {
+        let row = &tmp[y * width..(y + 1) * width];
+        input[..width].copy_from_slice(row);
+        squared_distance_transform_1d(
+            &input[..width],
+            &mut output[..width],
+            &mut v[..width],
+            &mut z[..=width],
+        );
+        out[y * width..(y + 1) * width].copy_from_slice(&output[..width]);
+    }
+
+    out
+}
+
+fn build_sdf_glyph_image(mask: &[u8], width: u32, height: u32) -> Image {
+    let padded_width = width + TEXT_SDF_PADDING * 2;
+    let padded_height = height + TEXT_SDF_PADDING * 2;
+    let padded_len = (padded_width * padded_height) as usize;
+    let mut inside_mask = vec![false; padded_len];
+    let mut coverage = vec![0.0; padded_len];
+
+    for y in 0..height as usize {
+        for x in 0..width as usize {
+            let src = y * width as usize + x;
+            let dst = (y + TEXT_SDF_PADDING as usize) * padded_width as usize
+                + (x + TEXT_SDF_PADDING as usize);
+            let alpha = f32::from(mask[src]) / 255.0;
+            inside_mask[dst] = alpha >= 0.5;
+            coverage[dst] = alpha;
+        }
+    }
+
+    let outside_mask: Vec<bool> = inside_mask.iter().map(|inside| !inside).collect();
+    let distance_to_inside =
+        distance_transform(&inside_mask, padded_width as usize, padded_height as usize);
+    let distance_to_outside =
+        distance_transform(&outside_mask, padded_width as usize, padded_height as usize);
+    let spread = TEXT_SDF_PADDING as f32;
+
+    let mut data = Vec::with_capacity(padded_len * 4);
+    for idx in 0..padded_len {
+        // Preserve the original antialiased coverage so diagonal strokes do not collapse
+        // into a hard binary silhouette before we build the distance field.
+        let signed_distance = distance_to_outside[idx].sqrt() - distance_to_inside[idx].sqrt()
+            + (coverage[idx] - 0.5);
+        let alpha = (0.5 + 0.5 * (signed_distance / spread)).clamp(0.0, 1.0);
+        let alpha_u8 = (alpha * 255.0).round() as u8;
+        data.extend_from_slice(&[255, 255, 255, alpha_u8]);
+    }
+
+    let mut image = Image::new(
+        Extent3d {
+            width: padded_width,
+            height: padded_height,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8Unorm,
+        RenderAssetUsages::default(),
+    );
+    image.sampler = ImageSampler::linear();
+    image
+}
+
+fn create_text_atlas_page(
+    images: &mut Assets<Image>,
+    texture_atlases: &mut Assets<TextureAtlasLayout>,
+    minimum_size: u32,
+) -> UTextLabelAtlasPage {
+    let size = minimum_size.max(TEXT_SDF_ATLAS_SIZE).next_power_of_two();
+    let mut atlas_image = Image::new_fill(
+        Extent3d {
+            width: size,
+            height: size,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        &[0, 0, 0, 0],
+        TextureFormat::Rgba8Unorm,
+        RenderAssetUsages::default(),
+    );
+    atlas_image.sampler = ImageSampler::linear();
+    let texture = images.add(atlas_image);
+    let texture_atlas = texture_atlases.add(TextureAtlasLayout::new_empty(UVec2::splat(size)));
+
+    UTextLabelAtlasPage {
+        texture,
+        texture_atlas,
+        builder: DynamicTextureAtlasBuilder::new(UVec2::splat(size), 2),
+        glyphs: HashMap::default(),
+    }
+}
+
+fn clip_quad_to_rect(quad: TextGlyphQuad, clip_rect: LocalClipRect) -> Option<TextGlyphQuad> {
+    let half = quad.size * 0.5;
+    let original_min = quad.center - half;
+    let original_max = quad.center + half;
+
+    let clipped_min = Vec2::new(
+        original_min.x.max(clip_rect.min.x),
+        original_min.y.max(clip_rect.min.y),
+    );
+    let clipped_max = Vec2::new(
+        original_max.x.min(clip_rect.max.x),
+        original_max.y.min(clip_rect.max.y),
+    );
+
+    if clipped_min.x >= clipped_max.x || clipped_min.y >= clipped_max.y {
         return None;
     }
 
-    Some(local_quad_to_world(
-        global_transform,
-        Vec2::ZERO,
-        layout_info.size * 0.5,
-    ))
+    let original_width = original_max.x - original_min.x;
+    let original_height = original_max.y - original_min.y;
+    if original_width <= 0.0 || original_height <= 0.0 {
+        return None;
+    }
+
+    let left_t = (clipped_min.x - original_min.x) / original_width;
+    let right_t = (clipped_max.x - original_min.x) / original_width;
+    let bottom_t = (clipped_min.y - original_min.y) / original_height;
+    let top_t = (clipped_max.y - original_min.y) / original_height;
+
+    let uv_left = quad.uv_min.x + (quad.uv_max.x - quad.uv_min.x) * left_t;
+    let uv_right = quad.uv_min.x + (quad.uv_max.x - quad.uv_min.x) * right_t;
+    let uv_bottom = quad.uv_max.y + (quad.uv_min.y - quad.uv_max.y) * bottom_t;
+    let uv_top = quad.uv_max.y + (quad.uv_min.y - quad.uv_max.y) * top_t;
+
+    Some(TextGlyphQuad {
+        center: (clipped_min + clipped_max) * 0.5,
+        size: clipped_max - clipped_min,
+        uv_min: Vec2::new(uv_left, uv_top),
+        uv_max: Vec2::new(uv_right, uv_bottom),
+    })
 }
 
-fn local_quad_to_world(
-    global_transform: &GlobalTransform,
-    local_center: Vec2,
-    local_half_extents: Vec2,
-) -> [Vec2; 4] {
-    let transform = global_transform.to_matrix();
-    let local_points = [
-        Vec2::new(
-            local_center.x - local_half_extents.x,
-            local_center.y - local_half_extents.y,
-        ),
-        Vec2::new(
-            local_center.x - local_half_extents.x,
-            local_center.y + local_half_extents.y,
-        ),
-        Vec2::new(
-            local_center.x + local_half_extents.x,
-            local_center.y - local_half_extents.y,
-        ),
-        Vec2::new(
-            local_center.x + local_half_extents.x,
-            local_center.y + local_half_extents.y,
-        ),
-    ];
+fn label_content_clip_rect(
+    label: &UTextLabel,
+    node: &UNode,
+    computed_size: &ComputedSize,
+) -> Option<LocalClipRect> {
+    if label.autosize || label.overflow == UTextOverflow::Visible {
+        return None;
+    }
 
-    [
-        transform
-            .transform_point3(local_points[0].extend(0.0))
-            .truncate(),
-        transform
-            .transform_point3(local_points[1].extend(0.0))
-            .truncate(),
-        transform
-            .transform_point3(local_points[2].extend(0.0))
-            .truncate(),
-        transform
-            .transform_point3(local_points[3].extend(0.0))
-            .truncate(),
-    ]
+    if computed_size.width <= 0.0 || computed_size.height <= 0.0 {
+        return None;
+    }
+
+    let width = (computed_size.width - node.padding.width_sum()).max(0.0);
+    let height = (computed_size.height - node.padding.height_sum()).max(0.0);
+
+    Some(LocalClipRect {
+        min: Vec2::new(-width * 0.5, -height * 0.5),
+        max: Vec2::new(width * 0.5, height * 0.5),
+    })
 }
 
-fn is_quad_fully_inside_active_clippers(
-    entity: Entity,
-    world_quad: &[Vec2; 4],
+fn build_text_page_mesh(quads: &[TextGlyphQuad]) -> Mesh {
+    let mut positions = Vec::with_capacity(quads.len() * 4);
+    let mut normals = Vec::with_capacity(quads.len() * 4);
+    let mut uvs = Vec::with_capacity(quads.len() * 4);
+    let mut indices = Vec::with_capacity(quads.len() * 6);
+
+    for (quad_index, quad) in quads.iter().enumerate() {
+        let base = (quad_index * 4) as u32;
+        let half = quad.size * 0.5;
+        let min = quad.center - half;
+        let max = quad.center + half;
+
+        positions.extend_from_slice(&[
+            [min.x, min.y, 0.0],
+            [max.x, min.y, 0.0],
+            [min.x, max.y, 0.0],
+            [max.x, max.y, 0.0],
+        ]);
+        normals.extend_from_slice(&[[0.0, 0.0, 1.0]; 4]);
+        uvs.extend_from_slice(&[
+            [quad.uv_min.x, quad.uv_max.y],
+            [quad.uv_max.x, quad.uv_max.y],
+            [quad.uv_min.x, quad.uv_min.y],
+            [quad.uv_max.x, quad.uv_min.y],
+        ]);
+        indices.extend_from_slice(&[base, base + 2, base + 1, base + 1, base + 2, base + 3]);
+    }
+
+    Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+    .with_inserted_indices(Indices::U32(indices))
+}
+
+fn build_text_material(label: &UTextLabel, texture: Handle<Image>) -> UTextLabelSdfMaterial {
+    UTextLabelSdfMaterial {
+        color: label.color.into(),
+        clip_radius: Vec4::ZERO,
+        clip_center: Vec2::ZERO,
+        clip_size: Vec2::ZERO,
+        edge_softness: DEFAULT_TEXT_EDGE_SOFTNESS,
+        use_clip: 0,
+        _pad: Vec2::ZERO,
+        texture,
+    }
+}
+
+fn sync_text_label_meshes(
+    mut commands: Commands,
+    mut atlas_cache: ResMut<UTextLabelAtlasCache>,
+    mut images: ResMut<Assets<Image>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<UTextLabelSdfMaterial>>,
+    mut font_system: ResMut<CosmicFontSystem>,
+    mut swash_cache: ResMut<bevy::text::SwashCache>,
+    label_query: Query<
+        (
+            Entity,
+            Ref<UTextLabel>,
+            Ref<UNode>,
+            Ref<ComputedSize>,
+            Ref<ComputedTextBlock>,
+            Ref<UTextLabelLayoutCache>,
+            Option<&Children>,
+        ),
+        Or<(
+            Added<UTextLabel>,
+            Changed<UTextLabel>,
+            Changed<UNode>,
+            Changed<ComputedSize>,
+            Changed<ComputedTextBlock>,
+            Changed<UTextLabelLayoutCache>,
+        )>,
+    >,
+    child_query: Query<
+        (
+            Entity,
+            &ChildOf,
+            &TextRenderPageMarker,
+            &Mesh2d,
+            &MeshMaterial2d<UTextLabelSdfMaterial>,
+        ),
+        With<TextChildMarker>,
+    >,
+) {
+    for (entity, label, node, computed_size, computed, layout_cache, children) in label_query.iter()
+    {
+        let mut existing_children = HashMap::new();
+        if let Some(children) = children {
+            for child in children {
+                if let Ok((child_entity, child_of, page_marker, mesh_handle, material_handle)) =
+                    child_query.get(*child)
+                {
+                    if child_of.get() == entity {
+                        existing_children.insert(
+                            page_marker.texture_id,
+                            (
+                                child_entity,
+                                mesh_handle.0.clone(),
+                                material_handle.0.clone(),
+                            ),
+                        );
+                    }
+                }
+            }
+        }
+
+        let text_size = layout_cache.measured_size;
+        let render_scale = resolved_render_scale(label.render_scale);
+        let content_clip = label_content_clip_rect(&label, &node, &computed_size);
+        let mut page_batches: HashMap<AssetId<Image>, TextPageBatch> = HashMap::default();
+
+        if !layout_cache.displayed_text.is_empty() && text_size.x > 0.0 && text_size.y > 0.0 {
+            for run in computed.buffer().layout_runs() {
+                let line_y = (run.line_y * render_scale).round();
+
+                for layout_glyph in run.glyphs.iter() {
+                    let physical_glyph = layout_glyph.physical((0.0, 0.0), render_scale);
+                    let cache_key = physical_glyph.cache_key;
+                    let atlas_key = UTextLabelAtlasKey {
+                        font_id: label.font.id(),
+                        font_size_bits: cache_key.font_size_bits,
+                        font_weight: cache_key.font_weight.0,
+                        flags_bits: cache_key.flags.bits(),
+                    };
+                    let glyph_key = UTextLabelGlyphKey {
+                        glyph_id: cache_key.glyph_id,
+                        x_bin_bits: cache_key.x_bin.as_float().to_bits(),
+                        y_bin_bits: cache_key.y_bin.as_float().to_bits(),
+                    };
+
+                    let atlas_pages = atlas_cache.pages_by_font.entry(atlas_key).or_default();
+                    let atlas_info = if let Some(info) = atlas_pages
+                        .iter()
+                        .find_map(|page| page.glyphs.get(&glyph_key))
+                        .cloned()
+                    {
+                        info
+                    } else {
+                        let Some(image) = swash_cache
+                            .0
+                            .get_image_uncached(&mut font_system.0, physical_glyph.cache_key)
+                        else {
+                            continue;
+                        };
+
+                        let width = image.placement.width;
+                        let height = image.placement.height;
+                        if width == 0 || height == 0 {
+                            continue;
+                        }
+
+                        let mask = extract_mask_alpha(&image.data, width as usize, height as usize);
+                        if mask.iter().all(|alpha| *alpha == 0) {
+                            continue;
+                        }
+
+                        let glyph_image = build_sdf_glyph_image(&mask, width, height);
+                        let glyph_offset = IVec2::new(
+                            image.placement.left - TEXT_SDF_PADDING as i32,
+                            image.placement.top + TEXT_SDF_PADDING as i32,
+                        );
+
+                        let mut stored = None;
+                        for page in atlas_pages.iter_mut() {
+                            let Some(atlas_layout) = texture_atlases.get_mut(&page.texture_atlas)
+                            else {
+                                continue;
+                            };
+                            let Some(atlas_image) = images.get_mut(&page.texture) else {
+                                continue;
+                            };
+                            if let Ok(glyph_index) =
+                                page.builder
+                                    .add_texture(atlas_layout, &glyph_image, atlas_image)
+                            {
+                                let info = UTextLabelGlyphAtlasInfo {
+                                    texture: page.texture.clone(),
+                                    texture_atlas: page.texture_atlas.clone(),
+                                    glyph_index,
+                                    offset: glyph_offset,
+                                };
+                                page.glyphs.insert(glyph_key, info.clone());
+                                stored = Some(info);
+                                break;
+                            }
+                        }
+
+                        if let Some(info) = stored {
+                            info
+                        } else {
+                            let min_size = glyph_image
+                                .texture_descriptor
+                                .size
+                                .width
+                                .max(glyph_image.texture_descriptor.size.height);
+                            let mut page =
+                                create_text_atlas_page(&mut images, &mut texture_atlases, min_size);
+                            let Some(atlas_layout) = texture_atlases.get_mut(&page.texture_atlas)
+                            else {
+                                continue;
+                            };
+                            let Some(atlas_image) = images.get_mut(&page.texture) else {
+                                continue;
+                            };
+                            let Ok(glyph_index) =
+                                page.builder
+                                    .add_texture(atlas_layout, &glyph_image, atlas_image)
+                            else {
+                                continue;
+                            };
+                            let info = UTextLabelGlyphAtlasInfo {
+                                texture: page.texture.clone(),
+                                texture_atlas: page.texture_atlas.clone(),
+                                glyph_index,
+                                offset: glyph_offset,
+                            };
+                            page.glyphs.insert(glyph_key, info.clone());
+                            atlas_pages.push(page);
+                            info
+                        }
+                    };
+
+                    let Some(atlas_layout) = texture_atlases.get(&atlas_info.texture_atlas) else {
+                        continue;
+                    };
+                    let Some(atlas_image) = images.get(&atlas_info.texture) else {
+                        continue;
+                    };
+                    let glyph_rect = atlas_layout.textures[atlas_info.glyph_index];
+                    let glyph_size_pixels =
+                        Vec2::new(glyph_rect.width() as f32, glyph_rect.height() as f32);
+                    let glyph_size = glyph_size_pixels / render_scale;
+
+                    let position_x = (glyph_size_pixels.x * 0.5
+                        + atlas_info.offset.x as f32
+                        + physical_glyph.x as f32)
+                        / render_scale;
+                    let position_y = (line_y + physical_glyph.y as f32
+                        - atlas_info.offset.y as f32
+                        + glyph_size_pixels.y * 0.5)
+                        / render_scale;
+
+                    let local_center = Vec2::new(
+                        position_x - text_size.x * 0.5,
+                        text_size.y * 0.5 - position_y,
+                    );
+                    let atlas_width = atlas_image.texture_descriptor.size.width as f32;
+                    let atlas_height = atlas_image.texture_descriptor.size.height as f32;
+                    let uv_min = Vec2::new(
+                        glyph_rect.min.x as f32 / atlas_width,
+                        glyph_rect.min.y as f32 / atlas_height,
+                    );
+                    let uv_max = Vec2::new(
+                        glyph_rect.max.x as f32 / atlas_width,
+                        glyph_rect.max.y as f32 / atlas_height,
+                    );
+
+                    let quad = TextGlyphQuad {
+                        center: local_center,
+                        size: glyph_size,
+                        uv_min,
+                        uv_max,
+                    };
+                    let clipped_quad = if let Some(clip_rect) = content_clip {
+                        clip_quad_to_rect(quad, clip_rect)
+                    } else {
+                        Some(quad)
+                    };
+                    let Some(quad) = clipped_quad else {
+                        continue;
+                    };
+
+                    page_batches
+                        .entry(atlas_info.texture.id())
+                        .and_modify(|batch| batch.quads.push(quad.clone()))
+                        .or_insert_with(|| TextPageBatch {
+                            texture: atlas_info.texture.clone(),
+                            quads: vec![quad],
+                        });
+                }
+            }
+        }
+
+        for (texture_id, batch) in page_batches {
+            let existing = existing_children.remove(&texture_id);
+            let mesh = build_text_page_mesh(&batch.quads);
+
+            match existing {
+                Some((child_entity, mesh_handle, material_handle)) => {
+                    if let Some(existing_mesh) = meshes.get_mut(&mesh_handle) {
+                        *existing_mesh = mesh;
+                    }
+                    if let Some(existing_material) = materials.get_mut(&material_handle) {
+                        *existing_material = build_text_material(&label, batch.texture.clone());
+                    }
+                    commands
+                        .entity(child_entity)
+                        .insert(TextRenderPageMarker { texture_id });
+                }
+                None => {
+                    commands.entity(entity).with_children(|parent| {
+                        parent.spawn((
+                            TextRenderPageMarker { texture_id },
+                            TextChildMarker,
+                            Mesh2d(meshes.add(mesh)),
+                            MeshMaterial2d(
+                                materials.add(build_text_material(&label, batch.texture.clone())),
+                            ),
+                            Transform::from_translation(Vec3::new(0.0, 0.0, TEXT_RENDER_Z)),
+                            Visibility::Inherited,
+                        ));
+                    });
+                }
+            }
+        }
+
+        for (_, (stale_child, _, _)) in existing_children {
+            commands.entity(stale_child).despawn();
+        }
+    }
+}
+
+fn active_clipper_for_entity(
+    start_entity: Entity,
     parents_query: &Query<&ChildOf>,
-    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UClip)>,
-) -> bool {
-    let mut current = entity;
+    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+) -> MaterialClipInfo {
+    let mut current = start_entity;
 
     while let Ok(parent) = parents_query.get(current) {
         current = parent.get();
 
-        let Ok((clip_transform, clip_size, clip)) = clipper_query.get(current) else {
+        let Ok((transform, computed_size, node, clip)) = clipper_query.get(current) else {
             continue;
         };
 
@@ -248,47 +1265,114 @@ fn is_quad_fully_inside_active_clippers(
             continue;
         }
 
-        let half_size = Vec2::new(clip_size.width, clip_size.height) * 0.5;
-        if !is_quad_inside_oriented_rect(world_quad, clip_transform, half_size) {
-            return false;
+        let size = Vec2::new(computed_size.width, computed_size.height);
+        if size.x <= 0.0 || size.y <= 0.0 {
+            continue;
         }
+
+        return MaterialClipInfo {
+            center: transform.translation().truncate(),
+            size,
+            radius: Vec4::new(
+                node.border_radius.top_right,
+                node.border_radius.bottom_right,
+                node.border_radius.top_left,
+                node.border_radius.bottom_left,
+            ),
+            use_clip: 1,
+        };
     }
 
-    true
+    MaterialClipInfo::default()
 }
 
-fn is_quad_inside_oriented_rect(
-    world_quad: &[Vec2; 4],
-    rect_transform: &GlobalTransform,
-    rect_half_size: Vec2,
-) -> bool {
-    let inv = rect_transform.to_matrix().inverse();
+fn sync_text_clipper_materials(
+    text_query: Query<(Entity, &MeshMaterial2d<UTextLabelSdfMaterial>), With<TextChildMarker>>,
+    parents_query: Query<&ChildOf>,
+    clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    mut materials: ResMut<Assets<UTextLabelSdfMaterial>>,
+) {
+    for (entity, material_handle) in text_query.iter() {
+        let clip = active_clipper_for_entity(entity, &parents_query, &clipper_query);
+        let Some(material) = materials.get_mut(&material_handle.0) else {
+            continue;
+        };
 
-    world_quad.iter().all(|world_point| {
-        let local = inv.transform_point3(world_point.extend(0.0)).truncate();
-        local.x >= -rect_half_size.x
-            && local.x <= rect_half_size.x
-            && local.y >= -rect_half_size.y
-            && local.y <= rect_half_size.y
-    })
+        if material.clip_center != clip.center
+            || material.clip_size != clip.size
+            || material.clip_radius != clip.radius
+            || material.use_clip != clip.use_clip
+        {
+            material.clip_center = clip.center;
+            material.clip_size = clip.size;
+            material.clip_radius = clip.radius;
+            material.use_clip = clip.use_clip;
+        }
+    }
+}
+
+fn mark_text_label_layout_dirty(
+    mut layout_cache: ResMut<LayoutCache>,
+    changed_labels: Query<
+        Entity,
+        (
+            With<UTextLabel>,
+            Or<(Added<UTextLabel>, Changed<IntrinsicSize>, Changed<UNode>)>,
+        ),
+    >,
+    children_query: Query<&Children>,
+    parents_query: Query<&ChildOf>,
+) {
+    for entity in changed_labels.iter() {
+        layout_cache.mark_dirty_recursive(entity, &children_query);
+        layout_cache.mark_dirty_ancestors(entity, &parents_query);
+    }
 }
 
 pub struct UnivisTextPlugin;
 
 impl Plugin for UnivisTextPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .register_type::<UTextLabel>()
-            .add_systems(Update, (
-                init_text_label_container,
-                sync_text_label_props,
-                sync_text_clip_visibility,
-            ))
+        embedded_asset!(app, "shaders/text_label_sdf.wgsl");
+
+        app.register_type::<UTextLabel>()
+            .register_type::<UTextOverflow>()
+            .register_type::<UTextLabelLayoutCache>()
+            .init_resource::<UTextLabelAtlasCache>()
+            .add_plugins(Material2dPlugin::<UTextLabelSdfMaterial>::default())
+            .add_systems(
+                PostUpdate,
+                measure_text_label_layout
+                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .before(sync_text_label_intrinsic_size),
+            )
+            .add_systems(
+                PostUpdate,
+                sync_text_label_intrinsic_size
+                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .before(fit_node_to_text_size),
+            )
             .add_systems(
                 PostUpdate,
                 fit_node_to_text_size
                     .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .before(mark_text_label_layout_dirty),
+            )
+            .add_systems(
+                PostUpdate,
+                mark_text_label_layout_dirty
+                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .before(sync_text_label_meshes),
+            )
+            .add_systems(
+                PostUpdate,
+                sync_text_label_meshes
+                    .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(UnivisPostUpdateSet::LayoutMeasure),
+            )
+            .add_systems(
+                PostUpdate,
+                sync_text_clipper_materials.in_set(UnivisPostUpdateSet::RenderSync),
             );
     }
 }
@@ -298,38 +1382,78 @@ mod tests {
     use super::*;
 
     #[test]
-    fn quad_inside_oriented_rect_returns_true() {
-        let rect_transform = GlobalTransform::from(Transform::default());
-        let rect_half_size = Vec2::new(50.0, 30.0);
-        let quad = [
-            Vec2::new(-20.0, -10.0),
-            Vec2::new(-20.0, 10.0),
-            Vec2::new(20.0, -10.0),
-            Vec2::new(20.0, 10.0),
-        ];
+    fn clip_quad_to_rect_clips_size_and_uvs() {
+        let quad = TextGlyphQuad {
+            center: Vec2::new(0.0, 0.0),
+            size: Vec2::new(10.0, 6.0),
+            uv_min: Vec2::new(0.1, 0.2),
+            uv_max: Vec2::new(0.5, 0.8),
+        };
+        let clip_rect = LocalClipRect {
+            min: Vec2::new(-2.0, -3.0),
+            max: Vec2::new(5.0, 3.0),
+        };
 
-        assert!(is_quad_inside_oriented_rect(
-            &quad,
-            &rect_transform,
-            rect_half_size,
-        ));
+        let clipped = clip_quad_to_rect(quad, clip_rect).expect("quad should be clipped");
+
+        assert_eq!(clipped.size, Vec2::new(7.0, 6.0));
+        assert_eq!(clipped.center, Vec2::new(1.5, 0.0));
+        assert!((clipped.uv_min.x - 0.22).abs() < 0.001);
+        assert!((clipped.uv_max.x - 0.5).abs() < 0.001);
     }
 
     #[test]
-    fn quad_outside_oriented_rect_returns_false() {
-        let rect_transform = GlobalTransform::from(Transform::default());
-        let rect_half_size = Vec2::new(50.0, 30.0);
-        let quad = [
-            Vec2::new(-20.0, -10.0),
-            Vec2::new(-20.0, 10.0),
-            Vec2::new(60.0, -10.0),
-            Vec2::new(60.0, 10.0),
-        ];
+    fn clip_quad_to_rect_returns_none_when_outside() {
+        let quad = TextGlyphQuad {
+            center: Vec2::new(20.0, 0.0),
+            size: Vec2::new(4.0, 4.0),
+            uv_min: Vec2::ZERO,
+            uv_max: Vec2::ONE,
+        };
+        let clip_rect = LocalClipRect {
+            min: Vec2::new(-5.0, -5.0),
+            max: Vec2::new(5.0, 5.0),
+        };
 
-        assert!(!is_quad_inside_oriented_rect(
-            &quad,
-            &rect_transform,
-            rect_half_size,
-        ));
+        assert!(clip_quad_to_rect(quad, clip_rect).is_none());
+    }
+
+    #[test]
+    fn desired_intrinsic_size_uses_content_dimensions_only() {
+        let node = UNode {
+            width: UVal::Content,
+            height: UVal::Px(48.0),
+            padding: USides::axes(6.0, 4.0),
+            ..default()
+        };
+        let layout_cache = UTextLabelLayoutCache {
+            measured_size: Vec2::new(120.0, 22.0),
+            ..default()
+        };
+        let current = IntrinsicSize {
+            width: 1.0,
+            height: 48.0,
+        };
+
+        let desired = desired_text_label_intrinsic_size(&node, &layout_cache, current);
+
+        assert_eq!(desired.width, 132.0);
+        assert_eq!(desired.height, 48.0);
+    }
+
+    #[test]
+    fn measured_text_outer_size_includes_padding_for_empty_text() {
+        let node = UNode {
+            padding: USides::axes(8.0, 10.0),
+            ..default()
+        };
+        let layout_cache = UTextLabelLayoutCache {
+            measured_size: Vec2::ZERO,
+            ..default()
+        };
+
+        let outer = measured_text_outer_size(&node, &layout_cache);
+
+        assert_eq!(outer, Vec2::new(16.0, 20.0));
     }
 }

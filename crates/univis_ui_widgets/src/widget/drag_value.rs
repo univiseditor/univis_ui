@@ -1,6 +1,9 @@
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
+const MIN_PIXELS_PER_RESOLUTION_UNIT: f32 = 2.0;
+const MAX_AUTO_SENSITIVITY_SCALE: f32 = 10.0;
+
 pub struct UnivisDragValuePlugin;
 
 impl Plugin for UnivisDragValuePlugin {
@@ -212,6 +215,8 @@ fn handle_drag_value_interaction(
                         drag.min_value,
                         drag.max_value,
                         drag.pixels_per_full_range,
+                        drag.step,
+                        drag.decimals,
                     );
 
                     if fine_mode {
@@ -331,10 +336,58 @@ fn snap_to_step(value: f32, min: f32, max: f32, step: f32) -> f32 {
     snapped.clamp(lo, hi)
 }
 
-fn pixels_to_value_delta(delta_px: f32, min: f32, max: f32, pixels_per_full_range: f32) -> f32 {
+fn drag_resolution_unit(step: Option<f32>, decimals: usize) -> f32 {
+    if let Some(step) = step.filter(|step| step.is_finite() && *step > f32::EPSILON) {
+        return step.abs();
+    }
+
+    if decimals == 0 {
+        1.0
+    } else {
+        10_f32.powi(-(decimals.min(6) as i32))
+    }
+}
+
+fn effective_pixels_per_full_range(
+    min: f32,
+    max: f32,
+    pixels_per_full_range: f32,
+    step: Option<f32>,
+    decimals: usize,
+) -> f32 {
+    let base = pixels_per_full_range.max(1.0);
     let (lo, hi) = sorted_range(min, max);
     let range = hi - lo;
-    let sensitivity = pixels_per_full_range.max(1.0);
+    if !range.is_finite() || range <= f32::EPSILON {
+        return base;
+    }
+
+    let resolution = drag_resolution_unit(step, decimals);
+    if !resolution.is_finite() || resolution <= f32::EPSILON {
+        return base;
+    }
+
+    let units = (range / resolution).abs();
+    if !units.is_finite() || units <= 1.0 {
+        return base;
+    }
+
+    let recommended = units * MIN_PIXELS_PER_RESOLUTION_UNIT;
+    base.max(recommended.min(base * MAX_AUTO_SENSITIVITY_SCALE))
+}
+
+fn pixels_to_value_delta(
+    delta_px: f32,
+    min: f32,
+    max: f32,
+    pixels_per_full_range: f32,
+    step: Option<f32>,
+    decimals: usize,
+) -> f32 {
+    let (lo, hi) = sorted_range(min, max);
+    let range = hi - lo;
+    let sensitivity =
+        effective_pixels_per_full_range(min, max, pixels_per_full_range, step, decimals);
     (delta_px / sensitivity) * range
 }
 
@@ -382,7 +435,26 @@ mod tests {
 
     #[test]
     fn sensitivity_mapping_200px_full_range() {
-        let delta = pixels_to_value_delta(200.0, 10.0, 110.0, 200.0);
+        let delta = pixels_to_value_delta(200.0, 10.0, 110.0, 200.0, Some(1.0), 0);
         assert!((delta - 100.0).abs() < 0.0001);
+    }
+
+    #[test]
+    fn large_integer_ranges_gain_more_precision() {
+        let effective = effective_pixels_per_full_range(1.0, 1000.0, 200.0, Some(1.0), 0);
+        assert!(effective > 200.0);
+        assert!(effective <= 2000.0);
+    }
+
+    #[test]
+    fn small_decimal_ranges_keep_base_sensitivity() {
+        let effective = effective_pixels_per_full_range(0.0, 1.0, 200.0, Some(0.01), 2);
+        assert!((effective - 200.0).abs() < 0.0001);
+    }
+
+    #[test]
+    fn adaptive_sensitivity_reduces_large_range_jump_per_pixel() {
+        let delta = pixels_to_value_delta(1.0, 1.0, 1000.0, 200.0, Some(1.0), 0);
+        assert!(delta < 1.0);
     }
 }

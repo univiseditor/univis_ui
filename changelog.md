@@ -30,6 +30,7 @@ For deeper release context, see:
 - Ensured `UTextLabel` ellipsis layout and rendered glyph meshes stay in sync by remeasuring the final displayed text before mesh generation.
 - Allowed autosized `UTextLabel` nodes to shrink back correctly when their text becomes empty.
 - Stopped `UTextLabel` from retrying failed text measurement every frame when a font handle is unresolved or not ready yet.
+- Improved `UDragValue` precision on large ranges by adapting drag sensitivity to the widget resolution, making values like `23` practical to hit even across spans such as `1..1000`.
 
 ## [0.2.0-alpha.1] - 2026-03-07
 

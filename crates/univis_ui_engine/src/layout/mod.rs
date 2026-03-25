@@ -15,7 +15,9 @@ pub mod prelude {
     pub use crate::layout::UnivisLayoutPlugin;
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
     pub use crate::layout::image::UImage;
-    pub use crate::layout::layout_system::{UScreenRoot, UWorldRoot};
+    pub use crate::layout::layout_system::{
+        UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace, URootUi,
+    };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;
 }
@@ -30,6 +32,10 @@ pub struct UnivisLayoutPlugin;
 impl Plugin for UnivisLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<USelf>()
+            .register_type::<URootUi>()
+            .register_type::<UiSpace>()
+            .register_type::<UiCanvasSize>()
+            .register_type::<UiCameraRef>()
             .register_type::<UAlignSelf>()
             .register_type::<UPosition>()
             .register_type::<ULayoutContainerExt>()
@@ -53,6 +59,7 @@ impl Plugin for UnivisLayoutPlugin {
                 PostUpdate,
                 (
                     UnivisPostUpdateSet::WidgetSync,
+                    UnivisPostUpdateSet::RootResolve,
                     UnivisPostUpdateSet::LayoutHierarchy,
                     UnivisPostUpdateSet::LayoutMeasure,
                     UnivisPostUpdateSet::LayoutSolve,
@@ -64,6 +71,7 @@ impl Plugin for UnivisLayoutPlugin {
                 PostUpdate,
                 (
                     UnivisPostUpdateSet::WidgetSync,
+                    UnivisPostUpdateSet::RootResolve,
                     UnivisPostUpdateSet::LayoutHierarchy,
                     UnivisPostUpdateSet::LayoutMeasure,
                     UnivisPostUpdateSet::LayoutSolve,
@@ -71,6 +79,12 @@ impl Plugin for UnivisLayoutPlugin {
                 )
                     .after(update_text2d_layout)
                     .before(AssetEventSystems),
+            )
+            .add_systems(
+                PostUpdate,
+                (resolve_root_ui, sync_screen_roots_to_camera)
+                    .chain()
+                    .in_set(UnivisPostUpdateSet::RootResolve),
             )
             .add_systems(
                 PostUpdate,

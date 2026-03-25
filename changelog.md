@@ -7,6 +7,24 @@ For deeper release context, see:
 - `RELEASE_NOTES_0.2.0-alpha.1.md`
 - `RELEASE_NOTES_2026-03-06.md`
 
+## [2026-03-25]
+
+### Changed
+
+- Started the `alpha2` `URootUi` root-system migration and documented the frozen Phase 0 decisions in the roadmap:
+  - unify public roots around `URootUi`
+  - keep `UScreenRoot` and `UWorldRoot` as compatibility wrappers during `alpha2`
+  - freeze the default `meters_per_unit` and `UiCameraRef::Auto` behavior
+- Completed Phase 1 of the `URootUi` refactor by introducing shared root resolution through `URootUi`, `UiSpace`, `UiCanvasSize`, `UiCameraRef`, and internal `ResolvedRootUi`.
+- Completed Phase 2 of the `URootUi` refactor by making screen roots behave as real HUD roots tied to the resolved camera and projection instead of acting like ordinary window-sized world canvases.
+- Completed Phase 3 of the `URootUi` refactor by removing hardcoded `Camera2d` assumptions from picking and panel resize paths and resolving interaction cameras from each root.
+- Completed Phase 4 of the `URootUi` refactor by making the render path derive from `ResolvedRootUi.space`, mapping `World3d` to the 3D material path and `Screen` / `World2d` to the 2D material path.
+
+### Notes
+
+- The `URootUi` migration is still in progress for `alpha2`; additional breaking changes are expected in later phases.
+- This changelog entry backfills the previously undocumented completed phases: `Phase 0`, `Phase 1`, `Phase 2`, `Phase 3`, and `Phase 4`.
+
 ## [2026-03-16]
 
 ### Added

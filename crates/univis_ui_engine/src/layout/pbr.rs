@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 /// خصائص المواد الفيزيائية (PBR) للعناصر ثلاثية الأبعاد.
-/// أضف هذا المكون مع UI3d للتحكم في الإضاءة.
+/// تُطبَّق عندما يُحل الجذر إلى `UiSpace::World3d`.
 #[derive(Component, Reflect, Clone, Debug)]
 #[reflect(Component)]
 pub struct UPbr {

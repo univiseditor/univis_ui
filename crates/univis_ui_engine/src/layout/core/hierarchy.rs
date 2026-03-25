@@ -6,7 +6,7 @@ use bevy::prelude::*;
 /// This runs periodically (or on change) to ensure every node knows its depth level.
 /// It also calculates the `LayoutTreeDepth` resource (maximum depth).
 pub fn update_layout_hierarchy(
-    root_query: Query<Entity, Or<(With<UWorldRoot>, With<UScreenRoot>)>>,
+    root_query: Query<Entity, With<ResolvedRootUi>>,
     children_query: Query<&Children>,
     mut commands: Commands,
     mut tree_depth: ResMut<LayoutTreeDepth>,

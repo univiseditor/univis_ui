@@ -7,6 +7,7 @@ pub mod schedule;
 pub mod internal {
     pub use crate::layout::components::{IntrinsicSize, LayoutDepth, LayoutTreeDepth, UI3d};
     pub use crate::layout::geometry::ComputedSize;
+    pub use crate::layout::layout_system::ResolvedRootUi;
     pub use crate::layout::render::system::{MaterialHandles, MaterialPool};
 }
 
@@ -32,7 +33,9 @@ pub(crate) mod internal_prelude {
 pub mod prelude {
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
     pub use crate::layout::image::UImage;
-    pub use crate::layout::layout_system::{UScreenRoot, UWorldRoot};
+    pub use crate::layout::layout_system::{
+        UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace, URootUi,
+    };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;
     pub use crate::{UnivisEnginePlugin, layout::prelude::*};

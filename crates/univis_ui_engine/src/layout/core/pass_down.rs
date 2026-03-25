@@ -67,8 +67,7 @@ pub fn downward_solve_pass_safe(
     )>,
 
     intrinsic_query: Query<&IntrinsicSize>,
-    root_query: Query<&UWorldRoot>,
-    window_query: Query<&Window>,
+    root_query: Query<&ResolvedRootUi>,
 ) {
     let start = std::time::Instant::now();
 
@@ -86,7 +85,7 @@ pub fn downward_solve_pass_safe(
 
             // 2. حساب حجم الحاوية
             let container_size = if depth == 0 {
-                calculate_root_size(entity, &root_query, &window_query)
+                calculate_root_size(entity, &root_query)
             } else {
                 Vec2::new(
                     node_data.computed_size.width,
@@ -183,16 +182,12 @@ fn extract_node_data(
 
 fn calculate_root_size(
     entity: Entity,
-    root_query: &Query<&UWorldRoot>,
-    window_query: &Query<&Window>,
+    root_query: &Query<&ResolvedRootUi>,
 ) -> Vec2 {
-    if let Ok(world_root) = root_query.get(entity) {
-        world_root.size
-    } else if let Ok(window) = window_query.single() {
-        Vec2::new(window.width(), window.height())
-    } else {
-        Vec2::new(800.0, 600.0)
-    }
+    root_query
+        .get(entity)
+        .map(|root| root.canvas_size)
+        .unwrap_or(Vec2::new(800.0, 600.0))
 }
 
 fn collect_children_layout_data(

@@ -2,12 +2,14 @@ use super::math::sd_rounded_box;
 use crate::internal_prelude::*;
 use bevy::ecs::relationship::Relationship;
 use bevy::picking::backend::prelude::*;
+use bevy::picking::pointer::Location;
 use bevy::prelude::*;
+use std::collections::HashMap;
 
 /// دالة دقيقة للتحقق من القص باستخدام المصفوفات
 fn is_clipped_by_ancestors(
     start_entity: Entity,
-    cursor_world_pos: Vec2,
+    cursor_world_pos: Vec3,
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
 ) -> bool {
@@ -24,9 +26,8 @@ fn is_clipped_by_ancestors(
                 let inverse_matrix = transform_matrix.inverse();
 
                 // تحويل النقطة
-                let cursor_in_clipper_space = inverse_matrix
-                    .transform_point3(cursor_world_pos.extend(0.0))
-                    .truncate();
+                let cursor_in_clipper_space =
+                    inverse_matrix.transform_point3(cursor_world_pos).truncate();
 
                 // 2. حساب حدود القناع
                 let half_size = Vec2::new(size.width, size.height) * 0.5;
@@ -50,6 +51,19 @@ fn is_clipped_by_ancestors(
     false // غير مقصوص
 }
 
+#[derive(Clone, Copy)]
+struct CachedPointerRay {
+    order: f32,
+    origin: Vec3,
+    direction: Vec3,
+}
+
+#[derive(Default)]
+struct CameraHitBucket {
+    order: f32,
+    hits: Vec<(Entity, HitData, f32)>,
+}
+
 /// ✅ دالة جديدة: فحص إذا كان الكيان هو أب لكيان آخر
 fn is_ancestor_of(
     potential_ancestor: Entity,
@@ -69,10 +83,78 @@ fn is_ancestor_of(
     false
 }
 
+fn resolve_root_for_entity(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+) -> Option<ResolvedRootUi> {
+    let mut current = entity;
+
+    loop {
+        if let Ok(root) = root_query.get(current) {
+            return Some(*root);
+        }
+
+        let parent = parents_query.get(current).ok()?;
+        current = parent.get();
+    }
+}
+
+fn pointer_ray_for_camera(
+    location: &Location,
+    camera_entity: Entity,
+    cameras: &Query<(Entity, &Camera, &GlobalTransform)>,
+) -> Option<CachedPointerRay> {
+    let Ok((_, camera, camera_transform)) = cameras.get(camera_entity) else {
+        return None;
+    };
+
+    if !camera
+        .logical_viewport_rect()
+        .is_some_and(|rect| rect.contains(location.position))
+    {
+        return None;
+    }
+
+    let ray = camera.viewport_to_world(camera_transform, location.position).ok()?;
+    Some(CachedPointerRay {
+        order: camera.order as f32,
+        origin: ray.origin,
+        direction: ray.direction.as_vec3(),
+    })
+}
+
+fn intersect_ray_with_node_plane(
+    ray: &CachedPointerRay,
+    global_transform: &GlobalTransform,
+) -> Option<(Vec3, Vec2, Vec3, f32)> {
+    let plane_origin = global_transform.translation();
+    let plane_normal = global_transform.back().as_vec3();
+    let denominator = ray.direction.dot(plane_normal);
+
+    if denominator.abs() <= f32::EPSILON {
+        return None;
+    }
+
+    let distance = (plane_origin - ray.origin).dot(plane_normal) / denominator;
+    if distance < 0.0 {
+        return None;
+    }
+
+    let world_hit = ray.origin + ray.direction * distance;
+    let local_hit = global_transform
+        .to_matrix()
+        .inverse()
+        .transform_point3(world_hit)
+        .truncate();
+
+    Some((world_hit, local_hit, plane_normal, distance))
+}
+
 pub fn univis_picking_backend(
     pointers: Query<(&PointerId, &PointerLocation)>,
-    cameras: Query<(Entity, &Camera, &GlobalTransform), With<Camera2d>>,
-
+    cameras: Query<(Entity, &Camera, &GlobalTransform)>,
+    root_query: Query<&ResolvedRootUi>,
     nodes_query: Query<
         (
             Entity,
@@ -83,37 +165,39 @@ pub fn univis_picking_backend(
         ),
         With<UInteraction>,
     >,
-
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
-
     mut output: MessageWriter<PointerHits>,
 ) {
-    let Ok((cam_entity, camera, cam_transform)) = cameras.single() else {
-        return;
-    };
-
     for (pointer_id, pointer_loc) in pointers.iter() {
         let Some(location) = pointer_loc.location() else {
             continue;
         };
 
-        let Ok(ray) = camera.viewport_to_world(cam_transform, location.position) else {
-            continue;
-        };
-
-        let cursor_pos_world = ray.origin.truncate();
-
-        // المرحلة 1: جمع كل الـ hits المحتملة
-        let mut all_hits: Vec<(Entity, HitData, f32)> = Vec::new();
+        let mut ray_cache: HashMap<Entity, Option<CachedPointerRay>> = HashMap::new();
+        let mut hits_by_camera: HashMap<Entity, CameraHitBucket> = HashMap::new();
 
         for (entity, node, global_transform, size, depth_comp) in nodes_query.iter() {
-            // التحويل لـ Local Space
-            let transform_matrix = global_transform.to_matrix();
-            let inverse_matrix = transform_matrix.inverse();
-            let cursor_pos_local = inverse_matrix
-                .transform_point3(cursor_pos_world.extend(0.0))
-                .truncate();
+            let Some(root) = resolve_root_for_entity(entity, &parents_query, &root_query) else {
+                continue;
+            };
+            let Some(camera_entity) = root.camera_entity else {
+                continue;
+            };
+
+            let ray = ray_cache
+                .entry(camera_entity)
+                .or_insert_with(|| pointer_ray_for_camera(location, camera_entity, &cameras))
+                .as_ref();
+            let Some(ray) = ray else {
+                continue;
+            };
+
+            let Some((hit_world, cursor_pos_local, hit_normal, hit_distance)) =
+                intersect_ray_with_node_plane(ray, global_transform)
+            else {
+                continue;
+            };
 
             let half_size = Vec2::new(size.width, size.height) * 0.5;
             let radius_vec = Vec4::new(
@@ -126,62 +210,63 @@ pub fn univis_picking_backend(
             let dist = sd_rounded_box(cursor_pos_local, half_size, radius_vec);
 
             if dist <= 0.0 {
-                // التحقق من القص
-                if is_clipped_by_ancestors(entity, cursor_pos_world, &parents_query, &clipper_query)
-                {
+                if is_clipped_by_ancestors(entity, hit_world, &parents_query, &clipper_query) {
                     continue;
                 }
 
-                // حساب العمق
-                let tree_depth = depth_comp.map(|d| d.0).unwrap_or(0) as f32;
-                let z_depth = global_transform.translation().z;
-                let final_depth = tree_depth * 1000.0 + z_depth;
+                // نستخدم مسافة الشعاع كأساس للعمق، مع انحياز صغير يمنح الأبناء أولوية
+                // على الآباء عند وجودهما على نفس المستوى البصري تقريبًا.
+                let tree_bias = depth_comp.map(|d| d.0).unwrap_or(0) as f32 * 1e-4;
+                let final_depth = (hit_distance - tree_bias).max(0.0);
 
-                all_hits.push((
-                    entity,
-                    HitData {
-                        camera: cam_entity,
-                        depth: final_depth,
-                        position: Some(cursor_pos_world.extend(0.0)),
-                        normal: Some(Vec3::Z),
-                    },
-                    final_depth, // نحتفظ بالعمق للمقارنة
-                ));
+                hits_by_camera
+                    .entry(camera_entity)
+                    .or_insert_with(|| CameraHitBucket {
+                        order: ray.order,
+                        ..default()
+                    })
+                    .hits
+                    .push((
+                        entity,
+                        HitData::new(
+                            camera_entity,
+                            final_depth,
+                            Some(hit_world),
+                            Some(hit_normal),
+                        ),
+                        final_depth,
+                    ));
             }
         }
 
-        // ✅ المرحلة 2: تصفية الآباء إذا كان هناك أبناء
-        // نريد فقط إبقاء العنصر الأعمق من كل عائلة
-        let mut filtered_hits: Vec<(Entity, HitData)> = Vec::new();
+        for bucket in hits_by_camera.into_values() {
+            let mut filtered_hits: Vec<(Entity, HitData)> = Vec::new();
 
-        for (entity, hit_data, depth) in all_hits.iter() {
-            let mut should_include = true;
+            for (entity, hit_data, depth) in bucket.hits.iter() {
+                let mut should_include = true;
 
-            // فحص: هل هناك ابن لهذا الكيان تم التقاطه أيضاً؟
-            for (other_entity, _, other_depth) in all_hits.iter() {
-                if entity == other_entity {
-                    continue;
+                // نريد فقط إبقاء أعمق عنصر في نفس العائلة.
+                for (other_entity, _, other_depth) in bucket.hits.iter() {
+                    if entity == other_entity {
+                        continue;
+                    }
+
+                    if is_ancestor_of(*entity, *other_entity, &parents_query)
+                        && other_depth < depth
+                    {
+                        should_include = false;
+                        break;
+                    }
                 }
 
-                // إذا كان other_entity ابن لـ entity وعمقه أكبر (أقرب للكاميرا)
-                if is_ancestor_of(*entity, *other_entity, &parents_query) && other_depth > depth {
-                    should_include = false;
-                    break;
+                if should_include {
+                    filtered_hits.push((*entity, hit_data.clone()));
                 }
             }
 
-            if should_include {
-                filtered_hits.push((*entity, hit_data.clone()));
+            if !filtered_hits.is_empty() {
+                output.write(PointerHits::new(*pointer_id, filtered_hits, bucket.order));
             }
-        }
-
-        // إرسال النتائج المفلترة
-        if !filtered_hits.is_empty() {
-            output.write(PointerHits {
-                pointer: *pointer_id,
-                picks: filtered_hits,
-                order: 0.0,
-            });
         }
     }
 }

@@ -33,38 +33,52 @@ impl MaterialPool {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ResolvedRenderMode {
+    Flat2d,
+    World3d,
+}
+
 /// نظام محسّن لتحديث المواد بدون تسرب
 pub fn update_materials_optimized(
     mut commands: Commands,
     mut pool: ResMut<MaterialPool>,
     mut profiler: Option<ResMut<LayoutProfiler>>,
-
-    // الاستعلام يشمل UI3d و UPbr
-    mut query: Query<
-        (
+    roots_changed: Query<(), Changed<ResolvedRootUi>>,
+    mut queries: ParamSet<(
+        Query<(
             Entity,
             &UNode,
             &ComputedSize,
             Option<&UBorder>,
             Option<&UImage>,
-            Option<&UI3d>, // <--- نحتاج هذا للتمييز بين 2D و 3D
             Option<&UPbr>,
             Option<&mut MaterialHandles>,
-        ),
-        Or<(
-            Changed<UNode>,
-            Changed<ComputedSize>,
-            Changed<UBorder>,
-            Changed<UImage>,
-            Changed<UI3d>,
-            Changed<UPbr>,
-            Changed<ChildOf>, // مهم للقص
         )>,
-    >,
-
+        Query<
+            (
+                Entity,
+                &UNode,
+                &ComputedSize,
+                Option<&UBorder>,
+                Option<&UImage>,
+                Option<&UPbr>,
+                Option<&mut MaterialHandles>,
+            ),
+            Or<(
+                Changed<UNode>,
+                Changed<ComputedSize>,
+                Changed<UBorder>,
+                Changed<UImage>,
+                Changed<UPbr>,
+                Changed<ChildOf>,
+            )>,
+        >,
+    )>,
     // استعلامات القص
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    root_query: Query<&ResolvedRootUi>,
 
     // الموارد
     mut meshes: ResMut<Assets<Mesh>>,
@@ -75,50 +89,111 @@ pub fn update_materials_optimized(
     let created_before = pool.created_count;
     let reused_before = pool.reused_count;
 
-    for (entity, node, size, border, image, ui3d_opt, pbr_opt, handles_opt) in query.iter_mut() {
-        let size_vec = Vec2::new(size.width, size.height);
-        if size_vec.x <= 0.0 || size_vec.y <= 0.0 {
-            continue;
+    if roots_changed.is_empty() {
+        for (entity, node, size, border, image, pbr_opt, handles_opt) in queries.p1().iter_mut() {
+            sync_entity_material(
+                entity,
+                node,
+                size,
+                border,
+                image,
+                pbr_opt,
+                handles_opt,
+                &parents_query,
+                &clipper_query,
+                &root_query,
+                &mut commands,
+                &mut pool,
+                &mut meshes,
+                &mut materials_2d,
+                &mut materials_3d,
+            );
         }
+    } else {
+        for (entity, node, size, border, image, pbr_opt, handles_opt) in queries.p0().iter_mut() {
+            sync_entity_material(
+                entity,
+                node,
+                size,
+                border,
+                image,
+                pbr_opt,
+                handles_opt,
+                &parents_query,
+                &clipper_query,
+                &root_query,
+                &mut commands,
+                &mut pool,
+                &mut meshes,
+                &mut materials_2d,
+                &mut materials_3d,
+            );
+        }
+    }
 
-        // --- البيانات المشتركة ---
-        let (tex_handle, use_tex, base_color) = if let Some(img) = image {
-            (Some(img.texture.clone()), 1, LinearRgba::from(img.color))
-        } else {
-            (None, 0, LinearRgba::from(node.background_color))
-        };
+    if let Some(ref mut prof) = profiler {
+        prof.materials_created = pool.created_count - created_before;
+        prof.materials_reused = pool.reused_count - reused_before;
+        prof.material_update_time = start.elapsed().as_secs_f64() * 1000.0;
+    }
+}
 
-        let (b_color, b_offset, b_width) = if let Some(b) = border {
-            (LinearRgba::from(b.color), b.offset, b.width)
-        } else {
-            (LinearRgba::NONE, 0.0, 0.0)
-        };
+fn sync_entity_material(
+    entity: Entity,
+    node: &UNode,
+    size: &ComputedSize,
+    border: Option<&UBorder>,
+    image: Option<&UImage>,
+    pbr_opt: Option<&UPbr>,
+    handles_opt: Option<Mut<'_, MaterialHandles>>,
+    parents_query: &Query<&ChildOf>,
+    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    root_query: &Query<&ResolvedRootUi>,
+    commands: &mut Commands,
+    pool: &mut MaterialPool,
+    meshes: &mut Assets<Mesh>,
+    materials_2d: &mut Assets<UNodeMaterial>,
+    materials_3d: &mut Assets<UNodeMaterial3d>,
+) {
+    let size_vec = Vec2::new(size.width, size.height);
+    if size_vec.x <= 0.0 || size_vec.y <= 0.0 {
+        return;
+    }
 
-        let radius = Vec4::new(
-            node.border_radius.top_right,
-            node.border_radius.bottom_right,
-            node.border_radius.top_left,
-            node.border_radius.bottom_left,
-        );
+    let render_mode = resolve_render_mode(entity, parents_query, root_query);
 
-        let shape_mode = match node.shape_mode {
-            UShapeMode::Round => 0,
-            UShapeMode::Cut => 1,
-        };
+    // --- البيانات المشتركة ---
+    let (tex_handle, use_tex, base_color) = if let Some(img) = image {
+        (Some(img.texture.clone()), 1, LinearRgba::from(img.color))
+    } else {
+        (None, 0, LinearRgba::from(node.background_color))
+    };
 
-        // --- البحث عن القص (لـ 2D فقط حالياً) ---
-        let (clip_center, clip_size, clip_radius, use_clip) =
-            find_clipper(entity, &parents_query, &clipper_query);
+    let (b_color, b_offset, b_width) = if let Some(b) = border {
+        (LinearRgba::from(b.color), b.offset, b.width)
+    } else {
+        (LinearRgba::NONE, 0.0, 0.0)
+    };
 
-        let mesh = meshes.add(Rectangle::new(size_vec.x, size_vec.y));
+    let radius = Vec4::new(
+        node.border_radius.top_right,
+        node.border_radius.bottom_right,
+        node.border_radius.top_left,
+        node.border_radius.bottom_left,
+    );
 
-        // =========================================================
-        // التفرع: هل نحن في وضع 3D أم 2D؟
-        // =========================================================
+    let shape_mode = match node.shape_mode {
+        UShapeMode::Round => 0,
+        UShapeMode::Cut => 1,
+    };
 
-        if ui3d_opt.is_some() {
-            // >>>> مسار 3D <<<<
+    let (clip_center, clip_size, clip_radius, use_clip) =
+        find_clipper(entity, parents_query, clipper_query);
 
+    let mesh = meshes.add(Rectangle::new(size_vec.x, size_vec.y));
+
+    match render_mode {
+        ResolvedRenderMode::World3d => {
             let (metallic, roughness, emissive_val) = if let Some(pbr) = pbr_opt {
                 (
                     pbr.metallic,
@@ -132,7 +207,6 @@ pub fn update_materials_optimized(
             let material_handle = if let Some(mut handles) = handles_opt {
                 if let Some(existing_handle) = &handles.material_3d {
                     if let Some(existing_mat) = materials_3d.get_mut(existing_handle) {
-                        // تحديث المادة 3D الموجودة
                         existing_mat.color = Vec4::from(base_color.to_vec4());
                         existing_mat.size = size_vec;
                         existing_mat.radius = radius;
@@ -148,7 +222,6 @@ pub fn update_materials_optimized(
                         pool.reused_count += 1;
                         existing_handle.clone()
                     } else {
-                        // إعادة إنشاء 3D
                         let new_mat = materials_3d.add(create_3d_material(
                             base_color,
                             size_vec,
@@ -206,18 +279,15 @@ pub fn update_materials_optimized(
                 new_mat
             };
 
-            // تطبيق مكونات 3D وإزالة 2D
             commands
                 .entity(entity)
                 .insert((Mesh3d(mesh), MeshMaterial3d(material_handle)))
                 .remove::<(Mesh2d, MeshMaterial2d<UNodeMaterial>)>();
-        } else {
-            // >>>> مسار 2D (مع القص) <<<<
-
+        }
+        ResolvedRenderMode::Flat2d => {
             let material_handle = if let Some(mut handles) = handles_opt {
                 if let Some(existing_handle) = &handles.material_2d {
                     if let Some(existing_mat) = materials_2d.get_mut(existing_handle) {
-                        // تحديث المادة 2D الموجودة
                         existing_mat.color = base_color;
                         existing_mat.radius = radius;
                         existing_mat.border_color = b_color;
@@ -227,8 +297,6 @@ pub fn update_materials_optimized(
                         existing_mat.use_texture = use_tex;
                         existing_mat.shape_mode = shape_mode;
                         existing_mat.texture = tex_handle.clone();
-
-                        // تحديث بيانات القص
                         existing_mat.clip_center = clip_center;
                         existing_mat.clip_size = clip_size;
                         existing_mat.clip_radius = clip_radius;
@@ -237,7 +305,6 @@ pub fn update_materials_optimized(
                         pool.reused_count += 1;
                         existing_handle.clone()
                     } else {
-                        // إعادة إنشاء 2D
                         let new_mat = materials_2d.add(create_2d_material(
                             base_color,
                             radius,
@@ -301,18 +368,43 @@ pub fn update_materials_optimized(
                 new_mat
             };
 
-            // تطبيق مكونات 2D وإزالة 3D
             commands
                 .entity(entity)
                 .insert((Mesh2d(mesh), MeshMaterial2d(material_handle)))
                 .remove::<(Mesh3d, MeshMaterial3d<UNodeMaterial3d>)>();
         }
     }
+}
 
-    if let Some(ref mut prof) = profiler {
-        prof.materials_created = pool.created_count - created_before;
-        prof.materials_reused = pool.reused_count - reused_before;
-        prof.material_update_time = start.elapsed().as_secs_f64() * 1000.0;
+fn resolve_render_mode(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+) -> ResolvedRenderMode {
+    let space = resolve_root_for_entity(entity, parents_query, root_query)
+        .map(|root| root.space)
+        .unwrap_or(UiSpace::Screen);
+
+    match space {
+        UiSpace::World3d => ResolvedRenderMode::World3d,
+        UiSpace::Screen | UiSpace::World2d => ResolvedRenderMode::Flat2d,
+    }
+}
+
+fn resolve_root_for_entity(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+) -> Option<ResolvedRootUi> {
+    let mut current = entity;
+
+    loop {
+        if let Ok(root) = root_query.get(current) {
+            return Some(*root);
+        }
+
+        let parent = parents_query.get(current).ok()?;
+        current = parent.get();
     }
 }
 

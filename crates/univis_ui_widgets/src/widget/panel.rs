@@ -1,6 +1,8 @@
 use crate::internal_prelude::*;
 use bevy::ecs::relationship::Relationship;
+use bevy::picking::backend::prelude::PointerLocation;
 use bevy::picking::pointer::PointerButton;
+use bevy::picking::pointer::PointerId;
 use bevy::prelude::*;
 use bevy::window::{CursorIcon, PrimaryWindow, SystemCursorIcon, Window};
 
@@ -351,10 +353,12 @@ fn handle_panel_window_resize(
         Option<&ChildOf>,
     )>,
     parent_size_query: Query<&ComputedSize>,
-    world_root_query: Query<&UWorldRoot>,
+    parents_query: Query<&ChildOf>,
+    root_query: Query<&ResolvedRootUi>,
     windows: Query<&Window, With<PrimaryWindow>>,
-    cameras: Query<(&Camera, &GlobalTransform), With<Camera2d>>,
-    parent_global_query: Query<&GlobalTransform>,
+    pointers: Query<(&PointerId, &PointerLocation)>,
+    cameras: Query<(Entity, &Camera, &GlobalTransform), With<Camera>>,
+    global_query: Query<&GlobalTransform>,
 ) {
     for (entity, panel_window, mut runtime, mut node, mut uself_opt, computed, transform, parent) in
         panel_query.iter_mut()
@@ -378,16 +382,23 @@ fn handle_panel_window_resize(
             transform,
             parent,
             &parent_size_query,
-            &world_root_query,
+            &parents_query,
+            &root_query,
             &windows,
             &mut commands,
         ) {
             continue;
         }
 
-        let Some(cursor_parent) =
-            cursor_in_parent_space(parent, &windows, &cameras, &parent_global_query)
-        else {
+        let Some(cursor_parent) = cursor_in_parent_space(
+            entity,
+            parent,
+            &parents_query,
+            &root_query,
+            &pointers,
+            &cameras,
+            &global_query,
+        ) else {
             continue;
         };
 
@@ -470,7 +481,8 @@ fn ensure_panel_absolute_geometry(
     transform: &Transform,
     parent: Option<&ChildOf>,
     parent_size_query: &Query<&ComputedSize>,
-    world_root_query: &Query<&UWorldRoot>,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
     windows: &Query<&Window, With<PrimaryWindow>>,
     commands: &mut Commands,
 ) -> bool {
@@ -495,7 +507,8 @@ fn ensure_panel_absolute_geometry(
         panel_entity,
         parent,
         parent_size_query,
-        world_root_query,
+        parents_query,
+        root_query,
         windows,
     )
     .unwrap_or(Vec2::new(width, height));
@@ -523,7 +536,8 @@ fn resolve_parent_size(
     panel_entity: Entity,
     parent: Option<&ChildOf>,
     parent_size_query: &Query<&ComputedSize>,
-    world_root_query: &Query<&UWorldRoot>,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
     windows: &Query<&Window, With<PrimaryWindow>>,
 ) -> Option<Vec2> {
     if let Some(parent) = parent {
@@ -532,8 +546,8 @@ fn resolve_parent_size(
         }
     }
 
-    if let Ok(root) = world_root_query.get(panel_entity) {
-        return Some(root.size);
+    if let Some(root) = resolve_root_for_entity(panel_entity, parents_query, root_query) {
+        return Some(root.canvas_size.max(Vec2::splat(1.0)));
     }
 
     if let Ok(window) = windows.single() {
@@ -544,26 +558,77 @@ fn resolve_parent_size(
 }
 
 fn cursor_in_parent_space(
+    panel_entity: Entity,
     parent: Option<&ChildOf>,
-    windows: &Query<&Window, With<PrimaryWindow>>,
-    cameras: &Query<(&Camera, &GlobalTransform), With<Camera2d>>,
-    parent_global_query: &Query<&GlobalTransform>,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+    pointers: &Query<(&PointerId, &PointerLocation)>,
+    cameras: &Query<(Entity, &Camera, &GlobalTransform), With<Camera>>,
+    global_query: &Query<&GlobalTransform>,
 ) -> Option<Vec2> {
-    let window = windows.single().ok()?;
-    let cursor_screen = window.cursor_position()?;
-    let (camera, camera_transform) = cameras.single().ok()?;
-    let ray = camera
-        .viewport_to_world(camera_transform, cursor_screen)
-        .ok()?;
-    let cursor_world = ray.origin.truncate();
-
-    if let Some(parent) = parent {
-        let parent_transform = parent_global_query.get(parent.get()).ok()?;
-        let inv = parent_transform.to_matrix().inverse();
-        return Some(inv.transform_point3(cursor_world.extend(0.0)).truncate());
+    let location = pointers
+        .iter()
+        .find_map(|(pointer_id, pointer_loc)| {
+            pointer_id.is_mouse().then(|| pointer_loc.location()).flatten()
+        })?;
+    let root = resolve_root_for_entity(panel_entity, parents_query, root_query)?;
+    let camera_entity = root.camera_entity?;
+    let Ok((_, camera, camera_transform)) = cameras.get(camera_entity) else {
+        return None;
+    };
+    if !camera
+        .logical_viewport_rect()
+        .is_some_and(|rect| rect.contains(location.position))
+    {
+        return None;
     }
 
-    Some(cursor_world)
+    let ray = camera
+        .viewport_to_world(camera_transform, location.position)
+        .ok()?;
+    let plane_entity = parent.map(|value| value.get()).unwrap_or(root.root_entity);
+    let plane_transform = global_query.get(plane_entity).ok()?;
+    let cursor_world = intersect_ray_with_ui_plane(ray.origin, ray.direction.as_vec3(), plane_transform)?;
+    let local_matrix = plane_transform.to_matrix().inverse();
+    Some(local_matrix.transform_point3(cursor_world).truncate())
+}
+
+fn resolve_root_for_entity(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+) -> Option<ResolvedRootUi> {
+    let mut current = entity;
+
+    loop {
+        if let Ok(root) = root_query.get(current) {
+            return Some(*root);
+        }
+
+        let parent = parents_query.get(current).ok()?;
+        current = parent.get();
+    }
+}
+
+fn intersect_ray_with_ui_plane(
+    ray_origin: Vec3,
+    ray_direction: Vec3,
+    plane_transform: &GlobalTransform,
+) -> Option<Vec3> {
+    let plane_origin = plane_transform.translation();
+    let plane_normal = plane_transform.back().as_vec3();
+    let denominator = ray_direction.dot(plane_normal);
+
+    if denominator.abs() <= f32::EPSILON {
+        return None;
+    }
+
+    let distance = (plane_origin - ray_origin).dot(plane_normal) / denominator;
+    if distance < 0.0 {
+        return None;
+    }
+
+    Some(ray_origin + ray_direction * distance)
 }
 
 fn apply_resize_delta_to_rect(

@@ -7,7 +7,7 @@ pub mod schedule;
 pub mod internal {
     pub use crate::layout::components::{IntrinsicSize, LayoutDepth, LayoutTreeDepth, UI3d};
     pub use crate::layout::geometry::ComputedSize;
-    pub use crate::layout::layout_system::ResolvedRootUi;
+    pub use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
     pub use crate::layout::render::system::{MaterialHandles, MaterialPool};
 }
 

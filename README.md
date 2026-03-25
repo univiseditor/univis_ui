@@ -146,11 +146,13 @@ Reference pages:
 - Use `URootUi::screen()`
 - Follows the resolved camera viewport
 - Behaves as a real HUD rather than a window-sized world canvas
+- Acts as a closed root capsule: local stacking stays inside the root
 
 ### World2d
 - Use `URootUi::world_2d(size)` for flat world-space UI
 - Uses a fixed logical canvas
 - Renders through the 2D path
+- Acts as a closed root capsule: descendants never interleave above other roots automatically
 
 ### World3d
 - Use `URootUi::world_3d(size)` for 3D-lit world-space UI
@@ -175,7 +177,9 @@ Reference pages:
 ### Primary Components
 - `UNode`: size, padding, margin, background, border radius, shape mode
 - `ULayout`: display algorithm + axis alignment + gaps + grid columns + `container_ext`
-- `USelf`: per-child overrides (`align_self`, absolute positioning, order) + `item_ext`
+- `USelf`: per-child overrides (`align_self`, absolute positioning, `order`) + `item_ext`
+
+`USelf.order` is local to the current `URootUi` capsule. It does not escape above another root.
 
 ### Units
 - `UVal::Px(f32)` = logical UI units

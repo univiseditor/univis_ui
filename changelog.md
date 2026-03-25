@@ -26,11 +26,13 @@ For deeper release context, see:
 - Completed Phase 8 of the `URootUi` refactor by finishing the example migration, adding explicit `screen` HUD and world-scale showcase examples, and rechecking example semantics around the new root model.
 - Completed Phase 9 of the `URootUi` refactor by rewriting root docs, quick-start snippets, and interaction support docs around `URootUi`, logical UI units, viewport semantics, and explicit world scaling.
 - Completed Phase 10 verification by running `cargo check --workspace`, sequential targeted tests for `univis_ui_engine`, `univis_ui_widgets`, and `univis_ui_interaction`, refreshed smoke checks for screen, world, and 3D examples, and final manual visual validation through `root_screen_hud` and `root_world_scale`, while also adding direct verification tests for root resolution, root-bound layout sizing, `Screen`/`World2d`/`World3d` picking paths, panel root-camera resize behavior, world-root attachment, and `meters_per_unit` physical scaling.
+- Made `URootUi` behave as a closed stacking capsule across layout, rendering, text, and picking so descendants never interleave above another root automatically; root-vs-root order is now resolved first, and same-`z` roots break ties by spawn order.
 
 ### Added
 
 - Added `root_screen_hud` to show that `URootUi::screen()` remains visually fixed while the camera moves, rotates, and zooms.
 - Added `root_world_scale` to show that a fixed logical canvas can map to different physical world sizes through `meters_per_unit`.
+- Added `root_capsule_overlap` as a node-graph-style example that demonstrates overlapping roots with protruding ports while keeping each root visually sealed as its own stacking capsule.
 
 ### Fixed
 
@@ -38,12 +40,13 @@ For deeper release context, see:
 - Fixed the `UTextLabel` SDF edge filtering regression that made some examples render text with an exaggerated halo after the phase 6 unit-model changes.
 - Fixed bloom-enabled examples such as `border_light_3d`, `card_profile`, and `sci_fi` by pinning camera tonemapping to a LUT-free mode instead of relying on the default `TonyMcMapFace` path, which can fail at runtime when Bevy's `tonemapping_luts` feature is not enabled.
 - Fixed `root_screen_hud` after verification by updating its camera query to the current Bevy `single_mut()` result-based API, allowing the new Phase 8 example set to compile cleanly.
+- Fixed cross-root stacking leaks where a child such as a port or button could visually or interactively rise above another `URootUi` root even though its own root was below that other root.
 
 ### Notes
 
 - The `URootUi` migration is still in progress for `alpha2`; additional breaking changes are expected in later phases.
 - Phase 10 visual validation confirmed that `URootUi::screen()` stays viewport-fixed while the world canvas continues to move, rotate, and scale with the camera, and that `root_world_scale` keeps screen HUD behavior separate from world-root physical sizing.
-- This changelog entry backfills the previously undocumented completed phases: `Phase 0`, `Phase 1`, `Phase 2`, `Phase 3`, `Phase 4`, `Phase 5`, `Phase 6`, `Phase 7`, `Phase 8`, `Phase 9`, and `Phase 10`.
+- This changelog entry still backfills the previously undocumented completed phases: `Phase 0`, `Phase 1`, `Phase 2`, `Phase 3`, `Phase 4`, `Phase 5`, `Phase 6`, `Phase 7`, `Phase 8`, `Phase 9`, and `Phase 10`.
 
 ## [2026-03-16]
 

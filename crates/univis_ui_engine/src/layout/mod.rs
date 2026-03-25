@@ -55,6 +55,7 @@ impl Plugin for UnivisLayoutPlugin {
             .register_type::<UTrackSize>()
             .register_type::<UGridAutoFlow>()
             .init_resource::<LayoutTreeDepth>()
+            .init_resource::<RootSpawnRankCounter>()
             .add_plugins(LayoutCachePlugin)
             .configure_sets(
                 PostUpdate,
@@ -83,7 +84,12 @@ impl Plugin for UnivisLayoutPlugin {
             )
             .add_systems(
                 PostUpdate,
-                (resolve_root_ui, sync_screen_roots_to_camera)
+                (
+                    resolve_root_ui,
+                    assign_root_spawn_ranks,
+                    resolve_root_stacking,
+                    sync_root_capsule_transforms,
+                )
                     .chain()
                     .in_set(UnivisPostUpdateSet::RootResolve),
             )

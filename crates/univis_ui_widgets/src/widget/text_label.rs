@@ -21,7 +21,6 @@ const DEFAULT_TEXT_RENDER_SCALE: f32 = 8.0;
 const DEFAULT_TEXT_EDGE_SOFTNESS: f32 = 0.75;
 const TEXT_SDF_PADDING: u32 = 12;
 const TEXT_SDF_ATLAS_SIZE: u32 = 1024;
-const TEXT_RENDER_Z: f32 = 0.1;
 const DISTANCE_FIELD_INF: f32 = 1.0e20;
 const DEFAULT_ELLIPSIS: &str = "...";
 
@@ -989,9 +988,28 @@ fn text_world_scale_for_entity(
     }
 }
 
-fn text_render_transform(world_scale: f32) -> Transform {
+fn text_root_stack_for_entity(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_stack_query: &Query<&ResolvedRootStack>,
+) -> ResolvedRootStack {
+    let mut current = entity;
+
+    loop {
+        if let Ok(stack) = root_stack_query.get(current) {
+            return *stack;
+        }
+
+        let Ok(parent) = parents_query.get(current) else {
+            return ResolvedRootStack::default();
+        };
+        current = parent.parent();
+    }
+}
+
+fn text_render_transform(world_scale: f32, depth_offset: f32) -> Transform {
     Transform {
-        translation: Vec3::new(0.0, 0.0, TEXT_RENDER_Z * world_scale),
+        translation: Vec3::new(0.0, 0.0, depth_offset),
         scale: Vec3::splat(world_scale),
         ..default()
     }
@@ -1260,7 +1278,7 @@ fn sync_text_label_meshes(
                             MeshMaterial2d(
                                 materials.add(build_text_material(&label, batch.texture.clone())),
                             ),
-                            Transform::from_translation(Vec3::new(0.0, 0.0, TEXT_RENDER_Z)),
+                            Transform::default(),
                             Visibility::Inherited,
                         ));
                     });
@@ -1327,15 +1345,17 @@ fn sync_text_clipper_materials(
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     root_query: Query<&ResolvedRootUi>,
+    root_stack_query: Query<&ResolvedRootStack>,
     mut materials: ResMut<Assets<UTextLabelSdfMaterial>>,
 ) {
     for (entity, material_handle, mut transform) in text_query.iter_mut() {
         let world_scale = text_world_scale_for_entity(entity, &parents_query, &root_query);
+        let root_stack = text_root_stack_for_entity(entity, &parents_query, &root_stack_query);
         let clip = active_clipper_for_entity(entity, &parents_query, &clipper_query, &root_query);
         let Some(material) = materials.get_mut(&material_handle.0) else {
             continue;
         };
-        let desired_transform = text_render_transform(world_scale);
+        let desired_transform = text_render_transform(world_scale, root_stack.text_child_offset());
         if *transform != desired_transform {
             *transform = desired_transform;
         }

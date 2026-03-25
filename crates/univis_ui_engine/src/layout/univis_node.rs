@@ -432,7 +432,7 @@ pub struct USelf {
     pub top: UVal,
     pub bottom: UVal,
     pub right: UVal,
-    /// Layout order (affects Z-index too).
+    /// Layout order for siblings and local stacking inside the same root capsule.
     pub order: i32,
     pub position_type: UPositionType,
     /// Advanced item-only layout controls.

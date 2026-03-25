@@ -33,6 +33,7 @@ Semantics:
 - Resolves against the target camera viewport, not raw `Window.width()/height()`.
 - Behaves as a real HUD.
 - Camera translation, zoom, and rotation should not visually move screen UI.
+- Forms a closed stacking capsule: local ordering never escapes above another root.
 - Best for menus, overlays, HUDs, and cursor-fixed elements.
 
 ## World2d
@@ -48,6 +49,7 @@ Semantics:
 - Uses a fixed logical canvas for layout.
 - Lives in world space.
 - Renders through the flat 2D material path.
+- Forms a closed stacking capsule: descendants stay inside the root's visual layer.
 - Best for panels, diegetic monitors, and boards attached to the scene.
 
 ## World3d
@@ -63,6 +65,7 @@ Semantics:
 - Uses the same fixed logical canvas model as `World2d`.
 - Lives in world space.
 - Renders through the 3D material path.
+- Forms a closed stacking capsule relative to other UI roots.
 - `UPbr` settings apply here.
 
 ## Logical Canvas And Units

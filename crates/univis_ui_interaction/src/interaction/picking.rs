@@ -58,10 +58,25 @@ struct CachedPointerRay {
     direction: Vec3,
 }
 
+#[derive(Clone, Copy)]
+struct ResolvedEntityRootContext {
+    root: ResolvedRootUi,
+    stack: ResolvedRootStack,
+}
+
+#[derive(Clone)]
+struct RankedHit {
+    entity: Entity,
+    hit_data: HitData,
+    root_sort_key: f32,
+    local_depth_key: f32,
+    hit_distance: f32,
+}
+
 #[derive(Default)]
 struct CameraHitBucket {
     order: f32,
-    hits: Vec<(Entity, HitData, f32)>,
+    hits: Vec<RankedHit>,
 }
 
 /// ✅ دالة جديدة: فحص إذا كان الكيان هو أب لكيان آخر
@@ -86,13 +101,16 @@ fn is_ancestor_of(
 fn resolve_root_for_entity(
     entity: Entity,
     parents_query: &Query<&ChildOf>,
-    root_query: &Query<&ResolvedRootUi>,
-) -> Option<ResolvedRootUi> {
+    root_query: &Query<(&ResolvedRootUi, &ResolvedRootStack)>,
+) -> Option<ResolvedEntityRootContext> {
     let mut current = entity;
 
     loop {
-        if let Ok(root) = root_query.get(current) {
-            return Some(*root);
+        if let Ok((root, stack)) = root_query.get(current) {
+            return Some(ResolvedEntityRootContext {
+                root: *root,
+                stack: *stack,
+            });
         }
 
         let parent = parents_query.get(current).ok()?;
@@ -156,7 +174,7 @@ fn intersect_ray_with_node_plane(
 pub fn univis_picking_backend(
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(Entity, &Camera, &GlobalTransform)>,
-    root_query: Query<&ResolvedRootUi>,
+    root_query: Query<(&ResolvedRootUi, &ResolvedRootStack)>,
     nodes_query: Query<
         (
             Entity,
@@ -164,6 +182,7 @@ pub fn univis_picking_backend(
             &GlobalTransform,
             &ComputedSize,
             Option<&LayoutDepth>,
+            Option<&USelf>,
         ),
         With<UInteraction>,
     >,
@@ -179,11 +198,12 @@ pub fn univis_picking_backend(
         let mut ray_cache: HashMap<Entity, Option<CachedPointerRay>> = HashMap::new();
         let mut hits_by_camera: HashMap<Entity, CameraHitBucket> = HashMap::new();
 
-        for (entity, node, global_transform, size, depth_comp) in nodes_query.iter() {
-            let Some(root) = resolve_root_for_entity(entity, &parents_query, &root_query) else {
+        for (entity, node, global_transform, size, depth_comp, uself) in nodes_query.iter() {
+            let Some(root_context) = resolve_root_for_entity(entity, &parents_query, &root_query)
+            else {
                 continue;
             };
-            let Some(camera_entity) = root.camera_entity else {
+            let Some(camera_entity) = root_context.root.camera_entity else {
                 continue;
             };
 
@@ -216,10 +236,9 @@ pub fn univis_picking_backend(
                     continue;
                 }
 
-                // نستخدم مسافة الشعاع كأساس للعمق، مع انحياز صغير يمنح الأبناء أولوية
-                // على الآباء عند وجودهما على نفس المستوى البصري تقريبًا.
-                let tree_bias = depth_comp.map(|d| d.0).unwrap_or(0) as f32 * 1e-4;
-                let final_depth = (hit_distance - tree_bias).max(0.0);
+                let layout_depth = depth_comp.map(|d| d.0).unwrap_or(0);
+                let order = uself.map(|value| value.order).unwrap_or(0);
+                let local_depth_key = root_context.stack.local_depth_key(layout_depth, order);
 
                 hits_by_camera
                     .entry(camera_entity)
@@ -228,32 +247,39 @@ pub fn univis_picking_backend(
                         ..default()
                     })
                     .hits
-                    .push((
+                    .push(RankedHit {
                         entity,
-                        HitData::new(
+                        hit_data: HitData::new(
                             camera_entity,
-                            final_depth,
+                            hit_distance.max(0.0),
                             Some(hit_world),
                             Some(hit_normal),
                         ),
-                        final_depth,
-                    ));
+                        root_sort_key: root_context.stack.capsule_sort_key,
+                        local_depth_key,
+                        hit_distance,
+                    });
             }
         }
 
         for bucket in hits_by_camera.into_values() {
+            let mut ranked_hits = bucket.hits;
+            ranked_hits.sort_by(|left, right| {
+                right
+                    .root_sort_key
+                    .total_cmp(&left.root_sort_key)
+                    .then_with(|| right.local_depth_key.total_cmp(&left.local_depth_key))
+                    .then_with(|| left.hit_distance.total_cmp(&right.hit_distance))
+            });
+
             let mut filtered_hits: Vec<(Entity, HitData)> = Vec::new();
 
-            for (entity, hit_data, depth) in bucket.hits.iter() {
+            for ranked_hit in ranked_hits {
                 let mut should_include = true;
 
-                // نريد فقط إبقاء أعمق عنصر في نفس العائلة.
-                for (other_entity, _, other_depth) in bucket.hits.iter() {
-                    if entity == other_entity {
-                        continue;
-                    }
-
-                    if is_ancestor_of(*entity, *other_entity, &parents_query) && other_depth < depth
+                for (other_entity, _) in filtered_hits.iter() {
+                    if is_ancestor_of(ranked_hit.entity, *other_entity, &parents_query)
+                        || is_ancestor_of(*other_entity, ranked_hit.entity, &parents_query)
                     {
                         should_include = false;
                         break;
@@ -261,7 +287,9 @@ pub fn univis_picking_backend(
                 }
 
                 if should_include {
-                    filtered_hits.push((*entity, hit_data.clone()));
+                    let mut hit_data = ranked_hit.hit_data.clone();
+                    hit_data.depth = filtered_hits.len() as f32;
+                    filtered_hits.push((ranked_hit.entity, hit_data));
                 }
             }
 
@@ -278,18 +306,24 @@ mod tests {
     use bevy::camera::{
         CameraProjection, ComputedCameraValues, NormalizedRenderTarget, RenderTargetInfo,
     };
-    use bevy::ecs::system::SystemState;
     use bevy::ecs::message::Messages;
+    use bevy::ecs::system::SystemState;
 
-    fn sample_root(root_entity: Entity, space: UiSpace) -> ResolvedRootUi {
-        ResolvedRootUi {
+    fn sample_root(root_entity: Entity, space: UiSpace) -> (ResolvedRootUi, ResolvedRootStack) {
+        let root = ResolvedRootUi {
             root_entity,
             space,
             canvas_size: Vec2::new(800.0, 600.0),
             camera_entity: Some(Entity::PLACEHOLDER),
             meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
             resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
-        }
+        };
+        let band_width = if matches!(space, UiSpace::Screen) {
+            0.004
+        } else {
+            root.ui_units_to_world_scale() * 0.04
+        };
+        (root, ResolvedRootStack::with_capsule(0.0, band_width))
     }
 
     fn run_picking_for_space(space: UiSpace, perspective: bool) -> Vec<PointerHits> {
@@ -325,14 +359,19 @@ mod tests {
             .world_mut()
             .spawn((
                 camera,
-                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, if perspective { 5.0 } else { 1000.0 })),
+                GlobalTransform::from(Transform::from_xyz(
+                    0.0,
+                    0.0,
+                    if perspective { 5.0 } else { 1000.0 },
+                )),
             ))
             .id();
 
         let root = app.world_mut().spawn_empty().id();
+        let (resolved_root, resolved_stack) = sample_root(root, space);
         app.world_mut()
             .entity_mut(root)
-            .insert(sample_root(root, space))
+            .insert((resolved_root, resolved_stack))
             .insert(GlobalTransform::default());
 
         let node = app
@@ -355,8 +394,11 @@ mod tests {
             ))
             .id();
 
-        app.world_mut().entity_mut(root).get_mut::<ResolvedRootUi>().unwrap().camera_entity =
-            Some(camera_entity);
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .unwrap()
+            .camera_entity = Some(camera_entity);
 
         app.world_mut().spawn((
             PointerId::Mouse,
@@ -391,14 +433,16 @@ mod tests {
         let child = app.world_mut().spawn(ChildOf(root)).id();
         let grandchild = app.world_mut().spawn(ChildOf(child)).id();
 
-        let mut state =
-            SystemState::<(Query<&ChildOf>, Query<&ResolvedRootUi>)>::new(app.world_mut());
+        let mut state = SystemState::<(
+            Query<&ChildOf>,
+            Query<(&ResolvedRootUi, &ResolvedRootStack)>,
+        )>::new(app.world_mut());
         let (parents, roots) = state.get(app.world());
 
         let resolved = resolve_root_for_entity(grandchild, &parents, &roots)
             .expect("descendants should resolve to the ancestor root");
-        assert_eq!(resolved.root_entity, root);
-        assert_eq!(resolved.space, UiSpace::Screen);
+        assert_eq!(resolved.root.root_entity, root);
+        assert_eq!(resolved.root.space, UiSpace::Screen);
     }
 
     #[test]
@@ -457,6 +501,115 @@ mod tests {
             &parents,
             &clippers,
         ));
+    }
+
+    #[test]
+    fn picking_prefers_the_higher_root_capsule_over_a_deeper_child_in_a_lower_root() {
+        let mut app = App::new();
+        app.add_message::<PointerHits>();
+        app.add_systems(Update, univis_picking_backend);
+
+        let mut camera = Camera::default();
+        camera.computed = ComputedCameraValues {
+            target_info: Some(RenderTargetInfo {
+                physical_size: UVec2::new(800, 600),
+                scale_factor: 1.0,
+            }),
+            clip_from_view: OrthographicProjection {
+                area: Rect::new(-400.0, -300.0, 400.0, 300.0),
+                ..OrthographicProjection::default_2d()
+            }
+            .get_clip_from_view(),
+            ..default()
+        };
+
+        let camera_entity = app
+            .world_mut()
+            .spawn((
+                camera,
+                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1000.0)),
+            ))
+            .id();
+
+        let lower_root = app.world_mut().spawn_empty().id();
+        let (mut lower_resolved, mut lower_stack) = sample_root(lower_root, UiSpace::World2d);
+        lower_resolved.camera_entity = Some(camera_entity);
+        lower_stack.capsule_sort_key = 0.0;
+        app.world_mut()
+            .entity_mut(lower_root)
+            .insert((lower_resolved, lower_stack));
+
+        let upper_root = app.world_mut().spawn_empty().id();
+        let (mut upper_resolved, mut upper_stack) = sample_root(upper_root, UiSpace::World2d);
+        upper_resolved.camera_entity = Some(camera_entity);
+        upper_stack.capsule_sort_key = 0.05;
+        app.world_mut()
+            .entity_mut(upper_root)
+            .insert((upper_resolved, upper_stack));
+
+        let lower_node = app
+            .world_mut()
+            .spawn((
+                ChildOf(lower_root),
+                UInteraction::default(),
+                LayoutDepth(3),
+                USelf {
+                    order: 32,
+                    ..default()
+                },
+                UNode {
+                    width: UVal::Px(200.0),
+                    height: UVal::Px(120.0),
+                    ..default()
+                },
+                ComputedSize {
+                    width: 200.0,
+                    height: 120.0,
+                    local_pos: Vec2::ZERO,
+                },
+                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 0.08)),
+            ))
+            .id();
+
+        let upper_node = app
+            .world_mut()
+            .spawn((
+                ChildOf(upper_root),
+                UInteraction::default(),
+                LayoutDepth(1),
+                UNode {
+                    width: UVal::Px(200.0),
+                    height: UVal::Px(120.0),
+                    ..default()
+                },
+                ComputedSize {
+                    width: 200.0,
+                    height: 120.0,
+                    local_pos: Vec2::ZERO,
+                },
+                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 0.02)),
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            PointerId::Mouse,
+            PointerLocation::new(Location {
+                target: NormalizedRenderTarget::None {
+                    width: 800,
+                    height: 600,
+                },
+                position: Vec2::new(400.0, 300.0),
+            }),
+        ));
+
+        app.update();
+
+        let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();
+        let collected = hits.drain().collect::<Vec<_>>();
+        assert_eq!(collected.len(), 1);
+        assert_eq!(collected[0].picks.len(), 2);
+        assert_eq!(collected[0].picks[0].0, upper_node);
+        assert_eq!(collected[0].picks[1].0, lower_node);
     }
 
     #[test]

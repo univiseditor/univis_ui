@@ -3,7 +3,7 @@ pub mod widget;
 #[allow(unused_imports)]
 pub(crate) mod internal_prelude {
     pub use crate::widget::prelude::*;
-    pub use univis_ui_engine::internal::{ComputedSize, ResolvedRootUi};
+    pub use univis_ui_engine::internal::{ComputedSize, ResolvedRootStack, ResolvedRootUi};
     pub use univis_ui_engine::layout::geometry::{UCornerRadius, USides, UVal};
     pub use univis_ui_engine::prelude::*;
     pub use univis_ui_engine::schedule::UnivisPostUpdateSet;

@@ -68,6 +68,7 @@ pub fn downward_solve_pass_safe(
 
     intrinsic_query: Query<&IntrinsicSize>,
     root_query: Query<&ResolvedRootUi>,
+    root_stack_query: Query<&ResolvedRootStack>,
     parents_query: Query<&ChildOf>,
 ) {
     let start = std::time::Instant::now();
@@ -137,6 +138,9 @@ pub fn downward_solve_pass_safe(
                 solved_size
             };
             let world_scale = resolved_world_scale_for_entity(entity, &parents_query, &root_query);
+            let root_stack =
+                resolved_root_stack_for_entity(entity, &parents_query, &root_stack_query)
+                    .unwrap_or_default();
 
             // 8. تحديث حجم الحاوية
             if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
@@ -155,7 +159,13 @@ pub fn downward_solve_pass_safe(
                 .collect();
 
             // 10. تطبيق النتائج
-            apply_results_to_children(&solved_children, final_size, world_scale, &mut nodes);
+            apply_results_to_children(
+                &solved_children,
+                final_size,
+                world_scale,
+                root_stack,
+                &mut nodes,
+            );
         }
     }
 
@@ -213,6 +223,25 @@ fn resolved_world_scale_for_entity(
 
         let Ok(parent) = parents_query.get(current) else {
             return 1.0;
+        };
+        current = parent.parent();
+    }
+}
+
+fn resolved_root_stack_for_entity(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_stack_query: &Query<&ResolvedRootStack>,
+) -> Option<ResolvedRootStack> {
+    let mut current = entity;
+
+    loop {
+        if let Ok(stack) = root_stack_query.get(current) {
+            return Some(*stack);
+        }
+
+        let Ok(parent) = parents_query.get(current) else {
+            return None;
         };
         current = parent.parent();
     }
@@ -296,6 +325,7 @@ fn apply_results_to_children(
     solved_children: &[SolvedChild],
     parent_size: Vec2,
     world_scale: f32,
+    root_stack: ResolvedRootStack,
     nodes_query: &mut Query<(
         Entity,
         &UNode,
@@ -308,7 +338,7 @@ fn apply_results_to_children(
     )>,
 ) {
     for solved in solved_children.iter() {
-        if let Ok((_, _, _, _, _, _, mut computed, mut transform)) =
+        if let Ok((_, _, _, layout_depth, _, uself, mut computed, mut transform)) =
             nodes_query.get_mut(solved.entity)
         {
             computed.width = solved.result.size.x;
@@ -323,7 +353,8 @@ fn apply_results_to_children(
             transform.translation.y =
                 ((parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0)) * world_scale;
 
-            transform.translation.z = 0.1 * world_scale;
+            let order = uself.map(|value| value.order).unwrap_or(0);
+            transform.translation.z = root_stack.local_depth_offset(layout_depth.0, order);
         }
     }
 }
@@ -502,6 +533,14 @@ mod tests {
                     camera_entity: None,
                     meters_per_unit,
                     resolution_scale: 1.0,
+                },
+                ResolvedRootStack {
+                    capsule_sort_key: 0.0,
+                    capsule_band_base: 0.0,
+                    capsule_band_width: meters_per_unit * 0.04,
+                    capsule_band_step: (meters_per_unit * 0.04) / 2048.0,
+                    initialized: true,
+                    ..default()
                 },
             ))
             .id();
@@ -684,8 +723,108 @@ mod tests {
         assert_eq!(logical_b.width, logical_a.width);
         assert_eq!(logical_b.height, logical_a.height);
 
-        assert!(transform_b
-            .translation
-            .abs_diff_eq(transform_a.translation * 0.25, 1e-5));
+        assert!(
+            transform_b
+                .translation
+                .abs_diff_eq(transform_a.translation * 0.25, 1e-5)
+        );
+    }
+
+    #[test]
+    fn child_depth_stays_inside_its_root_capsule_band() {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let lower_root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World2d,
+                    canvas_size: Vec2::new(400.0, 200.0),
+                    camera_entity: None,
+                    meters_per_unit: 1.0,
+                    resolution_scale: 1.0,
+                },
+                ResolvedRootStack {
+                    capsule_sort_key: 0.0,
+                    capsule_band_base: 0.0,
+                    capsule_band_width: 0.04,
+                    capsule_band_step: 0.04 / 2048.0,
+                    initialized: true,
+                    ..default()
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(lower_root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("lower root should have resolved state")
+            .root_entity = lower_root;
+
+        let upper_root_floor = 0.05;
+        app.world_mut().spawn((
+            UNode::default(),
+            ULayout::default(),
+            LayoutDepth(0),
+            ResolvedRootUi {
+                root_entity: Entity::PLACEHOLDER,
+                space: UiSpace::World2d,
+                canvas_size: Vec2::new(400.0, 200.0),
+                camera_entity: None,
+                meters_per_unit: 1.0,
+                resolution_scale: 1.0,
+            },
+            ResolvedRootStack {
+                capsule_sort_key: upper_root_floor,
+                capsule_band_base: upper_root_floor,
+                capsule_band_width: 0.04,
+                capsule_band_step: 0.04 / 2048.0,
+                initialized: true,
+                ..default()
+            },
+        ));
+
+        let child = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    width: UVal::Px(100.0),
+                    height: UVal::Px(50.0),
+                    ..default()
+                },
+                USelf {
+                    order: 32,
+                    ..default()
+                },
+                LayoutDepth(1),
+                ChildOf(lower_root),
+            ))
+            .id();
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 1;
+        app.update();
+
+        let child_transform = *app
+            .world()
+            .entity(child)
+            .get::<Transform>()
+            .expect("child should have a transform");
+
+        assert!(child_transform.translation.z < upper_root_floor);
     }
 }

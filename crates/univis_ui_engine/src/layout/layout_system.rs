@@ -16,6 +16,7 @@ pub enum UiSpace {
 pub enum UiCanvasSize {
     Viewport,
     Fixed(Vec2),
+    FitContent { min: Vec2, max: Option<Vec2> },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
@@ -91,6 +92,34 @@ impl URootUi {
             resolution_scale: Self::DEFAULT_RESOLUTION_SCALE,
         }
     }
+
+    /// Creates a world-space 2D root whose logical canvas grows from its measured content.
+    pub fn world_2d_fit_content() -> Self {
+        Self {
+            space: UiSpace::World2d,
+            canvas: UiCanvasSize::FitContent {
+                min: Vec2::ZERO,
+                max: None,
+            },
+            camera: UiCameraRef::Auto,
+            meters_per_unit: Self::DEFAULT_METERS_PER_UNIT,
+            resolution_scale: Self::DEFAULT_RESOLUTION_SCALE,
+        }
+    }
+
+    /// Creates a world-space 3D root whose logical canvas grows from its measured content.
+    pub fn world_3d_fit_content() -> Self {
+        Self {
+            space: UiSpace::World3d,
+            canvas: UiCanvasSize::FitContent {
+                min: Vec2::ZERO,
+                max: None,
+            },
+            camera: UiCameraRef::Auto,
+            meters_per_unit: Self::DEFAULT_METERS_PER_UNIT,
+            resolution_scale: Self::DEFAULT_RESOLUTION_SCALE,
+        }
+    }
 }
 
 const LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT: f32 = 1.0;
@@ -109,6 +138,8 @@ pub struct ResolvedRootUi {
     pub root_entity: Entity,
     /// Resolved UI space for this root.
     pub space: UiSpace,
+    /// The source policy used to resolve the final logical canvas.
+    pub canvas: UiCanvasSize,
     /// Final logical canvas size after resolving viewport or fixed sizing.
     pub canvas_size: Vec2,
     pub camera_entity: Option<Entity>,
@@ -123,6 +154,7 @@ impl Default for ResolvedRootUi {
         Self {
             root_entity: Entity::PLACEHOLDER,
             space: UiSpace::Screen,
+            canvas: UiCanvasSize::Viewport,
             canvas_size: Vec2::ZERO,
             camera_entity: None,
             meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
@@ -385,6 +417,7 @@ pub(crate) fn resolve_root_ui(
         let next = ResolvedRootUi {
             root_entity: entity,
             space: effective.space,
+            canvas: effective.canvas,
             canvas_size,
             camera_entity,
             meters_per_unit: effective.meters_per_unit,
@@ -557,6 +590,27 @@ pub(crate) fn sync_root_capsule_transforms(
     }
 }
 
+pub(crate) fn sync_fit_content_root_canvas_sizes(
+    mut roots: Query<(&IntrinsicSize, &mut ResolvedRootUi), With<ResolvedRootUi>>,
+) {
+    for (intrinsic, mut resolved) in roots.iter_mut() {
+        let UiCanvasSize::FitContent { min, max } = resolved.canvas else {
+            continue;
+        };
+
+        if resolved.space == UiSpace::Screen {
+            continue;
+        }
+
+        let measured = Vec2::new(intrinsic.width, intrinsic.height).max(Vec2::ZERO);
+        let next_canvas_size = clamp_canvas_size(measured, min, max);
+
+        if resolved.canvas_size != next_canvas_size {
+            resolved.canvas_size = next_canvas_size;
+        }
+    }
+}
+
 pub fn sync_cached_ui3d(
     mut commands: Commands,
     roots_changed: Query<
@@ -726,6 +780,7 @@ fn resolve_root_canvas_size(
 ) -> Vec2 {
     match canvas {
         UiCanvasSize::Fixed(size) => size,
+        UiCanvasSize::FitContent { min, max } => clamp_canvas_size(min.max(Vec2::ZERO), min, max),
         UiCanvasSize::Viewport => {
             if let Some(camera_entity) = camera_entity {
                 if let Ok((_, camera)) = cameras.get(camera_entity) {
@@ -746,6 +801,17 @@ fn resolve_root_canvas_size(
             }
         }
     }
+}
+
+fn clamp_canvas_size(size: Vec2, min: Vec2, max: Option<Vec2>) -> Vec2 {
+    let mut clamped = Vec2::new(size.x.max(min.x), size.y.max(min.y));
+
+    if let Some(max) = max {
+        clamped.x = clamped.x.min(max.x);
+        clamped.y = clamped.y.min(max.y);
+    }
+
+    clamped
 }
 
 fn emit_root_resolution_warning(entity: Entity, space: UiSpace, issue: RootResolutionIssue) {
@@ -878,6 +944,7 @@ mod tests {
         ResolvedRootUi {
             root_entity: Entity::PLACEHOLDER,
             space: UiSpace::Screen,
+            canvas: UiCanvasSize::Viewport,
             canvas_size,
             camera_entity: Some(Entity::PLACEHOLDER),
             meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
@@ -994,6 +1061,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(640.0, 360.0)),
                     canvas_size: Vec2::new(640.0, 360.0),
                     camera_entity: None,
                     meters_per_unit: 0.25,
@@ -1006,6 +1074,7 @@ mod tests {
                     capsule_band_width: root_capsule_band_width(&ResolvedRootUi {
                         root_entity: Entity::PLACEHOLDER,
                         space: UiSpace::World2d,
+                        canvas: UiCanvasSize::Fixed(Vec2::new(640.0, 360.0)),
                         canvas_size: Vec2::new(640.0, 360.0),
                         camera_entity: None,
                         meters_per_unit: 0.25,
@@ -1014,6 +1083,7 @@ mod tests {
                     capsule_band_step: root_capsule_band_width(&ResolvedRootUi {
                         root_entity: Entity::PLACEHOLDER,
                         space: UiSpace::World2d,
+                        canvas: UiCanvasSize::Fixed(Vec2::new(640.0, 360.0)),
                         canvas_size: Vec2::new(640.0, 360.0),
                         camera_entity: None,
                         meters_per_unit: 0.25,
@@ -1067,6 +1137,7 @@ mod tests {
         let resolved = ResolvedRootUi {
             root_entity: Entity::PLACEHOLDER,
             space: UiSpace::World2d,
+            canvas: UiCanvasSize::Fixed(Vec2::new(320.0, 180.0)),
             canvas_size: Vec2::new(320.0, 180.0),
             camera_entity: None,
             meters_per_unit: 1.0,
@@ -1143,6 +1214,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(320.0, 180.0)),
                     canvas_size: Vec2::new(320.0, 180.0),
                     camera_entity: None,
                     meters_per_unit: 1.0,
@@ -1161,6 +1233,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(320.0, 180.0)),
                     canvas_size: Vec2::new(320.0, 180.0),
                     camera_entity: None,
                     meters_per_unit: 1.0,
@@ -1213,6 +1286,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::Screen,
+                    canvas: UiCanvasSize::Viewport,
                     canvas_size: Vec2::new(800.0, 600.0),
                     camera_entity: Some(Entity::PLACEHOLDER),
                     meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
@@ -1227,6 +1301,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::Screen,
+                    canvas: UiCanvasSize::Viewport,
                     canvas_size: Vec2::new(800.0, 600.0),
                     camera_entity: Some(Entity::PLACEHOLDER),
                     meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
@@ -1433,6 +1508,7 @@ mod tests {
             ResolvedRootUi {
                 root_entity: Entity::PLACEHOLDER,
                 space,
+                canvas: UiCanvasSize::Fixed(Vec2::new(800.0, 600.0)),
                 canvas_size: Vec2::new(800.0, 600.0),
                 camera_entity: None,
                 meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,

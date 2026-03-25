@@ -44,9 +44,15 @@ Use:
 URootUi::world_2d(Vec2::new(1280.0, 720.0))
 ```
 
+or:
+
+```rust
+URootUi::world_2d_fit_content()
+```
+
 Semantics:
 
-- Uses a fixed logical canvas for layout.
+- Supports either a fixed logical canvas or a content-driven one.
 - Lives in world space.
 - Renders through the flat 2D material path.
 - Forms a closed stacking capsule: descendants stay inside the root's visual layer.
@@ -60,9 +66,15 @@ Use:
 URootUi::world_3d(Vec2::new(1280.0, 720.0))
 ```
 
+or:
+
+```rust
+URootUi::world_3d_fit_content()
+```
+
 Semantics:
 
-- Uses the same fixed logical canvas model as `World2d`.
+- Uses the same logical canvas model as `World2d`, including fit-content sizing.
 - Lives in world space.
 - Renders through the 3D material path.
 - Forms a closed stacking capsule relative to other UI roots.
@@ -75,6 +87,7 @@ Semantics:
 - `UVal::Px(f32)` means logical UI units.
 - `UiCanvasSize::Viewport` means "follow the resolved camera viewport".
 - `UiCanvasSize::Fixed(Vec2)` means a fixed logical canvas for layout.
+- `UiCanvasSize::FitContent { min, max }` means "measure the logical canvas from content, then clamp it".
 
 For world roots, physical size is derived explicitly:
 
@@ -87,6 +100,7 @@ This means:
 - layout stays in logical UI units
 - `meters_per_unit` controls only physical world size
 - `resolution_scale` controls visual quality independently from world size
+- fit-content roots work best when their direct content has intrinsic or fixed sizing; heavy `%` or root-relative flex can introduce circular expectations
 
 ## Camera Resolution
 

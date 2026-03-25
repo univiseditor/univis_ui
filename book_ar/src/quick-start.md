@@ -51,8 +51,10 @@ fn setup(mut commands: Commands) {
 - `URootUi::screen()` لمسار HUD الحقيقي والعناصر الثابتة على الشاشة.
 - `URootUi::world_2d(size)` لواجهة world-space المسطحة.
 - `URootUi::world_3d(size)` لواجهة world-space التي تستخدم مسار المواد ثلاثي الأبعاد.
+- `URootUi::world_2d_fit_content()` و`URootUi::world_3d_fit_content()` لقياس حجم root العالمي من المحتوى الداخلي.
 - `UVal::Px` يعني وحدات UI منطقية، لا pixels فعلية للشاشة.
 - `UiCanvasSize::Viewport` يتبع viewport الكاميرا المحلولة.
+- `UiCanvasSize::FitContent { min, max }` يقيس canvas المنطقي من المحتوى ثم يطبّق الحدود عند الحاجة.
 - الحجم الفيزيائي في world-space يُشتق بالعلاقة:
   `world_size = canvas_size * meters_per_unit`
 

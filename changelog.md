@@ -7,6 +7,16 @@ For deeper release context, see:
 - `RELEASE_NOTES_0.2.0-alpha.1.md`
 - `RELEASE_NOTES_2026-03-06.md`
 
+## [2026-03-26]
+
+### Added
+
+- Added `root_fit_content` to demonstrate `URootUi::world_2d_fit_content()` and `UiCanvasSize::FitContent { min, max }` for `World3d` roots in one visual example.
+
+### Notes
+
+- The completed `URootUi` migration baseline from `Phase 0` through `Phase 10` remains the foundation for this follow-up example work.
+
 ## [2026-03-25]
 
 ### Changed
@@ -33,6 +43,7 @@ For deeper release context, see:
 - Added `root_screen_hud` to show that `URootUi::screen()` remains visually fixed while the camera moves, rotates, and zooms.
 - Added `root_world_scale` to show that a fixed logical canvas can map to different physical world sizes through `meters_per_unit`.
 - Added `root_capsule_overlap` as a node-graph-style example that demonstrates overlapping roots with protruding ports while keeping each root visually sealed as its own stacking capsule.
+- Added content-driven world-root sizing through `UiCanvasSize::FitContent { min, max }` plus `URootUi::world_2d_fit_content()` and `URootUi::world_3d_fit_content()`, allowing world roots to derive their logical canvas from measured content and optionally clamp it.
 
 ### Fixed
 
@@ -41,11 +52,13 @@ For deeper release context, see:
 - Fixed bloom-enabled examples such as `border_light_3d`, `card_profile`, and `sci_fi` by pinning camera tonemapping to a LUT-free mode instead of relying on the default `TonyMcMapFace` path, which can fail at runtime when Bevy's `tonemapping_luts` feature is not enabled.
 - Fixed `root_screen_hud` after verification by updating its camera query to the current Bevy `single_mut()` result-based API, allowing the new Phase 8 example set to compile cleanly.
 - Fixed cross-root stacking leaks where a child such as a port or button could visually or interactively rise above another `URootUi` root even though its own root was below that other root.
+- Fixed the world-root sizing gap where `World2d` and `World3d` roots had to be declared with fixed canvas sizes even when the desired behavior was to wrap measured content.
 
 ### Notes
 
 - The `URootUi` migration is still in progress for `alpha2`; additional breaking changes are expected in later phases.
 - Phase 10 visual validation confirmed that `URootUi::screen()` stays viewport-fixed while the world canvas continues to move, rotate, and scale with the camera, and that `root_world_scale` keeps screen HUD behavior separate from world-root physical sizing.
+- The new fit-content world-root mode works best when the root content has intrinsic or fixed sizing; heavy `%` or root-relative flex can still create circular sizing expectations.
 - This changelog entry still backfills the previously undocumented completed phases: `Phase 0`, `Phase 1`, `Phase 2`, `Phase 3`, `Phase 4`, `Phase 5`, `Phase 6`, `Phase 7`, `Phase 8`, `Phase 9`, and `Phase 10`.
 
 ## [2026-03-16]

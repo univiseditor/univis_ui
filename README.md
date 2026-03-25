@@ -150,12 +150,14 @@ Reference pages:
 
 ### World2d
 - Use `URootUi::world_2d(size)` for flat world-space UI
+- Use `URootUi::world_2d_fit_content()` when the root should size itself from measured content
 - Uses a fixed logical canvas
 - Renders through the 2D path
 - Acts as a closed root capsule: descendants never interleave above other roots automatically
 
 ### World3d
 - Use `URootUi::world_3d(size)` for 3D-lit world-space UI
+- Use `URootUi::world_3d_fit_content()` when the root should size itself from measured content
 - Uses the same fixed logical canvas model
 - Renders through the 3D material path and supports `UPbr`
 
@@ -163,9 +165,11 @@ Reference pages:
 - `UVal::Px(f32)` means logical UI units
 - `UiCanvasSize::Viewport` follows the resolved camera viewport
 - `UiCanvasSize::Fixed(Vec2)` defines a fixed logical canvas for layout
+- `UiCanvasSize::FitContent { min, max }` derives the logical canvas from measured content and clamps it if needed
 - World roots derive physical size through:
   `world_size = canvas_size * meters_per_unit`
 - `resolution_scale` stays independent from physical world size
+- Content-driven world roots work best when the root content has intrinsic or fixed sizing; heavy `%` or root-relative flex can create circular sizing expectations
 
 ### Alpha2 Migration Note
 - `UScreenRoot` and `UWorldRoot` remain only as deprecated compatibility wrappers during `alpha2`

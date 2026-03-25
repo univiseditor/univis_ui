@@ -313,6 +313,10 @@ mod tests {
         let root = ResolvedRootUi {
             root_entity,
             space,
+            canvas: match space {
+                UiSpace::Screen => UiCanvasSize::Viewport,
+                UiSpace::World2d | UiSpace::World3d => UiCanvasSize::Fixed(Vec2::new(800.0, 600.0)),
+            },
             canvas_size: Vec2::new(800.0, 600.0),
             camera_entity: Some(Entity::PLACEHOLDER),
             meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,

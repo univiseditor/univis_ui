@@ -87,7 +87,7 @@ pub fn downward_solve_pass_safe(
 
             // 2. حساب حجم الحاوية
             let container_size = if depth == 0 {
-                calculate_root_size(entity, &root_query)
+                calculate_root_size(entity, &root_query, &intrinsic_query)
             } else {
                 Vec2::new(
                     node_data.computed_size.width,
@@ -202,11 +202,38 @@ fn extract_node_data(
     })
 }
 
-fn calculate_root_size(entity: Entity, root_query: &Query<&ResolvedRootUi>) -> Vec2 {
-    root_query
-        .get(entity)
-        .map(|root| root.canvas_size)
-        .unwrap_or(Vec2::new(800.0, 600.0))
+fn calculate_root_size(
+    entity: Entity,
+    root_query: &Query<&ResolvedRootUi>,
+    intrinsic_query: &Query<&IntrinsicSize>,
+) -> Vec2 {
+    let Ok(root) = root_query.get(entity) else {
+        return Vec2::new(800.0, 600.0);
+    };
+
+    match root.canvas {
+        UiCanvasSize::FitContent { min, max } if root.space != UiSpace::Screen => {
+            let measured = intrinsic_query
+                .get(entity)
+                .map(|intrinsic| Vec2::new(intrinsic.width, intrinsic.height))
+                .unwrap_or(root.canvas_size);
+            clamp_root_canvas_size(measured.max(Vec2::ZERO), min, max)
+        }
+        UiCanvasSize::Viewport | UiCanvasSize::Fixed(_) | UiCanvasSize::FitContent { .. } => {
+            root.canvas_size
+        }
+    }
+}
+
+fn clamp_root_canvas_size(size: Vec2, min: Vec2, max: Option<Vec2>) -> Vec2 {
+    let mut clamped = Vec2::new(size.x.max(min.x), size.y.max(min.y));
+
+    if let Some(max) = max {
+        clamped.x = clamped.x.min(max.x);
+        clamped.y = clamped.y.min(max.y);
+    }
+
+    clamped
 }
 
 fn resolved_world_scale_for_entity(
@@ -504,6 +531,7 @@ mod tests {
     use crate::layout::core::layout_cache::LayoutCache;
     use crate::layout::core::layout_cache::{track_layout_changes, update_depth_cache};
     use crate::layout::core::pass_up::upward_measure_pass_cached;
+    use crate::layout::layout_system::sync_fit_content_root_canvas_sizes;
 
     fn solve_child_under_world_root(meters_per_unit: f32) -> (ComputedSize, Transform) {
         let mut app = App::new();
@@ -529,6 +557,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(400.0, 200.0)),
                     canvas_size: Vec2::new(400.0, 200.0),
                     camera_entity: None,
                     meters_per_unit,
@@ -666,6 +695,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(400.0, 200.0)),
                     canvas_size: Vec2::new(400.0, 200.0),
                     camera_entity: None,
                     meters_per_unit: 1.0,
@@ -714,6 +744,154 @@ mod tests {
     }
 
     #[test]
+    fn world_fit_content_root_adopts_measured_child_size() {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                sync_fit_content_root_canvas_sizes,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World2d,
+                    canvas: UiCanvasSize::FitContent {
+                        min: Vec2::ZERO,
+                        max: None,
+                    },
+                    canvas_size: Vec2::ZERO,
+                    camera_entity: None,
+                    meters_per_unit: 1.0,
+                    resolution_scale: 1.0,
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        app.world_mut().spawn((
+            UNode {
+                width: UVal::Px(120.0),
+                height: UVal::Px(48.0),
+                ..default()
+            },
+            LayoutDepth(1),
+            ChildOf(root),
+        ));
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 1;
+        app.update();
+
+        let root_size = app
+            .world()
+            .entity(root)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("fit-content root should have computed size");
+        let resolved = app
+            .world()
+            .entity(root)
+            .get::<ResolvedRootUi>()
+            .copied()
+            .expect("fit-content root should have resolved state");
+
+        assert_eq!(root_size.width, 120.0);
+        assert_eq!(root_size.height, 48.0);
+        assert_eq!(resolved.canvas_size, Vec2::new(120.0, 48.0));
+    }
+
+    #[test]
+    fn world_fit_content_root_clamps_measured_size_to_bounds() {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                sync_fit_content_root_canvas_sizes,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World3d,
+                    canvas: UiCanvasSize::FitContent {
+                        min: Vec2::new(100.0, 80.0),
+                        max: Some(Vec2::new(180.0, 120.0)),
+                    },
+                    canvas_size: Vec2::ZERO,
+                    camera_entity: None,
+                    meters_per_unit: 1.0,
+                    resolution_scale: 1.0,
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        app.world_mut().spawn((
+            UNode {
+                width: UVal::Px(260.0),
+                height: UVal::Px(30.0),
+                ..default()
+            },
+            LayoutDepth(1),
+            ChildOf(root),
+        ));
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 1;
+        app.update();
+
+        let root_size = app
+            .world()
+            .entity(root)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("fit-content root should have computed size");
+        let resolved = app
+            .world()
+            .entity(root)
+            .get::<ResolvedRootUi>()
+            .copied()
+            .expect("fit-content root should have resolved state");
+
+        assert_eq!(root_size.width, 180.0);
+        assert_eq!(root_size.height, 80.0);
+        assert_eq!(resolved.canvas_size, Vec2::new(180.0, 80.0));
+    }
+
+    #[test]
     fn world_roots_scale_physical_transforms_without_changing_logical_layout() {
         let (logical_a, transform_a) = solve_child_under_world_root(1.0);
         let (logical_b, transform_b) = solve_child_under_world_root(0.25);
@@ -755,6 +933,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(400.0, 200.0)),
                     canvas_size: Vec2::new(400.0, 200.0),
                     camera_entity: None,
                     meters_per_unit: 1.0,
@@ -784,6 +963,7 @@ mod tests {
             ResolvedRootUi {
                 root_entity: Entity::PLACEHOLDER,
                 space: UiSpace::World2d,
+                canvas: UiCanvasSize::Fixed(Vec2::new(400.0, 200.0)),
                 canvas_size: Vec2::new(400.0, 200.0),
                 camera_entity: None,
                 meters_per_unit: 1.0,

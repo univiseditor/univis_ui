@@ -51,8 +51,10 @@ fn setup(mut commands: Commands) {
 - `URootUi::screen()` for real HUD and screen-fixed overlays.
 - `URootUi::world_2d(size)` for flat world-space UI.
 - `URootUi::world_3d(size)` for world-space UI that uses the 3D material path.
+- `URootUi::world_2d_fit_content()` and `URootUi::world_3d_fit_content()` size world roots from measured content.
 - `UVal::Px` means logical UI units, not literal display pixels.
 - `UiCanvasSize::Viewport` follows the resolved camera viewport.
+- `UiCanvasSize::FitContent { min, max }` measures logical canvas size from content and clamps it when needed.
 - World-space physical size is derived as:
   `world_size = canvas_size * meters_per_unit`
 

@@ -99,7 +99,12 @@ impl Plugin for UnivisLayoutPlugin {
             )
             .add_systems(
                 PostUpdate,
-                upward_measure_pass_cached.in_set(UnivisPostUpdateSet::LayoutMeasure),
+                (
+                    upward_measure_pass_cached,
+                    sync_fit_content_root_canvas_sizes,
+                )
+                    .chain()
+                    .in_set(UnivisPostUpdateSet::LayoutMeasure),
             )
             .add_systems(
                 PostUpdate,

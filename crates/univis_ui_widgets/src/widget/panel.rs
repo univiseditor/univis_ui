@@ -720,7 +720,9 @@ fn uval_px(value: UVal) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::camera::{CameraProjection, ComputedCameraValues, NormalizedRenderTarget, RenderTargetInfo};
+    use bevy::camera::{
+        CameraProjection, ComputedCameraValues, NormalizedRenderTarget, RenderTargetInfo,
+    };
     use bevy::ecs::system::SystemState;
     use bevy::picking::pointer::Location;
 
@@ -851,6 +853,7 @@ mod tests {
             .spawn(ResolvedRootUi {
                 root_entity: Entity::PLACEHOLDER,
                 space: UiSpace::Screen,
+                canvas: UiCanvasSize::Viewport,
                 canvas_size: Vec2::new(1280.0, 720.0),
                 camera_entity: None,
                 meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
@@ -914,7 +917,10 @@ mod tests {
 
         let camera_entity = app
             .world_mut()
-            .spawn((camera, GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1000.0))))
+            .spawn((
+                camera,
+                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1000.0)),
+            ))
             .id();
 
         let root = app
@@ -923,6 +929,7 @@ mod tests {
                 ResolvedRootUi {
                     root_entity: Entity::PLACEHOLDER,
                     space: UiSpace::Screen,
+                    canvas: UiCanvasSize::Viewport,
                     canvas_size: Vec2::new(800.0, 600.0),
                     camera_entity: Some(camera_entity),
                     meters_per_unit: 1.0,
@@ -964,13 +971,7 @@ mod tests {
         let parent = parents.get(panel).ok();
 
         let cursor = cursor_in_parent_space(
-            panel,
-            parent,
-            &parents,
-            &roots,
-            &pointers,
-            &cameras,
-            &globals,
+            panel, parent, &parents, &roots, &pointers, &cameras, &globals,
         )
         .expect("cursor should resolve against the root camera");
 

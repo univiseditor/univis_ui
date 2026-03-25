@@ -14,7 +14,10 @@ fn setup_scroll_list(mut commands: Commands) {
     // 1. الحاوية الخارجية (التي تقص)
     commands
         .spawn((
-            UWorldRoot::default(),
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_2d(Vec2::new(800.0, 600.0))
+            },
             // تفعيل القص
             UClip { enabled: true },
             // تفعيل منطق التمرير

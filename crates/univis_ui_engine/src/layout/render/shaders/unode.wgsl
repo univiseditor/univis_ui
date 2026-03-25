@@ -84,7 +84,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         dist_outer = sd_rounded_box(p, half_size, material.radius);
     }
     
-    let aa_width = max(fwidth(dist_outer), 0.5) * max(material.softness, 0.5);
+    let softness = max(material.softness, 0.0001);
+    let aa_width = max(fwidth(dist_outer), softness);
     var alpha_final = 1.0 - smoothstep(-aa_width, aa_width, dist_outer);
     
     // تحسين الأداء: إذا كان العنصر شفافاً تماماً، لا تكمل الحساب
@@ -108,7 +109,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         // إذا كانت المسافة سالبة (داخل الصندوق) -> Alpha 1
         // إذا كانت المسافة موجبة (خارج الصندوق) -> Alpha 0
         // نستخدم smoothstep صغيرة جداً للحصول على حواف ناعمة للقص
-        let alpha_clip = 1.0 - smoothstep(-0.5, 0.5, d_clip);
+        let alpha_clip = 1.0 - smoothstep(-softness, softness, d_clip);
         
         // دمج شفافية العنصر مع شفافية القناع
         alpha_final = min(alpha_final, alpha_clip);

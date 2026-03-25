@@ -23,7 +23,7 @@ fn masonry_gallery_test(mut commands: Commands) {
                 align_items: UAlignItems::Start,
                 ..default()
             },
-            UScreenRoot,
+            URootUi::screen(),
         ))
         .with_children(|root| {
             // =========================================================

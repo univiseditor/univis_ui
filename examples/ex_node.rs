@@ -18,9 +18,9 @@ fn setup_node_showcase(mut commands: Commands) {
     // 1. الحاوية الرئيسية للعقدة (The Container)
     commands
         .spawn((
-            UWorldRoot {
-                size: Vec2::new(220.0, 300.0),
-                ..default()
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_2d(Vec2::new(220.0, 300.0))
             }, // الحجم المبدئي
             Transform::from_translation(node_pos),
             UNode {

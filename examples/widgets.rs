@@ -10,7 +10,7 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2d);
-    commands.spawn(UScreenRoot).with_children(|root| {
+    commands.spawn(URootUi::screen()).with_children(|root| {
         // root.spawn((
         //     UIconButton {
         //         width: UVal::Px(40.0),

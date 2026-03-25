@@ -15,8 +15,9 @@ pub mod prelude {
     pub use crate::layout::UnivisLayoutPlugin;
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
     pub use crate::layout::image::UImage;
+    #[allow(deprecated)]
     pub use crate::layout::layout_system::{
-        UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace, URootUi,
+        URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;

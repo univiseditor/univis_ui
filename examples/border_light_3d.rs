@@ -1,4 +1,4 @@
-use bevy::{post_process::bloom::Bloom, prelude::*};
+use bevy::{core_pipeline::tonemapping::Tonemapping, post_process::bloom::Bloom, prelude::*};
 use univis_ui_engine::prelude::*;
 
 fn main() {
@@ -16,13 +16,14 @@ fn setup(mut commands: Commands) {
             ..default()
         },
         Transform::from_xyz(0.0, 0.0, 1000.),
+        Tonemapping::ReinhardLuminance,
         Bloom::NATURAL,
     ));
     commands
         .spawn((
-            UWorldRoot {
-                is_3d: true,
-                ..default()
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_3d(Vec2::new(800.0, 600.0))
             },
             ULayout {
                 flex_direction: UFlexDirection::Row,

@@ -59,7 +59,7 @@ impl Default for UNodeMaterial {
             size: Vec2::new(100.0, 100.0),
             border_width: 0.0,
             border_offset: 0.0,
-            softness: 1.0,
+            softness: 0.5,
             _pad: 0.0,
             texture: None,
             use_texture: 0,

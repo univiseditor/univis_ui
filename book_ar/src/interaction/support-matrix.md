@@ -1,23 +1,30 @@
-# مصفوفة دعم التفاعل (Screen / World / 3D)
+# مصفوفة دعم التفاعل (Screen / World2d / World3d)
 
 المعاني:
+
 - `Supported`: مدعوم في المسار الموثق.
 - `Partial`: مدعوم جزئيًا مع قيود.
 - `N/A`: غير مقصود لهذا النمط.
 
-| القدرة | Screen UI (`UScreenRoot`) | World UI (`UWorldRoot`, `is_3d = false`) | 3D UI (`UWorldRoot`, `is_3d = true`) | الشروط / الملاحظات |
+| القدرة | Screen UI (`URootUi::screen()`) | World UI (`URootUi::world_2d(...)`) | 3D UI (`URootUi::world_3d(...)`) | الشروط / الملاحظات |
 |---|---|---|---|---|
-| الرندر الأساسي | Supported | Supported | Supported | مسار 3D يعتمد على نشر `UI3d` واستخدام `UNodeMaterial3d`. |
-| الالتقاط + أحداث المؤشر | Supported | Supported | Partial | الـ picking backend الحالي يستعلم `Camera2d`؛ مشاهد 3D التي تعتمد فقط على `Camera3d` ليست ضمن هذا المسار. |
-| hit testing مع القص (clipping) | Supported | Supported | Partial | فحص قص الأسلاف يعمل داخل picking backend، مع نفس قيد الكاميرا. |
-| مقابض تغيير حجم `UPanelWindow` | Supported | Supported | Partial | مسار تغيير الحجم يستعلم `Camera2d` حاليًا. |
-| إدخال/أحداث `UTextField` | Supported | Supported | Partial | يتطلب `UnivisTextFieldPlugin`، والتفاعل ما يزال يتبع مسار `Camera2d`. |
-| تفاعل `UScrollContainer` | Supported | Supported | Partial | Plugin التمرير مضاف تلقائيًا، لكن التفاعل يتبع مسار `Camera2d`. |
-| خصائص `UPbr` (`metallic`, `roughness`, `emissive`) | N/A | N/A | Supported | مخصصة لمسار الرندر ثلاثي الأبعاد `UI3d`. |
+| الرندر الأساسي | Supported | Supported | Supported | `Screen` و`World2d` يستخدمان مسار 2D، بينما `World3d` يستخدم مسار المواد ثلاثي الأبعاد. |
+| الالتقاط + أحداث المؤشر | Supported | Supported | Supported | التفاعل يحسم الكاميرا من كل root عبر `ResolvedRootUi`. وفي المشاهد متعددة الكاميرات يُفضّل استخدام `UiCameraRef::Entity`. |
+| hit testing مع القص | Supported | Supported | Supported | فحص قص الأسلاف يعمل في كل الفضاءات. وجذور العالم ما تزال تُفحص على مستوى plane الواجهة نفسها. |
+| مقابض تغيير حجم `UPanelWindow` | Supported | Supported | Supported | منطق تغيير الحجم يحسب حركة المؤشر عبر كاميرا الجذر ومستوى اللوحة. |
+| إدخال/أحداث `UTextField` | Supported | Supported | Supported | يتطلب `UnivisTextFieldPlugin`. |
+| تفاعل `UScrollContainer` | Supported | Supported | Supported | التمرير يتبع مسار الكاميرا المحلولة من الجذر. |
+| خصائص `UPbr` (`metallic`, `roughness`, `emissive`) | N/A | N/A | Supported | مخصصة فقط لمسار `World3d`. |
+
+## ملاحظات
+
+- `URootUi::screen()` هو مسار HUD حقيقي مربوط بالـ viewport المحلول.
+- `URootUi::world_2d(...)` و`URootUi::world_3d(...)` يعتمدان canvas منطقيًا ثابتًا مع world scaling صريح.
+- `meters_per_unit` يغيّر الحجم الفيزيائي في العالم من دون تغيير حجم التخطيط المنطقي.
 
 ## مصادر التحقق
 
-- `src/interaction/picking.rs`
-- `src/widget/panel.rs`
-- `src/layout/layout_system.rs`
-- `src/layout/render/mod.rs`
+- `crates/univis_ui_interaction/src/interaction/picking.rs`
+- `crates/univis_ui_widgets/src/widget/panel.rs`
+- `crates/univis_ui_engine/src/layout/layout_system.rs`
+- `crates/univis_ui_engine/src/layout/render/system.rs`

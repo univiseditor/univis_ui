@@ -35,9 +35,9 @@ fn setup(mut commands: Commands) {
 
     commands
         .spawn((
-            UWorldRoot {
-                size: Vec2::new(1680.0, 960.0),
-                ..default()
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_2d(Vec2::new(1680.0, 960.0))
             },
             UNode {
                 width: UVal::Percent(1.0),
@@ -149,7 +149,7 @@ fn setup(mut commands: Commands) {
                         "The node grows to the measured text automatically.",
                         |card| {
                         card.spawn(UTextLabel {
-                            text: "Autosize label adapts to content width and height.".into(),
+                            text: "Autosize grows\nto fit content.".into(),
                             font_size: 28.0,
                             color: Color::srgb(0.98, 0.95, 0.90),
                             ..default()
@@ -227,7 +227,7 @@ fn setup(mut commands: Commands) {
                         |card| {
                         spawn_fixed_label(
                             card,
-                            "Visible overflow lets the line continue outside the local box if that is what you want for a stylized layout.",
+                            "Visible overflow can continue past the inner box.",
                             240.0,
                             54.0,
                             UTextOverflow::Visible,
@@ -305,6 +305,17 @@ fn spawn_demo_card(
             UBorder {
                 width: 1.0,
                 color: Color::srgba(0.90, 0.95, 1.0, 0.18),
+                ..default()
+            },
+            USelf {
+                item_ext: ULayoutItemExt {
+                    flex: ULayoutFlexItem {
+                        flex_shrink: Some(0.0),
+                        flex_basis: Some(UVal::Px(328.0)),
+                        ..default()
+                    },
+                    ..default()
+                },
                 ..default()
             },
         ))

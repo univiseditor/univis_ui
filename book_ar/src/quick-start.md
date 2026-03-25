@@ -26,7 +26,7 @@ fn setup(mut commands: Commands) {
 
     commands
         .spawn((
-            UScreenRoot,
+            URootUi::screen(),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -46,23 +46,36 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-## 3) ماذا يضيف `UnivisUiPlugin`؟
+## 3) اختيارات الجذر
+
+- `URootUi::screen()` لمسار HUD الحقيقي والعناصر الثابتة على الشاشة.
+- `URootUi::world_2d(size)` لواجهة world-space المسطحة.
+- `URootUi::world_3d(size)` لواجهة world-space التي تستخدم مسار المواد ثلاثي الأبعاد.
+- `UVal::Px` يعني وحدات UI منطقية، لا pixels فعلية للشاشة.
+- `UiCanvasSize::Viewport` يتبع viewport الكاميرا المحلولة.
+- الحجم الفيزيائي في world-space يُشتق بالعلاقة:
+  `world_size = canvas_size * meters_per_unit`
+
+## 4) ماذا يضيف `UnivisUiPlugin`؟
 
 - Interaction: `UnivisInteractionPlugin`
 - المحرك: `UnivisEnginePlugin`
 - Style/fonts/icons: `UnivisUiStylePlugin`
 - Widgets: `UnivisWidgetPlugin`
 
-## 4) ملاحظات مهمة مباشرة
+## 5) ملاحظات مهمة مباشرة
 
 - `UnivisWidgetPlugin` لا يضيف `UnivisTextFieldPlugin` تلقائيًا؛ أضفه يدويًا عند استخدام `UTextField`.
 - `UnivisWidgetPlugin` لا يضيف `UnivisBadgePlugin` تلقائيًا.
 - `UnivisScrollViewPlugin` مضاف تلقائيًا داخل `UnivisWidgetPlugin`.
-- مسار الالتقاط `picking` وتغيير حجم `UPanelWindow` يعتمدان حاليًا على استعلامات `Camera2d`.
+- التفاعل يحسم الكاميرا من كل `URootUi`.
+- في المشاهد متعددة الكاميرات يُفضّل ربط الجذر صراحة عبر `UiCameraRef::Entity`.
+- `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق deprecated خلال `alpha2`.
+- إذا احتجت نفس الحجم الفيزيائي التاريخي لأمثلة world-space القديمة، فاضبط `meters_per_unit: 1.0` صراحة.
 
 إذا أردت تشغيل ميزات إضافية اختيارية عند تركيبك الجزئي للـ plugins، أضفها يدويًا.
 
-## 5) وضع Direct Crates (متقدم)
+## 6) وضع Direct Crates (متقدم)
 
 ```rust,no_run
 use bevy::prelude::*;

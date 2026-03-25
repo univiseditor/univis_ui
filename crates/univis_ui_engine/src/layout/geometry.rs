@@ -10,11 +10,11 @@ use bevy::prelude::*;
 #[derive(Component, Default, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct ComputedSize {
-    /// The calculated width of the node in logical pixels.
+    /// The calculated width of the node in logical UI units.
     pub width: f32,
-    /// The calculated height of the node in logical pixels.
+    /// The calculated height of the node in logical UI units.
     pub height: f32,
-    /// The local position of the node relative to its parent's center.
+    /// The local position of the node relative to its parent's center in logical UI units.
     pub local_pos: Vec2,
 }
 
@@ -30,7 +30,7 @@ impl ComputedSize {
 /// Defines dimension values for width, height, or position.
 #[derive(Reflect, Clone, Copy, Debug, PartialEq)]
 pub enum UVal {
-    /// A fixed value in pixels.
+    /// A fixed value in logical UI units.
     Px(f32),
     /// A percentage of the parent's size (0.0 to 1.0).
     Percent(f32),

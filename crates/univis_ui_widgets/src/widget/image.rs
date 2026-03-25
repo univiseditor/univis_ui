@@ -22,6 +22,7 @@ pub fn sync_image_geometry(
         let mut native_size = Vec2::ZERO;
         if needs_native_size {
             if let Some(img) = images.get(&ui_image.texture) {
+                // Native texture size is treated as logical UI units when projected into layout.
                 let size = img.size_f32(); // دالة في Bevy ترجع UVec2 كـ Vec2
                 native_size = size;
             }

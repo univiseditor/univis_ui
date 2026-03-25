@@ -39,6 +39,12 @@ enum ResolvedRenderMode {
     World3d,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct ResolvedRenderContext {
+    mode: ResolvedRenderMode,
+    ui_to_world_scale: f32,
+}
+
 /// نظام محسّن لتحديث المواد بدون تسرب
 pub fn update_materials_optimized(
     mut commands: Commands,
@@ -155,12 +161,15 @@ fn sync_entity_material(
     materials_2d: &mut Assets<UNodeMaterial>,
     materials_3d: &mut Assets<UNodeMaterial3d>,
 ) {
-    let size_vec = Vec2::new(size.width, size.height);
-    if size_vec.x <= 0.0 || size_vec.y <= 0.0 {
+    let logical_size = Vec2::new(size.width, size.height);
+    if logical_size.x <= 0.0 || logical_size.y <= 0.0 {
         return;
     }
 
-    let render_mode = resolve_render_mode(entity, parents_query, root_query);
+    let render_context = resolve_render_context(entity, parents_query, root_query);
+    let world_scale = render_context.ui_to_world_scale;
+    let size_vec = logical_size * world_scale;
+    let softness = minimum_local_softness(world_scale);
 
     // --- البيانات المشتركة ---
     let (tex_handle, use_tex, base_color) = if let Some(img) = image {
@@ -170,7 +179,11 @@ fn sync_entity_material(
     };
 
     let (b_color, b_offset, b_width) = if let Some(b) = border {
-        (LinearRgba::from(b.color), b.offset, b.width)
+        (
+            LinearRgba::from(b.color),
+            b.offset * world_scale,
+            b.width * world_scale,
+        )
     } else {
         (LinearRgba::NONE, 0.0, 0.0)
     };
@@ -180,7 +193,7 @@ fn sync_entity_material(
         node.border_radius.bottom_right,
         node.border_radius.top_left,
         node.border_radius.bottom_left,
-    );
+    ) * world_scale;
 
     let shape_mode = match node.shape_mode {
         UShapeMode::Round => 0,
@@ -189,10 +202,12 @@ fn sync_entity_material(
 
     let (clip_center, clip_size, clip_radius, use_clip) =
         find_clipper(entity, parents_query, clipper_query);
+    let clip_size = clip_size * world_scale;
+    let clip_radius = clip_radius * world_scale;
 
     let mesh = meshes.add(Rectangle::new(size_vec.x, size_vec.y));
 
-    match render_mode {
+    match render_context.mode {
         ResolvedRenderMode::World3d => {
             let (metallic, roughness, emissive_val) = if let Some(pbr) = pbr_opt {
                 (
@@ -213,6 +228,7 @@ fn sync_entity_material(
                         existing_mat.border_color = Vec4::from(b_color.to_vec4());
                         existing_mat.emissive = emissive_val;
                         existing_mat.border_width = b_width;
+                        existing_mat.softness = softness;
                         existing_mat.metallic = metallic;
                         existing_mat.roughness = roughness;
                         existing_mat.use_texture = use_tex;
@@ -229,6 +245,7 @@ fn sync_entity_material(
                             b_color,
                             emissive_val,
                             b_width,
+                            softness,
                             metallic,
                             roughness,
                             use_tex,
@@ -247,6 +264,7 @@ fn sync_entity_material(
                         b_color,
                         emissive_val,
                         b_width,
+                        softness,
                         metallic,
                         roughness,
                         use_tex,
@@ -265,6 +283,7 @@ fn sync_entity_material(
                     b_color,
                     emissive_val,
                     b_width,
+                    softness,
                     metallic,
                     roughness,
                     use_tex,
@@ -294,6 +313,7 @@ fn sync_entity_material(
                         existing_mat.size = size_vec;
                         existing_mat.border_width = b_width;
                         existing_mat.border_offset = b_offset;
+                        existing_mat.softness = softness;
                         existing_mat.use_texture = use_tex;
                         existing_mat.shape_mode = shape_mode;
                         existing_mat.texture = tex_handle.clone();
@@ -312,6 +332,7 @@ fn sync_entity_material(
                             size_vec,
                             b_width,
                             b_offset,
+                            softness,
                             use_tex,
                             shape_mode,
                             tex_handle.clone(),
@@ -332,6 +353,7 @@ fn sync_entity_material(
                         size_vec,
                         b_width,
                         b_offset,
+                        softness,
                         use_tex,
                         shape_mode,
                         tex_handle.clone(),
@@ -352,6 +374,7 @@ fn sync_entity_material(
                     size_vec,
                     b_width,
                     b_offset,
+                    softness,
                     use_tex,
                     shape_mode,
                     tex_handle.clone(),
@@ -376,18 +399,26 @@ fn sync_entity_material(
     }
 }
 
-fn resolve_render_mode(
+fn resolve_render_context(
     entity: Entity,
     parents_query: &Query<&ChildOf>,
     root_query: &Query<&ResolvedRootUi>,
-) -> ResolvedRenderMode {
-    let space = resolve_root_for_entity(entity, parents_query, root_query)
-        .map(|root| root.space)
-        .unwrap_or(UiSpace::Screen);
+) -> ResolvedRenderContext {
+    let Some(root) = resolve_root_for_entity(entity, parents_query, root_query) else {
+        return ResolvedRenderContext {
+            mode: ResolvedRenderMode::Flat2d,
+            ui_to_world_scale: 1.0,
+        };
+    };
 
-    match space {
+    let mode = match root.space {
         UiSpace::World3d => ResolvedRenderMode::World3d,
         UiSpace::Screen | UiSpace::World2d => ResolvedRenderMode::Flat2d,
+    };
+
+    ResolvedRenderContext {
+        mode,
+        ui_to_world_scale: root.ui_units_to_world_scale(),
     }
 }
 
@@ -435,6 +466,10 @@ fn find_clipper(
     (Vec2::ZERO, Vec2::ZERO, Vec4::ZERO, 0)
 }
 
+fn minimum_local_softness(ui_to_world_scale: f32) -> f32 {
+    (0.5 * ui_to_world_scale).max(1.0e-4)
+}
+
 // 2. دالة إنشاء مادة 2D (محدثة مع بيانات القص)
 fn create_2d_material(
     base_color: LinearRgba,
@@ -443,6 +478,7 @@ fn create_2d_material(
     size_vec: Vec2,
     b_width: f32,
     b_offset: f32,
+    softness: f32,
     use_tex: u32,
     shape_mode: u32,
     tex: Option<Handle<Image>>,
@@ -459,7 +495,7 @@ fn create_2d_material(
         size: size_vec,
         border_width: b_width,
         border_offset: b_offset,
-        softness: 1.0,
+        softness,
         use_texture: use_tex,
         shape_mode,
         texture: tex,
@@ -480,6 +516,7 @@ fn create_3d_material(
     b_color: LinearRgba,
     emissive: Vec4,
     b_width: f32,
+    softness: f32,
     metallic: f32,
     roughness: f32,
     use_tex: u32,
@@ -493,7 +530,7 @@ fn create_3d_material(
         border_color: Vec4::from(b_color.to_vec4()),
         emissive,
         border_width: b_width,
-        softness: 1.0,
+        softness,
         metallic,
         roughness,
         use_texture: use_tex,

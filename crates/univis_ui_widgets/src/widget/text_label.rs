@@ -970,6 +970,33 @@ fn build_text_material(label: &UTextLabel, texture: Handle<Image>) -> UTextLabel
     }
 }
 
+fn text_world_scale_for_entity(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+) -> f32 {
+    let mut current = entity;
+
+    loop {
+        if let Ok(root) = root_query.get(current) {
+            return root.ui_units_to_world_scale();
+        }
+
+        let Ok(parent) = parents_query.get(current) else {
+            return 1.0;
+        };
+        current = parent.parent();
+    }
+}
+
+fn text_render_transform(world_scale: f32) -> Transform {
+    Transform {
+        translation: Vec3::new(0.0, 0.0, TEXT_RENDER_Z * world_scale),
+        scale: Vec3::splat(world_scale),
+        ..default()
+    }
+}
+
 fn sync_text_label_meshes(
     mut commands: Commands,
     mut atlas_cache: ResMut<UTextLabelAtlasCache>,
@@ -1251,8 +1278,10 @@ fn active_clipper_for_entity(
     start_entity: Entity,
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    root_query: &Query<&ResolvedRootUi>,
 ) -> MaterialClipInfo {
     let mut current = start_entity;
+    let world_scale = text_world_scale_for_entity(start_entity, parents_query, root_query);
 
     while let Ok(parent) = parents_query.get(current) {
         current = parent.get();
@@ -1265,7 +1294,7 @@ fn active_clipper_for_entity(
             continue;
         }
 
-        let size = Vec2::new(computed_size.width, computed_size.height);
+        let size = Vec2::new(computed_size.width, computed_size.height) * world_scale;
         if size.x <= 0.0 || size.y <= 0.0 {
             continue;
         }
@@ -1278,7 +1307,7 @@ fn active_clipper_for_entity(
                 node.border_radius.bottom_right,
                 node.border_radius.top_left,
                 node.border_radius.bottom_left,
-            ),
+            ) * world_scale,
             use_clip: 1,
         };
     }
@@ -1287,26 +1316,40 @@ fn active_clipper_for_entity(
 }
 
 fn sync_text_clipper_materials(
-    text_query: Query<(Entity, &MeshMaterial2d<UTextLabelSdfMaterial>), With<TextChildMarker>>,
+    mut text_query: Query<
+        (
+            Entity,
+            &MeshMaterial2d<UTextLabelSdfMaterial>,
+            &mut Transform,
+        ),
+        With<TextChildMarker>,
+    >,
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    root_query: Query<&ResolvedRootUi>,
     mut materials: ResMut<Assets<UTextLabelSdfMaterial>>,
 ) {
-    for (entity, material_handle) in text_query.iter() {
-        let clip = active_clipper_for_entity(entity, &parents_query, &clipper_query);
+    for (entity, material_handle, mut transform) in text_query.iter_mut() {
+        let world_scale = text_world_scale_for_entity(entity, &parents_query, &root_query);
+        let clip = active_clipper_for_entity(entity, &parents_query, &clipper_query, &root_query);
         let Some(material) = materials.get_mut(&material_handle.0) else {
             continue;
         };
-
+        let desired_transform = text_render_transform(world_scale);
+        if *transform != desired_transform {
+            *transform = desired_transform;
+        }
         if material.clip_center != clip.center
             || material.clip_size != clip.size
             || material.clip_radius != clip.radius
             || material.use_clip != clip.use_clip
+            || material.edge_softness != DEFAULT_TEXT_EDGE_SOFTNESS
         {
             material.clip_center = clip.center;
             material.clip_size = clip.size;
             material.clip_radius = clip.radius;
             material.use_clip = clip.use_clip;
+            material.edge_softness = DEFAULT_TEXT_EDGE_SOFTNESS;
         }
     }
 }

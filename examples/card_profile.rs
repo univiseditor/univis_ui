@@ -1,4 +1,4 @@
-use bevy::{post_process::bloom::Bloom, prelude::*};
+use bevy::{core_pipeline::tonemapping::Tonemapping, post_process::bloom::Bloom, prelude::*};
 use univis_ui::prelude::*;
 
 fn main() {
@@ -11,13 +11,13 @@ fn main() {
 
 fn setup_profile_card(mut commands: Commands, asset_server: Res<AssetServer>) {
     // 1. كاميرا 2D عادية (لا نحتاج إضاءة)
-    commands.spawn((Camera2d, Bloom::NATURAL));
+    commands.spawn((Camera2d, Tonemapping::ReinhardLuminance, Bloom::NATURAL));
 
-    // 2. جذر الشاشة (UScreenRoot)
+    // 2. جذر الشاشة عبر URootUi
     // هذا المكون يملأ نافذة اللعبة تلقائياً ويعمل كحاوية رئيسية
     commands
         .spawn((
-            UScreenRoot,
+            URootUi::screen(),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),

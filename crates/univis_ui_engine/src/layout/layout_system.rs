@@ -1,4 +1,6 @@
-use bevy::{ecs::relationship::Relationship, prelude::*};
+#![allow(deprecated)]
+
+use bevy::prelude::*;
 
 use crate::internal_prelude::*;
 
@@ -25,10 +27,15 @@ pub enum UiCameraRef {
 #[reflect(Component)]
 #[require(UNode, ResolvedRootUi, RootResolutionState)]
 pub struct URootUi {
+    /// Where the UI lives once projected into the scene.
     pub space: UiSpace,
+    /// The logical canvas size used by layout.
     pub canvas: UiCanvasSize,
+    /// Which camera resolves viewport-bound roots and interaction context.
     pub camera: UiCameraRef,
+    /// Physical world size per logical UI unit for world-space roots.
     pub meters_per_unit: f32,
+    /// Rendering quality multiplier that stays independent from physical world size.
     pub resolution_scale: f32,
 }
 
@@ -36,6 +43,7 @@ impl URootUi {
     pub const DEFAULT_METERS_PER_UNIT: f32 = 0.001;
     pub const DEFAULT_RESOLUTION_SCALE: f32 = 1.0;
 
+    /// Creates a screen-space root that behaves like a HUD tied to the resolved viewport.
     pub fn screen() -> Self {
         Self {
             space: UiSpace::Screen,
@@ -46,6 +54,10 @@ impl URootUi {
         }
     }
 
+    /// Creates a world-space 2D root with a fixed logical canvas size.
+    ///
+    /// The default `meters_per_unit` is `0.001`, so the physical world size is:
+    /// `world_size = canvas_size * meters_per_unit`.
     pub fn world_2d(size: Vec2) -> Self {
         Self {
             space: UiSpace::World2d,
@@ -56,6 +68,10 @@ impl URootUi {
         }
     }
 
+    /// Creates a world-space 3D root with a fixed logical canvas size.
+    ///
+    /// The default `meters_per_unit` is `0.001`, so the physical world size is:
+    /// `world_size = canvas_size * meters_per_unit`.
     pub fn world_3d(size: Vec2) -> Self {
         Self {
             space: UiSpace::World3d,
@@ -67,13 +83,19 @@ impl URootUi {
     }
 }
 
+const LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT: f32 = 1.0;
+
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
 pub struct ResolvedRootUi {
     pub root_entity: Entity,
+    /// Resolved UI space for this root.
     pub space: UiSpace,
+    /// Final logical canvas size after resolving viewport or fixed sizing.
     pub canvas_size: Vec2,
     pub camera_entity: Option<Entity>,
+    /// Physical world size per logical UI unit for world-space roots.
     pub meters_per_unit: f32,
+    /// Rendering quality multiplier that stays independent from physical world size.
     pub resolution_scale: f32,
 }
 
@@ -90,10 +112,34 @@ impl Default for ResolvedRootUi {
     }
 }
 
+impl ResolvedRootUi {
+    /// Returns how many world units correspond to one logical UI unit for this root.
+    pub fn ui_units_to_world_scale(&self) -> f32 {
+        match self.space {
+            UiSpace::Screen => 1.0,
+            UiSpace::World2d | UiSpace::World3d => normalize_meters_per_unit(self.meters_per_unit),
+        }
+    }
+
+    /// Converts a logical UI size to its physical size in world units for this root.
+    pub fn world_size_for(&self, logical_size: Vec2) -> Vec2 {
+        logical_size * self.ui_units_to_world_scale()
+    }
+
+    /// Converts a logical scalar to world units for this root.
+    pub fn world_scalar_for(&self, logical_value: f32) -> f32 {
+        logical_value * self.ui_units_to_world_scale()
+    }
+}
+
 /// Marker for the Screen Root node (HUD).
 ///
-/// Use this for UI that stays fixed to the camera/screen.
-/// It typically takes its size automatically from the window dimensions.
+/// Deprecated compatibility wrapper during `alpha2`.
+/// Prefer `URootUi::screen()` for new code.
+#[deprecated(
+    since = "0.2.0-alpha.2",
+    note = "Use `URootUi::screen()` instead of `UScreenRoot`."
+)]
 #[derive(Component, Default)]
 #[require(UNode, ResolvedRootUi, RootResolutionState)]
 pub struct UScreenRoot;
@@ -102,6 +148,10 @@ pub struct UScreenRoot;
 ///
 /// Legacy compatibility wrapper during the `alpha2` migration.
 /// Prefer `URootUi::world_2d(size)` or `URootUi::world_3d(size)` for new code.
+#[deprecated(
+    since = "0.2.0-alpha.2",
+    note = "Use `URootUi::world_2d(size)` or `URootUi::world_3d(size)` instead. If you need the exact legacy `UWorldRoot` physical sizing during alpha2, set `meters_per_unit = 1.0` explicitly on `URootUi`."
+)]
 #[derive(Component)]
 #[require(UNode, ResolvedRootUi, RootResolutionState)]
 pub struct UWorldRoot {
@@ -148,6 +198,14 @@ struct EffectiveRootUi {
 }
 
 const PERSPECTIVE_SCREEN_DISTANCE: f32 = 1.0;
+
+fn normalize_meters_per_unit(value: f32) -> f32 {
+    if value.is_finite() && value > f32::EPSILON {
+        value
+    } else {
+        URootUi::DEFAULT_METERS_PER_UNIT
+    }
+}
 
 pub(crate) fn resolve_root_ui(
     mut roots: Query<
@@ -199,10 +257,7 @@ pub(crate) fn resolve_root_ui(
 }
 
 pub(crate) fn sync_screen_roots_to_camera(
-    mut roots: Query<
-        (&ResolvedRootUi, &mut Transform),
-        Or<(With<UScreenRoot>, With<URootUi>)>,
-    >,
+    mut roots: Query<(&ResolvedRootUi, &mut Transform), Or<(With<UScreenRoot>, With<URootUi>)>>,
     cameras: Query<(&GlobalTransform, Option<&Projection>), With<Camera>>,
 ) {
     for (resolved, mut transform) in roots.iter_mut() {
@@ -228,34 +283,97 @@ pub(crate) fn sync_screen_roots_to_camera(
     }
 }
 
-pub fn auto_propagate_ui3d(
+pub fn sync_cached_ui3d(
     mut commands: Commands,
-
-    // 1. مراقبة الجذور (Roots) التي تغيرت إعداداتها
-    root_query: Query<(Entity, &UWorldRoot), (Changed<UWorldRoot>, Without<UI3d>)>,
-
-    // 2. مراقبة الأبناء (Children) الذين ليس لديهم UI3d بعد
-    // نبحث عن أي UNode له أب، ولكن ينقصه مكون UI3d
-    child_query: Query<(Entity, &ChildOf), (With<UNode>, Without<UI3d>)>,
-
-    // 3. استعلام للتحقق مما إذا كان الأب يمتلك UI3d
-    parent_check: Query<&UI3d>,
+    roots_changed: Query<
+        (),
+        (
+            Changed<ResolvedRootUi>,
+            Or<(With<URootUi>, With<UScreenRoot>, With<UWorldRoot>)>,
+        ),
+    >,
+    all_nodes: Query<(Entity, Has<UI3d>), Or<(With<UNode>, With<UI3d>)>>,
+    incremental_nodes: Query<
+        (Entity, Has<UI3d>),
+        Or<(Added<UNode>, Added<UI3d>, Changed<ChildOf>)>,
+    >,
+    mut removed_children: RemovedComponents<ChildOf>,
+    parents_query: Query<&ChildOf>,
+    root_query: Query<&ResolvedRootUi, Or<(With<URootUi>, With<UScreenRoot>, With<UWorldRoot>)>>,
 ) {
-    // أ) معالجة الجذر: هل طلب المستخدم وضع 3D؟
-    for (entity, root) in root_query.iter() {
-        if root.is_3d {
-            commands.entity(entity).insert(UI3d);
+    if roots_changed.is_empty() {
+        for (entity, has_ui3d) in incremental_nodes.iter() {
+            sync_cached_ui3d_for_entity(
+                entity,
+                has_ui3d,
+                &parents_query,
+                &root_query,
+                &mut commands,
+            );
+        }
+
+        for entity in removed_children.read() {
+            let Ok((_, has_ui3d)) = all_nodes.get(entity) else {
+                continue;
+            };
+
+            sync_cached_ui3d_for_entity(
+                entity,
+                has_ui3d,
+                &parents_query,
+                &root_query,
+                &mut commands,
+            );
+        }
+    } else {
+        for (entity, has_ui3d) in all_nodes.iter() {
+            sync_cached_ui3d_for_entity(
+                entity,
+                has_ui3d,
+                &parents_query,
+                &root_query,
+                &mut commands,
+            );
         }
     }
+}
 
-    // ب) التوريث المتسلسل:
-    // نمر على كل الأبناء الذين ليس لديهم UI3d
-    for (child_entity, parent) in child_query.iter() {
-        // إذا كان "الأب" يمتلك العلامة UI3d
-        if parent_check.get(parent.get()).is_ok() {
-            // إذن "الابن" يجب أن يصبح 3D أيضاً
-            commands.entity(child_entity).insert(UI3d);
+fn sync_cached_ui3d_for_entity(
+    entity: Entity,
+    has_ui3d: bool,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi, Or<(With<URootUi>, With<UScreenRoot>, With<UWorldRoot>)>>,
+    commands: &mut Commands,
+) {
+    let should_have_ui3d = resolve_root_for_ui3d(entity, parents_query, root_query)
+        .map(|root| matches!(root.space, UiSpace::World3d))
+        .unwrap_or(false);
+
+    match (should_have_ui3d, has_ui3d) {
+        (true, false) => {
+            commands.entity(entity).insert(UI3d);
         }
+        (false, true) => {
+            commands.entity(entity).remove::<UI3d>();
+        }
+        _ => {}
+    }
+}
+
+fn resolve_root_for_ui3d(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi, Or<(With<URootUi>, With<UScreenRoot>, With<UWorldRoot>)>>,
+) -> Option<ResolvedRootUi> {
+    let mut current = entity;
+
+    loop {
+        if let Ok(root) = root_query.get(current) {
+            return Some(*root);
+        }
+
+        let parent = parents_query.get(current).ok()?;
+        current = parent.parent();
     }
 }
 
@@ -283,7 +401,8 @@ fn effective_root_ui(
             },
             canvas: UiCanvasSize::Fixed(root.size),
             camera: UiCameraRef::Auto,
-            meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
+            // `UWorldRoot` stays on the old 1 UI unit = 1 world unit behavior during alpha2.
+            meters_per_unit: LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT,
             resolution_scale: root.resolution_scale,
         });
     }
@@ -473,6 +592,8 @@ fn perspective_screen_frustum_size(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::camera::{ComputedCameraValues, RenderTargetInfo, Viewport};
+    use bevy::ecs::system::SystemState;
 
     fn screen_root(canvas_size: Vec2) -> ResolvedRootUi {
         ResolvedRootUi {
@@ -509,7 +630,9 @@ mod tests {
         assert!(result
             .translation
             .abs_diff_eq(Vec3::new(12.0, -4.0, -498.0), 1e-4));
-        assert!(result.rotation.abs_diff_eq(Quat::from_rotation_z(0.35), 1e-5));
+        assert!(result
+            .rotation
+            .abs_diff_eq(Quat::from_rotation_z(0.35), 1e-5));
         assert!(result.scale.abs_diff_eq(Vec3::new(2.0, 2.0, 1.0), 1e-5));
     }
 
@@ -559,5 +682,325 @@ mod tests {
             .abs_diff_eq(Vec3::new(1.0, 2.0, 2.0), 1e-4));
         assert!(result.rotation.abs_diff_eq(Quat::IDENTITY, 1e-5));
         assert!(result.scale.abs_diff_eq(Vec3::new(0.02, 0.02, 1.0), 1e-5));
+    }
+
+    #[test]
+    fn sync_screen_root_transforms_leaves_world_roots_attached_to_world_transforms() {
+        let mut app = App::new();
+        app.add_systems(Update, sync_screen_roots_to_camera);
+
+        let original = Transform::from_xyz(3.0, -2.0, 7.0);
+        let root = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(640.0, 360.0)),
+                original,
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World2d,
+                    canvas_size: Vec2::new(640.0, 360.0),
+                    camera_entity: None,
+                    meters_per_unit: 0.25,
+                    resolution_scale: 1.0,
+                },
+            ))
+            .id();
+
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        app.update();
+
+        let transform = app
+            .world()
+            .entity(root)
+            .get::<Transform>()
+            .copied()
+            .expect("root should keep a transform");
+
+        assert!(transform
+            .translation
+            .abs_diff_eq(original.translation, 1e-5));
+        assert!(transform.rotation.abs_diff_eq(original.rotation, 1e-5));
+        assert!(transform.scale.abs_diff_eq(original.scale, 1e-5));
+    }
+
+    #[test]
+    fn resolve_root_camera_auto_reports_missing_single_and_ambiguous_states() {
+        let mut app = App::new();
+
+        let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
+        let cameras = camera_state.get(app.world());
+        let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Auto, &cameras);
+        assert_eq!(camera_entity, None);
+        assert_eq!(issue, RootResolutionIssue::AutoMissingCamera);
+
+        let expected = app.world_mut().spawn(Camera::default()).id();
+        let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
+        let cameras = camera_state.get(app.world());
+        let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Auto, &cameras);
+        assert_eq!(camera_entity, Some(expected));
+        assert_eq!(issue, RootResolutionIssue::None);
+
+        app.world_mut().spawn(Camera::default());
+        let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
+        let cameras = camera_state.get(app.world());
+        let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Auto, &cameras);
+        assert_eq!(camera_entity, None);
+        assert_eq!(issue, RootResolutionIssue::AutoAmbiguousCamera);
+    }
+
+    #[test]
+    fn resolve_root_camera_reports_missing_and_inactive_explicit_targets() {
+        let mut app = App::new();
+        let inactive = app
+            .world_mut()
+            .spawn(Camera {
+                is_active: false,
+                ..default()
+            })
+            .id();
+
+        let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
+        let cameras = camera_state.get(app.world());
+
+        let (camera_entity, issue) =
+            resolve_root_camera(UiCameraRef::Entity(Entity::PLACEHOLDER), &cameras);
+        assert_eq!(camera_entity, None);
+        assert_eq!(issue, RootResolutionIssue::ExplicitCameraMissing);
+
+        let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Entity(inactive), &cameras);
+        assert_eq!(camera_entity, None);
+        assert_eq!(issue, RootResolutionIssue::ExplicitCameraInactive);
+    }
+
+    #[test]
+    fn resolve_root_canvas_size_returns_fixed_size_verbatim() {
+        let mut app = App::new();
+        app.world_mut().spawn(Window {
+            resolution: (1280, 720).into(),
+            ..default()
+        });
+
+        let mut state =
+            SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
+        let (cameras, windows) = state.get(app.world());
+        let mut issue = RootResolutionIssue::None;
+
+        let size = resolve_root_canvas_size(
+            UiCanvasSize::Fixed(Vec2::new(320.0, 240.0)),
+            None,
+            &cameras,
+            &windows,
+            &mut issue,
+        );
+
+        assert_eq!(size, Vec2::new(320.0, 240.0));
+        assert_eq!(issue, RootResolutionIssue::None);
+    }
+
+    #[test]
+    fn resolve_root_canvas_size_reads_logical_viewport_size_from_camera() {
+        let mut app = App::new();
+        let camera = app
+            .world_mut()
+            .spawn(Camera {
+                viewport: Some(Viewport {
+                    physical_position: UVec2::ZERO,
+                    physical_size: UVec2::new(600, 300),
+                    depth: 0.0..1.0,
+                }),
+                computed: ComputedCameraValues {
+                    target_info: Some(RenderTargetInfo {
+                        physical_size: UVec2::new(1200, 900),
+                        scale_factor: 1.0,
+                    }),
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
+
+        let mut state =
+            SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
+        let (cameras, windows) = state.get(app.world());
+        let mut issue = RootResolutionIssue::None;
+
+        let size = resolve_root_canvas_size(
+            UiCanvasSize::Viewport,
+            Some(camera),
+            &cameras,
+            &windows,
+            &mut issue,
+        );
+
+        assert_eq!(size, Vec2::new(600.0, 300.0));
+        assert_eq!(issue, RootResolutionIssue::None);
+    }
+
+    #[test]
+    fn resolve_root_canvas_size_falls_back_to_window_when_viewport_size_is_unavailable() {
+        let mut app = App::new();
+        app.world_mut().spawn(Window {
+            resolution: (1280, 720).into(),
+            ..default()
+        });
+
+        let missing_camera = app.world_mut().spawn_empty().id();
+
+        let mut state =
+            SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
+        let (cameras, windows) = state.get(app.world());
+        let mut issue = RootResolutionIssue::None;
+
+        let size = resolve_root_canvas_size(
+            UiCanvasSize::Viewport,
+            Some(missing_camera),
+            &cameras,
+            &windows,
+            &mut issue,
+        );
+
+        assert_eq!(size, Vec2::new(1280.0, 720.0));
+        assert_eq!(issue, RootResolutionIssue::ViewportSizeUnavailable);
+    }
+
+    #[test]
+    fn resolve_root_canvas_size_uses_default_when_no_window_exists() {
+        let mut app = App::new();
+
+        let missing_camera = app.world_mut().spawn_empty().id();
+        let mut state =
+            SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
+        let (cameras, windows) = state.get(app.world());
+        let mut issue = RootResolutionIssue::None;
+
+        let size = resolve_root_canvas_size(
+            UiCanvasSize::Viewport,
+            Some(missing_camera),
+            &cameras,
+            &windows,
+            &mut issue,
+        );
+
+        assert_eq!(size, Vec2::new(800.0, 600.0));
+        assert_eq!(issue, RootResolutionIssue::ViewportSizeUnavailable);
+    }
+
+    fn world_root(space: UiSpace) -> (UWorldRoot, ResolvedRootUi) {
+        (
+            UWorldRoot {
+                is_3d: matches!(space, UiSpace::World3d),
+                ..default()
+            },
+            ResolvedRootUi {
+                root_entity: Entity::PLACEHOLDER,
+                space,
+                canvas_size: Vec2::new(800.0, 600.0),
+                camera_entity: None,
+                meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
+                resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
+            },
+        )
+    }
+
+    #[test]
+    fn cached_ui3d_is_added_for_world3d_roots_and_children() {
+        let mut app = App::new();
+        app.add_systems(Update, sync_cached_ui3d);
+
+        let (root_component, resolved) = world_root(UiSpace::World3d);
+        let root = app
+            .world_mut()
+            .spawn((UNode::default(), root_component, resolved))
+            .id();
+        let child = app
+            .world_mut()
+            .spawn((UNode::default(), ChildOf(root)))
+            .id();
+
+        app.update();
+
+        assert!(app.world().entity(root).contains::<UI3d>());
+        assert!(app.world().entity(child).contains::<UI3d>());
+    }
+
+    #[test]
+    fn cached_ui3d_is_removed_when_root_leaves_world3d() {
+        let mut app = App::new();
+        app.add_systems(Update, sync_cached_ui3d);
+
+        let (root_component, resolved) = world_root(UiSpace::World3d);
+        let root = app
+            .world_mut()
+            .spawn((UNode::default(), root_component, resolved))
+            .id();
+        let child = app
+            .world_mut()
+            .spawn((UNode::default(), ChildOf(root)))
+            .id();
+
+        app.update();
+
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have a resolved context")
+            .space = UiSpace::World2d;
+
+        app.update();
+
+        assert!(!app.world().entity(root).contains::<UI3d>());
+        assert!(!app.world().entity(child).contains::<UI3d>());
+    }
+
+    #[test]
+    fn cached_ui3d_is_applied_to_children_added_after_root_resolution() {
+        let mut app = App::new();
+        app.add_systems(Update, sync_cached_ui3d);
+
+        let (root_component, resolved) = world_root(UiSpace::World3d);
+        let root = app
+            .world_mut()
+            .spawn((UNode::default(), root_component, resolved))
+            .id();
+
+        app.update();
+
+        let child = app
+            .world_mut()
+            .spawn((UNode::default(), ChildOf(root)))
+            .id();
+
+        app.update();
+
+        assert!(app.world().entity(child).contains::<UI3d>());
+    }
+
+    #[test]
+    fn cached_ui3d_is_removed_when_child_detaches_from_world3d_root() {
+        let mut app = App::new();
+        app.add_systems(Update, sync_cached_ui3d);
+
+        let (root_component, resolved) = world_root(UiSpace::World3d);
+        let root = app
+            .world_mut()
+            .spawn((UNode::default(), root_component, resolved))
+            .id();
+        let child = app
+            .world_mut()
+            .spawn((UNode::default(), ChildOf(root)))
+            .id();
+
+        app.update();
+
+        app.world_mut().entity_mut(child).remove::<ChildOf>();
+
+        app.update();
+
+        assert!(!app.world().entity(child).contains::<UI3d>());
     }
 }

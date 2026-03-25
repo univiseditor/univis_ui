@@ -15,10 +15,9 @@ fn setup_interaction_test(mut commands: Commands) {
     // 1. حاوية رئيسية (World Root)
     commands
         .spawn((
-            UWorldRoot {
-                size: Vec2::new(1200.0, 800.0),
-                is_3d: false,
-                ..default()
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_2d(Vec2::new(1200.0, 800.0))
             },
             UNode {
                 width: UVal::Percent(1.0),

@@ -23,7 +23,7 @@ impl Plugin for UnivisRenderPlugin {
             .init_resource::<MaterialPool>()
             .add_systems(
                 PostUpdate,
-                auto_propagate_ui3d
+                sync_cached_ui3d
                     .in_set(UnivisPostUpdateSet::RenderSync)
                     .after(UnivisPostUpdateSet::LayoutSolve),
             )
@@ -31,7 +31,7 @@ impl Plugin for UnivisRenderPlugin {
                 PostUpdate,
                 update_materials_optimized
                     .in_set(UnivisPostUpdateSet::RenderSync)
-                    .after(auto_propagate_ui3d),
+                    .after(sync_cached_ui3d),
             );
     }
 }

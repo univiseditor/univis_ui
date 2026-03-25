@@ -68,6 +68,7 @@ pub fn downward_solve_pass_safe(
 
     intrinsic_query: Query<&IntrinsicSize>,
     root_query: Query<&ResolvedRootUi>,
+    parents_query: Query<&ChildOf>,
 ) {
     let start = std::time::Instant::now();
 
@@ -120,11 +121,22 @@ pub fn downward_solve_pass_safe(
                 .collect();
 
             // 6. إعداد القيود
-            let constraints = build_constraints(container_size, &node_data.spec);
+            let constraints = if depth == 0 {
+                BoxConstraints::tight(container_size)
+            } else {
+                build_constraints(container_size, &node_data.spec)
+            };
 
             // 7. تشغيل Solver
             let solver_config = translate_config(&node_data.layout, &node_data.spec);
-            let final_size = solve_flex_layout(&solver_config, constraints, &mut solver_items_refs);
+            let solved_size =
+                solve_flex_layout(&solver_config, constraints, &mut solver_items_refs);
+            let final_size = if depth == 0 {
+                container_size
+            } else {
+                solved_size
+            };
+            let world_scale = resolved_world_scale_for_entity(entity, &parents_query, &root_query);
 
             // 8. تحديث حجم الحاوية
             if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
@@ -143,7 +155,7 @@ pub fn downward_solve_pass_safe(
                 .collect();
 
             // 10. تطبيق النتائج
-            apply_results_to_children(&solved_children, final_size, &mut nodes);
+            apply_results_to_children(&solved_children, final_size, world_scale, &mut nodes);
         }
     }
 
@@ -180,14 +192,30 @@ fn extract_node_data(
     })
 }
 
-fn calculate_root_size(
-    entity: Entity,
-    root_query: &Query<&ResolvedRootUi>,
-) -> Vec2 {
+fn calculate_root_size(entity: Entity, root_query: &Query<&ResolvedRootUi>) -> Vec2 {
     root_query
         .get(entity)
         .map(|root| root.canvas_size)
         .unwrap_or(Vec2::new(800.0, 600.0))
+}
+
+fn resolved_world_scale_for_entity(
+    entity: Entity,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+) -> f32 {
+    let mut current = entity;
+
+    loop {
+        if let Ok(root) = root_query.get(current) {
+            return root.ui_units_to_world_scale();
+        }
+
+        let Ok(parent) = parents_query.get(current) else {
+            return 1.0;
+        };
+        current = parent.parent();
+    }
 }
 
 fn collect_children_layout_data(
@@ -267,6 +295,7 @@ fn build_constraints(container_size: Vec2, node_spec: &UNode) -> BoxConstraints 
 fn apply_results_to_children(
     solved_children: &[SolvedChild],
     parent_size: Vec2,
+    world_scale: f32,
     nodes_query: &mut Query<(
         Entity,
         &UNode,
@@ -289,11 +318,12 @@ fn apply_results_to_children(
             let child_h = solved.result.size.y;
 
             transform.translation.x =
-                (-parent_size.x / 2.0) + solved.result.pos.x + (child_w / 2.0);
+                ((-parent_size.x / 2.0) + solved.result.pos.x + (child_w / 2.0)) * world_scale;
 
-            transform.translation.y = (parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0);
+            transform.translation.y =
+                ((parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0)) * world_scale;
 
-            transform.translation.z = 0.1;
+            transform.translation.z = 0.1 * world_scale;
         }
     }
 }
@@ -439,6 +469,77 @@ fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layout::components::LayoutTreeDepth;
+    use crate::layout::core::layout_cache::LayoutCache;
+    use crate::layout::core::layout_cache::{track_layout_changes, update_depth_cache};
+    use crate::layout::core::pass_up::upward_measure_pass_cached;
+
+    fn solve_child_under_world_root(meters_per_unit: f32) -> (ComputedSize, Transform) {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World2d,
+                    canvas_size: Vec2::new(400.0, 200.0),
+                    camera_entity: None,
+                    meters_per_unit,
+                    resolution_scale: 1.0,
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        let child = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    width: UVal::Px(100.0),
+                    height: UVal::Px(50.0),
+                    ..default()
+                },
+                LayoutDepth(1),
+                ChildOf(root),
+            ))
+            .id();
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 1;
+        app.update();
+
+        let child_size = *app
+            .world()
+            .entity(child)
+            .get::<ComputedSize>()
+            .expect("child should have computed size");
+        let child_transform = *app
+            .world()
+            .entity(child)
+            .get::<Transform>()
+            .expect("child should have transform");
+
+        (child_size, child_transform)
+    }
 
     #[test]
     fn translate_config_reads_container_ext_values() {
@@ -499,5 +600,92 @@ mod tests {
         assert_eq!(spec.flex_basis, None);
         assert_eq!(spec.grid_column_span, 1);
         assert_eq!(spec.grid_row_span, 1);
+    }
+
+    #[test]
+    fn downward_pass_uses_resolved_root_canvas_for_percent_sized_children() {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World2d,
+                    canvas_size: Vec2::new(400.0, 200.0),
+                    camera_entity: None,
+                    meters_per_unit: 1.0,
+                    resolution_scale: 1.0,
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        let child = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    width: UVal::Percent(0.5),
+                    height: UVal::Percent(0.25),
+                    ..default()
+                },
+                LayoutDepth(1),
+                ChildOf(root),
+            ))
+            .id();
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 1;
+
+        app.update();
+
+        let root_size = app
+            .world()
+            .entity(root)
+            .get::<ComputedSize>()
+            .expect("root should have computed size");
+        let child_size = app
+            .world()
+            .entity(child)
+            .get::<ComputedSize>()
+            .expect("child should have computed size");
+
+        assert_eq!(root_size.width, 400.0);
+        assert_eq!(root_size.height, 200.0);
+        assert_eq!(child_size.width, 200.0);
+        assert_eq!(child_size.height, 50.0);
+    }
+
+    #[test]
+    fn world_roots_scale_physical_transforms_without_changing_logical_layout() {
+        let (logical_a, transform_a) = solve_child_under_world_root(1.0);
+        let (logical_b, transform_b) = solve_child_under_world_root(0.25);
+
+        assert_eq!(logical_a.width, 100.0);
+        assert_eq!(logical_a.height, 50.0);
+        assert_eq!(logical_b.width, logical_a.width);
+        assert_eq!(logical_b.height, logical_a.height);
+
+        assert!(transform_b
+            .translation
+            .abs_diff_eq(transform_a.translation * 0.25, 1e-5));
     }
 }

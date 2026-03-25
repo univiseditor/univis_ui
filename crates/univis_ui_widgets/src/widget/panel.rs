@@ -566,11 +566,12 @@ fn cursor_in_parent_space(
     cameras: &Query<(Entity, &Camera, &GlobalTransform), With<Camera>>,
     global_query: &Query<&GlobalTransform>,
 ) -> Option<Vec2> {
-    let location = pointers
-        .iter()
-        .find_map(|(pointer_id, pointer_loc)| {
-            pointer_id.is_mouse().then(|| pointer_loc.location()).flatten()
-        })?;
+    let location = pointers.iter().find_map(|(pointer_id, pointer_loc)| {
+        pointer_id
+            .is_mouse()
+            .then(|| pointer_loc.location())
+            .flatten()
+    })?;
     let root = resolve_root_for_entity(panel_entity, parents_query, root_query)?;
     let camera_entity = root.camera_entity?;
     let Ok((_, camera, camera_transform)) = cameras.get(camera_entity) else {
@@ -588,7 +589,8 @@ fn cursor_in_parent_space(
         .ok()?;
     let plane_entity = parent.map(|value| value.get()).unwrap_or(root.root_entity);
     let plane_transform = global_query.get(plane_entity).ok()?;
-    let cursor_world = intersect_ray_with_ui_plane(ray.origin, ray.direction.as_vec3(), plane_transform)?;
+    let cursor_world =
+        intersect_ray_with_ui_plane(ray.origin, ray.direction.as_vec3(), plane_transform)?;
     let local_matrix = plane_transform.to_matrix().inverse();
     Some(local_matrix.transform_point3(cursor_world).truncate())
 }
@@ -718,6 +720,9 @@ fn uval_px(value: UVal) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::camera::{CameraProjection, ComputedCameraValues, NormalizedRenderTarget, RenderTargetInfo};
+    use bevy::ecs::system::SystemState;
+    use bevy::picking::pointer::Location;
 
     #[test]
     fn panel_resize_edge_to_cursor_icon() {
@@ -836,5 +841,139 @@ mod tests {
             .into_iter(),
         );
         assert_eq!(corner_icon, SystemCursorIcon::NwseResize);
+    }
+
+    #[test]
+    fn resolve_parent_size_uses_root_canvas_when_panel_has_no_sized_parent() {
+        let mut app = App::new();
+        let root = app
+            .world_mut()
+            .spawn(ResolvedRootUi {
+                root_entity: Entity::PLACEHOLDER,
+                space: UiSpace::Screen,
+                canvas_size: Vec2::new(1280.0, 720.0),
+                camera_entity: None,
+                meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
+                resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
+            })
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .unwrap()
+            .root_entity = root;
+        let panel = app.world_mut().spawn(ChildOf(root)).id();
+
+        let mut state = SystemState::<(
+            Query<&ComputedSize>,
+            Query<&ChildOf>,
+            Query<&ResolvedRootUi>,
+            Query<&Window, With<PrimaryWindow>>,
+        )>::new(app.world_mut());
+        let (parent_sizes, parents, roots, windows) = state.get(app.world());
+
+        let size = resolve_parent_size(
+            panel,
+            Some(&ChildOf(root)),
+            &parent_sizes,
+            &parents,
+            &roots,
+            &windows,
+        )
+        .expect("panel should inherit root canvas size when no parent size exists");
+
+        assert_eq!(size, Vec2::new(1280.0, 720.0));
+    }
+
+    #[test]
+    fn intersect_ray_with_ui_plane_returns_intersection_on_ui_plane() {
+        let plane = GlobalTransform::default();
+        let hit = intersect_ray_with_ui_plane(Vec3::new(0.0, 0.0, 5.0), Vec3::NEG_Z, &plane)
+            .expect("ray should intersect the plane");
+
+        assert!(hit.abs_diff_eq(Vec3::ZERO, 1e-5));
+    }
+
+    #[test]
+    fn cursor_in_parent_space_uses_resolved_root_camera() {
+        let mut app = App::new();
+
+        let mut camera = Camera::default();
+        camera.computed = ComputedCameraValues {
+            target_info: Some(RenderTargetInfo {
+                physical_size: UVec2::new(800, 600),
+                scale_factor: 1.0,
+            }),
+            clip_from_view: OrthographicProjection {
+                area: Rect::new(-400.0, -300.0, 400.0, 300.0),
+                ..OrthographicProjection::default_2d()
+            }
+            .get_clip_from_view(),
+            ..default()
+        };
+
+        let camera_entity = app
+            .world_mut()
+            .spawn((camera, GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1000.0))))
+            .id();
+
+        let root = app
+            .world_mut()
+            .spawn((
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::Screen,
+                    canvas_size: Vec2::new(800.0, 600.0),
+                    camera_entity: Some(camera_entity),
+                    meters_per_unit: 1.0,
+                    resolution_scale: 1.0,
+                },
+                GlobalTransform::default(),
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .unwrap()
+            .root_entity = root;
+
+        let panel = app
+            .world_mut()
+            .spawn((ChildOf(root), GlobalTransform::default()))
+            .id();
+
+        app.world_mut().spawn((
+            PointerId::Mouse,
+            PointerLocation::new(Location {
+                target: NormalizedRenderTarget::None {
+                    width: 800,
+                    height: 600,
+                },
+                position: Vec2::new(400.0, 300.0),
+            }),
+        ));
+
+        let mut state = SystemState::<(
+            Query<&ChildOf>,
+            Query<&ResolvedRootUi>,
+            Query<(&PointerId, &PointerLocation)>,
+            Query<(Entity, &Camera, &GlobalTransform), With<Camera>>,
+            Query<&GlobalTransform>,
+        )>::new(app.world_mut());
+        let (parents, roots, pointers, cameras, globals) = state.get(app.world());
+        let parent = parents.get(panel).ok();
+
+        let cursor = cursor_in_parent_space(
+            panel,
+            parent,
+            &parents,
+            &roots,
+            &pointers,
+            &cameras,
+            &globals,
+        )
+        .expect("cursor should resolve against the root camera");
+
+        assert!(cursor.abs_diff_eq(Vec2::ZERO, 1e-5));
     }
 }

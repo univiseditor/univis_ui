@@ -13,9 +13,14 @@ fn main() {
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2d);
 
-    commands.spawn(UWorldRoot::default()).with_children(|btn| {
-        btn.spawn((UButton::default(), UInteraction::default()));
-    });
+    commands
+        .spawn(URootUi {
+            meters_per_unit: 1.0,
+            ..URootUi::world_2d(Vec2::new(800.0, 600.0))
+        })
+        .with_children(|btn| {
+            btn.spawn((UButton::default(), UInteraction::default()));
+        });
 }
 
 fn add_node(mut commands: Commands, query: Query<(Entity, &UInteraction, &UButton)>) {
@@ -38,9 +43,9 @@ pub fn spawn_node(
     // إنشاء العقدة كـ ابن مباشر
     commands
         .spawn((
-            UWorldRoot {
-                size: Vec2::ZERO,
-                ..default()
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_2d(Vec2::ZERO)
             },
             Transform::from_xyz(pos.x, pos.y, 1.),
             UInteraction::default(), // لتفعيل التفاعل.

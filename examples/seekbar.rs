@@ -16,7 +16,7 @@ fn setup_seekbar_demo(mut commands: Commands) {
     // Screen Root
     commands
         .spawn((
-            UScreenRoot,
+            URootUi::screen(),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),

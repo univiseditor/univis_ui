@@ -19,11 +19,31 @@ For deeper release context, see:
 - Completed Phase 2 of the `URootUi` refactor by making screen roots behave as real HUD roots tied to the resolved camera and projection instead of acting like ordinary window-sized world canvases.
 - Completed Phase 3 of the `URootUi` refactor by removing hardcoded `Camera2d` assumptions from picking and panel resize paths and resolving interaction cameras from each root.
 - Completed Phase 4 of the `URootUi` refactor by making the render path derive from `ResolvedRootUi.space`, mapping `World3d` to the 3D material path and `Screen` / `World2d` to the 2D material path.
+- Completed Phase 5 of the `URootUi` refactor by replacing `UI3d` propagation with derived cached state from each node's resolved root, including stale-state removal when roots switch mode and correct inheritance for newly spawned children.
+- Completed Phase 6 of the `URootUi` refactor by normalizing the unit model around logical UI units, applying `meters_per_unit` consistently to world-space mesh sizing and transforms, and keeping `resolution_scale` separate from physical world size.
+- Completed Phase 7 of the `URootUi` refactor by promoting `URootUi` as the public root API, documenting `screen/world_2d/world_3d` constructors, and marking `UScreenRoot` / `UWorldRoot` as deprecated compatibility wrappers with migration notes for `alpha2`.
+- Migrated all shipped examples to the `URootUi` API so the example surface now demonstrates `screen()`, `world_2d(...)`, and `world_3d(...)` directly instead of the deprecated root wrappers.
+- Completed Phase 8 of the `URootUi` refactor by finishing the example migration, adding explicit `screen` HUD and world-scale showcase examples, and rechecking example semantics around the new root model.
+- Completed Phase 9 of the `URootUi` refactor by rewriting root docs, quick-start snippets, and interaction support docs around `URootUi`, logical UI units, viewport semantics, and explicit world scaling.
+- Completed Phase 10 verification by running `cargo check --workspace`, sequential targeted tests for `univis_ui_engine`, `univis_ui_widgets`, and `univis_ui_interaction`, refreshed smoke checks for screen, world, and 3D examples, and final manual visual validation through `root_screen_hud` and `root_world_scale`, while also adding direct verification tests for root resolution, root-bound layout sizing, `Screen`/`World2d`/`World3d` picking paths, panel root-camera resize behavior, world-root attachment, and `meters_per_unit` physical scaling.
+
+### Added
+
+- Added `root_screen_hud` to show that `URootUi::screen()` remains visually fixed while the camera moves, rotates, and zooms.
+- Added `root_world_scale` to show that a fixed logical canvas can map to different physical world sizes through `meters_per_unit`.
+
+### Fixed
+
+- Restored legacy `UWorldRoot` example visibility during `alpha2` by preserving its historical `1 UI unit = 1 world unit` behavior as a compatibility path while the newer `URootUi` scale model continues to use `meters_per_unit`.
+- Fixed the `UTextLabel` SDF edge filtering regression that made some examples render text with an exaggerated halo after the phase 6 unit-model changes.
+- Fixed bloom-enabled examples such as `border_light_3d`, `card_profile`, and `sci_fi` by pinning camera tonemapping to a LUT-free mode instead of relying on the default `TonyMcMapFace` path, which can fail at runtime when Bevy's `tonemapping_luts` feature is not enabled.
+- Fixed `root_screen_hud` after verification by updating its camera query to the current Bevy `single_mut()` result-based API, allowing the new Phase 8 example set to compile cleanly.
 
 ### Notes
 
 - The `URootUi` migration is still in progress for `alpha2`; additional breaking changes are expected in later phases.
-- This changelog entry backfills the previously undocumented completed phases: `Phase 0`, `Phase 1`, `Phase 2`, `Phase 3`, and `Phase 4`.
+- Phase 10 visual validation confirmed that `URootUi::screen()` stays viewport-fixed while the world canvas continues to move, rotate, and scale with the camera, and that `root_world_scale` keeps screen HUD behavior separate from world-root physical sizing.
+- This changelog entry backfills the previously undocumented completed phases: `Phase 0`, `Phase 1`, `Phase 2`, `Phase 3`, `Phase 4`, `Phase 5`, `Phase 6`, `Phase 7`, `Phase 8`, `Phase 9`, and `Phase 10`.
 
 ## [2026-03-16]
 

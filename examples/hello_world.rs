@@ -16,10 +16,10 @@ fn setup(mut commands: Commands) {
     // هذا الكيان يحدد حجم مساحة العمل
     commands
         .spawn((
-            UWorldRoot {
-                size: Vec2::new(800.0, 600.0), // حجم اللوحة
-                ..default()
-            },
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_2d(Vec2::new(800.0, 600.0))
+            }, // حجم اللوحة
             // 3. إضافة خصائص الشكل (UNode)
             UNode {
                 width: UVal::Percent(1.0),  // عرض كامل

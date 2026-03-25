@@ -68,7 +68,7 @@ fn setup(mut commands: Commands) {
 
     commands
         .spawn((
-            UScreenRoot,
+            URootUi::screen(),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -140,14 +140,36 @@ Reference pages:
 - [Current limitations (AR)](book_ar/src/development/current-limitations.md)
 
 ## Spaces And Roots
-### Screen Space
-- Use `Camera2d`
-- Root marker: `UScreenRoot`
+`URootUi` is the single public root entry point during `alpha2`.
 
-### World Space
-- Use `UWorldRoot { size, is_3d, resolution_scale }`
-- Supports 2D/3D placement depending on your scene and camera setup
-- Set `is_3d: true` to propagate `UI3d` and use the 3D material path
+### Screen
+- Use `URootUi::screen()`
+- Follows the resolved camera viewport
+- Behaves as a real HUD rather than a window-sized world canvas
+
+### World2d
+- Use `URootUi::world_2d(size)` for flat world-space UI
+- Uses a fixed logical canvas
+- Renders through the 2D path
+
+### World3d
+- Use `URootUi::world_3d(size)` for 3D-lit world-space UI
+- Uses the same fixed logical canvas model
+- Renders through the 3D material path and supports `UPbr`
+
+### Units And Scaling
+- `UVal::Px(f32)` means logical UI units
+- `UiCanvasSize::Viewport` follows the resolved camera viewport
+- `UiCanvasSize::Fixed(Vec2)` defines a fixed logical canvas for layout
+- World roots derive physical size through:
+  `world_size = canvas_size * meters_per_unit`
+- `resolution_scale` stays independent from physical world size
+
+### Alpha2 Migration Note
+- `UScreenRoot` and `UWorldRoot` remain only as deprecated compatibility wrappers during `alpha2`
+- New code should use `URootUi::screen()`, `URootUi::world_2d(size)`, and `URootUi::world_3d(size)`
+- To preserve the historical physical size of older world-space examples during migration, set `meters_per_unit: 1.0` explicitly
+- In multi-camera scenes, prefer `UiCameraRef::Entity(camera_entity)` over `Auto`
 
 ## Layout Model
 ### Primary Components
@@ -156,7 +178,7 @@ Reference pages:
 - `USelf`: per-child overrides (`align_self`, absolute positioning, order) + `item_ext`
 
 ### Units
-- `UVal::Px(f32)`
+- `UVal::Px(f32)` = logical UI units
 - `UVal::Percent(f32)`
 - `UVal::Content`
 - `UVal::Auto`
@@ -197,11 +219,12 @@ Reference pages:
 - Auto color feedback: `UInteractionColors`
 - Pointer observers for over/out/press/release/click
 - Picking backend performs SDF hit-tests and respects clipping ancestors
+- Interaction resolves the active camera from each root through `ResolvedRootUi`
 
-### Current Limitations
-- `univis_picking_backend` currently queries `Camera2d`.
-- `UPanelWindow` resize interaction currently queries `Camera2d`.
-- For reliable interaction behavior, spawn `Camera2d` in the active UI scene.
+### Interaction Notes
+- In simple scenes, `UiCameraRef::Auto` is usually enough
+- In multi-camera scenes, bind each root explicitly with `UiCameraRef::Entity`
+- World-space interaction still targets the resolved UI plane of the root
 
 ## Built-in Widgets
 - `UTextLabel`

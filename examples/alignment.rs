@@ -16,9 +16,9 @@ fn setup(mut commands: Commands) {
     // 1. الجذر (Root)
     commands
         .spawn((
-            UWorldRoot {
-                size: Vec2::new(1280.0, 720.0),
-                ..default()
+            URootUi {
+                meters_per_unit: 1.0,
+                ..URootUi::world_2d(Vec2::new(1280.0, 720.0))
             },
             UNode {
                 width: UVal::Percent(1.0),

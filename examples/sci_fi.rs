@@ -1,4 +1,4 @@
-use bevy::{post_process::bloom::Bloom, prelude::*};
+use bevy::{core_pipeline::tonemapping::Tonemapping, post_process::bloom::Bloom, prelude::*};
 use univis_ui::prelude::*;
 
 fn main() {
@@ -25,14 +25,14 @@ pub fn setup_sci_fi_hud(mut commands: Commands) {
             clear_color: ClearColorConfig::Custom(Color::BLACK),
             ..default()
         },
+        Tonemapping::ReinhardLuminance,
         Bloom::NATURAL,
     ));
 
     // 1. Root Container (Full Screen Overlay)
     commands
         .spawn((
-            // UWorldRoot { size: Vec2::new(1280.0, 720.0), resolution_scale: 1.0 },
-            UScreenRoot,
+            URootUi::screen(),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),

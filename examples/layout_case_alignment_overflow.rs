@@ -14,7 +14,7 @@ fn setup(mut commands: Commands) {
 
     commands
         .spawn((
-            UScreenRoot,
+            URootUi::screen(),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),

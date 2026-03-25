@@ -173,10 +173,10 @@ Primary files:
 
 The engine should not rely on one-way propagation of `UI3d` from parents to children as the source of truth.
 
-- [ ] Audit every current use of `UI3d`.
-- [ ] Decide whether `UI3d` becomes a purely internal cached marker or a fully derived transient detail.
-- [ ] Ensure switching between `World2d` and `World3d` removes stale 3D state correctly.
-- [ ] Ensure newly spawned children inherit the correct resolved mode without relying on delayed propagation quirks.
+- [x] Audit every current use of `UI3d`.
+- [x] Decide whether `UI3d` becomes a purely internal cached marker or a fully derived transient detail.
+- [x] Ensure switching between `World2d` and `World3d` removes stale 3D state correctly.
+- [x] Ensure newly spawned children inherit the correct resolved mode without relying on delayed propagation quirks.
 
 Primary files:
 
@@ -188,11 +188,11 @@ Primary files:
 
 Clarify that layout uses logical UI units, while world scaling is controlled separately.
 
-- [ ] Update `UVal` docs so `Px` means logical UI units, not literal display pixels.
-- [ ] Update `ComputedSize` docs to the same meaning.
-- [ ] Define how logical canvas size maps to world size as `world_size = canvas_size * meters_per_unit`.
-- [ ] Ensure mesh sizing and transforms use the resolved world scale in world modes.
-- [ ] Ensure `resolution_scale` stays independent from physical world size.
+- [x] Update `UVal` docs so `Px` means logical UI units, not literal display pixels.
+- [x] Update `ComputedSize` docs to the same meaning.
+- [x] Define how logical canvas size maps to world size as `world_size = canvas_size * meters_per_unit`.
+- [x] Ensure mesh sizing and transforms use the resolved world scale in world modes.
+- [x] Ensure `resolution_scale` stays independent from physical world size.
 
 Primary files:
 
@@ -204,15 +204,15 @@ Primary files:
 
 Introduce `URootUi` cleanly and remove ambiguity from public API surface.
 
-- [ ] Export `URootUi` from the public prelude.
-- [ ] Add `URootUi::screen()`.
-- [ ] Add `URootUi::world_2d(size)`.
-- [ ] Add `URootUi::world_3d(size)`.
-- [ ] Keep `UScreenRoot` as a deprecated compatibility wrapper for `URootUi::screen()` during `alpha2`.
-- [ ] Keep `UWorldRoot { size, is_3d: false }` as a deprecated compatibility wrapper for `URootUi::world_2d(size)` during `alpha2`.
-- [ ] Keep `UWorldRoot { size, is_3d: true }` as a deprecated compatibility wrapper for `URootUi::world_3d(size)` during `alpha2`.
-- [ ] Mark old roots deprecated with migration notes if kept temporarily.
-- [ ] Remove root-specific wording that no longer reflects behavior.
+- [x] Export `URootUi` from the public prelude.
+- [x] Add `URootUi::screen()`.
+- [x] Add `URootUi::world_2d(size)`.
+- [x] Add `URootUi::world_3d(size)`.
+- [x] Keep `UScreenRoot` as a deprecated compatibility wrapper for `URootUi::screen()` during `alpha2`.
+- [x] Keep `UWorldRoot { size, is_3d: false }` as a deprecated compatibility wrapper for `URootUi::world_2d(size)` during `alpha2`.
+- [x] Keep `UWorldRoot { size, is_3d: true }` as a deprecated compatibility wrapper for `URootUi::world_3d(size)` during `alpha2`.
+- [x] Mark old roots deprecated with migration notes if kept temporarily.
+- [x] Remove root-specific wording that no longer reflects behavior.
 
 Primary files:
 
@@ -224,11 +224,11 @@ Primary files:
 
 Every example should use the new root API and demonstrate the correct semantics.
 
-- [ ] Replace `UScreenRoot` usage with `URootUi::screen()`.
-- [ ] Replace `UWorldRoot` usage with `URootUi::world_2d(...)` or `URootUi::world_3d(...)`.
-- [ ] Add at least one example that proves real screen-fixed HUD behavior while the camera moves.
-- [ ] Add at least one example that proves fixed logical canvas plus explicit world scale.
-- [ ] Recheck examples that currently rely on `Camera2d` assumptions.
+- [x] Replace `UScreenRoot` usage with `URootUi::screen()`.
+- [x] Replace `UWorldRoot` usage with `URootUi::world_2d(...)` or `URootUi::world_3d(...)`.
+- [x] Add at least one example that proves real screen-fixed HUD behavior while the camera moves.
+- [x] Add at least one example that proves fixed logical canvas plus explicit world scale.
+- [x] Recheck examples that currently rely on `Camera2d` assumptions.
 
 Primary directories:
 
@@ -238,13 +238,13 @@ Primary directories:
 
 The docs must stop teaching the broken model.
 
-- [ ] Rewrite root docs in both books.
-- [ ] Update quick-start snippets.
-- [ ] Update the support matrix to distinguish `Screen`, `World2d`, and `World3d`.
-- [ ] Add a migration note for `alpha2`.
-- [ ] Document logical UI units.
-- [ ] Document viewport canvas semantics.
-- [ ] Document world scaling through `meters_per_unit`.
+- [x] Rewrite root docs in both books.
+- [x] Update quick-start snippets.
+- [x] Update the support matrix to distinguish `Screen`, `World2d`, and `World3d`.
+- [x] Add a migration note for `alpha2`.
+- [x] Document logical UI units.
+- [x] Document viewport canvas semantics.
+- [x] Document world scaling through `meters_per_unit`.
 
 Primary files:
 
@@ -263,33 +263,33 @@ This refactor needs behavior-level verification, not only compile success.
 
 ### Engine Tests
 
-- [ ] Verify root size resolution for viewport canvas, fixed canvas, and fallback behavior.
-- [ ] Verify layout correctness under the new root resolution path.
-- [ ] Verify switching between `World2d` and `World3d`.
-- [ ] Verify new child insertion under each root mode.
+- [x] Verify root size resolution for viewport canvas, fixed canvas, and fallback behavior.
+- [x] Verify layout correctness under the new root resolution path.
+- [x] Verify switching between `World2d` and `World3d`.
+- [x] Verify new child insertion under each root mode.
 
 ### Interaction Tests
 
-- [ ] Verify picking under `Screen`.
-- [ ] Verify picking under `World2d`.
-- [ ] Verify picking under `World3d` with the intended supported camera path.
-- [ ] Verify panel resize behavior after removing `Camera2d` hardcoding.
-- [ ] Verify clipping-aware hit testing after the root refactor.
+- [x] Verify picking under `Screen`.
+- [x] Verify picking under `World2d`.
+- [x] Verify picking under `World3d` with the intended supported camera path.
+- [x] Verify panel resize behavior after removing `Camera2d` hardcoding.
+- [x] Verify clipping-aware hit testing after the root refactor.
 
 ### Behavior Validation
 
-- [ ] Move the camera and verify screen UI remains visually fixed.
-- [ ] Zoom the camera and verify screen UI remains visually fixed.
-- [ ] Rotate the camera and verify screen UI remains visually fixed.
-- [ ] Verify world UI remains attached to world transforms.
-- [ ] Verify `meters_per_unit` changes resize world UI physically without changing logical layout.
+- [x] Move the camera and verify screen UI remains visually fixed.
+- [x] Zoom the camera and verify screen UI remains visually fixed.
+- [x] Rotate the camera and verify screen UI remains visually fixed.
+- [x] Verify world UI remains attached to world transforms.
+- [x] Verify `meters_per_unit` changes resize world UI physically without changing logical layout.
 
 ### Release Validation
 
-- [ ] Run `cargo check --workspace`.
-- [ ] Run targeted tests for engine and interaction crates.
-- [ ] Run example smoke checks for screen, world, and 3D examples.
-- [ ] Run manual visual validation for HUD correctness.
+- [x] Run `cargo check --workspace`.
+- [x] Run targeted tests for engine and interaction crates.
+- [x] Run example smoke checks for screen, world, and 3D examples.
+- [x] Run manual visual validation for HUD correctness.
 
 ## Recommended Delivery Order
 

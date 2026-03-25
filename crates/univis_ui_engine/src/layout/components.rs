@@ -31,8 +31,8 @@ pub struct LayoutTreeDepth {
     pub max_depth: usize,
 }
 
-/// علامة توافق داخلية/مرحلية لمسار الرسم ثلاثي الأبعاد.
-/// لم تعد المصدر الأساسي للحقيقة بعد إدخال `ResolvedRootUi`.
+/// Marker داخلي/مرحلي مخزن مؤقتًا لمسار الرسم ثلاثي الأبعاد.
+/// يُشتق من أقرب `ResolvedRootUi` ولا يُستخدم كمصدر الحقيقة الأساسي.
 #[derive(Component, Reflect, Default, Clone, Copy, Debug)]
 #[reflect(Component)]
 pub struct UI3d;

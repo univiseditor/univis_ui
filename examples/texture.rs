@@ -12,7 +12,7 @@ fn setup(mut commands: Commands, assets: Res<AssetServer>) {
     commands.spawn(Camera2d);
     commands
         .spawn((
-            UScreenRoot,
+            URootUi::screen(),
             ULayout {
                 gap: 10.0,
                 ..default()

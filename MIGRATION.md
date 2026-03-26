@@ -2,6 +2,17 @@
 
 This file replaces the temporary docs/examples/API roadmap files now that the migration work has been applied to the repository.
 
+## When To Read This File
+
+Read `MIGRATION.md` when you are coming from older docs, older example paths, or older root assumptions.
+
+Use the other root files for different goals:
+
+- `README.md`: landing story and fastest overview
+- `README_AR.md`: Arabic landing story
+- `RELEASE_NOTES.md`: current alpha release summary
+- `changelog.md`: chronological change history
+
 ## What Changed
 
 - documentation now lives under one bilingual `mdBook` in `docs/`
@@ -56,6 +67,7 @@ Arabic mirrors:
 
 - project story and crate map: `README.md`
 - Arabic landing page: `README_AR.md`
+- alpha2 stability note: `ALPHA2_STATUS.md`
 - guides: `docs/src/en/*` and `docs/src/ar/*`
 - example catalog: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
 - API reference: generated `cargo doc --no-deps -p univis_ui`

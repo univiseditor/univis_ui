@@ -37,6 +37,12 @@ Serve locally:
 mdbook serve docs -n 127.0.0.1 -p 3000
 ```
 
+Hosted docs URL:
+
+```text
+https://univiseditor.github.io/univis_ui/
+```
+
 ## Guides vs API Docs
 
 - Use this book for concepts, migration notes, and example-driven workflows.
@@ -51,5 +57,7 @@ cargo doc --no-deps -p univis_ui
 ## Where To Look Next
 
 - related example: [Examples](examples/index.md)
+- curated gallery: [Example Gallery](examples/gallery.md)
 - related API index: [API Reference](api/index.md)
 - related migration notes: [Migration and Limitations](migration/index.md)
+- alpha2 stability note: [Alpha2 Stability](migration/alpha2-stability.md)

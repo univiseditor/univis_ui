@@ -10,5 +10,6 @@ Use this checklist for docs-heavy pull requests.
 - [ ] new public API has `rustdoc` at the declaration site
 - [ ] internal-only helpers were not promoted accidentally in generated docs
 - [ ] commands in docs use package-aware example invocations where needed
+- [ ] visual validation notes were updated when representative examples or rendering behavior changed
 - [ ] `README` / `README_AR` were updated if the landing story changed
 - [ ] `changelog.md` was updated if the change is notable

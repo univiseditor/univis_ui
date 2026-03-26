@@ -4,7 +4,7 @@
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.1"
+univis_ui = "0.2.0-alpha.2"
 ```
 
 ## 2) Minimal App

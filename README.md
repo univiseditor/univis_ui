@@ -5,6 +5,8 @@
 
 Arabic version: [README_AR.md](README_AR.md)
 Migration summary: [MIGRATION.md](MIGRATION.md)
+Alpha2 status: [ALPHA2_STATUS.md](ALPHA2_STATUS.md)
+Hosted docs target: `https://univiseditor.github.io/univis_ui/`
 
 Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit interfaces with one ECS-native stack.
 
@@ -39,17 +41,17 @@ Univis UI is built for teams that want more than a basic HUD layer.
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.1"
+univis_ui = "0.2.0-alpha.2"
 ```
 
 If you want direct control over the internal layers:
 
 ```toml
 [dependencies]
-univis_ui_engine = "0.2.0-alpha.1"
-univis_ui_style = "0.2.0-alpha.1"
-univis_ui_interaction = "0.2.0-alpha.1"
-univis_ui_widgets = "0.2.0-alpha.1"
+univis_ui_engine = "0.2.0-alpha.2"
+univis_ui_style = "0.2.0-alpha.2"
+univis_ui_interaction = "0.2.0-alpha.2"
+univis_ui_widgets = "0.2.0-alpha.2"
 ```
 
 ## Quick Start
@@ -132,6 +134,7 @@ The full documentation lives in `docs/` as one mdBook with Arabic and English tr
 - Arabic: `docs/src/ar/`
 - English: `docs/src/en/`
 - Docs home: `docs/src/index.md`
+- Hosted docs: `https://univiseditor.github.io/univis_ui/`
 
 Build docs:
 
@@ -149,8 +152,11 @@ Good starting points:
 
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
+- [Alpha2 Status](ALPHA2_STATUS.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
+- [Example Gallery (EN)](docs/src/en/examples/gallery.md)
+- [Example Gallery (AR)](docs/src/ar/examples/gallery.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
 - [Roots and Spaces (AR)](docs/src/ar/layout/roots.md)
 - [Examples Index (EN)](docs/src/en/examples/index.md)
@@ -161,9 +167,21 @@ Good starting points:
 ## GitHub Discovery Path
 
 1. Read this `README.md` for the project story and crate map.
-2. Open [Docs Home](docs/src/index.md) and jump into the relevant guide.
-3. Use the language-specific [Examples Index (EN)](docs/src/en/examples/index.md) or [Examples Index (AR)](docs/src/ar/examples/index.md).
-4. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
+2. Check [Alpha2 Status](ALPHA2_STATUS.md) if you want to know what is stable enough to build on.
+3. Open [Docs Home](docs/src/index.md) or the hosted docs URL and jump into the relevant guide.
+4. Use the language-specific [Example Gallery (EN)](docs/src/en/examples/gallery.md) or [Example Gallery (AR)](docs/src/ar/examples/gallery.md) before dropping to the full index.
+5. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
+
+## Root File Guide
+
+- `README.md`: project story, strengths, and the fastest entry path.
+- `README_AR.md`: Arabic landing page with the same high-level role.
+- `MIGRATION.md`: migration path from older docs, example paths, and root assumptions.
+- `MIGRATION_AR.md`: Arabic migration path.
+- `RELEASE_NOTES.md`: current alpha release-scale summary.
+- `changelog.md`: dated chronological record of notable changes.
+
+`ALPHA2_STATUS.md` is a temporary stabilization note for the current alpha line, not part of the long-term root release file set.
 
 ## API Docs
 

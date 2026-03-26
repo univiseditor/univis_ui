@@ -6,11 +6,34 @@ This changelog is intentionally concise.
 For deeper release context, see:
 - `RELEASE_NOTES.md`
 
+Use this file for the dated chronological record.
+Use `RELEASE_NOTES.md` for the current alpha release summary.
+Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
+
+## [0.2.0-alpha.2] - 2026-03-27
+
+### Changed
+
+- Bumped the facade crate and all public workspace crates from `0.2.0-alpha.1` to `0.2.0-alpha.2`.
+- Promoted the current `alpha2` line from an in-progress stabilization wave to a release-ready milestone after completing the `URootUi` baseline, the docs and API-doc cleanup, the crate-owned example migration, and the alpha2 stabilization roadmap through Phase 6.
+- Clarified the long-term root-level file set around `README.md`, `README_AR.md`, `MIGRATION.md`, `MIGRATION_AR.md`, `RELEASE_NOTES.md`, and `changelog.md`, while keeping `ALPHA2_STATUS.md` / `ALPHA2_STATUS_AR.md` as temporary stabilization notes for the current alpha line.
+- Finalized the release communication path so the hosted docs URL, example gallery, migration story, and release-readiness checklist all point at the same `0.2.0-alpha.2` public surface.
+
+### Notes
+
+- The detailed implementation log that led into this release remains captured under the dated entries for `2026-03-25` and `2026-03-26`.
+- This release still builds on the completed `URootUi` migration baseline from `Phase 0` through `Phase 10`.
+
 ## [2026-03-26]
 
 ### Added
 
 - Added `root_fit_content` to demonstrate `URootUi::world_2d_fit_content()` and `UiCanvasSize::FitContent { min, max }` for `World3d` roots in one visual example.
+- Added `ROADMAP_ALPHA2_STABILIZATION.md` and `ROADMAP_ALPHA2_STABILIZATION_AR.md` to define the next post-migration wave around `alpha2` stabilization, docs publishing, example-gallery refinement, release communication cleanup, and final release readiness.
+- Added `ALPHA2_STATUS.md` and `ALPHA2_STATUS_AR.md` as short root-level stability notes that freeze what is stable, transitional, and still experimental in the current `alpha2` line.
+- Added dedicated docs pages for `alpha2` stability, docs publishing, and a curated example gallery in both English and Arabic.
+- Added a GitHub Pages publishing workflow for the unified `docs/` book and bundled the example gallery with static visual references under `docs/src/assets/`.
+- Added dedicated visual-validation and alpha2-release-readiness pages in both English and Arabic, including a final pre-release checklist and an explicit wrapper-removal decision.
 
 ### Changed
 
@@ -29,6 +52,12 @@ For deeper release context, see:
 - Completed Phase 5 of the docs/examples/API roadmap by adding a dedicated docs authoring workflow, a docs review checklist, and a pull-request template that codifies bilingual docs updates, crate-owned examples, and public `rustdoc` expectations.
 - Completed Phase 6 of the docs/examples/API roadmap by adding a GitHub Actions workflow for `mdbook build docs`, sequential package-by-package example validation, sequential public-crate `cargo doc --no-deps`, and explicit pre-alpha documentation validation requirements.
 - Completed Phase 7 of the docs/examples/API roadmap by refreshing the release notes around the unified `docs/` book and crate-owned example layout, adding a dedicated migration page for users coming from older docs/example assumptions, tightening the GitHub discovery path across `README -> docs -> examples -> API docs`, and performing a final consistency pass on names, commands, and package-aware example invocations.
+- Completed Phase 1 of the alpha2 stabilization roadmap by freezing the current `URootUi`-centered public surface, explicitly keeping `UScreenRoot` and `UWorldRoot` only as deprecated wrappers for the remainder of `alpha2`, re-auditing the shipped examples, and publishing root-level plus in-book stability notes.
+- Completed Phase 2 of the alpha2 stabilization roadmap by wiring a GitHub Pages docs publishing workflow, defining the hosted docs URL, documenting how the published build is produced from `docs/`, and keeping the local `mdbook build docs` path as the canonical contributor flow.
+- Completed Phase 3 of the alpha2 stabilization roadmap by adding a curated example gallery, a best-first example list, purpose-driven grouped example sections, and static visual references for representative showcase and solver scenes.
+- Completed Phase 4 of the alpha2 stabilization roadmap by deciding the long-term root-level release file set, clarifying the unique role of each root file, adding “where to read what” guidance, and tightening `RELEASE_NOTES.md` so it stays release-focused instead of duplicating the landing or migration files.
+- Completed Phase 5 of the alpha2 stabilization roadmap by hardening docs/example validation around clearer CI job boundaries, adding a lightweight visual-validation checklist, and explicitly keeping screenshots as manual release-prep material rather than a required CI artifact.
+- Completed Phase 6 of the alpha2 stabilization roadmap by rechecking the canonical root examples, confirming that docs/migration/release notes describe the same current reality, adding a final alpha2 release-readiness checklist, and deciding not to remove deprecated root wrappers immediately after the next alpha cut.
 
 ### Notes
 

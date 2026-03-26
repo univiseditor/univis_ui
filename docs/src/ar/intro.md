@@ -37,6 +37,12 @@ mdbook build docs
 mdbook serve docs -n 127.0.0.1 -p 3000
 ```
 
+رابط الوثائق المنشورة:
+
+```text
+https://univiseditor.github.io/univis_ui/
+```
+
 ## الشرح مقابل `API Docs`
 
 - استخدم هذا الكتاب للمفاهيم، ومسارات الترحيل، والتعلم المعتمد على الأمثلة.
@@ -51,5 +57,7 @@ cargo doc --no-deps -p univis_ui
 ## إلى أين بعد ذلك؟
 
 - المثال المرتبط: [فهرس الأمثلة](examples/index.md)
+- العرض المنسق: [معرض الأمثلة](examples/gallery.md)
 - فهرس `API`: [مرجع الواجهة العامة](api/index.md)
 - صفحة الترحيل: [الترحيل والقيود](migration/index.md)
+- ملاحظة استقرار `alpha2`: [استقرار `alpha2`](migration/alpha2-stability.md)

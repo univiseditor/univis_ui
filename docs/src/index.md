@@ -12,6 +12,14 @@ Use the language switcher shown at the top of each page to jump to the mirrored 
 - `ar/` contains the Arabic documentation tree
 - `en/` contains the English documentation tree
 - both trees share the same chapter map and live in one mdBook
+- hosted docs URL: `https://univiseditor.github.io/univis_ui/`
+
+## Fast Links
+
+- [English Example Gallery](en/examples/gallery.md)
+- [معرض الأمثلة](ar/examples/gallery.md)
+- [Alpha2 Stability](en/migration/alpha2-stability.md)
+- [استقرار `alpha2`](ar/migration/alpha2-stability.md)
 
 ## Guides vs API Docs
 

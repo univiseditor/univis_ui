@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>layout_solver_no_widgets (HTML reference)</title>
+  <style>
+    :root {
+      --bg: #0a0d18;
+      --frame: #1a2233;
+      --left-col: #171c29;
+      --left-row: #293349;
+      --grid-bg: #1f2739;
+      --right-col: #1a2030;
+      --card: #32385f;
+      --muted: rgba(255, 255, 255, 0.6);
+      --border: rgba(235, 243, 255, 0.28);
+      --radius-lg: 14px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(1200px 700px at 10% 0%, #172243 0%, transparent 50%),
+        radial-gradient(1000px 700px at 100% 0%, #1b2645 0%, transparent 50%),
+        var(--bg);
+      color: #f4f7ff;
+      font-family: "Segoe UI", Arial, sans-serif;
+      padding: 20px;
+    }
+
+    .frame {
+      width: min(1140px, 100%);
+      min-height: 700px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--frame);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .col {
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .left {
+      background: var(--left-col);
+    }
+
+    .right {
+      background: var(--right-col);
+    }
+
+    .top-row {
+      height: 180px;
+      border-radius: 10px;
+      background: var(--left-row);
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .tile {
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .tile.a { flex: 2; background: #385b9f; }
+    .tile.b { flex: 1; background: #338063; }
+    .tile.c { flex: 1; background: #8f5c3b; }
+
+    .line {
+      height: 10px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      transform-origin: left center;
+      animation: pulse-w 2.2s ease-in-out infinite;
+    }
+    .line.big { width: 118px; opacity: 0.75; }
+    .line.s1 { width: 84px; animation-delay: 0.1s; }
+    .line.s2 { width: 108px; animation-delay: 0.45s; }
+    .line.s3 { width: 126px; animation-delay: 0.8s; }
+
+    .grid-wrap {
+      flex: 1;
+      border-radius: 10px;
+      background: var(--grid-bg);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: 58px;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .g {
+      border-radius: var(--radius-sm);
+    }
+    .g1 { background: #318fe0; grid-column: span 2; grid-row: span 2; }
+    .g2 { background: #c1574d; }
+    .g3 { background: #39ad6b; grid-row: span 2; }
+    .g4 { background: #d6a73e; grid-column: span 2; }
+    .g5 { background: #6069cc; }
+    .g6 { background: #37c7c7; }
+    .g7 { background: #8356b4; grid-column: span 2; }
+
+    .bottom-row {
+      height: 130px;
+      border-radius: 10px;
+      background: #2a3145;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    .mini {
+      border-radius: 8px;
+      background: #4f6387;
+      height: 84px;
+      animation: pulse-h 2.3s ease-in-out infinite;
+    }
+    .mini:nth-child(2) { background: #576a8d; animation-delay: 0.3s; }
+    .mini:nth-child(3) { background: #607194; animation-delay: 0.6s; }
+    .mini:nth-child(4) { background: #68789a; animation-delay: 0.9s; }
+
+    .ref {
+      flex: 1;
+      border-radius: 20px;
+      background: var(--card);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      min-height: 0;
+    }
+
+    .avatar {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      background: #b9c7e5;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.1);
+    }
+
+    .bar {
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.88);
+    }
+    .bar.name { width: 240px; height: 30px; }
+    .bar.handle { width: 170px; height: 18px; opacity: 0.7; }
+
+    .chips {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    .chip {
+      width: 56px;
+      height: 22px;
+      border-radius: 11px;
+    }
+    .chip.c1 { background: #47a8f5; }
+    .chip.c2 { background: #e1b43a; }
+    .chip.c3 { background: #3dc168; }
+
+    .stats {
+      width: 100%;
+      height: 90px;
+      border-radius: 12px;
+      background: rgba(10, 14, 25, 0.45);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+    .stat {
+      height: 70px;
+      border-radius: 8px;
+      background: #30364b;
+    }
+    .stat:nth-child(2) { background: #343a50; }
+    .stat:nth-child(3) { background: #383e55; }
+
+    .actions {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn {
+      height: 44px;
+      border-radius: 9px;
+    }
+    .btn.a { background: #3680eb; }
+    .btn.b { background: #747987; }
+
+    .probe {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+    }
+    .probe.rt { right: 12px; top: 12px; background: #f45b5b; }
+    .probe.lb { left: 12px; bottom: 12px; background: #53e18f; }
+
+    .caption {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.2px;
+    }
+
+    @keyframes pulse-w {
+      0%, 100% { transform: scaleX(0.82); }
+      50% { transform: scaleX(1.08); }
+    }
+
+    @keyframes pulse-h {
+      0%, 100% { transform: scaleY(0.88); }
+      50% { transform: scaleY(1.06); }
+    }
+
+    @media (max-width: 1200px) {
+      .frame {
+        grid-template-columns: 1fr;
+      }
+      .bar.name { width: min(240px, 70vw); }
+      .bar.handle { width: min(170px, 52vw); }
+    }
+  </style>
+</head>
+<body>
+  <section class="frame">
+    <section class="col left">
+      <div class="top-row">
+        <article class="tile a">
+          <div class="line big"></div>
+          <div class="line s1"></div>
+          <div class="line s2"></div>
+          <div class="line s3"></div>
+        </article>
+        <article class="tile b">
+          <div class="line big"></div>
+          <div class="line s1"></div>
+          <div class="line s2"></div>
+          <div class="line s3"></div>
+        </article>
+        <article class="tile c">
+          <div class="line big"></div>
+          <div class="line s1"></div>
+          <div class="line s2"></div>
+          <div class="line s3"></div>
+        </article>
+      </div>
+
+      <div class="grid-wrap">
+        <div class="g g1"></div>
+        <div class="g g2"></div>
+        <div class="g g3"></div>
+        <div class="g g4"></div>
+        <div class="g g5"></div>
+        <div class="g g6"></div>
+        <div class="g g7"></div>
+      </div>
+
+      <div class="bottom-row">
+        <div class="mini"></div>
+        <div class="mini"></div>
+        <div class="mini"></div>
+        <div class="mini"></div>
+      </div>
+    </section>
+
+    <section class="col right">
+      <article class="ref">
+        <div class="avatar"></div>
+        <div class="bar name"></div>
+        <div class="bar handle"></div>
+
+        <div class="chips">
+          <div class="chip c1"></div>
+          <div class="chip c2"></div>
+          <div class="chip c3"></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"></div>
+          <div class="stat"></div>
+          <div class="stat"></div>
+        </div>
+
+        <div class="actions">
+          <div class="btn a"></div>
+          <div class="btn b"></div>
+        </div>
+
+        <div class="probe rt"></div>
+        <div class="probe lb"></div>
+      </article>
+      <div class="caption">Raw layout reference: no widget components, only geometry blocks.</div>
+    </section>
+  </section>
+</body>
+</html>

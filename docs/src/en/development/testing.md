@@ -27,12 +27,14 @@ mdbook build docs
 GitHub Actions now validates docs/examples/API docs through:
 
 - `.github/workflows/docs_examples_api.yml`
+- `.github/workflows/docs_publish.yml`
 
 It runs:
 
 - `mdbook build docs`
 - `cargo doc --no-deps` for each public crate
 - package-by-package example checking through `./scripts/check_examples_serial_release.sh -p ...`
+- a dedicated GitHub Pages publishing path for the hosted docs site on `main`
 
 ## Sequential Validation On Low-End Machines
 
@@ -72,6 +74,7 @@ To validate only selected examples:
 2. run `cargo check --workspace --all-targets`
 3. run `./scripts/check_examples_serial_release.sh`
 4. launch at least one example related to the modified area
+5. use [Visual Validation](visual-validation.md) when the change is rendering-, layout-, or interaction-heavy
 
 ## Required Before The Next Alpha Cut
 
@@ -86,3 +89,11 @@ To validate only selected examples:
 - `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
 - `./scripts/check_examples_serial_release.sh -p univis_ui`
+- one manual pass through the representative examples in [Visual Validation](visual-validation.md)
+- one pass through [Alpha2 Release Readiness](alpha2-release-readiness.md)
+
+## Screenshot Policy
+
+- screenshots remain manual release-prep material
+- the example gallery can link to static visual references
+- screenshot generation is not a required CI gate in the current alpha line

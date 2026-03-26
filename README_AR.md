@@ -6,6 +6,8 @@
 ابنِ واجهات حادة وقابلة للتوسع في Bevy للشاشة، ولوحات العالم، والواجهات ثلاثية الأبعاد المضاءة، عبر طبقة ECS واحدة.
 
 ملخص الترحيل: [MIGRATION_AR.md](MIGRATION_AR.md)
+حالة `alpha2`: [ALPHA2_STATUS_AR.md](ALPHA2_STATUS_AR.md)
+رابط الوثائق العامة: `https://univiseditor.github.io/univis_ui/`
 
 > مهم:
 > ما تزال `univis_ui` في مرحلة **alpha**، لذلك يمكن أن تتغير الـ API والسلوك بين الإصدارات.
@@ -38,17 +40,17 @@
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.1"
+univis_ui = "0.2.0-alpha.2"
 ```
 
 إذا أردت تحكمًا مباشرًا في الطبقات الداخلية:
 
 ```toml
 [dependencies]
-univis_ui_engine = "0.2.0-alpha.1"
-univis_ui_style = "0.2.0-alpha.1"
-univis_ui_interaction = "0.2.0-alpha.1"
-univis_ui_widgets = "0.2.0-alpha.1"
+univis_ui_engine = "0.2.0-alpha.2"
+univis_ui_style = "0.2.0-alpha.2"
+univis_ui_interaction = "0.2.0-alpha.2"
+univis_ui_widgets = "0.2.0-alpha.2"
 ```
 
 ## بداية سريعة
@@ -131,6 +133,7 @@ fn setup(mut commands: Commands) {
 - العربية: `docs/src/ar/`
 - الإنجليزية: `docs/src/en/`
 - صفحة الدخول: `docs/src/index.md`
+- رابط الوثائق العامة: `https://univiseditor.github.io/univis_ui/`
 
 ابنِ الوثائق:
 
@@ -148,8 +151,11 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 - [صفحة الوثائق الرئيسية](docs/src/index.md)
 - [ملخص الترحيل](MIGRATION_AR.md)
+- [حالة `alpha2`](ALPHA2_STATUS_AR.md)
 - [البدء السريع (AR)](docs/src/ar/quick-start.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
+- [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md)
+- [Example Gallery (EN)](docs/src/en/examples/gallery.md)
 - [الجذور والمساحات (AR)](docs/src/ar/layout/roots.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
 - [فهرس الأمثلة (AR)](docs/src/ar/examples/index.md)
@@ -160,9 +166,21 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 ## مسار الاكتشاف من GitHub
 
 1. اقرأ `README.md` أو `README_AR.md` لفهم قصة المشروع وخريطة الحزم.
-2. افتح [صفحة الوثائق الرئيسية](docs/src/index.md) ثم انتقل إلى فصل الشرح المناسب.
-3. استخدم [فهرس الأمثلة (AR)](docs/src/ar/examples/index.md) أو [Examples Index (EN)](docs/src/en/examples/index.md).
-4. ولّد `cargo doc --no-deps -p univis_ui` عندما تحتاج المسارات الدقيقة والتواقيع.
+2. راجع [حالة `alpha2`](ALPHA2_STATUS_AR.md) إذا أردت معرفة ما الذي يعتبر مستقرًا بما يكفي للبناء عليه.
+3. افتح [صفحة الوثائق الرئيسية](docs/src/index.md) أو رابط الوثائق العامة ثم انتقل إلى فصل الشرح المناسب.
+4. استخدم [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md) أو [Example Gallery (EN)](docs/src/en/examples/gallery.md) قبل الرجوع إلى الفهرس الكامل.
+5. ولّد `cargo doc --no-deps -p univis_ui` عندما تحتاج المسارات الدقيقة والتواقيع.
+
+## دليل ملفات الجذر
+
+- `README.md`: قصة المشروع وأسرع نقطة دخول.
+- `README_AR.md`: صفحة الدخول العربية على المستوى العالي نفسه.
+- `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم ومسارات الأمثلة القديمة وافتراضات الجذور القديمة.
+- `MIGRATION_AR.md`: مسار الترحيل العربي.
+- `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha.
+- `changelog.md`: السجل الزمني المرتب حسب التواريخ للتغييرات الملحوظة.
+
+ويظل `ALPHA2_STATUS_AR.md` ملاحظة تثبيت مؤقتة مرتبطة بالـ alpha الحالي، وليس جزءًا من مجموعة ملفات الإصدار الجذرية طويلة الأمد.
 
 ## `API Docs`
 

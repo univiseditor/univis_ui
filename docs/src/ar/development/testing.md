@@ -27,12 +27,14 @@ mdbook build docs
 أصبح GitHub Actions يتحقق من التوثيق والأمثلة و`API Docs` عبر:
 
 - `.github/workflows/docs_examples_api.yml`
+- `.github/workflows/docs_publish.yml`
 
 ويشغّل:
 
 - `mdbook build docs`
 - `cargo doc --no-deps` لكل crate عامة
 - فحص الأمثلة لكل package على حدة عبر `./scripts/check_examples_serial_release.sh -p ...`
+- مسار نشر مستقل لصفحات الوثائق العامة على `main`
 
 ## للأجهزة الضعيفة (تشغيل تسلسلي)
 
@@ -72,6 +74,7 @@ mdbook build docs
 2. شغل `cargo check --workspace --all-targets`.
 3. شغل `./scripts/check_examples_serial_release.sh`.
 4. جرّب مثال واحد على الأقل مرتبط بالتعديل.
+5. استخدم [التحقق البصري](visual-validation.md) عندما يكون التعديل غنيًا بالرندر أو التخطيط أو التفاعل.
 
 ## المطلوب قبل إصدار alpha القادم
 
@@ -86,3 +89,11 @@ mdbook build docs
 - `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
 - `./scripts/check_examples_serial_release.sh -p univis_ui`
+- جولة يدوية واحدة على الأمثلة المرجعية في [التحقق البصري](visual-validation.md)
+- مراجعة صفحة [الجاهزية لإصدار `alpha2`](alpha2-release-readiness.md)
+
+## سياسة لقطات الشاشة
+
+- تبقى لقطات الشاشة مواد يدوية مرتبطة بتجهيز الإصدار
+- يمكن لمعرض الأمثلة أن يربط بمراجع بصرية ثابتة
+- لا يعد توليد الصور شرط تحقق آلي في خط alpha الحالي

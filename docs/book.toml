@@ -16,6 +16,8 @@ default-theme = "light"
 preferred-dark-theme = "navy"
 smart-punctuation = true
 mathjax-support = false
+site-url = "/univis_ui/"
+git-repository-url = "https://github.com/univiseditor/univis_ui"
 additional-js = ["theme/language-mode.js"]
 additional-css = ["theme/language-mode.css"]
 

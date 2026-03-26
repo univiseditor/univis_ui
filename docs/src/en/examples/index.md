@@ -2,6 +2,8 @@
 
 This is the canonical example catalog for the workspace.
 
+For the curated view, best-first list, and visual references, start with [Example Gallery](gallery.md).
+
 Run any example with:
 
 ```bash

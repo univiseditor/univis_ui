@@ -30,10 +30,10 @@ URootUi::screen()
 
 الدلالة:
 
-- يُحسم انطلاقًا من viewport الكاميرا المستهدفة، لا من `Window.width()/height()` مباشرة.
+- يُحسم انطلاقًا من مساحة رؤية الكاميرا المستهدفة، لا من `Window.width()/height()` مباشرة.
 - يتصرف كـ الواجهة الثابتة حقيقي.
 - حركة الكاميرا والـ zoom والدوران لا يجب أن تحرك واجهة الشاشة بصريًا.
-- يشكّل كبسولة stacking مغلقة: الترتيب المحلي لا يخرج فوق root آخر.
+- يشكّل كبسولة تراكب مغلقة: الترتيب المحلي لا يخرج فوق جذر آخر.
 - مناسب للقوائم، والعناصر العائمة، وعناصر الواجهة الثابتة الثابتة على الشاشة.
 
 ## العالم ثنائي الأبعاد
@@ -52,10 +52,10 @@ URootUi::world_2d_fit_content()
 
 الدلالة:
 
-- يدعم canvas منطقيًا ثابتًا أو canvas يُقاس من المحتوى.
+- يدعم مساحة رسم منطقية ثابتة أو مساحة رسم تُقاس من المحتوى.
 - يعيش داخل العالم.
 - يُرسم عبر مسار المواد ثنائي الأبعاد.
-- يشكّل كبسولة stacking مغلقة: الأبناء يبقون داخل الطبقة البصرية للجذر.
+- يشكّل كبسولة تراكب مغلقة: الأبناء يبقون داخل الطبقة البصرية للجذر.
 - مناسب للوحات والشاشات الداخلية والعناصر المربوطة بالمشهد.
 
 ## العالم ثلاثي الأبعاد
@@ -74,10 +74,10 @@ URootUi::world_3d_fit_content()
 
 الدلالة:
 
-- يستخدم نفس نموذج canvas المنطقي الموجود في `World2d`، بما فيه القياس من المحتوى.
+- يستخدم نفس نموذج مساحة الرسم المنطقية الموجود في `World2d`، بما فيه القياس من المحتوى.
 - يعيش داخل العالم.
 - يُرسم عبر المسار ثلاثي الأبعاد.
-- يشكّل كبسولة stacking مغلقة بالنسبة إلى جذور UI الأخرى.
+- يشكّل كبسولة تراكب مغلقة بالنسبة إلى جذور UI الأخرى.
 - هنا تصبح إعدادات `UPbr` ذات معنى.
 
 ## مساحة الرسم المنطقية ووحدات القياس
@@ -85,9 +85,9 @@ URootUi::world_3d_fit_content()
 يبقى `UVal` نوعًا خاصًا بوحدات التخطيط داخل شجرة الواجهة.
 
 - `UVal::Px(f32)` يعني وحدات UI منطقية.
-- `UiCanvasSize::Viewport` تعني اتباع viewport الكاميرا المحلولة.
-- `UiCanvasSize::Fixed(Vec2)` تعني canvas منطقيًا ثابت الحجم.
-- `UiCanvasSize::FitContent { min, max }` تعني قياس canvas المنطقي من المحتوى ثم تطبيق حدود `min/max` عند الحاجة.
+- `UiCanvasSize::Viewport` تعني اتباع مساحة رؤية الكاميرا المحلولة.
+- `UiCanvasSize::Fixed(Vec2)` تعني مساحة رسم منطقية ثابتة الحجم.
+- `UiCanvasSize::FitContent { min, max }` تعني قياس مساحة الرسم المنطقية من المحتوى ثم تطبيق حدود `min/max` عند الحاجة.
 
 في جذور العالم، الحجم الفيزيائي يُشتق صراحةً:
 
@@ -112,7 +112,7 @@ world_size = canvas_size * meters_per_unit
 UiCameraRef::Entity(camera_entity)
 ```
 
-حتى يبقى حسم الـ viewport والتفاعل وتثبيت جذور الشاشة واضحًا وغير ملتبس.
+حتى يبقى حسم مساحة الرؤية والتفاعل وتثبيت جذور الشاشة واضحًا وغير ملتبس.
 
 ## ملاحظة ترحيل لـ alpha2
 
@@ -142,3 +142,29 @@ URootUi {
     ..URootUi::world_3d(size)
 }
 ```
+
+## أمثلة مرتبطة
+
+- [`root_screen_hud`](../examples/index.md#root_screen_hud) داخل `univis_ui_engine`
+- [`root_world_scale`](../examples/index.md#root_world_scale) داخل `univis_ui_engine`
+- [`root_fit_content`](../examples/index.md#root_fit_content) داخل `univis_ui_engine`
+- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui_engine`
+- [`border_light_3d`](../examples/index.md#border_light_3d) داخل `univis_ui_engine`
+
+## صفحات ترحيل مرتبطة
+
+- [ترحيل الجذور إلى `URootUi`](../migration/root-api.md)
+
+## نقاط الدخول الرسمية في `API`
+
+- `univis_ui_engine::layout::layout_system::URootUi`
+- `univis_ui_engine::layout::layout_system::UiSpace`
+- `univis_ui_engine::layout::layout_system::UiCanvasSize`
+- `univis_ui_engine::layout::layout_system::UiCameraRef`
+- `univis_ui_engine::layout::pbr::UPbr`
+
+## إلى أين بعد ذلك؟
+
+- المثال المرتبط: [`root_screen_hud`](../examples/index.md#root_screen_hud)
+- فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
+- صفحة الترحيل: [ترحيل الجذور إلى `URootUi`](../migration/root-api.md)

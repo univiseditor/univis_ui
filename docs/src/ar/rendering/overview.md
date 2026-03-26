@@ -27,3 +27,9 @@
 - حواف نظيفة تحت التكبير.
 - دعم border radius وقص وتنعيم جيد.
 - مرونة لشكل `Round` و`Cut`.
+
+## أمثلة مرتبطة
+
+- [`border_light_3d`](../examples/index.md#border_light_3d) داخل `univis_ui_engine`
+- `card_profile` داخل `univis_ui`
+- `sci_fi` داخل `univis_ui`

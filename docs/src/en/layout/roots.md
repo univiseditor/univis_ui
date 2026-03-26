@@ -142,3 +142,29 @@ URootUi {
     ..URootUi::world_3d(size)
 }
 ```
+
+## Related Examples
+
+- [`root_screen_hud`](../examples/index.md#root_screen_hud) in `univis_ui_engine`
+- [`root_world_scale`](../examples/index.md#root_world_scale) in `univis_ui_engine`
+- [`root_fit_content`](../examples/index.md#root_fit_content) in `univis_ui_engine`
+- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) in `univis_ui_engine`
+- [`border_light_3d`](../examples/index.md#border_light_3d) in `univis_ui_engine`
+
+## Related Migration Notes
+
+- [Root API Migration to `URootUi`](../migration/root-api.md)
+
+## API Entry Points
+
+- `univis_ui_engine::layout::layout_system::URootUi`
+- `univis_ui_engine::layout::layout_system::UiSpace`
+- `univis_ui_engine::layout::layout_system::UiCanvasSize`
+- `univis_ui_engine::layout::layout_system::UiCameraRef`
+- `univis_ui_engine::layout::pbr::UPbr`
+
+## Where To Look Next
+
+- related example: [`root_screen_hud`](../examples/index.md#root_screen_hud)
+- related API index: [API Reference](../api/index.md)
+- related migration page: [Root API Migration to `URootUi`](../migration/root-api.md)

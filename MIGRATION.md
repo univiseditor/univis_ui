@@ -1,0 +1,65 @@
+# Migration Summary
+
+This file replaces the temporary docs/examples/API roadmap files now that the migration work has been applied to the repository.
+
+## What Changed
+
+- documentation now lives under one bilingual `mdBook` in `docs/`
+- English and Arabic chapters are mirrored under one shared `docs/src/SUMMARY.md`
+- examples now live next to the crate that primarily owns them
+- package-aware example commands are now the default
+- generated `API Docs` are now part of the documented learning path
+- the public root model centers on `URootUi`
+
+## New Discovery Path
+
+Use this order when navigating the project:
+
+1. `README.md` or `README_AR.md`
+2. `docs/src/index.md`
+3. the relevant guide chapter
+4. `docs/src/en/examples/index.md` or `docs/src/ar/examples/index.md`
+5. generated `cargo doc --no-deps -p univis_ui`
+
+## Example Command Migration
+
+Older commands often assumed the workspace root package:
+
+```bash
+cargo run --example hello_world
+```
+
+Use package-aware commands now:
+
+```bash
+cargo run -p univis_ui --example hello_world
+cargo run -p univis_ui_engine --example root_fit_content
+cargo run -p univis_ui_widgets --example text_field
+cargo run -p univis_ui_interaction --example interaction
+```
+
+## Root And Docs Migration
+
+If you learned the project through older docs or older root wrappers, start here:
+
+- `docs/src/en/migration/docs-and-examples.md`
+- `docs/src/en/migration/root-api.md`
+- `docs/src/en/migration/example-paths.md`
+
+Arabic mirrors:
+
+- `docs/src/ar/migration/docs-and-examples.md`
+- `docs/src/ar/migration/root-api.md`
+- `docs/src/ar/migration/example-paths.md`
+
+## Source Of Truth
+
+- project story and crate map: `README.md`
+- Arabic landing page: `README_AR.md`
+- guides: `docs/src/en/*` and `docs/src/ar/*`
+- example catalog: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
+- API reference: generated `cargo doc --no-deps -p univis_ui`
+
+## Why The Roadmap Files Were Removed
+
+The roadmap checklists were useful while the work was in progress, but they are now historical implementation notes. The repository now keeps a migration summary instead of open-ended planning files at the root.

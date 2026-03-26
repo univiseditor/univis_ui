@@ -4,6 +4,30 @@ use bevy::prelude::*;
 /// Component defining interaction colors.
 ///
 /// Attaching this component to a `UNode` enables automatic hover/press color changes.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui_engine::prelude::*;
+/// use univis_ui_interaction::prelude::*;
+///
+/// fn spawn_interactive(commands: &mut Commands) {
+///     commands.spawn((
+///         UNode {
+///             width: UVal::Px(160.0),
+///             height: UVal::Px(48.0),
+///             background_color: Color::srgb(0.18, 0.24, 0.34),
+///             ..default()
+///         },
+///         UInteractionColors {
+///             normal: Color::srgb(0.18, 0.24, 0.34),
+///             hovered: Color::srgb(0.24, 0.3, 0.42),
+///             pressed: Color::srgb(0.12, 0.18, 0.28),
+///         },
+///     ));
+/// }
+/// ```
 #[derive(Component, Clone, Reflect)]
 #[require(UInteraction)]
 pub struct UInteractionColors {

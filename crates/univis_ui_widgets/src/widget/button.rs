@@ -17,6 +17,17 @@ impl Plugin for UnivisButtonPlugin {
 ///
 /// `UButton` synchronizes its visual state into an underlying [`UNode`] and
 /// attaches hover/press colors through [`UInteractionColors`].
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui_widgets::prelude::*;
+///
+/// fn spawn_button(commands: &mut Commands) {
+///     commands.spawn(UButton::primary());
+/// }
+/// ```
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(ULayout, Pickable)]
@@ -40,11 +51,11 @@ impl Default for UButton {
     }
 }
 
-// علامة داخلية لضمان عدم تكرار المراقب
+// Internal marker to avoid attaching duplicate observers.
 #[derive(Component)]
 struct ButtonObserved;
 
-// --- الأنظمة (Systems) ---
+// --- Systems ---
 
 fn attach_button_observers(
     mut commands: Commands,

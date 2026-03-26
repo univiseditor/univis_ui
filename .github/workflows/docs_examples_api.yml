@@ -1,0 +1,44 @@
+name: Docs, Examples, and API Docs
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install mdBook
+        run: cargo install mdbook --locked
+
+      - name: Build mdBook
+        run: mdbook build docs
+
+      - name: Generate public API docs sequentially
+        run: |
+          cargo doc -p univis_ui_style --no-deps
+          cargo doc -p univis_ui_engine --no-deps
+          cargo doc -p univis_ui_interaction --no-deps
+          cargo doc -p univis_ui_widgets --no-deps
+          cargo doc -p univis_ui --no-deps
+
+      - name: Check examples package by package
+        run: |
+          ./scripts/check_examples_serial_release.sh -p univis_ui_engine
+          ./scripts/check_examples_serial_release.sh -p univis_ui_widgets
+          ./scripts/check_examples_serial_release.sh -p univis_ui_interaction
+          ./scripts/check_examples_serial_release.sh -p univis_ui

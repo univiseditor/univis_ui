@@ -27,3 +27,9 @@ The render sync system:
 - clean edges under zoom
 - good support for border radius, clipping, and antialiasing
 - flexibility for both `Round` and `Cut` shapes
+
+## Related Examples
+
+- [`border_light_3d`](../examples/index.md#border_light_3d) in `univis_ui_engine`
+- `card_profile` in `univis_ui`
+- `sci_fi` in `univis_ui`

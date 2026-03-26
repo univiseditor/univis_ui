@@ -5,13 +5,13 @@
 - تهيئة الشكل/الأبناء.
 - منطق التفاعل.
 - تحديث المرئيات.
-- إطلاق events (Messages) عند الحاجة.
+- إطلاق الرسائل عند الحاجة.
 
 ## ترتيب ذهني سريع
 
 - عرض/نص:
   - `UTextLabel`, `UImage`, `UBadge`, `UTag`, `UProgressBar`
-- Actions:
+- أفعال:
   - `UButton`, `UIconButton`, `UToggle`, `UCheckbox`, `URadioButton`
 - Inputs:
   - `USeekBar`, `UDragValue`, `USelect`, `UTextField`
@@ -24,3 +24,25 @@
 - اختيارية حاليًا:
   - `UnivisTextFieldPlugin`
   - `UnivisBadgePlugin`
+
+## أمثلة مرتبطة
+
+- [`widgets`](../examples/index.md#widgets) داخل `univis_ui_widgets`
+- [`text_label`](../examples/index.md#text_label) داخل `univis_ui_widgets`
+- [`text_field`](../examples/index.md#text_field) داخل `univis_ui_widgets`
+- [`panel_window`](../examples/index.md#panel_window) داخل `univis_ui_widgets`
+- [`scroll_view`](../examples/index.md#scroll_view) داخل `univis_ui_widgets`
+
+## نقاط الدخول الرسمية في `API`
+
+- `univis_ui_widgets::widget::text_label::UTextLabel`
+- `univis_ui_widgets::widget::button::UButton`
+- `univis_ui_widgets::widget::text_field::UTextField`
+- `univis_ui_widgets::widget::panel::{UPanel, UPanelWindow}`
+- `univis_ui_widgets::widget::scroll_view::UScrollContainer`
+
+## إلى أين بعد ذلك؟
+
+- المثال المرتبط: [`widgets`](../examples/index.md#widgets)
+- فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
+- صفحة الترحيل: [ترحيل مسارات الأمثلة](../migration/example-paths.md)

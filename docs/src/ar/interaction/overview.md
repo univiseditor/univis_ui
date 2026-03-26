@@ -34,3 +34,20 @@
 
 - [مصفوفة دعم التفاعل (الشاشة/العالم/ثلاثي الأبعاد)](support-matrix.md)
 - [القيود الحالية](../development/current-limitations.md)
+
+## أمثلة مرتبطة
+
+- [`interaction`](../examples/index.md#interaction) داخل `univis_ui_interaction`
+- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui_engine`
+
+## نقاط الدخول الرسمية في `API`
+
+- `univis_ui_interaction::interaction::feedback::UInteraction`
+- `univis_ui_interaction::interaction::feedback::UInteractionColors`
+- `univis_ui_interaction::interaction::picking::univis_picking_backend`
+
+## إلى أين بعد ذلك؟
+
+- المثال المرتبط: [`interaction`](../examples/index.md#interaction)
+- فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
+- صفحة مرجعية إضافية: [القيود الحالية](../development/current-limitations.md)

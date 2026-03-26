@@ -1,3 +1,10 @@
+//! Demonstrates blocking, ignoring, and passthrough behavior in interaction picking.
+//!
+//! Related docs:
+//! - `docs/src/en/interaction/overview.md`
+//! - `docs/src/ar/interaction/overview.md`
+//! - `docs/src/en/examples/index.md#interaction`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

@@ -48,13 +48,13 @@ fn setup(mut commands: Commands) {
 
 ## 3) اختيارات الجذر
 
-- `URootUi::screen()` لمسار HUD الحقيقي والعناصر الثابتة على الشاشة.
+- `URootUi::screen()` لمسار الواجهة الثابتة على الشاشة والعناصر المرتبطة بها.
 - `URootUi::world_2d(size)` لواجهة في فضاء العالم ثنائية الأبعاد.
 - `URootUi::world_3d(size)` لواجهة في فضاء العالم تستخدم مسار المواد ثلاثي الأبعاد.
-- `URootUi::world_2d_fit_content()` و`URootUi::world_3d_fit_content()` لقياس حجم root العالمي من المحتوى الداخلي.
+- `URootUi::world_2d_fit_content()` و`URootUi::world_3d_fit_content()` لقياس حجم الجذر العالمي من المحتوى الداخلي.
 - `UVal::Px` يعني وحدات UI منطقية، لا pixels فعلية للشاشة.
-- `UiCanvasSize::Viewport` يتبع viewport الكاميرا المحلولة.
-- `UiCanvasSize::FitContent { min, max }` يقيس canvas المنطقي من المحتوى ثم يطبّق الحدود عند الحاجة.
+- `UiCanvasSize::Viewport` يتبع مساحة رؤية الكاميرا المحلولة.
+- `UiCanvasSize::FitContent { min, max }` يقيس مساحة الرسم المنطقية من المحتوى ثم يطبّق الحدود عند الحاجة.
 - الحجم الفيزيائي في فضاء العالم يُشتق بالعلاقة:
   `world_size = canvas_size * meters_per_unit`
 
@@ -97,3 +97,27 @@ fn main() {
         .run();
 }
 ```
+
+## أمثلة مرتبطة
+
+- [`hello_world`](examples/index.md#hello_world) داخل `univis_ui`
+- [`widgets`](examples/index.md#widgets) داخل `univis_ui_widgets`
+- [`interaction`](examples/index.md#interaction) داخل `univis_ui_interaction`
+
+## صفحات ترحيل مرتبطة
+
+- [ترحيل الجذور إلى `URootUi`](migration/root-api.md)
+- [ترحيل مسارات الأمثلة](migration/example-paths.md)
+
+## نقاط الدخول الرسمية في `API`
+
+- `univis_ui::UnivisUiPlugin`
+- `univis_ui::prelude`
+- `univis_ui_engine::layout::layout_system::URootUi`
+- `univis_ui_engine::layout::univis_node::{UNode, ULayout}`
+
+## إلى أين بعد ذلك؟
+
+- المثال المرتبط: [`hello_world`](examples/index.md#hello_world)
+- فهرس `API`: [مرجع الواجهة العامة](api/index.md)
+- صفحة الترحيل: [ترحيل الجذور إلى `URootUi`](migration/root-api.md)

@@ -1,0 +1,82 @@
+# Release Notes
+
+This file replaces the version-specific `RELEASE_NOTES_0.2.0-alpha.1.md` root note and keeps the current alpha release story in one stable location.
+
+## Current Release Story
+
+The current `alpha2` line should be understood as a structural continuation of the `0.2.0-alpha.1` transition, not as a small patch over the old `0.1.x` line.
+
+The project has changed substantially in these areas:
+
+- packaging moved from a monolithic crate to a layered workspace
+- the public root model now centers on `URootUi`
+- examples are distributed by owning crate
+- documentation now lives in one bilingual `mdBook` under `docs/`
+- generated `API Docs` are part of the intended learning path
+- release validation now includes explicit sequential checks for docs, examples, and public crates
+
+## Main Upgrade Themes
+
+### Architecture
+
+- `univis_ui` remains the facade crate
+- `univis_ui_engine`, `univis_ui_style`, `univis_ui_interaction`, and `univis_ui_widgets` now represent clearer public subsystem boundaries
+- low-level users should depend on the crate that owns the capability they need
+
+### Roots And Layout
+
+- `URootUi` is the public root model
+- `screen`, `world_2d`, and `world_3d` are the canonical root spaces
+- content-sized world roots are supported through `UiCanvasSize::FitContent { min, max }`
+- root capsules prevent cross-root stacking leaks between separate UI trees
+
+### Docs And Examples
+
+- `README.md` and `README_AR.md` are the GitHub landing pages
+- `docs/src/index.md` is the docs landing point
+- examples now live next to the crate they primarily represent
+- package-aware example commands are now the default
+
+### Migration
+
+If you are upgrading from older docs, older example paths, or older root wrappers, start here:
+
+- `MIGRATION.md`
+- `MIGRATION_AR.md`
+- `docs/src/en/migration/`
+- `docs/src/ar/migration/`
+
+## Canonical Commands
+
+Generate API docs:
+
+```bash
+cargo doc --no-deps -p univis_ui
+```
+
+Build the docs site:
+
+```bash
+mdbook build docs
+```
+
+Run representative examples:
+
+```bash
+cargo run -p univis_ui --example hello_world
+cargo run -p univis_ui_engine --example root_fit_content
+cargo run -p univis_ui_widgets --example text_field
+cargo run -p univis_ui_interaction --example interaction
+```
+
+## Where To Look Next
+
+- release history and implementation highlights: `changelog.md`
+- migration summary: `MIGRATION.md`
+- Arabic migration summary: `MIGRATION_AR.md`
+- docs home: `docs/src/index.md`
+
+## Notes
+
+- the completed `URootUi` migration baseline from `Phase 0` through `Phase 10` remains the foundation for the current alpha line
+- the old version-specific release note file was removed to keep one stable root-level release note entry point

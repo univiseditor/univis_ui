@@ -17,7 +17,6 @@ This book is the full operational reference for the project. It covers:
 - This book documents the **actual repository state**.
 - Chapters reference concrete paths in `crates/*/src/`, `crates/*/examples/`, and the root `examples/` directory.
 - If code and docs diverge, treat the source code as the ground truth.
-- English translation is incremental; structure is complete, while some chapter bodies may still be Arabic.
 
 ## Requirements
 
@@ -37,3 +36,20 @@ Serve locally:
 ```bash
 mdbook serve docs -n 127.0.0.1 -p 3000
 ```
+
+## Guides vs API Docs
+
+- Use this book for concepts, migration notes, and example-driven workflows.
+- Use generated `rustdoc` for exact type paths, fields, and signatures.
+
+Generate the API docs with:
+
+```bash
+cargo doc --no-deps -p univis_ui
+```
+
+## Where To Look Next
+
+- related example: [Examples](examples/index.md)
+- related API index: [API Reference](api/index.md)
+- related migration notes: [Migration and Limitations](migration/index.md)

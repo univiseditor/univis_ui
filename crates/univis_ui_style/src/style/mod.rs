@@ -2,6 +2,7 @@
 
 use bevy::{asset::embedded_asset, prelude::*};
 
+/// Built-in icon font assets and helpers.
 pub mod icons;
 
 /// Common style imports, including [`Theme`] and the built-in icons.
@@ -11,6 +12,17 @@ pub mod prelude {
 }
 
 /// Registers embedded style assets and initializes the shared [`Theme`] resource.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui_style::style::UnivisUiStylePlugin;
+///
+/// App::new()
+///     .add_plugins(MinimalPlugins)
+///     .add_plugins(UnivisUiStylePlugin);
+/// ```
 pub struct UnivisUiStylePlugin;
 
 impl Plugin for UnivisUiStylePlugin {
@@ -24,26 +36,45 @@ impl Plugin for UnivisUiStylePlugin {
 }
 
 /// Shared style resource exposed to widgets and application code.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui_style::style::Theme;
+///
+/// fn read_theme(theme: Res<Theme>) {
+///     let _body_font = theme.text.font.inter_regular.clone();
+///     let _icon_font = theme.icon.font.clone();
+/// }
+/// ```
 #[derive(Resource)]
 pub struct Theme {
+    /// Text-oriented style handles.
     pub text: TextStyles,
+    /// Icon-oriented style handles.
     pub icon: IconStyles,
 }
 
 /// Group of text-related style handles.
 pub struct TextStyles {
+    /// Embedded body-font handles.
     pub font: Fonts,
 }
 
 /// Group of icon-related style handles.
 pub struct IconStyles {
+    /// Embedded icon font handle.
     pub font: Handle<Font>,
 }
 
 /// Built-in font handles embedded by [`UnivisUiStylePlugin`].
 pub struct Fonts {
+    /// Embedded Inter Regular handle.
     pub inter_regular: Handle<Font>,
+    /// Embedded Adwaita Sans Regular handle.
     pub adwaita_sans_regular: Handle<Font>,
+    /// Embedded Fira Sans Regular handle.
     pub fira_sans_regular: Handle<Font>,
 }
 

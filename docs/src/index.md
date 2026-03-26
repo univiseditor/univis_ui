@@ -13,6 +13,17 @@ Use the language switcher shown at the top of each page to jump to the mirrored 
 - `en/` contains the English documentation tree
 - both trees share the same chapter map and live in one mdBook
 
+## Guides vs API Docs
+
+- Use the guide chapters for mental models, migration notes, and example-driven learning.
+- Use generated `rustdoc` for exact type paths, field lists, and signatures.
+
+Generate API docs with:
+
+```bash
+cargo doc --no-deps -p univis_ui
+```
+
 ## Build
 
 ```bash

@@ -24,6 +24,9 @@ pub enum UiSpace {
 }
 
 /// Describes how a root obtains its logical canvas size.
+///
+/// `Viewport` is mainly for `UiSpace::Screen`, while `Fixed` and `FitContent`
+/// are most useful for `World2d` and `World3d` roots.
 #[derive(Clone, Copy, Debug, PartialEq, Reflect)]
 pub enum UiCanvasSize {
     /// Match the resolved viewport size.
@@ -52,6 +55,32 @@ pub enum UiCameraRef {
     RootResolutionState,
     RootSpawnRank
 )]
+/// Public root component for Univis UI trees.
+///
+/// `URootUi` defines where a root lives (`Screen`, `World2d`, or `World3d`),
+/// how its logical canvas is sized, which camera resolves it, and how world
+/// scaling is derived for world-space roots.
+///
+/// Every `URootUi` acts as a closed stacking capsule: local ordering stays
+/// inside the root and does not automatically rise above another root.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui_engine::prelude::*;
+///
+/// fn spawn_world_panel(commands: &mut Commands) {
+///     commands.spawn((
+///         URootUi::world_2d(Vec2::new(960.0, 540.0)),
+///         UNode {
+///             width: UVal::Percent(1.0),
+///             height: UVal::Percent(1.0),
+///             ..default()
+///         },
+///     ));
+/// }
+/// ```
 pub struct URootUi {
     /// Where the UI lives once projected into the scene.
     ///
@@ -75,6 +104,24 @@ impl URootUi {
     pub const DEFAULT_RESOLUTION_SCALE: f32 = 1.0;
 
     /// Creates a screen-space root that behaves like a HUD tied to the resolved viewport.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use bevy::prelude::*;
+    /// use univis_ui_engine::prelude::*;
+    ///
+    /// fn spawn_hud(commands: &mut Commands) {
+    ///     commands.spawn((
+    ///         URootUi::screen(),
+    ///         UNode {
+    ///             width: UVal::Percent(1.0),
+    ///             height: UVal::Percent(1.0),
+    ///             ..default()
+    ///         },
+    ///     ));
+    /// }
+    /// ```
     pub fn screen() -> Self {
         Self {
             space: UiSpace::Screen,
@@ -114,6 +161,9 @@ impl URootUi {
     }
 
     /// Creates a world-space 2D root whose logical canvas grows from its measured content.
+    ///
+    /// This is useful for floating cards, inspectors, or node-like panels that
+    /// should wrap their measured content.
     pub fn world_2d_fit_content() -> Self {
         Self {
             space: UiSpace::World2d,

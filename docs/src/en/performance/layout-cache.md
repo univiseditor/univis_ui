@@ -18,3 +18,7 @@ File: `src/layout/core/layout_cache.rs`
 
 - when node counts grow much larger
 - when dirty ratios stay high most of the time
+
+## Related Example
+
+- `layout_cache` in `univis_ui_engine`

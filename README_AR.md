@@ -5,10 +5,12 @@
 
 ابنِ واجهات حادة وقابلة للتوسع في Bevy للشاشة، ولوحات العالم، والواجهات ثلاثية الأبعاد المضاءة، عبر طبقة ECS واحدة.
 
+ملخص الترحيل: [MIGRATION_AR.md](MIGRATION_AR.md)
+
 > مهم:
 > ما تزال `univis_ui` في مرحلة **alpha**، لذلك يمكن أن تتغير الـ API والسلوك بين الإصدارات.
 
-من المثال `cargo run --release --example card_profile`:
+من المثال `cargo run --release -p univis_ui --features example_bloom --example card_profile`:
 
 ![profile](profile.png)
 
@@ -128,6 +130,7 @@ fn setup(mut commands: Commands) {
 
 - العربية: `docs/src/ar/`
 - الإنجليزية: `docs/src/en/`
+- صفحة الدخول: `docs/src/index.md`
 
 ابنِ الوثائق:
 
@@ -143,12 +146,42 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 نقاط بداية مفيدة:
 
+- [صفحة الوثائق الرئيسية](docs/src/index.md)
+- [ملخص الترحيل](MIGRATION_AR.md)
 - [البدء السريع (AR)](docs/src/ar/quick-start.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [الجذور والمساحات (AR)](docs/src/ar/layout/roots.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
 - [فهرس الأمثلة (AR)](docs/src/ar/examples/index.md)
 - [Examples Index (EN)](docs/src/en/examples/index.md)
+- [الترحيل والقيود (AR)](docs/src/ar/migration/index.md)
+- [Migration and Limitations (EN)](docs/src/en/migration/index.md)
+
+## مسار الاكتشاف من GitHub
+
+1. اقرأ `README.md` أو `README_AR.md` لفهم قصة المشروع وخريطة الحزم.
+2. افتح [صفحة الوثائق الرئيسية](docs/src/index.md) ثم انتقل إلى فصل الشرح المناسب.
+3. استخدم [فهرس الأمثلة (AR)](docs/src/ar/examples/index.md) أو [Examples Index (EN)](docs/src/en/examples/index.md).
+4. ولّد `cargo doc --no-deps -p univis_ui` عندما تحتاج المسارات الدقيقة والتواقيع.
+
+## `API Docs`
+
+استخدم صفحات الشرح للمفاهيم، وخطوات الترحيل، والتعلم عبر الأمثلة. واستخدم الوثائق المولدة آليًا عندما تحتاج المسارات الدقيقة، والحقول، والتواقيع.
+
+ولّدهـا بالأمر:
+
+```bash
+cargo doc --no-deps -p univis_ui
+```
+
+نقاط الدخول الأهم:
+
+- `univis_ui::UnivisUiPlugin`
+- `univis_ui_engine::layout::layout_system::URootUi`
+- `univis_ui_engine::layout::univis_node::UNode`
+- `univis_ui_interaction::interaction::feedback::UInteraction`
+- `univis_ui_widgets::widget::text_label::UTextLabel`
+- `univis_ui_style::style::Theme`
 
 أمثلة جيدة للبداية:
 

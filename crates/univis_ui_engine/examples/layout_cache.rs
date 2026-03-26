@@ -1,3 +1,10 @@
+//! Focused layout-cache reference scene.
+//!
+//! Related docs:
+//! - `docs/src/en/performance/layout-cache.md`
+//! - `docs/src/ar/performance/layout-cache.md`
+//! - `docs/src/en/examples/index.md`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::layout::profiling::LayoutProfilingPlugin;

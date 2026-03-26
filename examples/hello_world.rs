@@ -1,3 +1,10 @@
+//! Minimal facade-level entry point for Univis UI.
+//!
+//! Related docs:
+//! - `docs/src/en/quick-start.md`
+//! - `docs/src/ar/quick-start.md`
+//! - `docs/src/en/examples/index.md#hello_world`
+
 use bevy::prelude::*;
 use univis_ui::prelude::*; // استيراد المكتبة
 

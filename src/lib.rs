@@ -70,6 +70,17 @@ pub mod prelude {
 
 /// Registers the full Univis UI stack in the recommended order:
 /// style, engine, interaction, then widgets.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui::UnivisUiPlugin;
+///
+/// App::new()
+///     .add_plugins(DefaultPlugins)
+///     .add_plugins(UnivisUiPlugin);
+/// ```
 pub struct UnivisUiPlugin;
 
 impl Plugin for UnivisUiPlugin {

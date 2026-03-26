@@ -4,8 +4,7 @@ All notable changes to this project will be documented in this file.
 
 This changelog is intentionally concise.
 For deeper release context, see:
-- `RELEASE_NOTES_0.2.0-alpha.1.md`
-- `RELEASE_NOTES_2026-03-06.md`
+- `RELEASE_NOTES.md`
 
 ## [2026-03-26]
 
@@ -19,8 +18,17 @@ For deeper release context, see:
 - Normalized language separation inside the unified docs so English chapters no longer contain Arabic prose, Arabic chapters no longer contain stray English descriptive terms, and only code identifiers remain shared across both trees.
 - Rewrote `README.md` to focus on the library's practical value, strengths, use cases, quick start, and example entry points instead of spreading low-level reference detail across the landing page.
 - Added `README_AR.md` as a dedicated Arabic landing page and linked it from the main `README.md`.
+- Added repository-level migration summaries in `MIGRATION.md` and `MIGRATION_AR.md`, then removed the temporary docs/examples/API roadmap files from the root.
+- Replaced the version-specific `RELEASE_NOTES_0.2.0-alpha.1.md` root note with a stable root-level `RELEASE_NOTES.md`.
 - Expanded the generated Rust API docs across the facade crate and core workspace crates by adding crate-level and module-level `rustdoc`, documenting `URootUi`, layout primitives, common widgets, interaction state, and theme resources, and hiding several internal scheduling helpers from the public documentation surface.
 - Redistributed examples so each one now lives under the crate it primarily represents (`univis_ui`, `univis_ui_engine`, `univis_ui_interaction`, or `univis_ui_widgets`), then updated example manifests, package-specific example commands, example indexes, smoke-test docs, and release-validation scripts to follow the new package-aware layout.
+- Completed Phase 1 of the docs/examples/API roadmap by freezing the bilingual `docs/` information architecture around a mirrored English/Arabic navigation model, adding dedicated migration pages, and introducing editorial rules for language separation, naming, and example-link conventions.
+- Completed Phase 2 of the docs/examples/API roadmap by turning the examples chapter into a canonical package-aware catalog with purpose statements, learning/showcase/smoke tags, guide-to-example links, and reverse links from representative example source files back to their related docs pages.
+- Completed Phase 3 of the docs/examples/API roadmap by auditing the public API surface again, expanding curated `rustdoc` on high-value entry points such as `UnivisUiPlugin`, `URootUi`, `UNode`, `UInteractionColors`, `Theme`, `UTextLabel`, and `UButton`, and hiding several engine-internal modules from the generated documentation story.
+- Completed Phase 4 of the docs/examples/API roadmap by wiring `README`, the docs landing pages, and the key guide chapters to their canonical examples, migration pages, and fully qualified public API entry points.
+- Completed Phase 5 of the docs/examples/API roadmap by adding a dedicated docs authoring workflow, a docs review checklist, and a pull-request template that codifies bilingual docs updates, crate-owned examples, and public `rustdoc` expectations.
+- Completed Phase 6 of the docs/examples/API roadmap by adding a GitHub Actions workflow for `mdbook build docs`, sequential package-by-package example validation, sequential public-crate `cargo doc --no-deps`, and explicit pre-alpha documentation validation requirements.
+- Completed Phase 7 of the docs/examples/API roadmap by refreshing the release notes around the unified `docs/` book and crate-owned example layout, adding a dedicated migration page for users coming from older docs/example assumptions, tightening the GitHub discovery path across `README -> docs -> examples -> API docs`, and performing a final consistency pass on names, commands, and package-aware example invocations.
 
 ### Notes
 

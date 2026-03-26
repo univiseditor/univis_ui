@@ -4,8 +4,8 @@
 
 تحقق من:
 
-- وجود `Camera2d`.
-- وجود root (`UScreenRoot` أو `UWorldRoot`).
+- وجود كاميرا متوافقة مع الجذر الحالي.
+- وجود جذر مبني على `URootUi`.
 - أن `ComputedSize` ليس صفرًا.
 - أن `Visibility` ليست `Hidden`.
 

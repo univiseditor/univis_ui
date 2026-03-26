@@ -11,17 +11,29 @@
 //! Most users reach this module through [`crate::prelude`] or
 //! [`crate::layout::prelude`].
 
+#[doc(hidden)]
 pub mod algorithms;
+#[doc(hidden)]
 pub mod components;
+#[doc(hidden)]
 pub mod core;
+/// Logical UI units, spacing helpers, and box-side utilities.
 pub mod geometry;
+/// Image-backed node helpers.
 pub mod image;
+/// The public root model and root-resolution systems.
 pub mod layout_system;
+/// Physically based material overrides for `World3d` content.
 pub mod pbr;
+#[doc(hidden)]
 pub mod pipeline;
+/// Optional profiling and layout diagnostics helpers.
 pub mod profiling;
+/// Mesh/material synchronization and render-facing types.
 pub mod render;
+#[doc(hidden)]
 pub mod solver_types;
+/// Core node, layout, and local positioning components.
 pub mod univis_node;
 
 /// Common imports for authoring layout trees and roots directly from the engine crate.

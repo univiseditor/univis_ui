@@ -4,13 +4,14 @@
 [![License](https://img.shields.io/badge/License-MIT%2FApache--2.0-green)](LICENSE)
 
 Arabic version: [README_AR.md](README_AR.md)
+Migration summary: [MIGRATION.md](MIGRATION.md)
 
 Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit interfaces with one ECS-native stack.
 
 > Important:
 > `univis_ui` is still in **alpha**. API and behavior can change between versions.
 
-From `cargo run --release --example card_profile`:
+From `cargo run --release -p univis_ui --features example_bloom --example card_profile`:
 
 ![profile](profile.png)
 
@@ -130,6 +131,7 @@ The full documentation lives in `docs/` as one mdBook with Arabic and English tr
 
 - Arabic: `docs/src/ar/`
 - English: `docs/src/en/`
+- Docs home: `docs/src/index.md`
 
 Build docs:
 
@@ -145,12 +147,42 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 Good starting points:
 
+- [Docs Home](docs/src/index.md)
+- [Migration Summary](MIGRATION.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
-- [البدء السريع (AR)](docs/src/ar/quick-start.md)
+- [Quick Start (AR)](docs/src/ar/quick-start.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
-- [الجذور والمساحات (AR)](docs/src/ar/layout/roots.md)
+- [Roots and Spaces (AR)](docs/src/ar/layout/roots.md)
 - [Examples Index (EN)](docs/src/en/examples/index.md)
-- [فهرس الأمثلة (AR)](docs/src/ar/examples/index.md)
+- [Examples Index (AR)](docs/src/ar/examples/index.md)
+- [Migration and Limitations (EN)](docs/src/en/migration/index.md)
+- [الترحيل والقيود (AR)](docs/src/ar/migration/index.md)
+
+## GitHub Discovery Path
+
+1. Read this `README.md` for the project story and crate map.
+2. Open [Docs Home](docs/src/index.md) and jump into the relevant guide.
+3. Use the language-specific [Examples Index (EN)](docs/src/en/examples/index.md) or [Examples Index (AR)](docs/src/ar/examples/index.md).
+4. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
+
+## API Docs
+
+Use guides for concepts, migration notes, and example-driven learning. Use generated API docs for exact paths, fields, and signatures.
+
+Generate the API docs:
+
+```bash
+cargo doc --no-deps -p univis_ui
+```
+
+Useful entry points:
+
+- `univis_ui::UnivisUiPlugin`
+- `univis_ui_engine::layout::layout_system::URootUi`
+- `univis_ui_engine::layout::univis_node::UNode`
+- `univis_ui_interaction::interaction::feedback::UInteraction`
+- `univis_ui_widgets::widget::text_label::UTextLabel`
+- `univis_ui_style::style::Theme`
 
 Useful examples:
 

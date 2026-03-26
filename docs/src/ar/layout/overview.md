@@ -13,15 +13,15 @@
 
 ## الملفات المهمة
 
-- `src/layout/univis_node.rs`
-- `src/layout/core/pass_up.rs`
-- `src/layout/core/pass_down.rs`
-- `src/layout/core/solver.rs`
-- `src/layout/core/layout_cache.rs`
+- `crates/univis_ui_engine/src/layout/univis_node.rs`
+- `crates/univis_ui_engine/src/layout/core/pass_up.rs`
+- `crates/univis_ui_engine/src/layout/core/pass_down.rs`
+- `crates/univis_ui_engine/src/layout/core/solver.rs`
+- `crates/univis_ui_engine/src/layout/core/layout_cache.rs`
 
 ## مبادئ أساسية
 
-- الـ roots هي نقطة البداية: `UScreenRoot` أو `UWorldRoot`.
+- تبدأ الجذور من `URootUi`.
 - `LayoutDepth` يُحسب تلقائيًا عبر traversal.
 - `IntrinsicSize` يُستخدم لتقدير المقاسات المعتمدة على المحتوى.
 - `ComputedSize` هو الناتج النهائي المعتمد للرندر.

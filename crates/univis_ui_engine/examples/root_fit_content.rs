@@ -1,3 +1,10 @@
+//! Demonstrates content-sized world roots via `UiCanvasSize::FitContent`.
+//!
+//! Related docs:
+//! - `docs/src/en/layout/roots.md`
+//! - `docs/src/ar/layout/roots.md`
+//! - `docs/src/en/examples/index.md#root_fit_content`
+
 use bevy::{core_pipeline::tonemapping::Tonemapping, prelude::*};
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

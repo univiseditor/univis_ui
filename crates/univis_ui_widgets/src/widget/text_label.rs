@@ -1,3 +1,9 @@
+//! Text rendering widgets for Univis UI.
+//!
+//! [`UTextLabel`] measures text through Bevy's text pipeline, then renders the
+//! final result through Univis SDF materials so the same widget can stay sharp
+//! in screen and world roots.
+
 use crate::internal_prelude::*;
 use bevy::asset::{Asset, AssetEvent, AssetId, Assets, RenderAssetUsages, embedded_asset};
 use bevy::color::LinearRgba;
@@ -41,6 +47,22 @@ pub enum UTextOverflow {
 ///
 /// `UTextLabel` measures text using Bevy's text pipeline, then renders the
 /// result through a mesh/material path that stays sharp in screen and world roots.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui_widgets::prelude::*;
+///
+/// fn spawn_label(commands: &mut Commands) {
+///     commands.spawn(UTextLabel {
+///         text: "Hello Univis".into(),
+///         font_size: 28.0,
+///         color: Color::WHITE,
+///         ..default()
+///     });
+/// }
+/// ```
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout, Visibility, ComputedTextBlock, UTextLabelLayoutCache)]

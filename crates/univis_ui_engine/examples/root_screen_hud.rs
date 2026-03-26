@@ -1,3 +1,10 @@
+//! Demonstrates that `URootUi::screen()` stays fixed while a world root follows camera motion.
+//!
+//! Related docs:
+//! - `docs/src/en/layout/roots.md`
+//! - `docs/src/ar/layout/roots.md`
+//! - `docs/src/en/examples/index.md#root_screen_hud`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

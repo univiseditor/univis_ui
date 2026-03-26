@@ -1,3 +1,10 @@
+//! Demonstrates `UTextField` setup, filtering, and emitted messages.
+//!
+//! Related docs:
+//! - `docs/src/en/widgets/overview.md`
+//! - `docs/src/ar/widgets/overview.md`
+//! - `docs/src/en/examples/index.md#text_field`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

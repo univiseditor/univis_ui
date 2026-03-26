@@ -40,7 +40,27 @@ pub enum UShapeMode {
 }
 
 /// The core component for any UI node.
-/// Defines sizing, spacing, appearance (color/radius), and layout behavior.
+///
+/// `UNode` carries the box-model information for a visual UI entity: preferred
+/// size, padding, margin, background color, and border radius.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use bevy::prelude::*;
+/// use univis_ui_engine::prelude::*;
+///
+/// fn spawn_panel(commands: &mut Commands) {
+///     commands.spawn(UNode {
+///         width: UVal::Px(320.0),
+///         height: UVal::Px(120.0),
+///         padding: USides::all(16.0),
+///         background_color: Color::srgb(0.12, 0.15, 0.2),
+///         border_radius: UCornerRadius::all(16.0),
+///         ..default()
+///     });
+/// }
+/// ```
 #[derive(Component, Clone, Reflect)]
 #[require(Transform, Visibility, ComputedSize, ULayout, IntrinsicSize)]
 pub struct UNode {

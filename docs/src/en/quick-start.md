@@ -97,3 +97,27 @@ fn main() {
         .run();
 }
 ```
+
+## Related Examples
+
+- [`hello_world`](examples/index.md#hello_world) in `univis_ui`
+- [`widgets`](examples/index.md#widgets) in `univis_ui_widgets`
+- [`interaction`](examples/index.md#interaction) in `univis_ui_interaction`
+
+## Related Migration Notes
+
+- [Root API Migration to `URootUi`](migration/root-api.md)
+- [Example Path Migration](migration/example-paths.md)
+
+## API Entry Points
+
+- `univis_ui::UnivisUiPlugin`
+- `univis_ui::prelude`
+- `univis_ui_engine::layout::layout_system::URootUi`
+- `univis_ui_engine::layout::univis_node::{UNode, ULayout}`
+
+## Where To Look Next
+
+- related example: [`hello_world`](examples/index.md#hello_world)
+- related API index: [API Reference](api/index.md)
+- related migration page: [Root API Migration to `URootUi`](migration/root-api.md)

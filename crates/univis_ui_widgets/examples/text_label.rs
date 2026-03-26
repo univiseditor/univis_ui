@@ -1,3 +1,10 @@
+//! Explores text measurement, overflow, clipping, and autosize for `UTextLabel`.
+//!
+//! Related docs:
+//! - `docs/src/en/widgets/overview.md`
+//! - `docs/src/ar/widgets/overview.md`
+//! - `docs/src/en/examples/index.md#text_label`
+
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;

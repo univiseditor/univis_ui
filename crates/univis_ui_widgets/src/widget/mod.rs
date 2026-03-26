@@ -9,22 +9,38 @@ use crate::internal_prelude::*;
 use crate::widget::{badge::BadgePluginInstalled, text_field::TextFieldPluginInstalled};
 use bevy::prelude::*;
 
+/// Badge and tag widgets.
 pub mod badge;
+/// Button widgets.
 pub mod button;
+/// Checkbox widget.
 pub mod checkbox;
+/// Divider widget.
 pub mod divider;
+/// Drag-to-edit numeric widget.
 pub mod drag_value;
+/// Icon button widget.
 pub mod icon_btn;
+/// Image widget.
 pub mod image;
 mod menu; // Internal placeholder module; not part of public API yet.
+/// Panel and panel-window widgets.
 pub mod panel;
+/// Progress-bar widget.
 pub mod progress;
+/// Radio button and radio-group widgets.
 pub mod radio;
+/// Scroll container widget.
 pub mod scroll_view;
+/// Seek-bar widget.
 pub mod seekbar;
+/// Select / dropdown widget.
 pub mod select;
+/// Editable text-field widget.
 pub mod text_field;
+/// Text rendering widget.
 pub mod text_label;
+/// Toggle / switch widget.
 pub mod toggle;
 
 /// Common widget imports for applications that depend on `univis_ui_widgets` directly.

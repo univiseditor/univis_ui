@@ -22,6 +22,18 @@ cargo doc --no-deps
 mdbook build docs
 ```
 
+## CI Validation
+
+GitHub Actions now validates docs/examples/API docs through:
+
+- `.github/workflows/docs_examples_api.yml`
+
+It runs:
+
+- `mdbook build docs`
+- `cargo doc --no-deps` for each public crate
+- package-by-package example checking through `./scripts/check_examples_serial_release.sh -p ...`
+
 ## Sequential Validation On Low-End Machines
 
 ```bash
@@ -60,3 +72,17 @@ To validate only selected examples:
 2. run `cargo check --workspace --all-targets`
 3. run `./scripts/check_examples_serial_release.sh`
 4. launch at least one example related to the modified area
+
+## Required Before The Next Alpha Cut
+
+- `cargo check --workspace --all-targets`
+- `mdbook build docs`
+- `cargo doc -p univis_ui_style --no-deps`
+- `cargo doc -p univis_ui_engine --no-deps`
+- `cargo doc -p univis_ui_interaction --no-deps`
+- `cargo doc -p univis_ui_widgets --no-deps`
+- `cargo doc -p univis_ui --no-deps`
+- `./scripts/check_examples_serial_release.sh -p univis_ui_engine`
+- `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
+- `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
+- `./scripts/check_examples_serial_release.sh -p univis_ui`

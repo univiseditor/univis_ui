@@ -27,3 +27,20 @@ Interaction depends on `UInteraction` being present on the target entity.
 
 - [Support Matrix](support-matrix.md)
 - [Current Limitations](../development/current-limitations.md)
+
+## Related Examples
+
+- [`interaction`](../examples/index.md#interaction) in `univis_ui_interaction`
+- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) in `univis_ui_engine`
+
+## API Entry Points
+
+- `univis_ui_interaction::interaction::feedback::UInteraction`
+- `univis_ui_interaction::interaction::feedback::UInteractionColors`
+- `univis_ui_interaction::interaction::picking::univis_picking_backend`
+
+## Where To Look Next
+
+- related example: [`interaction`](../examples/index.md#interaction)
+- related API index: [API Reference](../api/index.md)
+- related migration page: [Current Limitations](../development/current-limitations.md)

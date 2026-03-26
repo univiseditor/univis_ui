@@ -4,8 +4,8 @@
 
 Check:
 
-- that a camera exists
-- that a root entity exists
+- that a compatible camera exists
+- that a root entity built from `URootUi` exists
 - that `ComputedSize` is not zero
 - that `Visibility` is not `Hidden`
 

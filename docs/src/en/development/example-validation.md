@@ -4,6 +4,12 @@
 
 - March 6, 2026
 
+## Status Note
+
+This page is a historical validation snapshot from an earlier alpha-prep pass.
+The canonical current example catalog now lives in [Examples](../examples/index.md), and the
+workspace has grown since this report was captured.
+
 ## Validation Mode
 
 - Command style: sequential, release profile

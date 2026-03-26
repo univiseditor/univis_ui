@@ -1,3 +1,10 @@
+//! Broad sampler for the built-in widget surface.
+//!
+//! Related docs:
+//! - `docs/src/en/widgets/overview.md`
+//! - `docs/src/ar/widgets/overview.md`
+//! - `docs/src/en/examples/index.md#widgets`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

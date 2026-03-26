@@ -1,6 +1,6 @@
-# الأحداث Messages
+# الأحداث والرسائل
 
-الأحداث في Univis تستخدم Bevy Messages (`#[derive(Message)]`).
+تعتمد الأحداث في Univis على رسائل Bevy (`#[derive(Message)]`).
 
 ## Toggle
 

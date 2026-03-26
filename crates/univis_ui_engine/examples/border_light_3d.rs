@@ -1,3 +1,10 @@
+//! Exercises the lit `World3d` render path with bloom-friendly styling.
+//!
+//! Related docs:
+//! - `docs/src/en/rendering/overview.md`
+//! - `docs/src/ar/rendering/overview.md`
+//! - `docs/src/en/examples/index.md#border_light_3d`
+
 use bevy::{core_pipeline::tonemapping::Tonemapping, post_process::bloom::Bloom, prelude::*};
 use univis_ui_engine::prelude::*;
 

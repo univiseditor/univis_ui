@@ -7,8 +7,11 @@ use bevy::prelude::*;
 
 use crate::internal_prelude::*;
 
+/// Interaction state components and default pointer observers.
 pub mod feedback;
+#[doc(hidden)]
 pub mod math;
+/// Picking backend and hit-resolution helpers for Univis roots.
 pub mod picking;
 
 /// Common imports for interaction-related integrations.
@@ -17,16 +20,17 @@ pub mod prelude {
 }
 
 /// Registers Univis pointer picking and the default interaction observers.
+///
+/// This is the main plugin to add when using `univis_ui_interaction`
+/// directly instead of the full facade crate.
 pub struct UnivisInteractionPlugin;
 
 impl Plugin for UnivisInteractionPlugin {
     fn build(&self, app: &mut App) {
-        // app.add_plugins(UnivisInputFieldPlugin);
-        // 1. إضافة Backend الالتقاط (حساب من أين يمر الماوس)
+        // 1. Install the picking backend that computes pointer hits.
         app.add_systems(PreUpdate, univis_picking_backend);
 
-        // 2. تسجيل المراقبين (Observers) - الطريقة الجديدة للتفاعل
-        // هذه المراقبون سيعملون تلقائياً لأي كيان يرسل له Backend حدثاً
+        // 2. Register the default pointer observers.
         app.add_observer(feedback::on_pointer_over);
         app.add_observer(feedback::on_pointer_out);
         app.add_observer(feedback::on_pointer_press);

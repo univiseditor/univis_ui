@@ -1,3 +1,10 @@
+//! Facade-level polished profile card showcase.
+//!
+//! Related docs:
+//! - `docs/src/en/rendering/overview.md`
+//! - `docs/src/ar/rendering/overview.md`
+//! - `docs/src/en/examples/index.md`
+
 use bevy::{core_pipeline::tonemapping::Tonemapping, post_process::bloom::Bloom, prelude::*};
 use univis_ui::prelude::*;
 

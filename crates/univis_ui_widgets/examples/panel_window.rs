@@ -1,3 +1,10 @@
+//! Demonstrates floating and resizable panel-window behavior.
+//!
+//! Related docs:
+//! - `docs/src/en/widgets/panel-window.md`
+//! - `docs/src/ar/widgets/panel-window.md`
+//! - `docs/src/en/examples/index.md#panel_window`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

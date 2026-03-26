@@ -1,3 +1,10 @@
+//! Demonstrates scrolling behavior for overflowing content.
+//!
+//! Related docs:
+//! - `docs/src/en/widgets/scroll-view.md`
+//! - `docs/src/ar/widgets/scroll-view.md`
+//! - `docs/src/en/examples/index.md#scroll_view`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

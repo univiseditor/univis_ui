@@ -1,3 +1,10 @@
+//! Demonstrates how `meters_per_unit` changes physical size without changing logical canvas size.
+//!
+//! Related docs:
+//! - `docs/src/en/layout/roots.md`
+//! - `docs/src/ar/layout/roots.md`
+//! - `docs/src/en/examples/index.md#root_world_scale`
+
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_engine::prelude::*;

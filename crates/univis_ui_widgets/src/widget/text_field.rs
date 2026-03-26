@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
 };
 
+/// Registers `UTextField`, its focus/input behavior, and the related messages.
 pub struct UnivisTextFieldPlugin;
 
 #[derive(Resource, Default)]
@@ -34,6 +35,10 @@ impl Plugin for UnivisTextFieldPlugin {
 // Components
 // =========================================================
 
+/// A single-line editable text field widget.
+///
+/// `UTextField` owns its interaction state, text buffer, cursor state, and the
+/// style values used to spawn its visual children.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout, Pickable)]
@@ -63,11 +68,16 @@ pub struct UTextField {
     pub padding: f32,
 }
 
+/// Input filtering mode applied while accepting text.
 #[derive(Clone, Copy, PartialEq, Reflect)]
 pub enum TextFieldInputType {
+    /// Accept arbitrary text.
     Text,
+    /// Accept numeric input only.
     Number,
+    /// Accept email-like text.
     Email,
+    /// Display masked characters while keeping the real value internally.
     Password,
 }
 
@@ -102,10 +112,12 @@ impl Default for UTextField {
 }
 
 impl UTextField {
+    /// Creates a text field with default styling and behavior.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Sets the current text value.
     pub fn with_text(mut self, text: impl Into<String>) -> Self {
         let text = text.into();
         self.cursor_position = text.len();
@@ -114,22 +126,26 @@ impl UTextField {
         self
     }
 
+    /// Sets the placeholder displayed when the field is empty.
     pub fn with_placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Overrides the visual width and height.
     pub fn with_size(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
         self
     }
 
+    /// Limits how many UTF-8 bytes can be stored.
     pub fn with_max_length(mut self, max: usize) -> Self {
         self.max_length = Some(max);
         self
     }
 
+    /// Sets the input filtering mode.
     pub fn input_type(mut self, input_type: TextFieldInputType) -> Self {
         self.input_type = input_type;
         self
@@ -505,12 +521,14 @@ fn emit_textfield_events(
 // Events
 // =========================================================
 
+/// Message emitted whenever the text buffer changes.
 #[derive(Message)]
 pub struct TextFieldChangedEvent {
     pub entity: Entity,
     pub text: String,
 }
 
+/// Message emitted when the user submits the current text.
 #[derive(Message)]
 pub struct TextFieldSubmitEvent {
     pub entity: Entity,

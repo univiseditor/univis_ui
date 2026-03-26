@@ -1,6 +1,9 @@
+//! Core node, layout, and local positioning components.
+
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
+/// Registers the node and layout types used by the engine layout solver.
 pub struct UnivisNodePlugin;
 
 impl Plugin for UnivisNodePlugin {
@@ -29,8 +32,10 @@ impl Plugin for UnivisNodePlugin {
 
 #[derive(Reflect, Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UShapeMode {
+    /// Rounded corners.
     #[default]
     Round,
+    /// Chamfered corners.
     Cut,
 }
 
@@ -71,7 +76,7 @@ impl Default for UNode {
     }
 }
 
-/// Defines a visual border around a node.
+/// Defines a border rendered around a [`UNode`].
 #[derive(Component, Clone)]
 pub struct UBorder {
     pub color: Color,
@@ -93,8 +98,10 @@ impl Default for UBorder {
     }
 }
 
-/// Layout configuration component.
-/// Controls how children are arranged within this node.
+/// Layout configuration for a [`UNode`].
+///
+/// This controls the container algorithm and the most common alignment rules
+/// used to place direct children.
 #[derive(Component, Debug, Clone, Reflect)]
 #[reflect(Component)] // Important for Inspector
 pub struct ULayout {
@@ -185,14 +192,20 @@ pub enum UJustifyContent {
     SpaceEvenly,
 }
 
-/// Supported display/layout modes.
+/// Supported display/layout modes for a container node.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UDisplay {
+    /// Flex-style layout using a main axis and a cross axis.
     Flex,
+    /// Grid-style layout with tracks and placement rules.
     Grid,
+    /// Simple stacking layout.
     Stack,
+    /// Radial placement around a center point.
     Radial,
+    /// Masonry-like column layout.
     Masonry,
+    /// Do not lay out children.
     None,
 }
 
@@ -419,8 +432,10 @@ impl Default for ULayoutGridItem {
     }
 }
 
-/// Self-control component for a child node.
-/// Overrides parent settings (Alignment) or Layout flow (Positioning).
+/// Child-local layout overrides and positioning rules.
+///
+/// `USelf` only affects layout and local stacking inside the same root capsule.
+/// Its [`USelf::order`] field is not a global `z-index`.
 #[derive(Component, Debug, Clone, Copy, Reflect)]
 #[reflect(Component)]
 pub struct USelf {
@@ -472,6 +487,7 @@ pub enum UAlignSelf {
 }
 
 #[derive(Debug, Clone, Copy, Reflect)]
+/// Explicit top/right/bottom/left offsets in resolved scalar form.
 pub struct UPosition {
     pub top: Option<f32>,
     pub right: Option<f32>,
@@ -479,20 +495,19 @@ pub struct UPosition {
     pub left: Option<f32>,
 }
 
-/// Determines if the element is part of the flow (Relative) or independent (Absolute).
+/// Determines whether the node stays in normal flow or is taken out of flow.
 #[derive(Reflect, Clone, Debug, Copy, PartialEq)]
 pub enum UPositionType {
     Relative, // In-flow
     Absolute, // Out-of-flow
 }
 
-/// مكون يفرض القص (Masking) على جميع أبنائه.
-/// يتم استخدام حدود هذا العنصر (Size + Position + Radius) كقناع.
+/// Clips all descendants to the node's resolved bounds and corner radius.
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ComputedSize, GlobalTransform)]
 pub struct UClip {
-    /// هل القص مفعل؟
+    /// Whether clipping is enabled for this node.
     pub enabled: bool,
 }
 impl UClip {

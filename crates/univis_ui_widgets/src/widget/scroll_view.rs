@@ -2,6 +2,7 @@ use crate::internal_prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 
+/// Registers the scroll container widget.
 pub struct UnivisScrollViewPlugin;
 
 impl Plugin for UnivisScrollViewPlugin {
@@ -11,6 +12,10 @@ impl Plugin for UnivisScrollViewPlugin {
     }
 }
 
+/// Adds mouse-wheel driven scrolling to a container node.
+///
+/// The entity is expected to own exactly one scrollable child whose local
+/// offsets are adjusted as overflow changes.
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct UScrollContainer {
@@ -22,6 +27,7 @@ pub struct UScrollContainer {
 }
 
 impl UScrollContainer {
+    /// Creates a vertical scroll container with default speed.
     pub fn new() -> Self {
         Self {
             scroll_speed: 30.0,
@@ -32,6 +38,8 @@ impl UScrollContainer {
     }
 }
 
+/// Internal system that applies wheel input to hovered scroll containers.
+#[doc(hidden)]
 pub fn scroll_interaction_system(
     // 1. قراءة عجلة الماوس
     mut mouse_wheel: MessageReader<MouseWheel>,

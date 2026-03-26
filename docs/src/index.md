@@ -1,0 +1,26 @@
+# Univis UI Docs
+
+This unified documentation book contains both language editions:
+
+- [Arabic / العربية](ar/intro.md)
+- [English](en/intro.md)
+
+Use the language switcher shown at the top of each page to jump to the mirrored chapter in the other language.
+
+## Structure
+
+- `ar/` contains the Arabic documentation tree
+- `en/` contains the English documentation tree
+- both trees share the same chapter map and live in one mdBook
+
+## Build
+
+```bash
+mdbook build docs
+```
+
+## Serve
+
+```bash
+mdbook serve docs -n 127.0.0.1 -p 3000
+```

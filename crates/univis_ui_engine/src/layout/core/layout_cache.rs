@@ -1,32 +1,32 @@
 use crate::internal_prelude::*;
 use bevy::{ecs::relationship::Relationship, platform::collections::*, prelude::*};
 
-/// نظام تخزين مؤقت للتخطيط - يقلل الحسابات المتكررة
+/// Cache resource used to avoid repeated layout work across frames.
 #[derive(Resource, Default)]
 pub struct LayoutCache {
-    /// تخزين الأحجام الجوهرية المحسوبة
+    /// Cached intrinsic sizes per entity.
     intrinsic_sizes: HashMap<Entity, IntrinsicSize>,
 
-    /// العقد التي تغيرت وتحتاج إعادة حساب
+    /// Nodes that need to be recomputed.
     dirty_nodes: HashSet<Entity>,
 
-    /// العقد حسب العمق (لتجنب Filter في كل إطار)
+    /// Entities grouped by tree depth.
     entities_by_depth: HashMap<usize, Vec<Entity>>,
 
-    /// رقم الإطار الحالي (للتتبع)
+    /// Running frame counter used for diagnostics.
     frame_count: u64,
 
-    /// آخر عمق أقصى معروف
+    /// Last known maximum depth.
     last_max_depth: usize,
 }
 
 impl LayoutCache {
-    /// إنشاء Cache جديد
+    /// Creates an empty layout cache.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// تحديث قائمة العقد حسب العمق
+    /// Rebuilds the entity-to-depth index.
     pub fn rebuild_depth_map(&mut self, query: &Query<(Entity, &LayoutDepth)>, max_depth: usize) {
         // مسح الخريطة القديمة
         self.entities_by_depth.clear();
@@ -42,18 +42,18 @@ impl LayoutCache {
         self.last_max_depth = max_depth;
     }
 
-    /// الحصول على العقد في عمق معين
+    /// Returns all entities known for a depth bucket.
     pub fn get_entities_at_depth(&self, depth: usize) -> Option<&Vec<Entity>> {
         self.entities_by_depth.get(&depth)
     }
 
-    /// تعليم عقدة كـ "متسخة" (تحتاج إعادة حساب)
+    /// Marks one entity as dirty.
     pub fn mark_dirty(&mut self, entity: Entity) {
         // استخدام HashSet يمنع التكرار تلقائياً
         self.dirty_nodes.insert(entity);
     }
 
-    /// تعليم عقدة وكل أبنائها كمتسخة
+    /// Marks an entity and all descendants as dirty.
     pub fn mark_dirty_recursive(&mut self, entity: Entity, children_query: &Query<&Children>) {
         // فقط إذا لم تكن متسخة مسبقاً (تجنب infinite recursion)
         if !self.dirty_nodes.insert(entity) {
@@ -67,10 +67,7 @@ impl LayoutCache {
         }
     }
 
-    /// تعليم جميع الآباء (من العنصر الحالي حتى الجذر) كمتسخين.
-    ///
-    /// هذا ضروري لأن قياس الحاويات يعتمد على أحجام الأبناء، وأي تغيير في ابن
-    /// يجب أن يُعيد قياس السلسلة الصاعدة كاملة.
+    /// Marks all ancestors from the entity up to the root as dirty.
     pub fn mark_dirty_ancestors(&mut self, entity: Entity, parents_query: &Query<&ChildOf>) {
         let mut current = entity;
 
@@ -80,47 +77,47 @@ impl LayoutCache {
         }
     }
 
-    /// هل العقدة متسخة؟
+    /// Returns `true` when the entity is marked dirty.
     pub fn is_dirty(&self, entity: Entity) -> bool {
         self.dirty_nodes.contains(&entity)
     }
 
-    /// مسح علامة "متسخ" من عقدة
+    /// Clears the dirty flag for one entity.
     pub fn clear_dirty(&mut self, entity: Entity) {
         self.dirty_nodes.remove(&entity);
     }
 
-    /// مسح كل العلامات المتسخة
+    /// Clears all dirty flags.
     pub fn clear_all_dirty(&mut self) {
         self.dirty_nodes.clear();
     }
 
-    /// حفظ الحجم الجوهري للعقدة
+    /// Stores an intrinsic size entry.
     pub fn cache_intrinsic(&mut self, entity: Entity, size: IntrinsicSize) {
         self.intrinsic_sizes.insert(entity, size);
     }
 
-    /// استرجاع الحجم الجوهري المخزن
+    /// Returns the cached intrinsic size for an entity, if present.
     pub fn get_cached_intrinsic(&self, entity: Entity) -> Option<IntrinsicSize> {
         self.intrinsic_sizes.get(&entity).copied()
     }
 
-    /// زيادة عداد الإطارات
+    /// Increments the frame counter.
     pub fn increment_frame(&mut self) {
         self.frame_count += 1;
     }
 
-    /// الحصول على رقم الإطار الحالي
+    /// Returns the current frame counter.
     pub fn current_frame(&self) -> u64 {
         self.frame_count
     }
 
-    /// عدد العقد المتسخة
+    /// Returns how many entities are currently dirty.
     pub fn dirty_count(&self) -> usize {
         self.dirty_nodes.len()
     }
 
-    /// نسبة العقد المتسخة
+    /// Returns the percentage of dirty entities relative to `total_nodes`.
     pub fn dirty_ratio(&self, total_nodes: usize) -> f32 {
         if total_nodes == 0 {
             return 0.0;
@@ -129,7 +126,8 @@ impl LayoutCache {
     }
 }
 
-/// نظام يراقب التغييرات ويحدث الـ Cache
+/// Internal system that tracks layout-affecting changes.
+#[doc(hidden)]
 pub fn track_layout_changes(
     mut cache: ResMut<LayoutCache>,
 
@@ -206,7 +204,8 @@ fn should_skip_intrinsic_only_container_change(
         && has_children
 }
 
-/// نظام يحدث خريطة العمق عند الحاجة
+/// Internal system that rebuilds the depth cache when the tree changes.
+#[doc(hidden)]
 pub fn update_depth_cache(
     mut cache: ResMut<LayoutCache>,
     tree_depth: Res<LayoutTreeDepth>,
@@ -236,7 +235,8 @@ pub fn update_depth_cache(
         cache.rebuild_depth_map(&depth_query, tree_depth.max_depth);
     }
 }
-/// Plugin للـ Cache System
+/// Internal plugin that installs the layout cache systems.
+#[doc(hidden)]
 pub struct LayoutCachePlugin;
 
 impl Plugin for LayoutCachePlugin {

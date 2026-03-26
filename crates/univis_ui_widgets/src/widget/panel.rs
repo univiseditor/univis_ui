@@ -6,6 +6,7 @@ use bevy::picking::pointer::PointerId;
 use bevy::prelude::*;
 use bevy::window::{CursorIcon, PrimaryWindow, SystemCursorIcon, Window};
 
+/// Registers panel and resizable panel-window behavior.
 pub struct UnivisPanelPlugin;
 
 impl Plugin for UnivisPanelPlugin {
@@ -27,6 +28,7 @@ impl Plugin for UnivisPanelPlugin {
     }
 }
 
+/// A styled container panel built on top of [`UNode`] and [`ULayout`].
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout)]
@@ -55,10 +57,12 @@ impl Default for UPanel {
 }
 
 impl UPanel {
+    /// Returns the default card-like panel style.
     pub fn card() -> Self {
         Self::default()
     }
 
+    /// Returns a translucent glass-like panel style.
     pub fn glass() -> Self {
         Self {
             background: Color::srgba(0.08, 0.1, 0.14, 0.72),
@@ -67,27 +71,34 @@ impl UPanel {
         }
     }
 
+    /// Overrides the panel padding.
     pub fn with_padding(mut self, padding: USides) -> Self {
         self.padding = padding;
         self
     }
 
+    /// Overrides the gap between direct children.
     pub fn with_gap(mut self, gap: f32) -> Self {
         self.gap = gap.max(0.0);
         self
     }
 
+    /// Overrides the main layout direction.
     pub fn with_direction(mut self, direction: UFlexDirection) -> Self {
         self.direction = direction;
         self
     }
 
+    /// Overrides the panel background color.
     pub fn with_background(mut self, background: Color) -> Self {
         self.background = background;
         self
     }
 }
 
+/// Enables resize handles around a panel-like entity.
+///
+/// This is typically paired with [`UPanel`] to create floating tool windows.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 pub struct UPanelWindow {
@@ -107,12 +118,14 @@ impl Default for UPanelWindow {
 }
 
 impl UPanelWindow {
+    /// Sets the minimum allowed width and height while resizing.
     pub fn with_min_size(mut self, width: f32, height: f32) -> Self {
         self.min_width = width.max(1.0);
         self.min_height = height.max(1.0);
         self
     }
 
+    /// Sets the thickness of the invisible resize hit region.
     pub fn with_border_hit_thickness(mut self, thickness: f32) -> Self {
         self.border_hit_thickness = thickness.max(1.0);
         self

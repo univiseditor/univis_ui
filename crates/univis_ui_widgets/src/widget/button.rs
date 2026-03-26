@@ -1,6 +1,7 @@
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
+/// Registers the built-in button widget behavior.
 pub struct UnivisButtonPlugin;
 
 impl Plugin for UnivisButtonPlugin {
@@ -12,6 +13,10 @@ impl Plugin for UnivisButtonPlugin {
 
 // ---(Components) ---
 
+/// A clickable container-style button widget.
+///
+/// `UButton` synchronizes its visual state into an underlying [`UNode`] and
+/// attaches hover/press colors through [`UInteractionColors`].
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(ULayout, Pickable)]
@@ -66,7 +71,7 @@ fn attach_button_observers(
 // --- Helper Functions ---
 
 impl UButton {
-    /// إنشاء زر أساسي
+    /// Returns the default "primary action" button style.
     pub fn primary() -> Self {
         Self {
             background: Color::srgb(0.2, 0.5, 0.9),
@@ -76,7 +81,7 @@ impl UButton {
         }
     }
 
-    /// إنشاء زر ثانوي
+    /// Returns a more neutral secondary button style.
     pub fn secondary() -> Self {
         Self {
             background: Color::srgb(0.4, 0.4, 0.4),
@@ -86,7 +91,7 @@ impl UButton {
         }
     }
 
-    /// إنشاء زر خطر
+    /// Returns a destructive or danger-styled button.
     pub fn danger() -> Self {
         Self {
             background: Color::srgb(0.9, 0.2, 0.2),
@@ -96,7 +101,7 @@ impl UButton {
         }
     }
 
-    /// إنشاء زر نجاح
+    /// Returns a success-styled button.
     pub fn success() -> Self {
         Self {
             background: Color::srgb(0.2, 0.8, 0.3),

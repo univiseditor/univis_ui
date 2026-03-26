@@ -1,17 +1,16 @@
 use bevy::prelude::*;
 
-/// خصائص المواد الفيزيائية (PBR) للعناصر ثلاثية الأبعاد.
-/// تُطبَّق عندما يُحل الجذر إلى `UiSpace::World3d`.
+/// Physically based material overrides for `World3d` UI content.
 #[derive(Component, Reflect, Clone, Debug)]
 #[reflect(Component)]
 pub struct UPbr {
-    /// مدى "معدنية" السطح (0.0 = بلاستيك/خشب، 1.0 = معدن).
+    /// Surface metallic factor, where `0.0` is dielectric and `1.0` is metallic.
     pub metallic: f32,
 
-    /// مدى خشونة السطح (0.0 = مرآة لامعة، 1.0 = سطح خشن باهت).
+    /// Surface roughness, where `0.0` is mirror-like and `1.0` is very rough.
     pub roughness: f32,
 
-    /// لون التوهج الذاتي (Glow). مفيد جداً لشاشات الخيال العلمي.
+    /// Emissive contribution for self-lit UI surfaces.
     pub emissive: LinearRgba,
 }
 
@@ -20,7 +19,7 @@ impl Default for UPbr {
         Self {
             metallic: 0.0,
             roughness: 0.5,
-            emissive: LinearRgba::BLACK, // لا يوجد توهج افتراضياً
+            emissive: LinearRgba::BLACK,
         }
     }
 }

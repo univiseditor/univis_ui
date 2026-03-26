@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-/// دالة SDF للمربع ذو الزوايا الدائرية
-/// تتطابق مع منطق الـ Shader حيث:
-/// Y+ = الأعلى, X+ = اليمين
+/// Signed-distance helper for a rounded box.
+///
+/// This matches the shader-side corner ordering, with `Y+` up and `X+` right.
 pub fn sd_rounded_box(p: Vec2, b: Vec2, r: Vec4) -> f32 {
     // r.x = Top-Right
     // r.y = Bottom-Right

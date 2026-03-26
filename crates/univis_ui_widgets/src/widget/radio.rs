@@ -5,6 +5,7 @@ use bevy::prelude::*;
 // Plugin
 // =========================================================
 
+/// Registers radio buttons, radio groups, and their change messages.
 pub struct UnivisRadioPlugin;
 
 impl Plugin for UnivisRadioPlugin {
@@ -30,18 +31,18 @@ impl Plugin for UnivisRadioPlugin {
 // Components
 // =========================================================
 
-/// مكون RadioButton الفردي
+/// A single radio button that optionally belongs to a [`URadioGroup`].
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout, Pickable, UInteraction)]
 pub struct URadioButton {
-    /// القيمة الفريدة لهذا الزر (في المجموعة)
+    /// Unique value represented by this button inside a group.
     pub value: String,
 
-    /// هل هو مختار؟
+    /// Whether this button is currently selected.
     pub checked: bool,
 
-    /// الحالة السابقة
+    /// Previous selection state used internally for change detection.
     previous_checked: bool,
 
     // --- الأبعاد ---
@@ -84,7 +85,7 @@ impl Default for URadioButton {
 }
 
 impl URadioButton {
-    /// إنشاء RadioButton جديد
+    /// Creates a radio button with the provided value.
     pub fn new(value: impl Into<String>) -> Self {
         Self {
             value: value.into(),
@@ -92,7 +93,7 @@ impl URadioButton {
         }
     }
 
-    /// تعيين كمختار
+    /// Marks the button as initially selected.
     pub fn checked(mut self) -> Self {
         self.checked = true;
         self.previous_checked = true;
@@ -100,13 +101,13 @@ impl URadioButton {
         self
     }
 
-    /// تخصيص الحجم
+    /// Overrides the button size.
     pub fn with_size(mut self, size: f32) -> Self {
         self.size = size;
         self
     }
 
-    /// تخصيص الألوان
+    /// Overrides the ring and dot colors.
     pub fn with_colors(mut self, ring: Color, checked: Color, dot: Color) -> Self {
         self.ring_color = ring;
         self.ring_checked_color = checked;
@@ -114,7 +115,7 @@ impl URadioButton {
         self
     }
 
-    /// تعطيل
+    /// Marks the button as disabled.
     pub fn disabled(mut self) -> Self {
         self.disabled = true;
         self
@@ -147,21 +148,21 @@ impl URadioButton {
     }
 }
 
-/// مكون RadioGroup - للتحكم في مجموعة أزرار
+/// A controller component that keeps a set of radio buttons mutually exclusive.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout)]
 pub struct URadioGroup {
-    /// القيمة المختارة حالياً
+    /// Currently selected value, if any.
     pub selected_value: Option<String>,
 
-    /// القيمة السابقة
+    /// Previous selected value used internally for change detection.
     previous_value: Option<String>,
 
-    /// الأزرار في المجموعة (يتم تعبئتها تلقائياً)
+    /// Buttons currently associated with this group.
     pub buttons: Vec<Entity>,
 
-    /// هل يجب أن يكون هناك اختيار دائماً؟
+    /// Whether the group requires one option to stay selected.
     pub require_selection: bool,
 
     // === إضافة خيارات التخطيط ===
@@ -198,19 +199,19 @@ impl URadioGroup {
         self
     }
 
-    /// تخطيط أفقي
+    /// Switches the group layout to a horizontal row.
     pub fn horizontal(mut self) -> Self {
         self.direction = UFlexDirection::Row;
         self
     }
 
-    /// تخطيط عمودي
+    /// Switches the group layout to a vertical column.
     pub fn vertical(mut self) -> Self {
         self.direction = UFlexDirection::Column;
         self
     }
 
-    /// تخصيص المسافة بين الأزرار
+    /// Overrides the gap between buttons.
     pub fn with_gap(mut self, gap: f32) -> Self {
         self.gap = gap;
         self

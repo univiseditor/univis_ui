@@ -4,6 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+PACKAGES=(
+  univis_ui_style
+  univis_ui_engine
+  univis_ui_interaction
+  univis_ui_widgets
+  univis_ui
+)
+
 if [ "${1:-}" = "-p" ]; then
   if [ -z "${2:-}" ]; then
     echo "Usage: $0 [-p <package>] [example_name ...]"
@@ -14,6 +22,8 @@ if [ "${1:-}" = "-p" ]; then
   ./scripts/test_lib_serial_release.sh -p "$PKG"
   ./scripts/check_examples_serial_release.sh -p "$PKG" "$@"
 else
-  ./scripts/test_lib_serial_release.sh
-  ./scripts/check_examples_serial_release.sh "$@"
+  for PACKAGE in "${PACKAGES[@]}"; do
+    ./scripts/test_lib_serial_release.sh -p "$PACKAGE"
+    ./scripts/check_examples_serial_release.sh -p "$PACKAGE" "$@"
+  done
 fi

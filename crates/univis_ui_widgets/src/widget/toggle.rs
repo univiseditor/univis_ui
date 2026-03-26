@@ -5,6 +5,7 @@ use bevy::prelude::*;
 // Plugin
 // =========================================================
 
+/// Registers the toggle / switch widget.
 pub struct UnivisTogglePlugin;
 
 impl Plugin for UnivisTogglePlugin {
@@ -23,31 +24,32 @@ impl Plugin for UnivisTogglePlugin {
 // Components
 // =========================================================
 
-/// مكون Toggle الرئيسي
+/// A binary on/off switch widget.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout, Pickable)]
 pub struct UToggle {
-    /// الحالة الحالية
+    /// Current on/off state.
     pub checked: bool,
 
-    /// الحالة السابقة (للكشف عن التغييرات)
+    /// Previous state used internally to emit change events.
     previous_checked: bool,
 
-    // --- الأبعاد ---
+    // --- dimensions ---
     pub width: f32,
     pub height: f32,
 
-    // --- الألوان ---
+    // --- colors ---
     pub track_color_off: Color,
     pub track_color_on: Color,
     pub knob_color: Color,
 
-    // --- الحركة ---
+    // --- animation ---
     pub animation_speed: f32,
-    pub current_offset: f32, // موضع الزر الحالي (0.0 = يسار، 1.0 = يمين)
+    /// Current knob interpolation, where `0.0` is off and `1.0` is on.
+    pub current_offset: f32,
 
-    // --- خيارات إضافية ---
+    // --- options ---
     pub disabled: bool,
 }
 
@@ -69,12 +71,12 @@ impl Default for UToggle {
 }
 
 impl UToggle {
-    /// إنشاء Toggle جديد
+    /// Creates a toggle with default styling.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// تعيين الحالة الأولية
+    /// Sets the initial checked state.
     pub fn with_checked(mut self, checked: bool) -> Self {
         self.checked = checked;
         self.previous_checked = checked;
@@ -82,7 +84,7 @@ impl UToggle {
         self
     }
 
-    /// تخصيص الألوان
+    /// Overrides the track and knob colors.
     pub fn with_colors(mut self, off: Color, on: Color, knob: Color) -> Self {
         self.track_color_off = off;
         self.track_color_on = on;
@@ -90,20 +92,20 @@ impl UToggle {
         self
     }
 
-    /// تخصيص الحجم
+    /// Overrides the widget size.
     pub fn with_size(mut self, width: f32, height: f32) -> Self {
         self.width = width;
         self.height = height;
         self
     }
 
-    /// تعطيل Toggle
+    /// Marks the toggle as disabled.
     pub fn disabled(mut self) -> Self {
         self.disabled = true;
         self
     }
 
-    /// أنماط جاهزة
+    /// Returns an iOS-inspired preset.
     pub fn ios_style() -> Self {
         Self {
             width: 51.0,
@@ -116,6 +118,7 @@ impl UToggle {
         }
     }
 
+    /// Returns a Material-inspired preset.
     pub fn material_style() -> Self {
         Self {
             width: 52.0,
@@ -128,6 +131,7 @@ impl UToggle {
         }
     }
 
+    /// Returns a sci-fi preset with a wider track.
     pub fn sci_fi_style() -> Self {
         Self {
             width: 70.0,
@@ -314,14 +318,15 @@ fn sync_toggle_colors(
 // Event (اختياري للتفاعل الخارجي)
 // =========================================================
 
-/// حدث يُطلق عند تغيير حالة Toggle
+/// Message emitted when a toggle changes state.
 #[derive(Message)]
 pub struct ToggleChangedEvent {
     pub entity: Entity,
     pub checked: bool,
 }
 
-/// نظام لإطلاق الأحداث
+/// Internal system that emits [`ToggleChangedEvent`].
+#[doc(hidden)]
 pub fn emit_toggle_events(
     mut events: MessageWriter<ToggleChangedEvent>,
     query: Query<(Entity, &UToggle), Changed<UToggle>>,

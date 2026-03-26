@@ -1,3 +1,10 @@
+//! Built-in widgets for Univis UI.
+//!
+//! The widgets in this module are composable Bevy components layered on top of
+//! the engine crate. Add [`UnivisWidgetPlugin`] for the common widget set, and
+//! opt into dedicated plugins such as `UnivisTextFieldPlugin` when a widget
+//! advertises extra runtime systems or events.
+
 use crate::internal_prelude::*;
 use crate::widget::{badge::BadgePluginInstalled, text_field::TextFieldPluginInstalled};
 use bevy::prelude::*;
@@ -20,6 +27,7 @@ pub mod text_field;
 pub mod text_label;
 pub mod toggle;
 
+/// Common widget imports for applications that depend on `univis_ui_widgets` directly.
 pub mod prelude {
     pub use crate::widget::{
         badge::*,
@@ -42,6 +50,10 @@ pub mod prelude {
     };
 }
 
+/// Registers the default built-in widget suite.
+///
+/// This plugin covers text rendering, panels, buttons, scrolling, toggles,
+/// selects, and other commonly used controls.
 pub struct UnivisWidgetPlugin;
 
 #[derive(Default)]

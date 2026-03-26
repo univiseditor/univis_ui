@@ -115,7 +115,7 @@ fn get_badge_radius(size: BadgeSize) -> UCornerRadius {
 }
 
 impl UBadge {
-    /// شارة أساسية
+    /// Returns a primary badge.
     pub fn primary() -> Self {
         Self {
             style: BadgeStyle::Primary,
@@ -123,7 +123,7 @@ impl UBadge {
         }
     }
 
-    /// شارة نجاح
+    /// Returns a success badge.
     pub fn success() -> Self {
         Self {
             style: BadgeStyle::Success,
@@ -131,7 +131,7 @@ impl UBadge {
         }
     }
 
-    /// شارة تحذير
+    /// Returns a warning badge.
     pub fn warning() -> Self {
         Self {
             style: BadgeStyle::Warning,
@@ -139,7 +139,7 @@ impl UBadge {
         }
     }
 
-    /// شارة خطر
+    /// Returns a danger badge.
     pub fn danger() -> Self {
         Self {
             style: BadgeStyle::Danger,
@@ -147,7 +147,7 @@ impl UBadge {
         }
     }
 
-    /// شارة معلومات
+    /// Returns an informational badge.
     pub fn info() -> Self {
         Self {
             style: BadgeStyle::Info,
@@ -155,13 +155,13 @@ impl UBadge {
         }
     }
 
-    /// شارة صغيرة
+    /// Switches the badge to the small size preset.
     pub fn small(mut self) -> Self {
         self.size = BadgeSize::Small;
         self
     }
 
-    /// شارة كبيرة
+    /// Switches the badge to the large size preset.
     pub fn large(mut self) -> Self {
         self.size = BadgeSize::Large;
         self

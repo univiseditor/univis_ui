@@ -1,6 +1,7 @@
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
+/// Registers the checkbox widget.
 pub struct UnivisCheckboxPlugin;
 
 impl Plugin for UnivisCheckboxPlugin {
@@ -21,6 +22,10 @@ impl Plugin for UnivisCheckboxPlugin {
 // 1. المكونات (Components)
 // =========================================================
 
+/// A simple checkbox with an optional text label.
+///
+/// The checkbox entity becomes the interactive parent, while its box and label
+/// visuals are spawned as children on initialization.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 pub struct UCheckbox {
@@ -146,6 +151,7 @@ fn toggle_checkbox_handler(
 }
 
 impl UCheckbox {
+    /// Creates a checkbox with a label.
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             label: Some(label.into()),
@@ -153,11 +159,13 @@ impl UCheckbox {
         }
     }
 
+    /// Sets the initial checked state.
     pub fn checked(mut self, state: bool) -> Self {
         self.checked = state;
         self
     }
 
+    /// Overrides the accent color used when the checkbox is checked.
     pub fn with_color(mut self, color: Color) -> Self {
         self.checked_color = color;
         self

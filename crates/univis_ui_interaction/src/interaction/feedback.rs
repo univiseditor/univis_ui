@@ -12,14 +12,20 @@ pub struct UInteractionColors {
     pub pressed: Color,
 }
 
+/// High-level interaction state tracked for interactive UI entities.
 #[derive(Component, Clone, Reflect, PartialEq, Default)]
 // #[require(Pickable)]
 pub enum UInteraction {
+    /// The pointer is not hovering or pressing this entity.
     #[default]
     Normal,
+    /// A click was completed on this entity.
     Clicked,
+    /// The pointer is currently hovering this entity.
     Hovered,
+    /// The pointer is currently pressing this entity.
     Pressed,
+    /// The pointer was just released over this entity.
     Released,
 }
 
@@ -33,6 +39,7 @@ impl Default for UInteractionColors {
     }
 }
 /// Event Handler: Pointer Over (Hover Enter)
+#[doc(hidden)]
 pub fn on_pointer_over(
     trigger: On<Pointer<Over>>,
     mut query: Query<
@@ -51,6 +58,7 @@ pub fn on_pointer_over(
 }
 
 /// Event Handler: Pointer Click (Click Enter)
+#[doc(hidden)]
 pub fn on_pointer_click(
     trigger: On<Pointer<Click>>,
     mut query: Query<
@@ -69,6 +77,7 @@ pub fn on_pointer_click(
 }
 
 /// Event Handler: Pointer Out (Hover Exit)
+#[doc(hidden)]
 pub fn on_pointer_out(
     trigger: On<Pointer<Out>>,
     mut query: Query<
@@ -87,6 +96,7 @@ pub fn on_pointer_out(
 }
 
 /// Event Handler: Pointer Press (Click Down)
+#[doc(hidden)]
 pub fn on_pointer_press(
     trigger: On<Pointer<Press>>,
     mut query: Query<
@@ -105,6 +115,7 @@ pub fn on_pointer_press(
 }
 
 /// Event Handler: Pointer Release (Click Up)
+#[doc(hidden)]
 pub fn on_pointer_release(
     trigger: On<Pointer<Release>>,
     mut query: Query<

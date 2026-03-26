@@ -1,3 +1,8 @@
+//! Picking and interaction state for Univis UI.
+//!
+//! The interaction plugin resolves hits against Univis roots and updates
+//! high-level state such as [`feedback::UInteraction`].
+
 use bevy::prelude::*;
 
 use crate::internal_prelude::*;
@@ -6,10 +11,12 @@ pub mod feedback;
 pub mod math;
 pub mod picking;
 
+/// Common imports for interaction-related integrations.
 pub mod prelude {
     pub use crate::interaction::{UnivisInteractionPlugin, feedback::*, picking::*};
 }
 
+/// Registers Univis pointer picking and the default interaction observers.
 pub struct UnivisInteractionPlugin;
 
 impl Plugin for UnivisInteractionPlugin {

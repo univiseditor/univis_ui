@@ -6,7 +6,7 @@ use bevy::picking::pointer::Location;
 use bevy::prelude::*;
 use std::collections::HashMap;
 
-/// دالة دقيقة للتحقق من القص باستخدام المصفوفات
+// Accurate clipping check using ancestor transforms and rounded-box SDF tests.
 fn is_clipped_by_ancestors(
     start_entity: Entity,
     cursor_world_pos: Vec3,
@@ -79,7 +79,7 @@ struct CameraHitBucket {
     hits: Vec<RankedHit>,
 }
 
-/// ✅ دالة جديدة: فحص إذا كان الكيان هو أب لكيان آخر
+// Returns `true` when `potential_ancestor` appears in the parent chain.
 fn is_ancestor_of(
     potential_ancestor: Entity,
     potential_descendant: Entity,

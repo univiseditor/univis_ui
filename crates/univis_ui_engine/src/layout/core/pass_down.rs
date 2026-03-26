@@ -5,7 +5,7 @@ use bevy::prelude::*;
 // نسخة Owned آمنة من SolverItem
 // =========================================================
 
-/// نسخة آمنة من SolverItem - تملك بياناتها
+#[doc(hidden)]
 pub struct SolverItemOwned {
     pub spec: SolverSpec,
     pub result: Box<SolverResult>,
@@ -13,7 +13,7 @@ pub struct SolverItemOwned {
 }
 
 impl SolverItemOwned {
-    /// تحويل إلى SolverItem مؤقت (للاستخدام مع الـ Solver)
+    #[doc(hidden)]
     pub fn as_solver_item(&mut self) -> SolverItem<'_> {
         SolverItem {
             spec: self.spec,
@@ -50,6 +50,7 @@ struct SolvedChild {
 // النظام الرئيسي - 100% آمن
 // =========================================================
 
+#[doc(hidden)]
 pub fn downward_solve_pass_safe(
     tree_depth: Res<LayoutTreeDepth>,
     cache: Res<LayoutCache>,

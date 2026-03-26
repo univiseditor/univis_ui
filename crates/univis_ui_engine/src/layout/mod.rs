@@ -1,3 +1,16 @@
+//! Layout and root systems for Univis UI.
+//!
+//! This module contains:
+//!
+//! - [`crate::layout::layout_system`] for [`crate::layout::layout_system::URootUi`]
+//!   and root resolution.
+//! - [`crate::layout::univis_node`] for node, layout, and local positioning components.
+//! - [`crate::layout::geometry`] for logical UI units and spacing helpers.
+//! - [`crate::layout::render`] for mesh/material synchronization.
+//!
+//! Most users reach this module through [`crate::prelude`] or
+//! [`crate::layout::prelude`].
+
 pub mod algorithms;
 pub mod components;
 pub mod core;
@@ -11,6 +24,7 @@ pub mod render;
 pub mod solver_types;
 pub mod univis_node;
 
+/// Common imports for authoring layout trees and roots directly from the engine crate.
 pub mod prelude {
     pub use crate::layout::UnivisLayoutPlugin;
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
@@ -28,6 +42,10 @@ use bevy::asset::AssetEventSystems;
 use bevy::prelude::*;
 use bevy::sprite::update_text2d_layout;
 
+/// Installs the layout pipeline for Univis UI roots and nodes.
+///
+/// This plugin resolves roots, builds the layout hierarchy, measures content,
+/// solves final geometry, and prepares render sync data in `PostUpdate`.
 pub struct UnivisLayoutPlugin;
 
 impl Plugin for UnivisLayoutPlugin {

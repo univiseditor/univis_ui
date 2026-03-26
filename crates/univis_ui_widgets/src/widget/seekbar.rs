@@ -5,6 +5,7 @@ use bevy::prelude::*;
 // Plugin
 // =========================================================
 
+/// Registers the seek bar / slider widget.
 pub struct UnivisSeekBarPlugin;
 
 impl Plugin for UnivisSeekBarPlugin {
@@ -29,15 +30,15 @@ impl Plugin for UnivisSeekBarPlugin {
 // Components
 // =========================================================
 
-/// مكون SeekBar الرئيسي
+/// A value slider widget with optional range mapping and step snapping.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout, Pickable)]
 pub struct USeekBar {
-    /// القيمة الحالية (0.0 - 1.0)
+    /// Current normalized value in the `0.0..=1.0` range.
     pub value: f32,
 
-    /// القيمة السابقة (للكشف عن التغييرات)
+    /// Previous value used internally for change detection.
     previous_value: f32,
     old_value: f32,        // سنستخدم هذا لتخزين موقع الماوس عند الضغط
     drag_start_value: f32, // متغير جديد: قيمة المقبض عند بدء السحب
@@ -97,12 +98,12 @@ impl Default for USeekBar {
 }
 
 impl USeekBar {
-    /// إنشاء SeekBar جديد
+    /// Creates a seek bar with default styling.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// تعيين القيمة الأولية
+    /// Sets the initial normalized value.
     pub fn with_value(mut self, value: f32) -> Self {
         let clamped = value.clamp(0.0, 1.0);
         self.value = clamped;
@@ -111,7 +112,7 @@ impl USeekBar {
         self
     }
 
-    /// تخصيص الحجم
+    /// Overrides the overall width, track height, and thumb size.
     pub fn with_size(mut self, width: f32, track_height: f32, thumb_size: f32) -> Self {
         self.width = width;
         self.track_height = track_height;
@@ -119,7 +120,7 @@ impl USeekBar {
         self
     }
 
-    /// تخصيص الألوان
+    /// Overrides the track, fill, and thumb colors.
     pub fn with_colors(mut self, track: Color, fill: Color, thumb: Color) -> Self {
         self.track_color = track;
         self.fill_color = fill;
@@ -128,44 +129,44 @@ impl USeekBar {
         self
     }
 
-    /// تخصيص النطاق
+    /// Maps the normalized value to a custom minimum and maximum.
     pub fn with_range(mut self, min: f32, max: f32) -> Self {
         self.min_value = min;
         self.max_value = max;
         self
     }
 
-    /// تفعيل القفز بخطوات
+    /// Enables snapping to a fixed step size in real-value space.
     pub fn with_step(mut self, step: f32) -> Self {
         self.step = Some(step);
         self
     }
 
-    /// إظهار القيمة
+    /// Enables the value label.
     pub fn show_value(mut self) -> Self {
         self.show_value = true;
         self
     }
 
-    /// تعطيل الحركة السلسة
+    // Disables smooth animation.
     // pub fn instant(mut self) -> Self {
     //     self.smooth_animation = false;
     //     self
     // }
 
-    /// الحصول على القيمة الفعلية (ضمن النطاق)
+    /// Returns the mapped value in the configured real range.
     pub fn real_value(&self) -> f32 {
         self.min_value + (self.value * (self.max_value - self.min_value))
     }
 
-    /// تعيين القيمة الفعلية
+    /// Sets the mapped real value and converts it back into normalized space.
     pub fn set_real_value(&mut self, real_value: f32) {
         let normalized = (real_value - self.min_value) / (self.max_value - self.min_value);
         self.value = normalized.clamp(0.0, 1.0);
         // self.target_value = self.value;
     }
 
-    // === أنماط جاهزة ===
+    // === Presets ===
 
     pub fn volume_style() -> Self {
         Self {

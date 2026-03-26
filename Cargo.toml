@@ -50,10 +50,6 @@ univis_ui_interaction = { path = "crates/univis_ui_interaction", version = "0.2.
 univis_ui_widgets = { path = "crates/univis_ui_widgets", version = "0.2.0-alpha.1" }
 
 [[example]]
-name = "border_light_3d"
-required-features = ["example_bloom"]
-
-[[example]]
 name = "card_profile"
 required-features = ["example_bloom"]
 

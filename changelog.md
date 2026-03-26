@@ -13,6 +13,15 @@ For deeper release context, see:
 
 - Added `root_fit_content` to demonstrate `URootUi::world_2d_fit_content()` and `UiCanvasSize::FitContent { min, max }` for `World3d` roots in one visual example.
 
+### Changed
+
+- Reorganized the documentation into a single `docs/` mdBook with `docs/src/ar` and `docs/src/en`, a shared `SUMMARY.md`, and a runtime language switcher at the top of mirrored pages, replacing the old split `book_ar` / `book_en` layout.
+- Normalized language separation inside the unified docs so English chapters no longer contain Arabic prose, Arabic chapters no longer contain stray English descriptive terms, and only code identifiers remain shared across both trees.
+- Rewrote `README.md` to focus on the library's practical value, strengths, use cases, quick start, and example entry points instead of spreading low-level reference detail across the landing page.
+- Added `README_AR.md` as a dedicated Arabic landing page and linked it from the main `README.md`.
+- Expanded the generated Rust API docs across the facade crate and core workspace crates by adding crate-level and module-level `rustdoc`, documenting `URootUi`, layout primitives, common widgets, interaction state, and theme resources, and hiding several internal scheduling helpers from the public documentation surface.
+- Redistributed examples so each one now lives under the crate it primarily represents (`univis_ui`, `univis_ui_engine`, `univis_ui_interaction`, or `univis_ui_widgets`), then updated example manifests, package-specific example commands, example indexes, smoke-test docs, and release-validation scripts to follow the new package-aware layout.
+
 ### Notes
 
 - The completed `URootUi` migration baseline from `Phase 0` through `Phase 10` remains the foundation for this follow-up example work.

@@ -1,6 +1,16 @@
+//! Core engine crate for Univis UI.
+//!
+//! This crate owns the root model, layout solver, rendering sync, and the
+//! schedule sets that the rest of the workspace builds on top of.
+//!
+//! Most applications import these APIs through `univis_ui::prelude`, while
+//! engine-level integrations typically use [`prelude`] or [`layout`] directly.
+
 use bevy::prelude::*;
 
+/// Layout, roots, rendering helpers, and node primitives.
 pub mod layout;
+/// Shared schedule sets used by engine, widgets, and interaction systems.
 pub mod schedule;
 
 #[doc(hidden)]
@@ -30,6 +40,7 @@ pub(crate) mod internal_prelude {
     pub use univis_ui_style::prelude::*;
 }
 
+/// The recommended import surface when depending on `univis_ui_engine` directly.
 pub mod prelude {
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
     pub use crate::layout::image::UImage;
@@ -42,6 +53,8 @@ pub mod prelude {
     pub use crate::{UnivisEnginePlugin, layout::prelude::*};
 }
 
+/// Registers the engine-level plugins responsible for node setup, layout
+/// solving, and render synchronization.
 pub struct UnivisEnginePlugin;
 
 impl Plugin for UnivisEnginePlugin {

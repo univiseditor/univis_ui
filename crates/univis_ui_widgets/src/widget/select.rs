@@ -1,6 +1,7 @@
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
+/// Registers the select / dropdown widget and its messages.
 pub struct UnivisSelectPlugin;
 
 impl Plugin for UnivisSelectPlugin {
@@ -28,6 +29,7 @@ impl Plugin for UnivisSelectPlugin {
     }
 }
 
+/// A single option inside a [`USelect`] widget.
 #[derive(Clone, Debug, Reflect)]
 pub struct USelectOption {
     pub label: String,
@@ -36,6 +38,7 @@ pub struct USelectOption {
 }
 
 impl USelectOption {
+    /// Creates an enabled option from a label/value pair.
     pub fn new(label: impl Into<String>, value: impl Into<String>) -> Self {
         Self {
             label: label.into(),
@@ -44,12 +47,16 @@ impl USelectOption {
         }
     }
 
+    /// Marks the option as disabled.
     pub fn disabled(mut self) -> Self {
         self.disabled = true;
         self
     }
 }
 
+/// A single-select dropdown widget.
+///
+/// The widget owns its options, open state, keyboard highlight, and selected value.
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout)]
@@ -110,10 +117,12 @@ impl Default for USelect {
 }
 
 impl USelect {
+    /// Creates an empty select widget with default styling.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Replaces the option list and revalidates the selection.
     pub fn with_options(mut self, options: Vec<USelectOption>) -> Self {
         self.options = options;
         sanitize_select(&mut self);
@@ -121,11 +130,13 @@ impl USelect {
         self
     }
 
+    /// Overrides the placeholder text shown when nothing is selected.
     pub fn with_placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
+    /// Selects an option by enabled index.
     pub fn with_selected_index(mut self, index: usize) -> Self {
         if index < self.options.len() && !self.options[index].disabled {
             self.selected_index = Some(index);
@@ -137,6 +148,7 @@ impl USelect {
         self
     }
 
+    /// Selects the first enabled option whose value matches.
     pub fn with_selected_value(mut self, value: impl AsRef<str>) -> Self {
         let value = value.as_ref();
         self.selected_index = self
@@ -148,17 +160,20 @@ impl USelect {
         self
     }
 
+    /// Overrides the trigger width and height.
     pub fn with_size(mut self, width: f32, trigger_height: f32) -> Self {
         self.width = width.max(1.0);
         self.trigger_height = trigger_height.max(1.0);
         self
     }
 
+    /// Limits how many options remain visible before scrolling is needed.
     pub fn with_max_visible_options(mut self, max_visible_options: usize) -> Self {
         self.max_visible_options = max_visible_options.max(1);
         self
     }
 
+    /// Disables interaction and closes the dropdown if it is open.
     pub fn disabled(mut self) -> Self {
         self.disabled = true;
         self.is_open = false;
@@ -1045,6 +1060,7 @@ fn next_enabled_index(
     None
 }
 
+/// Message emitted when the selected option changes.
 #[derive(Message)]
 pub struct SelectChangedEvent {
     pub entity: Entity,
@@ -1053,6 +1069,7 @@ pub struct SelectChangedEvent {
     pub label: String,
 }
 
+/// Message emitted when the dropdown opens or closes.
 #[derive(Message)]
 pub struct SelectOpenStateChangedEvent {
     pub entity: Entity,

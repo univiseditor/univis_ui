@@ -24,15 +24,23 @@ const TEXT_SDF_ATLAS_SIZE: u32 = 1024;
 const DISTANCE_FIELD_INF: f32 = 1.0e20;
 const DEFAULT_ELLIPSIS: &str = "...";
 
+/// Overflow policy used by [`UTextLabel`].
 #[derive(Debug, Reflect, Clone, Copy, PartialEq, Eq, Default)]
 #[reflect(Default, Debug, Clone, PartialEq)]
 pub enum UTextOverflow {
+    /// Render the full text even if it extends past the available bounds.
     Visible,
+    /// Clip the rendered text to the available bounds.
     Clip,
+    /// Replace overflowing tail content with an ellipsis when possible.
     #[default]
     Ellipsis,
 }
 
+/// A text-rendering widget backed by Bevy text measurement and Univis SDF rendering.
+///
+/// `UTextLabel` measures text using Bevy's text pipeline, then renders the
+/// result through a mesh/material path that stays sharp in screen and world roots.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout, Visibility, ComputedTextBlock, UTextLabelLayoutCache)]
@@ -43,17 +51,20 @@ pub struct UTextLabel {
     pub font: Handle<Font>,
     pub justify: Justify,
     pub linebreak: LineBreak,
-    /// هل يجب أن يفرض النص حجمه على UNode؟
-    /// إذا كان true، سيتم تحديث width/height للـ UNode تلقائياً.
+    /// If `true`, the label updates its host [`UNode`] width and height from measured text.
     pub autosize: bool,
-    /// عامل رفع دقة rasterization للنص مع الحفاظ على نفس الحجم النهائي في العالم.
+    /// SDF raster scale used to increase glyph sharpness while keeping the same final size.
     pub render_scale: f32,
-    /// كيف يتصرف النص عندما لا تكفي المساحة المتاحة.
+    /// What happens when the available bounds are too small for the full text.
     pub overflow: UTextOverflow,
-    /// عدد الأسطر الأقصى قبل القص أو إضافة ellipsis.
+    /// Maximum line count before clipping or ellipsis is applied.
     pub max_lines: Option<usize>,
 }
 
+/// Cached measurement output for [`UTextLabel`].
+///
+/// This is maintained by the text systems and is mainly useful for advanced
+/// tooling or diagnostics.
 #[derive(Component, Reflect, Default, Debug, Clone)]
 #[reflect(Component)]
 pub struct UTextLabelLayoutCache {
@@ -66,7 +77,9 @@ pub struct UTextLabelLayoutCache {
     pub dirty: bool,
 }
 
+/// Internal marker for generated text-render child entities.
 #[derive(Component)]
+#[doc(hidden)]
 pub struct TextChildMarker;
 
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -520,6 +533,8 @@ fn build_ellipsized_text(
     Ok((best_text, best_measured))
 }
 
+/// Internal system that measures text and updates [`UTextLabelLayoutCache`].
+#[doc(hidden)]
 pub fn measure_text_label_layout(
     mut font_events: MessageReader<AssetEvent<Font>>,
     fonts: Res<Assets<Font>>,
@@ -620,6 +635,8 @@ pub fn measure_text_label_layout(
     }
 }
 
+/// Internal system that copies measured text size back into autosized [`UNode`]s.
+#[doc(hidden)]
 pub fn fit_node_to_text_size(
     mut parent_query: Query<(&UTextLabel, &mut UNode, &UTextLabelLayoutCache)>,
 ) {
@@ -650,6 +667,8 @@ pub fn fit_node_to_text_size(
     }
 }
 
+/// Internal system that mirrors text measurement into [`IntrinsicSize`].
+#[doc(hidden)]
 pub fn sync_text_label_intrinsic_size(
     mut query: Query<
         (&UNode, &UTextLabelLayoutCache, &mut IntrinsicSize),
@@ -1392,6 +1411,7 @@ fn mark_text_label_layout_dirty(
     }
 }
 
+/// Registers the `UTextLabel` measurement and SDF rendering pipeline.
 pub struct UnivisTextPlugin;
 
 impl Plugin for UnivisTextPlugin {

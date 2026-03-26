@@ -1,27 +1,45 @@
 #![allow(deprecated)]
+//! Root model and root-resolution systems for Univis UI.
+//!
+//! [`URootUi`] is the modern public entry point for authoring UI roots.
+//! Every root resolves into a [`ResolvedRootUi`] plus an internal
+//! [`ResolvedRootStack`] capsule, which keeps cross-root stacking sealed:
+//! local ordering stays inside the root and descendants do not automatically
+//! interleave above another root.
 
 use bevy::prelude::*;
 use std::collections::HashMap;
 
 use crate::internal_prelude::*;
 
+/// Describes where a root is projected after layout is solved.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)]
 pub enum UiSpace {
+    /// A viewport-bound HUD root that stays visually fixed to the resolved camera.
     Screen,
+    /// A flat world-space UI canvas.
     World2d,
+    /// A world-space UI canvas rendered through the 3D material path.
     World3d,
 }
 
+/// Describes how a root obtains its logical canvas size.
 #[derive(Clone, Copy, Debug, PartialEq, Reflect)]
 pub enum UiCanvasSize {
+    /// Match the resolved viewport size.
     Viewport,
+    /// Use an explicit logical canvas size.
     Fixed(Vec2),
+    /// Measure the root content and clamp the result if needed.
     FitContent { min: Vec2, max: Option<Vec2> },
 }
 
+/// Selects which camera a root should resolve against.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
 pub enum UiCameraRef {
+    /// Resolve automatically; this works when exactly one compatible camera is available.
     Auto,
+    /// Bind the root to a specific camera entity.
     Entity(Entity),
 }
 
@@ -51,7 +69,9 @@ pub struct URootUi {
 }
 
 impl URootUi {
+    /// Default world scaling used by the convenience constructors.
     pub const DEFAULT_METERS_PER_UNIT: f32 = 0.001;
+    /// Default render-quality multiplier used by the convenience constructors.
     pub const DEFAULT_RESOLUTION_SCALE: f32 = 1.0;
 
     /// Creates a screen-space root that behaves like a HUD tied to the resolved viewport.
@@ -133,6 +153,10 @@ const ROOT_LOCAL_DEPTH_MAX: usize = 64;
 const ROOT_LOCAL_ORDER_CLAMP: i32 = 32;
 const ROOT_STACK_EDIT_EPSILON: f32 = 1.0e-5;
 
+/// Derived runtime state for a resolved root.
+///
+/// This component is updated by the engine and should usually be treated as
+/// read-only application state.
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
 pub struct ResolvedRootUi {
     pub root_entity: Entity,
@@ -183,6 +207,10 @@ impl ResolvedRootUi {
     }
 }
 
+/// Derived stacking data for a root capsule.
+///
+/// This keeps root-vs-root ordering separate from local child ordering so one
+/// root cannot visually leak above another root unless the root itself is above it.
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
 pub struct ResolvedRootStack {
     pub authored_root_z: f32,
@@ -253,10 +281,9 @@ pub(crate) struct RootSpawnRankCounter {
     next: u64,
 }
 
-/// Marker for the Screen Root node (HUD).
+/// Legacy compatibility wrapper for a screen-space HUD root.
 ///
-/// Deprecated compatibility wrapper during `alpha2`.
-/// Prefer `URootUi::screen()` for new code.
+/// Deprecated during `alpha2`. Prefer [`URootUi::screen`] for new code.
 #[deprecated(
     since = "0.2.0-alpha.2",
     note = "Use `URootUi::screen()` instead of `UScreenRoot`."
@@ -271,10 +298,10 @@ pub(crate) struct RootSpawnRankCounter {
 )]
 pub struct UScreenRoot;
 
-/// Marker for World Space UI Root.
+/// Legacy compatibility wrapper for a world-space root.
 ///
-/// Legacy compatibility wrapper during the `alpha2` migration.
-/// Prefer `URootUi::world_2d(size)` or `URootUi::world_3d(size)` for new code.
+/// Deprecated during the `alpha2` migration. Prefer
+/// [`URootUi::world_2d`] or [`URootUi::world_3d`] for new code.
 #[deprecated(
     since = "0.2.0-alpha.2",
     note = "Use `URootUi::world_2d(size)` or `URootUi::world_3d(size)` instead. If you need the exact legacy `UWorldRoot` physical sizing during alpha2, set `meters_per_unit = 1.0` explicitly on `URootUi`."

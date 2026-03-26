@@ -1,0 +1,24 @@
+[book]
+title = "Univis UI Docs"
+authors = ["Univis Contributors"]
+language = "en"
+text-direction = "ltr"
+src = "src"
+
+description = "Unified Univis UI documentation with Arabic and English chapters in one mdBook."
+
+[build]
+build-dir = "../target/book/docs"
+create-missing = false
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+smart-punctuation = true
+mathjax-support = false
+additional-js = ["theme/language-mode.js"]
+additional-css = ["theme/language-mode.css"]
+
+[output.html.fold]
+enable = true
+level = 1

@@ -7,6 +7,18 @@ description = "Layout and render engine for Univis UI."
 repository = "https://github.com/univiseditor/univis_ui"
 homepage = "https://github.com/univiseditor/univis_ui"
 
+[features]
+default = []
+example_bloom = ["bevy/bevy_post_process"]
+
 [dependencies]
 bevy = { workspace = true }
 univis_ui_style = { path = "../univis_ui_style", version = "0.2.0-alpha.1" }
+
+[dev-dependencies]
+univis_ui_interaction = { path = "../univis_ui_interaction", version = "0.2.0-alpha.1" }
+univis_ui_widgets = { path = "../univis_ui_widgets", version = "0.2.0-alpha.1" }
+
+[[example]]
+name = "border_light_3d"
+required-features = ["example_bloom"]

@@ -3,38 +3,46 @@
 [![Bevy](https://img.shields.io/badge/Bevy-0.18.1-blue)](https://bevyengine.org/)
 [![License](https://img.shields.io/badge/License-MIT%2FApache--2.0-green)](LICENSE)
 
-High-performance ECS UI framework for Bevy with an SDF-based rendering pipeline.
+Arabic version: [README_AR.md](README_AR.md)
+
+Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit interfaces with one ECS-native stack.
 
 > Important:
-> This project is in **Alpha** stage. API and behavior can change between versions.
+> `univis_ui` is still in **alpha**. API and behavior can change between versions.
 
-From example `cargo run --release --example card_profile`:
+From `cargo run --release --example card_profile`:
 
 ![profile](profile.png)
 
+## Why Univis UI
 
-## What Is Univis UI?
-Univis UI is a Bevy-native UI framework designed for both screen-space and world-space interfaces.
-It uses Signed Distance Field (SDF) materials to render crisp shapes and rounded UI at any scale.
+Univis UI is built for teams that want more than a basic HUD layer.
 
-### Core Highlights
-- ECS-first architecture (all UI is entities + components)
-- Custom layout solver with multiple display modes:
-`Flex`, `Grid`, `Masonry`, `Stack`, `Radial`
-- Extended CSS-inspired alignment/flex/grid controls
-- Screen-space and world-space roots
-- Optional 3D-lit UI with PBR controls
-- Built-in interaction states and pointer picking backend
-- Ready widgets: text, image, button, icon button, toggle, radio, seekbar, checkbox, progress
-- Optional profiling overlay/tools for layout performance
+- One UI stack for `screen`, `world_2d`, and `world_3d`
+- ECS-native composition: UI is entities and components, not a separate retained tree
+- Custom layout engine with `Flex`, `Grid`, `Masonry`, `Stack`, and `Radial`
+- SDF-driven rendering for crisp shapes and rounded surfaces under scale
+- Built-in picking, interaction states, and widget behavior
+- Fit-content world roots for node panels, floating inspectors, and diegetic cards
+- Modular plugin surface when you want the engine without the full facade
+
+## What It Helps You Build
+
+- game HUDs and overlays
+- diegetic world-space interfaces
+- 3D control panels and sci-fi surfaces
+- in-game tools, editors, and inspector-like panels
+- node-graph style UI with overlapping root capsules
 
 ## Installation
+
 ```toml
 [dependencies]
 univis_ui = "0.2.0-alpha.1"
 ```
 
-### Direct Crate Mode (Advanced)
+If you want direct control over the internal layers:
+
 ```toml
 [dependencies]
 univis_ui_engine = "0.2.0-alpha.1"
@@ -43,14 +51,8 @@ univis_ui_interaction = "0.2.0-alpha.1"
 univis_ui_widgets = "0.2.0-alpha.1"
 ```
 
-## Workspace Crates
-- `univis_ui_engine`: unified low-level engine for node primitives, layout solving, and render sync.
-- `univis_ui_style`: theme, fonts, and icons shared by engine/widgets.
-- `univis_ui_interaction`: picking backend + interaction feedback.
-- `univis_ui_widgets`: built-in widgets and optional-widget warnings.
-- `univis_ui` (facade): unified entrypoint and compatibility prelude.
-
 ## Quick Start
+
 ```rust
 use bevy::prelude::*;
 use univis_ui::prelude::*;
@@ -72,7 +74,7 @@ fn setup(mut commands: Commands) {
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
-                background_color: Color::srgb(0.08, 0.1, 0.14),
+                background_color: Color::srgb(0.08, 0.10, 0.14),
                 ..default()
             },
             ULayout {
@@ -84,7 +86,7 @@ fn setup(mut commands: Commands) {
         ))
         .with_children(|root| {
             root.spawn(UTextLabel {
-                text: "Hello Univis UI".to_string(),
+                text: "Hello Univis UI".into(),
                 font_size: 32.0,
                 color: Color::WHITE,
                 ..default()
@@ -93,251 +95,90 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-Direct-crate composition is also available when you do not want the full facade:
-```rust
-use bevy::prelude::*;
-use univis_ui_engine::prelude::*;
-use univis_ui_engine::UnivisEnginePlugin;
-use univis_ui_interaction::interaction::UnivisInteractionPlugin;
-use univis_ui_style::style::UnivisUiStylePlugin;
-use univis_ui_widgets::widget::UnivisWidgetPlugin;
+## Core Strengths
 
-fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(UnivisUiStylePlugin)
-        .add_plugins(UnivisEnginePlugin)
-        .add_plugins(UnivisInteractionPlugin)
-        .add_plugins(UnivisWidgetPlugin)
-        .run();
-}
-```
+### Roots That Match Real Use Cases
 
-## Project Book
-This repository includes two mdBook editions:
-- Arabic: `book_ar/`
-- English: `book_en/`
-English chapters are being translated incrementally while keeping full chapter parity.
+- `URootUi::screen()` for true viewport-fixed HUD UI
+- `URootUi::world_2d(size)` for flat world UI
+- `URootUi::world_3d(size)` for lit 3D UI
+- `world_2d_fit_content()` and `world_3d_fit_content()` for content-sized world roots
 
-Build it:
+### Layout That Goes Beyond Basic HUD Rows
+
+- flex and grid for standard UI
+- masonry and radial for expressive layouts
+- item and container extensions for advanced alignment and track behavior
+- root capsules that keep one UI tree from leaking over another
+
+### Rendering That Survives Scale
+
+- SDF materials for smooth corners and borders
+- 2D and 3D material paths from the same UI model
+- clipping and PBR support where needed
+- physical world scaling through `meters_per_unit`
+
+### Interaction And Widgets Included
+
+- pointer picking that resolves through each root
+- `UInteraction` and `UInteractionColors`
+- built-in text, image, button, toggle, checkbox, radio, seekbar, select, panel, scroll, and more
+
+## Docs And Examples
+
+The full documentation lives in `docs/` as one mdBook with Arabic and English trees:
+
+- Arabic: `docs/src/ar/`
+- English: `docs/src/en/`
+
+Build docs:
+
 ```bash
-mdbook build book_ar
-mdbook build book_en
+mdbook build docs
 ```
 
-Serve locally:
+Serve docs locally:
+
 ```bash
-mdbook serve book_ar -n 127.0.0.1 -p 3000
-mdbook serve book_en -n 127.0.0.1 -p 3001
+mdbook serve docs -n 127.0.0.1 -p 3000
 ```
 
-Reference pages:
-- [Plugin truth table (EN)](book_en/src/architecture/plugin-truth-table.md)
-- [Plugin truth table (AR)](book_ar/src/architecture/plugin-truth-table.md)
-- [Interaction support matrix (EN)](book_en/src/interaction/support-matrix.md)
-- [Interaction support matrix (AR)](book_ar/src/interaction/support-matrix.md)
-- [Current limitations (EN)](book_en/src/development/current-limitations.md)
-- [Current limitations (AR)](book_ar/src/development/current-limitations.md)
+Good starting points:
 
-## Spaces And Roots
-`URootUi` is the single public root entry point during `alpha2`.
+- [Quick Start (EN)](docs/src/en/quick-start.md)
+- [البدء السريع (AR)](docs/src/ar/quick-start.md)
+- [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
+- [الجذور والمساحات (AR)](docs/src/ar/layout/roots.md)
+- [Examples Index (EN)](docs/src/en/examples/index.md)
+- [فهرس الأمثلة (AR)](docs/src/ar/examples/index.md)
 
-### Screen
-- Use `URootUi::screen()`
-- Follows the resolved camera viewport
-- Behaves as a real HUD rather than a window-sized world canvas
-- Acts as a closed root capsule: local stacking stays inside the root
+Useful examples:
 
-### World2d
-- Use `URootUi::world_2d(size)` for flat world-space UI
-- Use `URootUi::world_2d_fit_content()` when the root should size itself from measured content
-- Uses a fixed logical canvas
-- Renders through the 2D path
-- Acts as a closed root capsule: descendants never interleave above other roots automatically
+- `hello_world`
+- `root_screen_hud`
+- `root_world_scale`
+- `root_fit_content`
+- `root_capsule_overlap`
+- `border_light_3d`
+- `card_profile`
+- `sci_fi`
 
-### World3d
-- Use `URootUi::world_3d(size)` for 3D-lit world-space UI
-- Use `URootUi::world_3d_fit_content()` when the root should size itself from measured content
-- Uses the same fixed logical canvas model
-- Renders through the 3D material path and supports `UPbr`
+Run one:
 
-### Units And Scaling
-- `UVal::Px(f32)` means logical UI units
-- `UiCanvasSize::Viewport` follows the resolved camera viewport
-- `UiCanvasSize::Fixed(Vec2)` defines a fixed logical canvas for layout
-- `UiCanvasSize::FitContent { min, max }` derives the logical canvas from measured content and clamps it if needed
-- World roots derive physical size through:
-  `world_size = canvas_size * meters_per_unit`
-- `resolution_scale` stays independent from physical world size
-- Content-driven world roots work best when the root content has intrinsic or fixed sizing; heavy `%` or root-relative flex can create circular sizing expectations
-
-### Alpha2 Migration Note
-- `UScreenRoot` and `UWorldRoot` remain only as deprecated compatibility wrappers during `alpha2`
-- New code should use `URootUi::screen()`, `URootUi::world_2d(size)`, and `URootUi::world_3d(size)`
-- To preserve the historical physical size of older world-space examples during migration, set `meters_per_unit: 1.0` explicitly
-- In multi-camera scenes, prefer `UiCameraRef::Entity(camera_entity)` over `Auto`
-
-## Layout Model
-### Primary Components
-- `UNode`: size, padding, margin, background, border radius, shape mode
-- `ULayout`: display algorithm + axis alignment + gaps + grid columns + `container_ext`
-- `USelf`: per-child overrides (`align_self`, absolute positioning, `order`) + `item_ext`
-
-`USelf.order` is local to the current `URootUi` capsule. It does not escape above another root.
-
-### Units
-- `UVal::Px(f32)` = logical UI units
-- `UVal::Percent(f32)`
-- `UVal::Content`
-- `UVal::Auto`
-- `UVal::Flex(f32)`
-
-### Display Modes
-- `UDisplay::Flex`
-- `UDisplay::Grid`
-- `UDisplay::Masonry`
-- `UDisplay::Stack`
-- `UDisplay::Radial`
-- `UDisplay::None`
-
-### Runtime Scheduling
-- `UnivisEnginePlugin` installs this `PostUpdate` layout/render chain:
-  `update_layout_hierarchy` -> `upward_measure_pass_cached` -> `downward_solve_pass_safe`
-
-### Extended Controls (New)
-- Container-level alignment/flex/grid: `ULayout.container_ext`
-  - `box_align: ULayoutBoxAlignContainer`
-  - `flex: ULayoutFlexContainer`
-  - `grid: ULayoutGridContainer`
-- Item-level alignment/flex/grid: `USelf.item_ext`
-  - `box_align: ULayoutBoxAlignSelf`
-  - `flex: ULayoutFlexItem`
-  - `grid: ULayoutGridItem`
-- Grid track sizing: `UTrackSize::{Px, Fr, Auto}`
-- Grid auto flow: `UGridAutoFlow::{Row, Column}`
-
-## Rendering And Visuals
-- Borders: `UBorder`
-- Shapes: `UShapeMode::{Round, Cut}`
-- Clipping: `UClip { enabled: bool }`
-- 3D lighting controls: `UPbr { metallic, roughness, emissive }`
-
-## Interaction Model
-- Interaction state component: `UInteraction`
-- Auto color feedback: `UInteractionColors`
-- Pointer observers for over/out/press/release/click
-- Picking backend performs SDF hit-tests and respects clipping ancestors
-- Interaction resolves the active camera from each root through `ResolvedRootUi`
-
-### Interaction Notes
-- In simple scenes, `UiCameraRef::Auto` is usually enough
-- In multi-camera scenes, bind each root explicitly with `UiCameraRef::Entity`
-- World-space interaction still targets the resolved UI plane of the root
-
-## Built-in Widgets
-- `UTextLabel`
-- `UImage`
-- `UButton`
-- `UIconButton`
-- `UCheckbox`
-- `UToggle`
-- `URadioButton`, `URadioGroup`
-- `USeekBar`
-- `UProgressBar`
-- `UTextField`
-- `UScrollContainer`
-- `UPanel`
-- `UBadge`, `UTag`
-- `UDragValue`
-- `USelect`
-
-### Widget Notes
-- `UnivisUiPlugin` installs the core widget plugin set.
-- `UTextField` behavior/events require adding `UnivisTextFieldPlugin` explicitly.
-- If you rely on dynamic `UBadge` / `UTag` styling updates, add `UnivisBadgePlugin` explicitly.
-- Scroll behavior is provided by `UnivisScrollViewPlugin` (included by `UnivisUiPlugin`).
-- `USelect` supports mouse interaction and basic keyboard navigation.
-
-### Resizable Panel Borders
-`UPanelWindow` enables opt-in border resize zones for `UPanel` (edges + corners).
-Scope in this release:
-- resize only (no move / no bring-to-front)
-- cursor icon changes only on panel resize zones
-
-```rust
-commands.spawn((
-    UPanel::glass(),
-    UPanelWindow::default()
-        .with_min_size(240.0, 160.0)
-        .with_border_hit_thickness(8.0),
-    UNode {
-        width: UVal::Px(420.0),
-        height: UVal::Px(260.0),
-        ..default()
-    },
-));
-```
-
-## Style And Icons
-- Embedded fonts (Inter, Adwaita Sans, Fira Sans)
-- Embedded Lucide icon font
-- `Theme` resource available via prelude
-- Icon constants available from `style::icons::Icon`
-
-## Profiling
-- Optional plugin: `LayoutProfilingPlugin`
-- Tracks pass timings, node stats, cache hit ratio, material reuse stats
-- Visual overlay with timing bars and frame graph
-- Keyboard controls: `F10` enable/disable profiler, `F11` overlay, `F9` graph, `F12` overlay position
-- No terminal logging by default (overlay-only diagnostics)
-
-## Examples
-### Existing Examples
 ```bash
-cargo run --release --example hello_world
-cargo run --release --example text_label
-cargo run --release --example text_field
-cargo run --release --example texture
-cargo run --release --example widgets
-cargo run --release --example toggle
-cargo run --release --example radio
-cargo run --release --example seekbar
-cargo run --release --example scroll_view
-cargo run --release --example interaction
-cargo run --release --example alignment
-cargo run --release --example masonry
-cargo run --release --example ex_node
-cargo run --release --example layout_cache
-cargo run --release --example card_profile
-cargo run --release --example border_light_3d
-cargo run --release --example sci_fi
-cargo run --release --example panel_divider
-cargo run --release --example panel_window
-cargo run --release --example drag_value
-cargo run --release --example select
+cargo run -p univis_ui_engine --example root_fit_content
 ```
 
-### New Layout Case Examples
-```bash
-cargo run --release --example layout_case_flex_wrap
-cargo run --release --example layout_case_grid_tracks
-cargo run --release --example layout_case_grid_auto_flow
-cargo run --release --example layout_case_stack
-cargo run --release --example layout_case_masonry_ext
-cargo run --release --example layout_case_radial
-cargo run --release --example layout_case_alignment_overflow
-```
+## Crates
 
-## Contributing
-Contributions are welcome.
-Useful areas:
-- Layout edge-case fixes
-- Performance and cache improvements
-- New widgets and examples
-- Documentation quality and API consistency
+- `univis_ui`: facade entry point
+- `univis_ui_engine`: roots, layout, rendering, and core node model
+- `univis_ui_interaction`: picking and interaction feedback
+- `univis_ui_style`: fonts, icons, and shared styling resources
+- `univis_ui_widgets`: built-in widgets and widget plugins
 
-## License
-Licensed under [MIT](LICENSE) OR [Apache-2.0](LICENSE).
+## Current Status
 
----
-For AI-focused documentation, read: `readme_for_ai.md`.
+The `alpha2` line is actively evolving around `URootUi`, world scaling, root capsules, unified docs, and API cleanup.
+
+If you want a single Bevy UI stack that can handle HUDs, world-space panels, and 3D-lit interfaces without splitting your mental model across multiple systems, this is what Univis UI is trying to deliver.

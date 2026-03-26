@@ -23,7 +23,9 @@ done
 
 echo
 echo "== Example checks =="
-./scripts/check_examples_serial_release.sh -p univis_ui
+for PACKAGE in "${PACKAGES[@]}"; do
+  ./scripts/check_examples_serial_release.sh -p "$PACKAGE"
+done
 
 echo
 echo "== Package rehearsal =="

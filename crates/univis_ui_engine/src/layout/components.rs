@@ -31,8 +31,10 @@ pub struct LayoutTreeDepth {
     pub max_depth: usize,
 }
 
-/// Marker داخلي/مرحلي مخزن مؤقتًا لمسار الرسم ثلاثي الأبعاد.
-/// يُشتق من أقرب `ResolvedRootUi` ولا يُستخدم كمصدر الحقيقة الأساسي.
+/// Cached internal marker for the 3D render path.
+///
+/// This is derived from the nearest [`crate::layout::layout_system::ResolvedRootUi`]
+/// and should not be treated as the source of truth.
 #[derive(Component, Reflect, Default, Clone, Copy, Debug)]
 #[reflect(Component)]
 pub struct UI3d;

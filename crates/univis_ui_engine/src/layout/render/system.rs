@@ -1,7 +1,7 @@
 use crate::internal_prelude::*;
 use bevy::{ecs::relationship::Relationship, prelude::*};
 
-/// مكون يحفظ Handle للـ Material مع العقدة
+/// Cached material handles attached to a rendered node.
 #[derive(Component)]
 pub struct MaterialHandles {
     pub material_2d: Option<Handle<UNodeMaterial>>,
@@ -17,12 +17,12 @@ impl Default for MaterialHandles {
     }
 }
 
-/// Resource لإدارة pool من المواد
+/// Simple statistics resource for material pooling.
 #[derive(Resource, Default)]
 pub struct MaterialPool {
-    /// عدد المواد المُعاد استخدامها
+    /// Number of material handles reused from the pool.
     pub reused_count: usize,
-    /// عدد المواد الجديدة المُنشأة
+    /// Number of new material handles created this frame.
     pub created_count: usize,
 }
 
@@ -45,7 +45,8 @@ struct ResolvedRenderContext {
     ui_to_world_scale: f32,
 }
 
-/// نظام محسّن لتحديث المواد بدون تسرب
+/// Internal system that refreshes node materials without leaking handles.
+#[doc(hidden)]
 pub fn update_materials_optimized(
     mut commands: Commands,
     mut pool: ResMut<MaterialPool>,

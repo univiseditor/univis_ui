@@ -1,3 +1,5 @@
+//! Logical UI units, spacing helpers, and box constraints used by the layout solver.
+
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
@@ -49,6 +51,7 @@ impl Default for UVal {
 }
 
 impl UVal {
+    /// Resolves the value against a parent/base scalar when possible.
     pub fn resolve(&self, base: f32) -> Option<f32> {
         match *self {
             UVal::Px(v) => Some(v),
@@ -57,6 +60,8 @@ impl UVal {
         }
     }
 
+    /// Resolves the value against a parent/base scalar, returning `0.0` for
+    /// non-resolvable modes such as `Content`, `Auto`, and `Flex`.
     pub fn resolve_or_zero(&self, base: f32) -> f32 {
         self.resolve(base).unwrap_or(0.0)
     }
@@ -212,13 +217,15 @@ impl UCornerRadius {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
+/// Padding totals expressed along the current main/cross axis pair.
 pub struct AxisPadding {
     pub main: f32,  // Sum of padding on the main axis
     pub cross: f32, // Sum of padding on the cross axis
 }
 
-/// A helper struct to abstract Main/Cross axis logic.
-/// Allows writing a single algorithm for both Row and Column directions.
+/// Helper for converting between world axes and main/cross layout axes.
+///
+/// This lets the solver share one implementation for row and column layouts.
 pub struct AxisHelper {
     axis: UFlexDirection,
 }
@@ -228,7 +235,7 @@ impl AxisHelper {
         Self { axis }
     }
 
-    /// هل الاتجاه معكوس؟
+    /// Returns `true` when the main axis direction is reversed.
     pub fn is_reverse(&self) -> bool {
         matches!(
             self.axis,
@@ -236,7 +243,7 @@ impl AxisHelper {
         )
     }
 
-    /// هل هو صف (أفقي)؟
+    /// Returns `true` when the main axis is horizontal.
     pub fn is_row(&self) -> bool {
         matches!(self.axis, UFlexDirection::Row | UFlexDirection::RowReverse)
     }
@@ -317,8 +324,7 @@ impl AxisHelper {
     }
 }
 
-/// Layout constraints passed down from parent to child.
-/// Defines the minimum and maximum allowed size for a child node.
+/// Minimum and maximum size constraints passed from parent to child.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BoxConstraints {
     pub min_width: f32,

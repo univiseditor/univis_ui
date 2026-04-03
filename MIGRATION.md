@@ -21,6 +21,22 @@ Use the other root files for different goals:
 - package-aware example commands are now the default
 - generated `API Docs` are now part of the documented learning path
 - the public root model centers on `URootUi`
+- layout sizing now has explicit `min_width/max_width/min_height/max_height`, `MinContent`, and `MaxContent`
+- `UVal::Auto` is no longer treated as the same thing as `Content`
+
+## Sizing Migration
+
+If you built layouts against older alpha behavior, recheck these assumptions:
+
+- `UVal::Content` now means explicit max-content sizing.
+- `UVal::Auto` now means contextual sizing instead of silently collapsing into `Content`.
+- `UImage` resolves `Auto`, `Content`, `MinContent`, and `MaxContent` to the native texture size when the asset becomes available.
+
+Start from these pages:
+
+- `docs/src/en/layout/sizing-semantics.md`
+- `docs/src/en/layout/node-model.md`
+- `docs/src/en/examples/index.md`
 
 ## New Discovery Path
 

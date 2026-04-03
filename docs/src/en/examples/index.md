@@ -166,6 +166,7 @@ cargo run -p <package> --example <name>
 | `select` | Dropdown selection with options. | single-select inputs | `Learning` |
 | `text_field` | Editable text fields with filters and submit/change events. | text input | `Learning` |
 | `text_label` | Text measurement, overflow, clipping, and autosize. | text rendering | `Learning` |
+| `widget_sizing_semantics` | Focused widget scene for wrap cards, `min_width`, text `MinContent/MaxContent`, and `UImage` intrinsic sizing. | widget sizing model | `Learning` |
 | `mixed_bidi_text` | Mixed Arabic + Latin text with bidi-aware ellipsis and start/end/middle truncation. | multilingual text overflow | `Learning` |
 | `text_edge_cases` | Edge-case text overflow scenes covering digits, mixed bidi text, truncation sides, autosize clamp, and max-lines. | text regression checks | `Learning` |
 | `text_label_zoom` | Text sharpness under zoom changes. | zoom/text fidelity | `Learning` |

@@ -34,6 +34,7 @@
 | --- | --- | --- | --- | --- |
 | `widgets` | `univis_ui_widgets` | شغّله إذا أردت نظرة أولى واسعة على الوحدات الجاهزة المضمنة. | `cargo run -p univis_ui_widgets --example widgets` | شغّل المثال |
 | `text_label` | `univis_ui_widgets` | شغّله إذا أردت دراسة قص النص والفيض و`autosize`. | `cargo run -p univis_ui_widgets --example text_label` | شغّل المثال |
+| `widget_sizing_semantics` | `univis_ui_widgets` | شغّله إذا أردت مشهدًا صغيرًا يشرح أحجام الوحدات: wrap cards و`min_width` ونصوص intrinsic وصور native-size. | `cargo run -p univis_ui_widgets --example widget_sizing_semantics` | شغّل المثال |
 | `mixed_bidi_text` | `univis_ui_widgets` | شغّله إذا أردت فحص النصوص العربية + اللاتينية مع ellipsis واعٍ بالاتجاه وخيارات القص. | `cargo run -p univis_ui_widgets --example mixed_bidi_text` | شغّل المثال |
 | `text_edge_cases` | `univis_ui_widgets` | شغّله إذا أردت مشهدًا صغيرًا يضغط على الحالات الطرفية لفيض النص. | `cargo run -p univis_ui_widgets --example text_edge_cases` | شغّل المثال |
 | `text_field` | `univis_ui_widgets` | شغّله إذا أردت إدخالًا نصيًا قابلًا للتحرير مع التصفية ورسائل الإرسال والتغيير. | `cargo run -p univis_ui_widgets --example text_field` | شغّل المثال |

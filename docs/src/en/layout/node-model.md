@@ -30,9 +30,11 @@ Supported units:
 
 - `width` and `height` are the preferred size request.
 - `min_width`, `max_width`, `min_height`, and `max_height` clamp the solved result.
+- `padding` participates in intrinsic measurement, while `margin` affects placement and wrap span rather than the node's inner measured content.
 - `UVal::Content` is the legacy alias for `UVal::MaxContent`.
 - `UVal::Auto` is contextual rather than identical to `Content`.
 - Use `MaxContent` or `MinContent` when you want explicit intrinsic sizing without implicit auto-stretch behavior.
+- `border_radius` and `shape_mode` stay visual-only; they do not change the measured layout size by themselves.
 
 See [Sizing Semantics](sizing-semantics.md) for the current detailed rules.
 

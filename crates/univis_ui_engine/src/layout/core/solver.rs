@@ -1073,4 +1073,175 @@ mod tests {
         assert_eq!(first.size.x, 70.0);
         assert_eq!(second.size.x, 130.0);
     }
+
+    #[test]
+    fn wrapped_row_moves_item_to_next_line_when_min_width_blocks_further_shrink() {
+        let mut config = base_solver_config();
+        config.flex_wrap = UFlexWrap::Wrap;
+        let constraints = BoxConstraints::tight(Vec2::new(150.0, 120.0));
+        let mut first = SolverResult::default();
+        let mut second = SolverResult::default();
+        let mut items = vec![
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 100.0,
+                    width_flex: 0.0,
+                    min_width: 90.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 24.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut first,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 100.0,
+                    width_flex: 0.0,
+                    min_width: 90.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 24.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut second,
+                margin: USides::default(),
+            },
+        ];
+
+        solve_flex_layout(&config, constraints, &mut items);
+
+        assert_eq!(first.size.x, 90.0);
+        assert_eq!(second.size.x, 90.0);
+        assert!(second.pos.y >= first.size.y - 0.1);
+    }
+
+    #[test]
+    fn wrapped_column_moves_item_to_next_column_when_min_height_blocks_further_shrink() {
+        let mut config = base_solver_config();
+        config.layout.flex_direction = UFlexDirection::Column;
+        config.flex_wrap = UFlexWrap::Wrap;
+        let constraints = BoxConstraints::tight(Vec2::new(120.0, 150.0));
+        let mut first = SolverResult::default();
+        let mut second = SolverResult::default();
+        let mut items = vec![
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 24.0,
+                    width_flex: 0.0,
+                    min_width: 0.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 100.0,
+                    height_flex: 0.0,
+                    min_height: 90.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut first,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 24.0,
+                    width_flex: 0.0,
+                    min_width: 0.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 100.0,
+                    height_flex: 0.0,
+                    min_height: 90.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut second,
+                margin: USides::default(),
+            },
+        ];
+
+        solve_flex_layout(&config, constraints, &mut items);
+
+        assert_eq!(first.size.y, 90.0);
+        assert_eq!(second.size.y, 90.0);
+        assert!(second.pos.x >= first.size.x - 0.1);
+    }
 }

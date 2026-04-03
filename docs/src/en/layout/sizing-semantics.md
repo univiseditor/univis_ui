@@ -25,7 +25,7 @@ This page freezes the intended sizing vocabulary for the current alpha line.
 - `Auto` is no longer treated as the same mode as `Content`.
 - In grid placement, `Auto` items can stretch to the cell by default. `MinContent` and `MaxContent` keep their intrinsic size unless alignment explicitly asks for stretch.
 - In flex cross-axis stretch behavior, `Auto` participates in implicit stretch. Explicit alignment can still force stretch for non-fixed, non-percent modes.
-- `UImage` keeps its widget-specific `Auto` behavior: if the texture is available, `Auto` resolves to the native image size before layout.
+- `UImage` treats `Auto`, `Content`, `MinContent`, and `MaxContent` as native-image measurement modes. Images have one intrinsic size, so these modes all resolve to the texture size once the asset is ready.
 
 ## Practical Guidance
 

@@ -29,6 +29,8 @@ File: `src/widget/image.rs`
 
 - binds an image into the material path
 - `sync_image_geometry` keeps rendered size aligned with layout
+- `Auto`, `Content`, `MinContent`, and `MaxContent` resolve to the native texture size once the image asset is available
+- `UNode` `min/max` constraints still clamp the final solved image size after native measurement
 
 ## `UBadge` and `UTag`
 

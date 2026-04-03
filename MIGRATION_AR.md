@@ -21,6 +21,22 @@
 - أصبحت أوامر الأمثلة المرتبطة بالحزمة هي القاعدة
 - أصبحت وثائق `API` المولدة جزءًا من مسار التعلم الموثق
 - أصبح نموذج الجذر العام يدور حول `URootUi`
+- أصبحت دلالات الأحجام أوضح عبر `min_width/max_width/min_height/max_height` و`MinContent` و`MaxContent`
+- لم يعد `UVal::Auto` يعامل كمرادف مباشر لـ `Content`
+
+## ترحيل دلالات الأحجام
+
+إذا كنت تعتمد على سلوك alpha أقدم، فأعد التحقق من هذه الافتراضات:
+
+- `UVal::Content` صار يعني حجم `max-content` الصريح.
+- `UVal::Auto` صار يعني حجمًا سياقيًا بدل أن ينهار بصمت إلى `Content`.
+- `UImage` يحول `Auto` و`Content` و`MinContent` و`MaxContent` إلى الحجم الأصلي للصورة عندما تصبح الـ asset متاحة.
+
+ابدأ من هذه الصفحات:
+
+- `docs/src/ar/layout/sizing-semantics.md`
+- `docs/src/ar/layout/node-model.md`
+- `docs/src/ar/examples/index.md`
 
 ## مسار الاكتشاف الجديد
 

@@ -31,6 +31,8 @@
 
 - يربط صورة بخلفية/texture مسار material.
 - `sync_image_geometry` يزامن أبعاد العرض.
+- `Auto` و`Content` و`MinContent` و`MaxContent` تتحول إلى الحجم الأصلي للصورة عندما تصبح الـ asset متاحة.
+- تبقى قيود `UNode` مثل `min/max` مطبقة على الحجم النهائي بعد القياس الأصلي.
 
 ## UBadge و UTag
 

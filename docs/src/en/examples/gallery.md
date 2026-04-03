@@ -34,6 +34,7 @@ This page is the curated view of the example surface. Use [Examples](index.md) f
 | --- | --- | --- | --- | --- |
 | `widgets` | `univis_ui_widgets` | Run this when you want a broad first pass over the built-in widget surface. | `cargo run -p univis_ui_widgets --example widgets` | run the example |
 | `text_label` | `univis_ui_widgets` | Run this when you want to study text clipping, overflow, and autosize behavior. | `cargo run -p univis_ui_widgets --example text_label` | run the example |
+| `widget_sizing_semantics` | `univis_ui_widgets` | Run this when you want a compact widget-level sizing scene for wrap cards, `min_width`, explicit intrinsic text, and native-size images. | `cargo run -p univis_ui_widgets --example widget_sizing_semantics` | run the example |
 | `mixed_bidi_text` | `univis_ui_widgets` | Run this when you want to inspect Arabic + Latin text, bidi-aware ellipsis, and truncation sides. | `cargo run -p univis_ui_widgets --example mixed_bidi_text` | run the example |
 | `text_edge_cases` | `univis_ui_widgets` | Run this when you want a compact regression scene for tricky text overflow cases. | `cargo run -p univis_ui_widgets --example text_edge_cases` | run the example |
 | `text_field` | `univis_ui_widgets` | Run this when you want editable input plus filtering and submit/change events. | `cargo run -p univis_ui_widgets --example text_field` | run the example |

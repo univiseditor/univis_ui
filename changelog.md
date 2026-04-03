@@ -20,6 +20,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Added public `min_width`, `max_width`, `min_height`, and `max_height` controls to `UNode`, plus explicit `UVal::MinContent` and `UVal::MaxContent` sizing modes.
 - Added a dedicated sizing-semantics docs note in both English and Arabic to freeze the alpha-line meaning of `Auto`, `Content`, `MinContent`, `MaxContent`, and `min/max` constraints.
 - Added `layout_sizing_semantics` as a focused `univis_ui_engine` example for contextual `Auto` sizing, explicit intrinsic modes, and min/max-aware flex redistribution.
+- Added `widget_sizing_semantics` as a focused `univis_ui_widgets` example for fixed cards, wrap breakpoints, explicit `min_width`, intrinsic text boxes, and `UImage` native-size behavior.
 
 ### Changed
 
@@ -29,6 +30,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Taught the layout solver to clamp solved sizes against explicit node `min/max` bounds and to respect those bounds during flex grow/shrink redistribution.
 - Split `Auto` from `Content` inside the layout solver so contextual auto sizing no longer collapses into explicit intrinsic sizing.
 - Kept `UVal::Content` as a backward-compatible public alias for max-content semantics while making implicit stretch behavior depend on `Auto` instead of all intrinsic modes.
+- Updated `UImage` sizing so `Auto`, `Content`, `MinContent`, and `MaxContent` all resolve to the native texture size once the image asset becomes available.
 
 ### Fixed
 

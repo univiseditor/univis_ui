@@ -29,6 +29,18 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libx11-dev \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-0
+
       - name: Run quality checks
         run: ./scripts/check_quality.sh
 
@@ -46,6 +58,18 @@ jobs:
 
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libx11-dev \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-0
 
       - name: Check representative examples
         run: ./scripts/check_representative_examples.sh
@@ -95,6 +119,18 @@ jobs:
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
 
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libx11-dev \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-0
+
       - name: Generate public API docs for ${{ matrix.package }}
         run: cargo doc -p ${{ matrix.package }} --no-deps
 
@@ -120,6 +156,18 @@ jobs:
 
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libx11-dev \
+            libasound2-dev \
+            libudev-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-0
 
       - name: Check examples for ${{ matrix.package }}
         run: ./scripts/check_examples_serial_release.sh -p ${{ matrix.package }}

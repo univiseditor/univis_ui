@@ -14,7 +14,7 @@ UClip { enabled: true }
 
 - in `interaction/picking` to reject hits outside clip bounds
 - in `render/system` to pass clip data into `UNodeMaterial`
-- in text through `sync_text_clip_visibility`
+- in text through local glyph clipping in `sync_text_label_meshes` and ancestor material clipping in `sync_text_clipper_materials`
 
 ## `UPbr`
 

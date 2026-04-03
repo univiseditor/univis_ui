@@ -20,7 +20,7 @@
 ## 3) النص يخرج خارج container مقصوص
 
 - تأكد من `UClip { enabled: true }` على ancestor الصحيح.
-- تأكد أن نظام `sync_text_clip_visibility` يعمل ضمن `UnivisTextPlugin`.
+- تأكد أن `UnivisTextPlugin` يعمل حتى يطبّق `sync_text_label_meshes` القص المحلي و`sync_text_clipper_materials` قص الأسلاف.
 
 ## 4) التمرير لا يعمل
 

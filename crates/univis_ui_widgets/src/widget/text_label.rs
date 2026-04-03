@@ -20,6 +20,8 @@ use bevy::text::{
     TextLayout, TextPipeline,
 };
 use std::collections::{HashMap, HashSet};
+use unicode_bidi::BidiInfo;
+use unicode_segmentation::UnicodeSegmentation;
 use univis_ui_engine::internal::IntrinsicSize;
 use univis_ui_engine::layout::core::layout_cache::LayoutCache;
 
@@ -29,6 +31,9 @@ const TEXT_SDF_PADDING: u32 = 12;
 const TEXT_SDF_ATLAS_SIZE: u32 = 1024;
 const DISTANCE_FIELD_INF: f32 = 1.0e20;
 const DEFAULT_ELLIPSIS: &str = "...";
+const LTR_ISOLATE_START: char = '\u{2066}';
+const RTL_ISOLATE_START: char = '\u{2067}';
+const ISOLATE_END: char = '\u{2069}';
 
 /// Overflow policy used by [`UTextLabel`].
 #[derive(Debug, Reflect, Clone, Copy, PartialEq, Eq, Default)]
@@ -41,6 +46,21 @@ pub enum UTextOverflow {
     /// Replace overflowing tail content with an ellipsis when possible.
     #[default]
     Ellipsis,
+}
+
+/// Controls which side of the text is shortened when ellipsis is applied.
+#[derive(Debug, Reflect, Clone, Copy, PartialEq, Eq, Default)]
+#[reflect(Default, Debug, Clone, PartialEq)]
+pub enum UTextTruncateSide {
+    /// Use the widget's default behavior.
+    #[default]
+    Auto,
+    /// Remove leading content.
+    Start,
+    /// Remove trailing content.
+    End,
+    /// Remove inner content and keep both edges.
+    Middle,
 }
 
 /// A text-rendering widget backed by Bevy text measurement and Univis SDF rendering.
@@ -79,6 +99,8 @@ pub struct UTextLabel {
     pub render_scale: f32,
     /// What happens when the available bounds are too small for the full text.
     pub overflow: UTextOverflow,
+    /// Which side is shortened when ellipsis is active.
+    pub truncate_side: UTextTruncateSide,
     /// Maximum line count before clipping or ellipsis is applied.
     pub max_lines: Option<usize>,
 }
@@ -211,6 +233,12 @@ struct MeasuredTextInfo {
     line_count: usize,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TextBaseDirection {
+    Ltr,
+    Rtl,
+}
+
 impl Default for UTextLabel {
     fn default() -> Self {
         Self {
@@ -223,6 +251,7 @@ impl Default for UTextLabel {
             autosize: true,
             render_scale: DEFAULT_TEXT_RENDER_SCALE,
             overflow: UTextOverflow::Ellipsis,
+            truncate_side: UTextTruncateSide::Auto,
             max_lines: None,
         }
     }
@@ -243,6 +272,11 @@ impl UTextLabel {
 
     pub fn with_overflow(mut self, overflow: UTextOverflow) -> Self {
         self.overflow = overflow;
+        self
+    }
+
+    pub fn with_truncate_side(mut self, truncate_side: UTextTruncateSide) -> Self {
+        self.truncate_side = truncate_side;
         self
     }
 
@@ -287,6 +321,121 @@ fn node_uses_intrinsic_dimension(spec: &UVal) -> bool {
     matches!(spec, UVal::Content | UVal::Auto)
 }
 
+fn parent_label_bounds(
+    entity: Entity,
+    label: &UTextLabel,
+    node: &UNode,
+    parents_query: &Query<&ChildOf>,
+    parent_query: &Query<(&UNode, &ComputedSize)>,
+) -> TextBounds {
+    if label.overflow == UTextOverflow::Visible {
+        return TextBounds {
+            width: None,
+            height: None,
+        };
+    }
+
+    let Ok(parent) = parents_query.get(entity) else {
+        return TextBounds {
+            width: None,
+            height: None,
+        };
+    };
+    let Ok((parent_node, parent_size)) = parent_query.get(parent.get()) else {
+        return TextBounds {
+            width: None,
+            height: None,
+        };
+    };
+
+    let width = if node_uses_intrinsic_dimension(&parent_node.width) {
+        None
+    } else {
+        Some(
+            (parent_size.width - parent_node.padding.width_sum() - node.margin.width_sum())
+                .max(0.0),
+        )
+    };
+
+    let height = if node_uses_intrinsic_dimension(&parent_node.height) {
+        None
+    } else {
+        Some(
+            (parent_size.height - parent_node.padding.height_sum() - node.margin.height_sum())
+                .max(0.0),
+        )
+    };
+
+    TextBounds { width, height }
+}
+
+fn parent_label_bounds_from_ids(
+    parent_entity: Option<Entity>,
+    overflow: UTextOverflow,
+    margin: USides,
+    parent_query: &Query<(&UNode, &ComputedSize)>,
+) -> TextBounds {
+    if overflow == UTextOverflow::Visible {
+        return TextBounds {
+            width: None,
+            height: None,
+        };
+    }
+
+    let Some(parent_entity) = parent_entity else {
+        return TextBounds {
+            width: None,
+            height: None,
+        };
+    };
+    let Ok((parent_node, parent_size)) = parent_query.get(parent_entity) else {
+        return TextBounds {
+            width: None,
+            height: None,
+        };
+    };
+
+    let width = if node_uses_intrinsic_dimension(&parent_node.width) {
+        None
+    } else {
+        Some((parent_size.width - parent_node.padding.width_sum() - margin.width_sum()).max(0.0))
+    };
+
+    let height = if node_uses_intrinsic_dimension(&parent_node.height) {
+        None
+    } else {
+        Some((parent_size.height - parent_node.padding.height_sum() - margin.height_sum()).max(0.0))
+    };
+
+    TextBounds { width, height }
+}
+
+fn clamp_outer_size_to_bounds(outer_size: Vec2, bounds: TextBounds) -> Vec2 {
+    Vec2::new(
+        bounds
+            .width
+            .map_or(outer_size.x, |width| outer_size.x.min(width)),
+        bounds
+            .height
+            .map_or(outer_size.y, |height| outer_size.y.min(height)),
+    )
+}
+
+fn text_horizontal_offset(
+    label: &UTextLabel,
+    node: &UNode,
+    computed_size: &ComputedSize,
+    text_size: Vec2,
+) -> f32 {
+    let content_width = (computed_size.width - node.padding.width_sum()).max(0.0);
+
+    match label.justify {
+        Justify::Left => (-content_width * 0.5) + (text_size.x * 0.5),
+        Justify::Center | Justify::Justified => 0.0,
+        Justify::Right => (content_width * 0.5) - (text_size.x * 0.5),
+    }
+}
+
 fn measured_text_outer_size(node: &UNode, layout_cache: &UTextLabelLayoutCache) -> Vec2 {
     Vec2::new(
         layout_cache.measured_size.x.max(0.0) + node.padding.width_sum(),
@@ -319,6 +468,7 @@ fn label_measure_bounds(
     label: &UTextLabel,
     node: &UNode,
     computed_size: Option<&ComputedSize>,
+    parent_bounds: TextBounds,
 ) -> TextBounds {
     let computed_width = computed_size.map_or(0.0, |size| size.width);
     let computed_height = computed_size.map_or(0.0, |size| size.height);
@@ -341,7 +491,18 @@ fn label_measure_bounds(
         None
     };
 
-    TextBounds { width, height }
+    TextBounds {
+        width: width.or(if label.autosize {
+            parent_bounds.width
+        } else {
+            None
+        }),
+        height: height.or(if label.autosize {
+            parent_bounds.height
+        } else {
+            None
+        }),
+    }
 }
 
 fn measure_layout_for_text(
@@ -463,12 +624,105 @@ fn has_overflow_constraints(bounds: TextBounds, label: &UTextLabel) -> bool {
 }
 
 fn text_char_boundaries(text: &str) -> Vec<usize> {
-    let mut boundaries = Vec::with_capacity(text.chars().count() + 1);
+    let mut boundaries = Vec::with_capacity(text.graphemes(true).count() + 1);
     boundaries.push(0);
-    for (idx, ch) in text.char_indices() {
-        boundaries.push(idx + ch.len_utf8());
+    for (idx, grapheme) in text.grapheme_indices(true) {
+        boundaries.push(idx + grapheme.len());
     }
     boundaries
+}
+
+fn base_direction_for_text(text: &str) -> TextBaseDirection {
+    let bidi = BidiInfo::new(text, None);
+    bidi.paragraphs
+        .first()
+        .map(|paragraph| {
+            if paragraph.level.is_rtl() {
+                TextBaseDirection::Rtl
+            } else {
+                TextBaseDirection::Ltr
+            }
+        })
+        .unwrap_or(TextBaseDirection::Ltr)
+}
+
+fn resolve_truncate_side(
+    truncate_side: UTextTruncateSide,
+    _base_direction: TextBaseDirection,
+) -> UTextTruncateSide {
+    match truncate_side {
+        UTextTruncateSide::Auto => UTextTruncateSide::End,
+        side => side,
+    }
+}
+
+fn isolate_for_direction(segment: &str, base_direction: TextBaseDirection) -> String {
+    if segment.is_empty() {
+        return String::new();
+    }
+
+    let isolate_start = match base_direction {
+        TextBaseDirection::Ltr => LTR_ISOLATE_START,
+        TextBaseDirection::Rtl => RTL_ISOLATE_START,
+    };
+
+    let mut isolated = String::with_capacity(segment.len() + 2);
+    isolated.push(isolate_start);
+    isolated.push_str(segment);
+    isolated.push(ISOLATE_END);
+    isolated
+}
+
+fn build_truncate_candidate(
+    text: &str,
+    boundaries: &[usize],
+    truncate_side: UTextTruncateSide,
+    kept_graphemes: usize,
+    base_direction: TextBaseDirection,
+) -> String {
+    let total_graphemes = boundaries.len().saturating_sub(1);
+    if total_graphemes == 0 {
+        return DEFAULT_ELLIPSIS.to_string();
+    }
+
+    match truncate_side {
+        UTextTruncateSide::End | UTextTruncateSide::Auto => {
+            let keep = kept_graphemes.min(total_graphemes);
+            let prefix = &text[..boundaries[keep]];
+            let isolated_prefix = isolate_for_direction(prefix, base_direction);
+            let mut candidate =
+                String::with_capacity(isolated_prefix.len() + DEFAULT_ELLIPSIS.len());
+            candidate.push_str(&isolated_prefix);
+            candidate.push_str(DEFAULT_ELLIPSIS);
+            candidate
+        }
+        UTextTruncateSide::Start => {
+            let keep = kept_graphemes.min(total_graphemes);
+            let suffix = &text[boundaries[total_graphemes - keep]..];
+            let isolated_suffix = isolate_for_direction(suffix, base_direction);
+            let mut candidate =
+                String::with_capacity(DEFAULT_ELLIPSIS.len() + isolated_suffix.len());
+            candidate.push_str(DEFAULT_ELLIPSIS);
+            candidate.push_str(&isolated_suffix);
+            candidate
+        }
+        UTextTruncateSide::Middle => {
+            let keep = kept_graphemes.min(total_graphemes);
+            let keep_prefix = keep.div_ceil(2);
+            let keep_suffix = keep / 2;
+            let prefix = &text[..boundaries[keep_prefix]];
+            let suffix = &text[boundaries[total_graphemes - keep_suffix]..];
+            let isolated_prefix = isolate_for_direction(prefix, base_direction);
+            let isolated_suffix = isolate_for_direction(suffix, base_direction);
+            let mut candidate = String::with_capacity(
+                isolated_prefix.len() + DEFAULT_ELLIPSIS.len() + isolated_suffix.len(),
+            );
+            candidate.push_str(&isolated_prefix);
+            candidate.push_str(DEFAULT_ELLIPSIS);
+            candidate.push_str(&isolated_suffix);
+            candidate
+        }
+    }
 }
 
 fn build_ellipsized_text(
@@ -483,6 +737,8 @@ fn build_ellipsized_text(
     computed: &mut ComputedTextBlock,
     font_system: &mut CosmicFontSystem,
 ) -> Result<(String, MeasuredTextInfo), ()> {
+    let base_direction = base_direction_for_text(&label.text);
+    let truncate_side = resolve_truncate_side(label.truncate_side, base_direction);
     let ellipsis_only = measure_layout_for_text(
         entity,
         DEFAULT_ELLIPSIS,
@@ -513,22 +769,20 @@ fn build_ellipsized_text(
     }
 
     let boundaries = text_char_boundaries(&label.text);
-    let total_chars = boundaries.len().saturating_sub(1);
-    if total_chars == 0 {
+    let total_graphemes = boundaries.len().saturating_sub(1);
+    if total_graphemes == 0 {
         return Ok((DEFAULT_ELLIPSIS.to_string(), ellipsis_only));
     }
 
     let mut best_text = DEFAULT_ELLIPSIS.to_string();
     let mut best_measured = ellipsis_only;
     let mut low = 0usize;
-    let mut high = total_chars;
+    let mut high = total_graphemes;
 
     while low < high {
         let mid = (low + high + 1) / 2;
-        let prefix_end = boundaries[mid];
-        let mut candidate = String::with_capacity(prefix_end + DEFAULT_ELLIPSIS.len());
-        candidate.push_str(&label.text[..prefix_end]);
-        candidate.push_str(DEFAULT_ELLIPSIS);
+        let candidate =
+            build_truncate_candidate(&label.text, &boundaries, truncate_side, mid, base_direction);
 
         let measured = measure_layout_for_text(
             entity,
@@ -562,6 +816,8 @@ pub fn measure_text_label_layout(
     fonts: Res<Assets<Font>>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut font_system: ResMut<CosmicFontSystem>,
+    parents_query: Query<&ChildOf>,
+    parent_query: Query<(&UNode, &ComputedSize)>,
     mut query: Query<(
         Entity,
         Ref<UTextLabel>,
@@ -598,7 +854,9 @@ pub fn measure_text_label_layout(
         let text_font = label_text_font(&label);
         let text_layout = label_text_layout(&label);
         let text_color = label.color;
-        let bounds = label_measure_bounds(&label, &node, Some(&computed_size));
+        let parent_bounds =
+            parent_label_bounds(entity, &label, &node, &parents_query, &parent_query);
+        let bounds = label_measure_bounds(&label, &node, Some(&computed_size), parent_bounds);
 
         match measure_layout_for_text(
             entity,
@@ -660,16 +918,61 @@ pub fn measure_text_label_layout(
 /// Internal system that copies measured text size back into autosized [`UNode`]s.
 #[doc(hidden)]
 pub fn fit_node_to_text_size(
-    mut parent_query: Query<(&UTextLabel, &mut UNode, &UTextLabelLayoutCache)>,
+    parents_query: Query<&ChildOf>,
+    mut params: ParamSet<(
+        Query<(&UNode, &ComputedSize)>,
+        Query<(Entity, &UTextLabel, &mut UNode, &UTextLabelLayoutCache)>,
+    )>,
 ) {
-    for (label, mut node, layout_cache) in parent_query.iter_mut() {
+    let label_snapshot: Vec<_> = {
+        let labels = params.p1();
+        labels
+            .iter()
+            .map(|(entity, label, node, _)| {
+                (
+                    entity,
+                    parents_query.get(entity).ok().map(|p| p.get()),
+                    label.overflow,
+                    node.margin,
+                )
+            })
+            .collect()
+    };
+
+    let parent_bounds_by_entity: HashMap<Entity, TextBounds> = {
+        let parent_bounds_query = params.p0();
+        label_snapshot
+            .into_iter()
+            .map(|(entity, parent_entity, overflow, margin)| {
+                (
+                    entity,
+                    parent_label_bounds_from_ids(
+                        parent_entity,
+                        overflow,
+                        margin,
+                        &parent_bounds_query,
+                    ),
+                )
+            })
+            .collect()
+    };
+
+    for (entity, label, mut node, layout_cache) in params.p1().iter_mut() {
         if !label.autosize {
             continue;
         }
 
         let outer_size = measured_text_outer_size(&node, layout_cache);
-        let target_width = outer_size.x;
-        let target_height = outer_size.y;
+        let parent_bounds = parent_bounds_by_entity
+            .get(&entity)
+            .copied()
+            .unwrap_or(TextBounds {
+                width: None,
+                height: None,
+            });
+        let clamped_outer_size = clamp_outer_size_to_bounds(outer_size, parent_bounds);
+        let target_width = clamped_outer_size.x;
+        let target_height = clamped_outer_size.y;
 
         let current_w = match node.width {
             UVal::Px(v) => v,
@@ -692,21 +995,38 @@ pub fn fit_node_to_text_size(
 /// Internal system that mirrors text measurement into [`IntrinsicSize`].
 #[doc(hidden)]
 pub fn sync_text_label_intrinsic_size(
+    parents_query: Query<&ChildOf>,
+    parent_bounds_query: Query<(&UNode, &ComputedSize)>,
     mut query: Query<
-        (&UNode, &UTextLabelLayoutCache, &mut IntrinsicSize),
+        (
+            Entity,
+            &UNode,
+            &UTextLabel,
+            &UTextLabelLayoutCache,
+            &mut IntrinsicSize,
+        ),
         Or<(
             Added<UTextLabel>,
+            Changed<UTextLabel>,
             Changed<UNode>,
             Changed<UTextLabelLayoutCache>,
         )>,
     >,
 ) {
-    for (node, layout_cache, mut intrinsic) in query.iter_mut() {
+    for (entity, node, label, layout_cache, mut intrinsic) in query.iter_mut() {
         if layout_cache.dirty {
             continue;
         }
 
-        let target = desired_text_label_intrinsic_size(node, layout_cache, *intrinsic);
+        let mut target = desired_text_label_intrinsic_size(node, layout_cache, *intrinsic);
+        if label.autosize {
+            let parent_bounds =
+                parent_label_bounds(entity, label, node, &parents_query, &parent_bounds_query);
+            let clamped_outer_size =
+                clamp_outer_size_to_bounds(Vec2::new(target.width, target.height), parent_bounds);
+            target.width = clamped_outer_size.x;
+            target.height = clamped_outer_size.y;
+        }
         if (intrinsic.width - target.width).abs() > 0.1
             || (intrinsic.height - target.height).abs() > 0.1
         {
@@ -942,7 +1262,7 @@ fn label_content_clip_rect(
     node: &UNode,
     computed_size: &ComputedSize,
 ) -> Option<LocalClipRect> {
-    if label.autosize || label.overflow == UTextOverflow::Visible {
+    if label.overflow == UTextOverflow::Visible {
         return None;
     }
 
@@ -1120,6 +1440,7 @@ fn sync_text_label_meshes(
         let text_size = layout_cache.measured_size;
         let render_scale = resolved_render_scale(label.render_scale);
         let content_clip = label_content_clip_rect(&label, &node, &computed_size);
+        let horizontal_offset = text_horizontal_offset(&label, &node, &computed_size, text_size);
         let mut page_batches: HashMap<AssetId<Image>, TextPageBatch> = HashMap::default();
 
         if !layout_cache.displayed_text.is_empty() && text_size.x > 0.0 && text_size.y > 0.0 {
@@ -1254,7 +1575,7 @@ fn sync_text_label_meshes(
                         / render_scale;
 
                     let local_center = Vec2::new(
-                        position_x - text_size.x * 0.5,
+                        horizontal_offset + position_x - text_size.x * 0.5,
                         text_size.y * 0.5 - position_y,
                     );
                     let atlas_width = atlas_image.texture_descriptor.size.width as f32;
@@ -1442,6 +1763,7 @@ impl Plugin for UnivisTextPlugin {
 
         app.register_type::<UTextLabel>()
             .register_type::<UTextOverflow>()
+            .register_type::<UTextTruncateSide>()
             .register_type::<UTextLabelLayoutCache>()
             .init_resource::<UTextLabelAtlasCache>()
             .add_plugins(Material2dPlugin::<UTextLabelSdfMaterial>::default())
@@ -1560,5 +1882,226 @@ mod tests {
         let outer = measured_text_outer_size(&node, &layout_cache);
 
         assert_eq!(outer, Vec2::new(16.0, 20.0));
+    }
+
+    #[test]
+    fn grapheme_boundaries_keep_joined_emoji_together() {
+        let boundaries = text_char_boundaries("A🧑‍💻B");
+
+        assert_eq!(boundaries.len(), 4);
+        assert_eq!(&"A🧑‍💻B"[..boundaries[2]], "A🧑‍💻");
+    }
+
+    #[test]
+    fn base_direction_detects_rtl_text() {
+        assert_eq!(
+            base_direction_for_text("مرحبا بالعالم"),
+            TextBaseDirection::Rtl
+        );
+        assert_eq!(
+            base_direction_for_text("hello world"),
+            TextBaseDirection::Ltr
+        );
+    }
+
+    #[test]
+    fn auto_truncate_side_defaults_to_end_for_ltr_and_rtl() {
+        assert_eq!(
+            resolve_truncate_side(UTextTruncateSide::Auto, TextBaseDirection::Ltr),
+            UTextTruncateSide::End
+        );
+        assert_eq!(
+            resolve_truncate_side(UTextTruncateSide::Auto, TextBaseDirection::Rtl),
+            UTextTruncateSide::End
+        );
+    }
+
+    #[test]
+    fn default_text_label_uses_ellipsis_overflow() {
+        let label = UTextLabel::default();
+
+        assert_eq!(label.overflow, UTextOverflow::Ellipsis);
+    }
+
+    #[test]
+    fn default_text_label_uses_auto_truncate_side() {
+        let label = UTextLabel::default();
+
+        assert_eq!(label.truncate_side, UTextTruncateSide::Auto);
+    }
+
+    #[test]
+    fn left_justify_offsets_text_toward_start_edge() {
+        let label = UTextLabel {
+            justify: Justify::Left,
+            ..default()
+        };
+        let node = UNode {
+            padding: USides::axes(10.0, 0.0),
+            ..default()
+        };
+        let computed_size = ComputedSize {
+            width: 100.0,
+            height: 20.0,
+            ..default()
+        };
+
+        let offset = text_horizontal_offset(&label, &node, &computed_size, Vec2::new(200.0, 20.0));
+
+        assert_eq!(offset, 60.0);
+    }
+
+    #[test]
+    fn right_justify_offsets_text_toward_end_edge() {
+        let label = UTextLabel {
+            justify: Justify::Right,
+            ..default()
+        };
+        let node = UNode {
+            padding: USides::axes(10.0, 0.0),
+            ..default()
+        };
+        let computed_size = ComputedSize {
+            width: 100.0,
+            height: 20.0,
+            ..default()
+        };
+
+        let offset = text_horizontal_offset(&label, &node, &computed_size, Vec2::new(40.0, 20.0));
+
+        assert_eq!(offset, 20.0);
+    }
+
+    #[test]
+    fn center_justify_keeps_zero_offset() {
+        let label = UTextLabel {
+            justify: Justify::Center,
+            ..default()
+        };
+        let node = UNode {
+            padding: USides::axes(10.0, 0.0),
+            ..default()
+        };
+        let computed_size = ComputedSize {
+            width: 100.0,
+            height: 20.0,
+            ..default()
+        };
+
+        let offset = text_horizontal_offset(&label, &node, &computed_size, Vec2::new(40.0, 20.0));
+
+        assert_eq!(offset, 0.0);
+    }
+
+    #[test]
+    fn local_clip_rect_exists_for_ellipsis_even_with_autosize() {
+        let label = UTextLabel {
+            autosize: true,
+            overflow: UTextOverflow::Ellipsis,
+            ..default()
+        };
+        let node = UNode {
+            padding: USides::axes(10.0, 6.0),
+            ..default()
+        };
+        let computed_size = ComputedSize {
+            width: 120.0,
+            height: 40.0,
+            ..default()
+        };
+
+        let clip = label_content_clip_rect(&label, &node, &computed_size).unwrap();
+
+        assert_eq!(clip.min, Vec2::new(-50.0, -14.0));
+        assert_eq!(clip.max, Vec2::new(50.0, 14.0));
+    }
+
+    #[test]
+    fn visible_overflow_disables_local_clip_rect() {
+        let label = UTextLabel {
+            overflow: UTextOverflow::Visible,
+            ..default()
+        };
+        let node = UNode {
+            padding: USides::all(8.0),
+            ..default()
+        };
+        let computed_size = ComputedSize {
+            width: 120.0,
+            height: 40.0,
+            ..default()
+        };
+
+        assert!(label_content_clip_rect(&label, &node, &computed_size).is_none());
+    }
+
+    #[test]
+    fn autosize_measure_bounds_use_parent_constraints_when_available() {
+        let label = UTextLabel {
+            autosize: true,
+            overflow: UTextOverflow::Ellipsis,
+            ..default()
+        };
+        let node = UNode::default();
+        let bounds = label_measure_bounds(
+            &label,
+            &node,
+            None,
+            TextBounds {
+                width: Some(180.0),
+                height: Some(44.0),
+            },
+        );
+
+        assert_eq!(bounds.width, Some(180.0));
+        assert_eq!(bounds.height, Some(44.0));
+    }
+
+    #[test]
+    fn truncate_candidate_end_keeps_prefix() {
+        let text = "abcdef";
+        let boundaries = text_char_boundaries(text);
+        let candidate = build_truncate_candidate(
+            text,
+            &boundaries,
+            UTextTruncateSide::End,
+            3,
+            TextBaseDirection::Ltr,
+        );
+
+        assert_eq!(candidate, format!("{LTR_ISOLATE_START}abc{ISOLATE_END}..."));
+    }
+
+    #[test]
+    fn truncate_candidate_start_keeps_suffix() {
+        let text = "abcdef";
+        let boundaries = text_char_boundaries(text);
+        let candidate = build_truncate_candidate(
+            text,
+            &boundaries,
+            UTextTruncateSide::Start,
+            3,
+            TextBaseDirection::Ltr,
+        );
+
+        assert_eq!(candidate, format!("...{LTR_ISOLATE_START}def{ISOLATE_END}"));
+    }
+
+    #[test]
+    fn truncate_candidate_middle_keeps_edges() {
+        let text = "abcdef";
+        let boundaries = text_char_boundaries(text);
+        let candidate = build_truncate_candidate(
+            text,
+            &boundaries,
+            UTextTruncateSide::Middle,
+            4,
+            TextBaseDirection::Ltr,
+        );
+
+        assert_eq!(
+            candidate,
+            format!("{LTR_ISOLATE_START}ab{ISOLATE_END}...{LTR_ISOLATE_START}ef{ISOLATE_END}")
+        );
     }
 }

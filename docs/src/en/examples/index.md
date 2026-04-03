@@ -81,6 +81,20 @@ cargo run -p <package> --example <name>
 - Best for: text rendering semantics.
 - Kind: `Learning`
 
+### `mixed_bidi_text`
+
+- Package: `univis_ui_widgets`
+- Purpose: demonstrates mixed Arabic + Latin text with bidi-aware ellipsis and truncation sides.
+- Best for: multilingual text overflow behavior.
+- Kind: `Learning`
+
+### `text_edge_cases`
+
+- Package: `univis_ui_widgets`
+- Purpose: concentrates tricky `UTextLabel` cases like leading digits, mixed bidi strings, truncation sides, autosize clamp, and max-lines.
+- Best for: text overflow regression checks.
+- Kind: `Learning`
+
 ### `text_field`
 
 - Package: `univis_ui_widgets`
@@ -112,6 +126,7 @@ cargo run -p <package> --example <name>
 | `complex_dashboard` | Integrated dashboard with multiple widgets and denser composition. | facade-level composition | `Showcase` |
 | `card_profile` | Profile card demo with polished presentation and optional bloom. | polished facade card | `Showcase`, `Smoke` |
 | `sci_fi` | Larger full-stack sci-fi HUD scene. | final-look showcase | `Showcase`, `Smoke` |
+| `transit_control` | Dense transit operations board with animated platform cards and dispatch panels. | non-sci-fi showcase composition | `Showcase` |
 
 ### `univis_ui_engine`
 
@@ -150,6 +165,8 @@ cargo run -p <package> --example <name>
 | `select` | Dropdown selection with options. | single-select inputs | `Learning` |
 | `text_field` | Editable text fields with filters and submit/change events. | text input | `Learning` |
 | `text_label` | Text measurement, overflow, clipping, and autosize. | text rendering | `Learning` |
+| `mixed_bidi_text` | Mixed Arabic + Latin text with bidi-aware ellipsis and start/end/middle truncation. | multilingual text overflow | `Learning` |
+| `text_edge_cases` | Edge-case text overflow scenes covering digits, mixed bidi text, truncation sides, autosize clamp, and max-lines. | text regression checks | `Learning` |
 | `text_label_zoom` | Text sharpness under zoom changes. | zoom/text fidelity | `Learning` |
 | `toggle` | Binary switch behavior. | on/off state | `Learning` |
 | `widgets` | Multi-widget sampler scene. | quick widget survey | `Learning` |

@@ -30,6 +30,8 @@ impl Plugin for UnivisUiStylePlugin {
         embedded_asset!(app, "assets/fonts/Inter-Regular.ttf");
         embedded_asset!(app, "assets/fonts/AdwaitaSans-Regular.ttf");
         embedded_asset!(app, "assets/fonts/FiraSans-Regular.ttf");
+        embedded_asset!(app, "assets/fonts/NotoSansArabic-Regular.ttf");
+        embedded_asset!(app, "assets/fonts/FreeSerif.otf");
         embedded_asset!(app, "assets/icons/Lucide.ttf");
         app.init_resource::<Theme>();
     }
@@ -76,6 +78,10 @@ pub struct Fonts {
     pub adwaita_sans_regular: Handle<Font>,
     /// Embedded Fira Sans Regular handle.
     pub fira_sans_regular: Handle<Font>,
+    /// Embedded Noto Sans Arabic Regular handle.
+    pub noto_sans_arabic_regular: Handle<Font>,
+    /// Embedded FreeSerif handle with broad Arabic + Latin coverage.
+    pub free_serif: Handle<Font>,
 }
 
 impl FromWorld for Theme {
@@ -91,6 +97,11 @@ impl FromWorld for Theme {
                     ),
                     fira_sans_regular: asset_server
                         .load("embedded://univis_ui_style/style/assets/fonts/FiraSans-Regular.ttf"),
+                    noto_sans_arabic_regular: asset_server.load(
+                        "embedded://univis_ui_style/style/assets/fonts/NotoSansArabic-Regular.ttf",
+                    ),
+                    free_serif: asset_server
+                        .load("embedded://univis_ui_style/style/assets/fonts/FreeSerif.otf"),
                 },
             },
             icon: IconStyles {

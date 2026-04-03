@@ -33,6 +33,8 @@ This page is the curated view of the example surface. Use [Examples](index.md) f
 | --- | --- | --- | --- | --- |
 | `widgets` | `univis_ui_widgets` | Run this when you want a broad first pass over the built-in widget surface. | `cargo run -p univis_ui_widgets --example widgets` | run the example |
 | `text_label` | `univis_ui_widgets` | Run this when you want to study text clipping, overflow, and autosize behavior. | `cargo run -p univis_ui_widgets --example text_label` | run the example |
+| `mixed_bidi_text` | `univis_ui_widgets` | Run this when you want to inspect Arabic + Latin text, bidi-aware ellipsis, and truncation sides. | `cargo run -p univis_ui_widgets --example mixed_bidi_text` | run the example |
+| `text_edge_cases` | `univis_ui_widgets` | Run this when you want a compact regression scene for tricky text overflow cases. | `cargo run -p univis_ui_widgets --example text_edge_cases` | run the example |
 | `text_field` | `univis_ui_widgets` | Run this when you want editable input plus filtering and submit/change events. | `cargo run -p univis_ui_widgets --example text_field` | run the example |
 | `panel_window` | `univis_ui_widgets` | Run this when you want floating, resizable tool-window behavior. | `cargo run -p univis_ui_widgets --example panel_window` | run the example |
 | `scroll_view` | `univis_ui_widgets` | Run this when you want overflow handling and explicit scrolling behavior. | `cargo run -p univis_ui_widgets --example scroll_view` | run the example |
@@ -49,6 +51,7 @@ This page is the curated view of the example surface. Use [Examples](index.md) f
 | --- | --- | --- | --- | --- |
 | `card_profile` | `univis_ui` | Run this when you want the most polished compact showcase card. | `cargo run -p univis_ui --features example_bloom --example card_profile` | [screenshot](../../assets/profile.png) |
 | `sci_fi` | `univis_ui` | Run this when you want a larger full-stack scene that mixes several systems. | `cargo run -p univis_ui --features example_bloom --example sci_fi` | run the example |
+| `transit_control` | `univis_ui` | Run this when you want a dense dispatch-board showcase with a different visual language from `sci_fi`. | `cargo run -p univis_ui --example transit_control` | run the example |
 | `complex_dashboard` | `univis_ui` | Run this when you want a denser integrated composition with multiple UI regions. | `cargo run -p univis_ui --example complex_dashboard` | [HTML reference](../../assets/visual-references/complex_dashboard.html) |
 
 ## Static Visual References

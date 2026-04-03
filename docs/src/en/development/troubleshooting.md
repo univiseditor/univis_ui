@@ -20,7 +20,7 @@ Check:
 ## 3) Text Escapes A Clipped Container
 
 - confirm `UClip { enabled: true }` is present on the correct ancestor
-- confirm `sync_text_clip_visibility` is active through `UnivisTextPlugin`
+- confirm `UnivisTextPlugin` is active so `sync_text_label_meshes` and `sync_text_clipper_materials` can apply local and ancestor clipping
 
 ## 4) Scrolling Does Not Work
 

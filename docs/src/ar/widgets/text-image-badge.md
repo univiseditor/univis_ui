@@ -13,15 +13,17 @@
 - `justify`
 - `linebreak`
 - `autosize`
+- `overflow` افتراضيًا هو `Ellipsis`، ويمكن التحويل إلى `Clip` أو `Visible` عند الحاجة
+- `truncate_side` يتحكم في القص مع `Ellipsis`: من البداية أو النهاية أو الوسط
 
 الأنظمة:
 
-- `init_text_label_container`
-- `sync_text_label_props`
+- `measure_text_label_layout`
 - `fit_node_to_text_size`
-- `sync_text_clip_visibility`
+- `sync_text_label_meshes`
+- `sync_text_clipper_materials`
 
-> `sync_text_clip_visibility` يضمن عدم ظهور النص خارج الأسلاف القاصين.
+> القص المحلي يتم على مستوى محارف النص، بينما ينتقل قص الأسلاف `UClip` إلى مادة النص كي يطبقه الشيدر.
 
 ## UImage
 

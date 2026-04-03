@@ -11,14 +11,17 @@ Core fields:
 - `color`
 - `justify`
 - `linebreak`
+- `overflow` defaults to `Ellipsis`; use `Clip` or `Visible` when needed
+- `truncate_side` controls whether ellipsis trims the start, end, or middle
 
 Systems:
 
-- text measurement
-- glyph geometry generation
-- clip visibility sync
+- `measure_text_label_layout`
+- `fit_node_to_text_size`
+- `sync_text_label_meshes`
+- `sync_text_clipper_materials`
 
-`sync_text_clip_visibility` prevents text from appearing outside clip ancestors.
+Local overflow is clipped per glyph quad, while ancestor `UClip` data is pushed into the text material for shader-side clipping.
 
 ## `UImage`
 

@@ -10,6 +10,27 @@ Use this file for the dated chronological record.
 Use `RELEASE_NOTES.md` for the current alpha release summary.
 Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
+## [2026-04-03]
+
+### Added
+
+- Added `mixed_bidi_text` and `text_edge_cases` as focused `univis_ui_widgets` examples for mixed Arabic + Latin labels, truncation sides, autosize clamping, and text-overflow edge cases.
+- Added embedded `NotoSansArabic-Regular.ttf` and `FreeSerif.otf` theme font handles so the shipped text examples can render Arabic and Latin coverage from repo-owned assets.
+- Added regression tests around grapheme-safe truncation, justify anchoring, local clip behavior, and autosize measurement under parent constraints in `UTextLabel`.
+
+### Changed
+
+- Extended `UTextLabel` ellipsis handling with grapheme-aware truncation, bidi-aware segment isolation, and the new `UTextTruncateSide` API (`Auto`, `Start`, `End`, `Middle`).
+- Updated the English and Arabic text-rendering docs to describe the current clipping model: local glyph clipping in `sync_text_label_meshes` plus ancestor `UClip` material clipping in `sync_text_clipper_materials`.
+- Refreshed the widget and example docs in both languages so the text examples, clipping behavior, and troubleshooting guidance match the current implementation.
+
+### Fixed
+
+- Fixed `UTextLabel` autosize so constrained parents cap the measured size instead of letting labels grow past their available bounds.
+- Fixed clipped single-line labels so `Justify::Left` and `Justify::Right` anchor to the expected edge instead of exposing the middle of the text.
+- Fixed local text clipping so `Clip` and `Ellipsis` still apply when `autosize` is enabled, while `Visible` keeps overflow unclipped.
+- Fixed the mixed-text demo card layouts by opting fixed-width flex items out of shrink, preventing overlap in wrapped example grids.
+
 ## [0.2.0-alpha.2] - 2026-03-27
 
 ### Changed

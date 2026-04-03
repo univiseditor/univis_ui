@@ -142,6 +142,7 @@ cargo run -p <package> --example <name>
 | `layout_case_grid_tracks` | Demonstrates grid track sizing and placement. | grid tracks | `Learning` |
 | `layout_case_masonry_ext` | Exercises masonry container extensions. | masonry tuning | `Learning` |
 | `layout_case_radial` | Demonstrates radial placement. | radial layout | `Learning` |
+| `layout_sizing_semantics` | Demonstrates `Auto`, `MinContent`, `MaxContent`, and explicit `min/max` bounds in one screen. | sizing model | `Learning` |
 | `layout_case_stack` | Demonstrates stack layout semantics. | stack layout | `Learning` |
 | `layout_solver_no_widgets` | Solver-heavy scene without widget dependencies. | pure layout debugging | `Learning` |
 | `layout_solver_ultra_complex` | Larger solver stress scene. | solver stress | `Learning`, `Smoke` |

@@ -142,6 +142,14 @@ fn has_explicit_justify_self(spec: &SolverSpec) -> bool {
     )
 }
 
+fn allows_implicit_stretch(mode: SolverSizeMode) -> bool {
+    matches!(mode, SolverSizeMode::Auto)
+}
+
+fn allows_explicit_stretch(mode: SolverSizeMode) -> bool {
+    !matches!(mode, SolverSizeMode::Fixed | SolverSizeMode::Percent)
+}
+
 fn resolve_track_sizes(
     template: &[UTrackSize],
     fallback_count: usize,
@@ -431,10 +439,13 @@ impl LayoutPlacer for FlexPlacer {
                     let (cross_mode, _, _) = axis.get_cross_spec(&item.spec);
                     (main_mode, cross_mode, ())
                 };
+                let stretch_allowed = if has_explicit_align_self(&item.spec) {
+                    allows_explicit_stretch(cross_mode)
+                } else {
+                    allows_implicit_stretch(cross_mode)
+                };
 
-                if canonical_align_self(cross_align) == UAlignSelfExt::Stretch
-                    && cross_mode != SolverSizeMode::Fixed
-                {
+                if canonical_align_self(cross_align) == UAlignSelfExt::Stretch && stretch_allowed {
                     child_cross = (line_sizes[line_idx] - m_cross_start - m_cross_end).max(0.0);
                     item.result.size = axis.to_world(child_main, child_cross);
                 }
@@ -681,20 +692,30 @@ impl LayoutPlacer for GridPlacer {
             let (cross_mode, _, _) = axis.get_cross_spec(&item.spec);
 
             let (mut child_main, mut child_cross) = axis.from_world(item.result.size);
+            let justify_stretch_allowed = if has_explicit_justify_self(&item.spec) {
+                allows_explicit_stretch(main_mode)
+            } else {
+                allows_implicit_stretch(main_mode)
+            };
 
             let mut justify_self = resolve_justify_self(&item.spec, ctx);
             if !has_explicit_justify_self(&item.spec)
                 && ctx.justify_items.is_none()
-                && matches!(main_mode, SolverSizeMode::Auto | SolverSizeMode::Content)
+                && allows_implicit_stretch(main_mode)
             {
                 justify_self = UAlignSelfExt::Stretch;
             }
             if canonical_align_self(justify_self) == UAlignSelfExt::Stretch
-                && main_mode != SolverSizeMode::Fixed
+                && justify_stretch_allowed
             {
                 child_main = (cell_main_size - m_main_start - m_main_end).max(0.0);
             }
 
+            let align_stretch_allowed = if has_explicit_align_self(&item.spec) {
+                allows_explicit_stretch(cross_mode)
+            } else {
+                allows_implicit_stretch(cross_mode)
+            };
             let mut align_self = resolve_cross_align(&item.spec, ctx.align_items);
             if !has_explicit_align_self(&item.spec)
                 && matches!(
@@ -704,13 +725,11 @@ impl LayoutPlacer for GridPlacer {
                         | UAlignItems::Start
                         | UAlignItems::FlexStart
                 )
-                && matches!(cross_mode, SolverSizeMode::Auto | SolverSizeMode::Content)
+                && allows_implicit_stretch(cross_mode)
             {
                 align_self = UAlignSelfExt::Stretch;
             }
-            if canonical_align_self(align_self) == UAlignSelfExt::Stretch
-                && cross_mode != SolverSizeMode::Fixed
-            {
+            if canonical_align_self(align_self) == UAlignSelfExt::Stretch && align_stretch_allowed {
                 child_cross = (cell_cross_size - m_cross_start - m_cross_end).max(0.0);
             }
 
@@ -922,9 +941,13 @@ mod tests {
             width_mode: SolverSizeMode::Fixed,
             width_val: 0.0,
             width_flex: 0.0,
+            min_width: 0.0,
+            max_width: f32::INFINITY,
             height_mode: SolverSizeMode::Fixed,
             height_val: 0.0,
             height_flex: 0.0,
+            min_height: 0.0,
+            max_height: f32::INFINITY,
             position_type: UPositionType::Relative,
             left: UVal::Auto,
             right: UVal::Auto,
@@ -1302,8 +1325,8 @@ mod tests {
         };
 
         let mut spec = default_spec();
-        spec.width_mode = SolverSizeMode::Content;
-        spec.height_mode = SolverSizeMode::Content;
+        spec.width_mode = SolverSizeMode::Auto;
+        spec.height_mode = SolverSizeMode::Auto;
         spec.width_val = 0.0;
         spec.height_val = 0.0;
 
@@ -1328,6 +1351,44 @@ mod tests {
 
         assert!((result.size.x - 100.0).abs() < 0.1);
         assert!((result.size.y - 60.0).abs() < 0.1);
+        assert!(result.pos.x.abs() < 0.1);
+        assert!(result.pos.y.abs() < 0.1);
+    }
+
+    #[test]
+    fn grid_content_item_keeps_intrinsic_size_by_default() {
+        let mut result = SolverResult {
+            size: Vec2::new(42.0, 18.0),
+            pos: Vec2::ZERO,
+        };
+
+        let mut spec = default_spec();
+        spec.width_mode = SolverSizeMode::Content;
+        spec.height_mode = SolverSizeMode::Content;
+        spec.width_val = 42.0;
+        spec.height_val = 18.0;
+
+        let mut items = vec![SolverItem {
+            spec,
+            result: &mut result,
+            margin: USides::default(),
+        }];
+
+        let mut ctx = base_ctx();
+        ctx.container_main_size = 100.0;
+        ctx.container_cross_size = 60.0;
+        ctx.grid_columns = 1;
+        ctx.grid_template_columns = vec![UTrackSize::Px(100.0)];
+        ctx.grid_template_rows = vec![UTrackSize::Px(60.0)];
+        ctx.align_items = UAlignItems::Start;
+        ctx.justify_items = None;
+
+        let placer = GridPlacer { columns: 1 };
+        let axis = AxisHelper::new(UFlexDirection::Row);
+        placer.place(&mut items, &axis, &ctx);
+
+        assert!((result.size.x - 42.0).abs() < 0.1);
+        assert!((result.size.y - 18.0).abs() < 0.1);
         assert!(result.pos.x.abs() < 0.1);
         assert!(result.pos.y.abs() < 0.1);
     }

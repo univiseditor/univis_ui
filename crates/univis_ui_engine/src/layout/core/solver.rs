@@ -91,9 +91,74 @@ fn resolve_flex_basis(basis: UVal, default_content: f32, available_main: f32) ->
     match basis {
         UVal::Px(v) => Some(v.max(0.0)),
         UVal::Percent(p) => Some((p * available_main).max(0.0)),
-        UVal::Content => Some(default_content.max(0.0)),
+        UVal::Content | UVal::MinContent | UVal::MaxContent => Some(default_content.max(0.0)),
         UVal::Auto | UVal::Flex(_) => None,
     }
+}
+
+fn main_bounds_for_spec(spec: &SolverSpec, axis: &AxisHelper) -> (f32, f32) {
+    if axis.is_row() {
+        (spec.min_width, spec.max_width)
+    } else {
+        (spec.min_height, spec.max_height)
+    }
+}
+
+fn cross_bounds_for_spec(spec: &SolverSpec, axis: &AxisHelper) -> (f32, f32) {
+    if axis.is_row() {
+        (spec.min_height, spec.max_height)
+    } else {
+        (spec.min_width, spec.max_width)
+    }
+}
+
+fn clamp_main_size(spec: &SolverSpec, axis: &AxisHelper, size: f32) -> f32 {
+    let (min, max) = main_bounds_for_spec(spec, axis);
+    size.clamp(min, max)
+}
+
+fn clamp_cross_size(spec: &SolverSpec, axis: &AxisHelper, size: f32) -> f32 {
+    let (min, max) = cross_bounds_for_spec(spec, axis);
+    size.clamp(min, max)
+}
+
+fn flex_grow_factor(spec: &SolverSpec, legacy_main_flex_factor: f32) -> f32 {
+    let ext_grow = spec.flex_grow.unwrap_or(0.0).max(0.0);
+    if ext_grow > 0.0 {
+        ext_grow
+    } else {
+        legacy_main_flex_factor.max(0.0)
+    }
+}
+
+fn flex_shrink_factor(spec: &SolverSpec) -> f32 {
+    spec.flex_shrink.unwrap_or(1.0).max(0.0)
+}
+
+fn allows_implicit_stretch(mode: SolverSizeMode) -> bool {
+    matches!(mode, SolverSizeMode::Auto)
+}
+
+fn allows_explicit_stretch(mode: SolverSizeMode) -> bool {
+    !matches!(mode, SolverSizeMode::Fixed | SolverSizeMode::Percent)
+}
+
+fn has_explicit_align_self_override(spec: &SolverSpec) -> bool {
+    matches!(
+        spec.align_self_ext,
+        Some(
+            UAlignSelfExt::Start
+                | UAlignSelfExt::End
+                | UAlignSelfExt::Center
+                | UAlignSelfExt::Stretch
+                | UAlignSelfExt::FlexStart
+                | UAlignSelfExt::FlexEnd
+                | UAlignSelfExt::SelfStart
+                | UAlignSelfExt::SelfEnd
+                | UAlignSelfExt::Left
+                | UAlignSelfExt::Right
+        )
+    ) || spec.align_self.is_some()
 }
 
 fn is_ext_stretch(value: UAlignSelfExt) -> bool {
@@ -148,26 +213,19 @@ pub fn solve_flex_layout(
 
     // 3. Calculate Sizes (Flexbox Sizing Loop)
     let mut used_main = 0.0;
-    let mut total_grow = 0.0;
-    let mut total_shrink_weight = 0.0;
-    let mut shrink_data: Vec<(usize, f32)> = Vec::with_capacity(normal_indices.len());
 
     for &idx in &normal_indices {
         let item = &mut items[idx];
         let (m_start, m_end, _, _) = axis.extract_margin_sides(item.margin);
         let margin_span = m_start + m_end;
         let (main_mode, main_val, main_flex_factor) = axis.get_main_spec(&item.spec);
-        let ext_grow = item.spec.flex_grow.unwrap_or(0.0).max(0.0);
-        let grow_factor = if ext_grow > 0.0 {
-            ext_grow
-        } else {
-            main_flex_factor.max(0.0)
-        };
+        let grow_factor = flex_grow_factor(&item.spec, main_flex_factor);
 
         let mut base_size = match main_mode {
             SolverSizeMode::Fixed => main_val,
             SolverSizeMode::Percent => main_val * available_main,
             SolverSizeMode::Flex => 0.0,
+            SolverSizeMode::MinContent => main_val,
             SolverSizeMode::Content => main_val,
             SolverSizeMode::Auto => main_val,
         };
@@ -176,20 +234,11 @@ pub fn solve_flex_layout(
                 base_size = resolved_basis;
             }
         }
+        base_size = clamp_main_size(&item.spec, &axis, base_size);
 
-        let shrink_factor = item.spec.flex_shrink.unwrap_or(1.0).max(0.0);
-        let shrink_weight = (base_size.max(1.0)) * shrink_factor;
-        total_shrink_weight += shrink_weight;
-        shrink_data.push((idx, shrink_weight));
-
-        if grow_factor > 0.0 {
-            total_grow += grow_factor;
-            item.result.size = axis.to_world(base_size, 0.0);
-            used_main += margin_span;
-        } else {
-            used_main += base_size + margin_span;
-            item.result.size = axis.to_world(base_size, 0.0);
-        }
+        let _ = grow_factor;
+        used_main += base_size + margin_span;
+        item.result.size = axis.to_world(base_size, 0.0);
     }
 
     if normal_indices.len() > 1 {
@@ -198,39 +247,135 @@ pub fn solve_flex_layout(
 
     // 4. Apply Flex Grow
     let positive_free_space = (available_main - used_main).max(0.0);
-    if total_grow > 0.0 && positive_free_space > 0.0 {
-        let unit = positive_free_space / total_grow;
-        for &idx in &normal_indices {
-            let item = &mut items[idx];
-            let (_, _, legacy_main_flex_factor) = axis.get_main_spec(&item.spec);
-            let ext_grow = item.spec.flex_grow.unwrap_or(0.0).max(0.0);
-            let grow_factor = if ext_grow > 0.0 {
-                ext_grow
-            } else {
-                legacy_main_flex_factor.max(0.0)
-            };
-            if grow_factor > 0.0 {
-                let current_base = axis.from_world(item.result.size).0;
-                let added = grow_factor * unit;
-                item.result.size = axis.to_world(current_base + added, 0.0);
-                used_main += added;
+    if positive_free_space > 0.0 {
+        let mut remaining_free_space = positive_free_space;
+        let mut growable_indices: Vec<usize> = normal_indices
+            .iter()
+            .copied()
+            .filter(|&idx| {
+                let item = &items[idx];
+                let (_, _, legacy_main_flex_factor) = axis.get_main_spec(&item.spec);
+                let grow_factor = flex_grow_factor(&item.spec, legacy_main_flex_factor);
+                if grow_factor <= 0.0 {
+                    return false;
+                }
+
+                let current_main = axis.from_world(item.result.size).0;
+                let (_, max_main) = main_bounds_for_spec(&item.spec, &axis);
+                current_main + 0.0001 < max_main
+            })
+            .collect();
+
+        while remaining_free_space > 0.0001 && !growable_indices.is_empty() {
+            let total_grow: f32 = growable_indices
+                .iter()
+                .map(|&idx| {
+                    let item = &items[idx];
+                    let (_, _, legacy_main_flex_factor) = axis.get_main_spec(&item.spec);
+                    flex_grow_factor(&item.spec, legacy_main_flex_factor)
+                })
+                .sum();
+
+            if total_grow <= 0.0 {
+                break;
             }
+
+            let mut distributed = 0.0;
+            let mut next_growable = Vec::new();
+
+            for &idx in &growable_indices {
+                let item = &mut items[idx];
+                let (_, _, legacy_main_flex_factor) = axis.get_main_spec(&item.spec);
+                let grow_factor = flex_grow_factor(&item.spec, legacy_main_flex_factor);
+                let (current_main, current_cross) = axis.from_world(item.result.size);
+                let (_, max_main) = main_bounds_for_spec(&item.spec, &axis);
+                let grow_share = remaining_free_space * (grow_factor / total_grow);
+                let next_main = (current_main + grow_share).min(max_main);
+                let added = next_main - current_main;
+
+                if added > 0.0 {
+                    item.result.size = axis.to_world(next_main, current_cross);
+                    used_main += added;
+                    distributed += added;
+                }
+
+                if next_main + 0.0001 < max_main {
+                    next_growable.push(idx);
+                }
+            }
+
+            if distributed <= 0.0001 {
+                break;
+            }
+
+            remaining_free_space = (remaining_free_space - distributed).max(0.0);
+            growable_indices = next_growable;
         }
     }
 
     // 4b. Apply Flex Shrink if content overflows the main axis.
     let overflow = (used_main - available_main).max(0.0);
-    if overflow > 0.0 && total_shrink_weight > 0.0 {
-        for (idx, weight) in shrink_data {
-            if weight <= 0.0 {
-                continue;
+    if overflow > 0.0 {
+        let mut remaining_overflow = overflow;
+        let mut shrinkable_indices: Vec<usize> = normal_indices
+            .iter()
+            .copied()
+            .filter(|&idx| {
+                let item = &items[idx];
+                let shrink_factor = flex_shrink_factor(&item.spec);
+                if shrink_factor <= 0.0 {
+                    return false;
+                }
+
+                let current_main = axis.from_world(item.result.size).0;
+                let (min_main, _) = main_bounds_for_spec(&item.spec, &axis);
+                current_main > min_main + 0.0001
+            })
+            .collect();
+
+        while remaining_overflow > 0.0001 && !shrinkable_indices.is_empty() {
+            let total_shrink_weight: f32 = shrinkable_indices
+                .iter()
+                .map(|&idx| {
+                    let item = &items[idx];
+                    let current_main = axis.from_world(item.result.size).0;
+                    current_main.max(1.0) * flex_shrink_factor(&item.spec)
+                })
+                .sum();
+
+            if total_shrink_weight <= 0.0 {
+                break;
             }
-            let item = &mut items[idx];
-            let current_main = axis.from_world(item.result.size).0;
-            let shrink_share = overflow * (weight / total_shrink_weight);
-            let new_main = (current_main - shrink_share).max(0.0);
-            used_main -= current_main - new_main;
-            item.result.size = axis.to_world(new_main, 0.0);
+
+            let mut absorbed = 0.0;
+            let mut next_shrinkable = Vec::new();
+
+            for &idx in &shrinkable_indices {
+                let item = &mut items[idx];
+                let (current_main, current_cross) = axis.from_world(item.result.size);
+                let (min_main, _) = main_bounds_for_spec(&item.spec, &axis);
+                let shrink_weight = current_main.max(1.0) * flex_shrink_factor(&item.spec);
+                let shrink_share = remaining_overflow * (shrink_weight / total_shrink_weight);
+                let next_main = (current_main - shrink_share).max(min_main);
+                let reduced = current_main - next_main;
+
+                if reduced > 0.0 {
+                    item.result.size = axis.to_world(next_main, current_cross);
+                    used_main -= reduced;
+                    absorbed += reduced;
+                }
+
+                if next_main > min_main + 0.0001 {
+                    next_shrinkable.push(idx);
+                }
+            }
+
+            if absorbed <= 0.0001 {
+                break;
+            }
+
+            remaining_overflow = (remaining_overflow - absorbed).max(0.0);
+            shrinkable_indices = next_shrinkable;
         }
     }
 
@@ -246,6 +391,7 @@ pub fn solve_flex_layout(
             SolverSizeMode::Fixed => cross_val,
             SolverSizeMode::Percent => cross_val * available_cross,
             SolverSizeMode::Flex => available_cross,
+            SolverSizeMode::MinContent => cross_val,
             SolverSizeMode::Content => cross_val,
             SolverSizeMode::Auto => cross_val,
         };
@@ -255,16 +401,23 @@ pub fn solve_flex_layout(
             .align_self_ext
             .or_else(|| item.spec.align_self.map(map_align_self_to_ext));
         let container_ext_align = map_align_items_to_ext(config.layout.align_items);
+        let has_explicit_align_override = has_explicit_align_self_override(&item.spec);
         let should_stretch = match ext_self {
             Some(UAlignSelfExt::Auto | UAlignSelfExt::Normal) | None => {
                 container_ext_align == UAlignItemsExt::Stretch
             }
             Some(value) => is_ext_stretch(value),
         };
+        let stretch_allowed = if has_explicit_align_override {
+            allows_explicit_stretch(cross_mode)
+        } else {
+            allows_implicit_stretch(cross_mode)
+        };
 
-        if should_stretch && cross_mode != SolverSizeMode::Fixed {
+        if should_stretch && stretch_allowed {
             child_cross = (available_cross - m_cross_start - m_cross_end).max(0.0);
         }
+        child_cross = clamp_cross_size(&item.spec, &axis, child_cross);
 
         max_child_cross = max_child_cross.max(child_cross + m_cross_start + m_cross_end);
         let current_main = axis.from_world(item.result.size).0;
@@ -325,12 +478,18 @@ pub fn solve_flex_layout(
     let mut final_container_size = axis.to_world(container_main, final_cross); // Default
     let placer_size_world = axis.to_world(used_size_from_placer.x, used_size_from_placer.y);
 
-    if config.width_mode == SolverSizeMode::Content || config.width_mode == SolverSizeMode::Auto {
+    if matches!(
+        config.width_mode,
+        SolverSizeMode::Content | SolverSizeMode::MinContent | SolverSizeMode::Auto
+    ) {
         final_container_size.x = placer_size_world
             .x
             .clamp(constraints.min_width, constraints.max_width);
     }
-    if config.height_mode == SolverSizeMode::Content || config.height_mode == SolverSizeMode::Auto {
+    if matches!(
+        config.height_mode,
+        SolverSizeMode::Content | SolverSizeMode::MinContent | SolverSizeMode::Auto
+    ) {
         final_container_size.y = placer_size_world
             .y
             .clamp(constraints.min_height, constraints.max_height);
@@ -353,12 +512,18 @@ pub fn solve_flex_layout(
     for &idx in &absolute_indices {
         let item = &mut items[idx];
         let intrinsic = Vec2::new(
-            if item.spec.width_mode == SolverSizeMode::Content {
+            if matches!(
+                item.spec.width_mode,
+                SolverSizeMode::Content | SolverSizeMode::MinContent
+            ) {
                 item.spec.width_val
             } else {
                 0.0
             },
-            if item.spec.height_mode == SolverSizeMode::Content {
+            if matches!(
+                item.spec.height_mode,
+                SolverSizeMode::Content | SolverSizeMode::MinContent
+            ) {
                 item.spec.height_val
             } else {
                 0.0
@@ -380,12 +545,16 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
             UVal::Px(v) => (SolverSizeMode::Fixed, v, 0.0),
             UVal::Percent(p) => (SolverSizeMode::Percent, p, 0.0),
             UVal::Flex(f) => (SolverSizeMode::Flex, 0.0, f),
-            UVal::Content | UVal::Auto => (SolverSizeMode::Content, 0.0, 0.0),
+            UVal::MinContent => (SolverSizeMode::MinContent, 0.0, 0.0),
+            UVal::Content | UVal::MaxContent => (SolverSizeMode::Content, 0.0, 0.0),
+            UVal::Auto => (SolverSizeMode::Auto, 0.0, 0.0),
         }
     };
 
     let (w_mode, w_val, w_flex) = map_dim(node.width);
     let (h_mode, h_val, h_flex) = map_dim(node.height);
+    let (min_width, max_width) = node.width_bounds();
+    let (min_height, max_height) = node.height_bounds();
 
     let (pos_type, l, r, t, b, align, order) = if let Some(u) = uself {
         (
@@ -453,9 +622,13 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         width_mode: w_mode,
         width_val: w_val,
         width_flex: w_flex,
+        min_width,
+        max_width,
         height_mode: h_mode,
         height_val: h_val,
         height_flex: h_flex,
+        min_height,
+        max_height,
 
         position_type: pos_type,
         left: l,
@@ -497,7 +670,8 @@ fn solve_absolute_box(
             SolverSizeMode::Percent => spec.width_val * container_size.x,
             _ => intrinsic_size.x,
         }
-    };
+    }
+    .clamp(spec.min_width, spec.max_width);
 
     // b. Calculate height (with Stretch support)
     let is_v_stretch = !matches!(spec.top, UVal::Auto) && !matches!(spec.bottom, UVal::Auto);
@@ -511,7 +685,8 @@ fn solve_absolute_box(
             SolverSizeMode::Percent => spec.height_val * container_size.y,
             _ => intrinsic_size.y,
         }
-    };
+    }
+    .clamp(spec.min_height, spec.max_height);
 
     // c. Calculate X Position
     let x = if let Some(l) = spec.left.resolve(container_size.x) {
@@ -538,6 +713,28 @@ fn solve_absolute_box(
 mod tests {
     use super::*;
 
+    fn base_solver_config() -> SolverConfig {
+        SolverConfig {
+            layout: ULayout::default(),
+            gap: 0.0,
+            row_gap: None,
+            column_gap: None,
+            padding: USides::default(),
+            grid_columns: 1,
+            justify_items: None,
+            align_content: None,
+            flex_wrap: UFlexWrap::NoWrap,
+            flex_align_content: None,
+            grid_template_columns: Vec::new(),
+            grid_template_rows: Vec::new(),
+            grid_auto_flow: UGridAutoFlow::Row,
+            grid_auto_rows: UTrackSize::Auto,
+            grid_auto_columns: UTrackSize::Auto,
+            width_mode: SolverSizeMode::Fixed,
+            height_mode: SolverSizeMode::Fixed,
+        }
+    }
+
     #[test]
     fn resolve_flex_basis_handles_percent() {
         let value = resolve_flex_basis(UVal::Percent(0.5), 10.0, 300.0);
@@ -549,6 +746,10 @@ mod tests {
         let node = UNode {
             width: UVal::Px(40.0),
             height: UVal::Px(20.0),
+            min_width: 12.0,
+            max_width: 96.0,
+            min_height: 8.0,
+            max_height: 72.0,
             ..default()
         };
         let uself = USelf {
@@ -583,8 +784,293 @@ mod tests {
         assert_eq!(spec.justify_overflow, UOverflowPosition::Safe);
         assert_eq!(spec.flex_grow, Some(2.0));
         assert_eq!(spec.flex_basis, Some(UVal::Px(30.0)));
+        assert_eq!(spec.min_width, 12.0);
+        assert_eq!(spec.max_width, 96.0);
+        assert_eq!(spec.min_height, 8.0);
+        assert_eq!(spec.max_height, 72.0);
         assert_eq!(spec.grid_column_start, Some(2));
         assert_eq!(spec.grid_column_span, 3);
         assert_eq!(spec.grid_row_span, 2);
+    }
+
+    #[test]
+    fn translate_spec_maps_intrinsic_modes() {
+        let node = UNode {
+            width: UVal::MinContent,
+            height: UVal::Auto,
+            ..default()
+        };
+
+        let spec = translate_spec(&node, None);
+
+        assert_eq!(spec.width_mode, SolverSizeMode::MinContent);
+        assert_eq!(spec.height_mode, SolverSizeMode::Auto);
+    }
+
+    #[test]
+    fn explicit_max_content_stays_on_content_mode() {
+        let node = UNode {
+            width: UVal::MaxContent,
+            height: UVal::Content,
+            ..default()
+        };
+
+        let spec = translate_spec(&node, None);
+
+        assert_eq!(spec.width_mode, SolverSizeMode::Content);
+        assert_eq!(spec.height_mode, SolverSizeMode::Content);
+    }
+
+    #[test]
+    fn auto_cross_size_stretches_but_content_cross_size_keeps_intrinsic_value() {
+        let mut config = base_solver_config();
+        config.layout.align_items = UAlignItems::Stretch;
+        let constraints = BoxConstraints::tight(Vec2::new(160.0, 100.0));
+
+        let mut auto_result = SolverResult::default();
+        let mut content_result = SolverResult::default();
+        let mut items = vec![
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 40.0,
+                    width_flex: 0.0,
+                    min_width: 0.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Auto,
+                    height_val: 18.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut auto_result,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 40.0,
+                    width_flex: 0.0,
+                    min_width: 0.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Content,
+                    height_val: 18.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut content_result,
+                margin: USides::default(),
+            },
+        ];
+
+        solve_flex_layout(&config, constraints, &mut items);
+
+        assert_eq!(auto_result.size.y, 100.0);
+        assert_eq!(content_result.size.y, 18.0);
+    }
+
+    #[test]
+    fn flex_shrink_respects_min_width_and_redistributes_remaining_overflow() {
+        let config = base_solver_config();
+        let constraints = BoxConstraints::tight(Vec2::new(100.0, 40.0));
+        let mut first = SolverResult::default();
+        let mut second = SolverResult::default();
+        let mut items = vec![
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 80.0,
+                    width_flex: 0.0,
+                    min_width: 60.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 20.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut first,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 80.0,
+                    width_flex: 0.0,
+                    min_width: 0.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 20.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: None,
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut second,
+                margin: USides::default(),
+            },
+        ];
+
+        let solved = solve_flex_layout(&config, constraints, &mut items);
+
+        assert_eq!(solved, Vec2::new(100.0, 40.0));
+        assert_eq!(first.size.x, 60.0);
+        assert_eq!(second.size.x, 40.0);
+    }
+
+    #[test]
+    fn flex_grow_respects_max_width_and_redistributes_remaining_space() {
+        let config = base_solver_config();
+        let constraints = BoxConstraints::tight(Vec2::new(200.0, 40.0));
+        let mut first = SolverResult::default();
+        let mut second = SolverResult::default();
+        let mut items = vec![
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 50.0,
+                    width_flex: 0.0,
+                    min_width: 0.0,
+                    max_width: 70.0,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 20.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: Some(1.0),
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut first,
+                margin: USides::default(),
+            },
+            SolverItem {
+                spec: SolverSpec {
+                    width_mode: SolverSizeMode::Fixed,
+                    width_val: 50.0,
+                    width_flex: 0.0,
+                    min_width: 0.0,
+                    max_width: f32::INFINITY,
+                    height_mode: SolverSizeMode::Fixed,
+                    height_val: 20.0,
+                    height_flex: 0.0,
+                    min_height: 0.0,
+                    max_height: f32::INFINITY,
+                    position_type: UPositionType::Relative,
+                    left: UVal::Auto,
+                    right: UVal::Auto,
+                    top: UVal::Auto,
+                    bottom: UVal::Auto,
+                    align_self: None,
+                    align_self_ext: None,
+                    justify_self_ext: None,
+                    justify_overflow: UOverflowPosition::Unsafe,
+                    align_overflow: UOverflowPosition::Unsafe,
+                    flex_grow: Some(1.0),
+                    flex_shrink: Some(1.0),
+                    flex_basis: None,
+                    grid_column_start: None,
+                    grid_column_span: 1,
+                    grid_row_start: None,
+                    grid_row_span: 1,
+                    order: 0,
+                },
+                result: &mut second,
+                margin: USides::default(),
+            },
+        ];
+
+        let solved = solve_flex_layout(&config, constraints, &mut items);
+
+        assert_eq!(solved, Vec2::new(200.0, 40.0));
+        assert_eq!(first.size.x, 70.0);
+        assert_eq!(second.size.x, 130.0);
     }
 }

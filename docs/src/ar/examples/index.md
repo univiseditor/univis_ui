@@ -142,6 +142,7 @@ cargo run -p <package> --example <name>
 | `layout_case_grid_tracks` | يوضح أحجام مسارات `grid` والتموضع. | مسارات `grid` | `تعليمي` |
 | `layout_case_masonry_ext` | يفحص امتدادات حاويات `masonry`. | ضبط `masonry` | `تعليمي` |
 | `layout_case_radial` | يوضح التوزيع الشعاعي. | التخطيط الشعاعي | `تعليمي` |
+| `layout_sizing_semantics` | يوضح `Auto` و`MinContent` و`MaxContent` وحدود `min/max` الصريحة في مشهد واحد. | نموذج الأحجام | `تعليمي` |
 | `layout_case_stack` | يوضح دلالات التخطيط المتراكم. | التخطيط المتراكم | `تعليمي` |
 | `layout_solver_no_widgets` | مشهد يركز على المحلل من دون الاعتماد على الوحدات الجاهزة. | تشخيص التخطيط الصرف | `تعليمي` |
 | `layout_solver_ultra_complex` | مشهد أكبر للضغط على المحلل. | ضغط المحلل | `تعليمي`, `تحقق-سريع` |

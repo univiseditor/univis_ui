@@ -297,10 +297,18 @@ fn collect_children_layout_data(
 
             let mut spec = translate_spec(node, uself_opt.as_deref());
 
-            if spec.width_mode == SolverSizeMode::Content {
+            if spec.width_mode == SolverSizeMode::MinContent {
+                spec.width_val = intrinsic.min_width;
+            } else if spec.width_mode == SolverSizeMode::Content {
+                spec.width_val = intrinsic.max_width;
+            } else if spec.width_mode == SolverSizeMode::Auto {
                 spec.width_val = intrinsic.width;
             }
-            if spec.height_mode == SolverSizeMode::Content {
+            if spec.height_mode == SolverSizeMode::MinContent {
+                spec.height_val = intrinsic.min_height;
+            } else if spec.height_mode == SolverSizeMode::Content {
+                spec.height_val = intrinsic.max_height;
+            } else if spec.height_mode == SolverSizeMode::Auto {
                 spec.height_val = intrinsic.height;
             }
 
@@ -335,15 +343,17 @@ fn prepare_solver_data_safe(
 
 fn build_constraints(container_size: Vec2, node_spec: &UNode) -> BoxConstraints {
     let mut constraints = BoxConstraints::tight(container_size);
+    let (min_width, max_width) = node_spec.width_bounds();
+    let (min_height, max_height) = node_spec.height_bounds();
 
-    if matches!(node_spec.width, UVal::Auto | UVal::Content) {
-        constraints.min_width = 0.0;
-        constraints.max_width = f32::INFINITY;
+    if node_spec.width.uses_intrinsic_measurement() {
+        constraints.min_width = min_width;
+        constraints.max_width = max_width;
     }
 
-    if matches!(node_spec.height, UVal::Auto | UVal::Content) {
-        constraints.min_height = 0.0;
-        constraints.max_height = f32::INFINITY;
+    if node_spec.height.uses_intrinsic_measurement() {
+        constraints.min_height = min_height;
+        constraints.max_height = max_height;
     }
 
     constraints
@@ -396,7 +406,9 @@ fn map_uval_to_mode(val: UVal) -> SolverSizeMode {
         UVal::Px(_) => SolverSizeMode::Fixed,
         UVal::Percent(_) => SolverSizeMode::Percent,
         UVal::Flex(_) => SolverSizeMode::Flex,
-        UVal::Content | UVal::Auto => SolverSizeMode::Content,
+        UVal::MinContent => SolverSizeMode::MinContent,
+        UVal::Content | UVal::MaxContent => SolverSizeMode::Content,
+        UVal::Auto => SolverSizeMode::Auto,
     }
 }
 
@@ -423,106 +435,7 @@ fn translate_config(layout: &ULayout, node: &UNode) -> SolverConfig {
 }
 
 fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
-    let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
-        match dim {
-            UVal::Px(v) => (SolverSizeMode::Fixed, v, 0.0),
-            UVal::Percent(p) => (SolverSizeMode::Percent, p, 0.0),
-            UVal::Flex(f) => (SolverSizeMode::Flex, 0.0, f),
-            UVal::Content | UVal::Auto => (SolverSizeMode::Content, 0.0, 0.0),
-        }
-    };
-
-    let (w_mode, w_val, w_flex) = map_dim(node.width);
-    let (h_mode, h_val, h_flex) = map_dim(node.height);
-
-    let (pos_type, l, r, t, b, align, order) = if let Some(u) = uself {
-        (
-            u.position_type,
-            u.left,
-            u.right,
-            u.top,
-            u.bottom,
-            if u.align_self == UAlignSelf::Auto {
-                None
-            } else {
-                Some(u.align_self)
-            },
-            u.order,
-        )
-    } else {
-        (
-            UPositionType::Relative,
-            UVal::Auto,
-            UVal::Auto,
-            UVal::Auto,
-            UVal::Auto,
-            None,
-            0,
-        )
-    };
-    let (align_self_ext, justify_self_ext, justify_overflow, align_overflow) =
-        if let Some(u) = uself {
-            (
-                u.item_ext.box_align.align_self,
-                u.item_ext.box_align.justify_self,
-                u.item_ext.box_align.justify_overflow,
-                u.item_ext.box_align.align_overflow,
-            )
-        } else {
-            (
-                None,
-                None,
-                UOverflowPosition::Unsafe,
-                UOverflowPosition::Unsafe,
-            )
-        };
-    let (flex_grow, flex_shrink, flex_basis) = if let Some(u) = uself {
-        (
-            u.item_ext.flex.flex_grow.map(|v| v.max(0.0)),
-            u.item_ext.flex.flex_shrink.map(|v| v.max(0.0)),
-            u.item_ext.flex.flex_basis,
-        )
-    } else {
-        (None, None, None)
-    };
-    let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) =
-        if let Some(u) = uself {
-            (
-                u.item_ext.grid.column_start,
-                u.item_ext.grid.column_span.max(1),
-                u.item_ext.grid.row_start,
-                u.item_ext.grid.row_span.max(1),
-            )
-        } else {
-            (None, 1, None, 1)
-        };
-
-    SolverSpec {
-        width_mode: w_mode,
-        width_val: w_val,
-        width_flex: w_flex,
-        height_mode: h_mode,
-        height_val: h_val,
-        height_flex: h_flex,
-        position_type: pos_type,
-        left: l,
-        right: r,
-        top: t,
-        bottom: b,
-        align_self: align,
-        align_self_ext,
-        justify_self_ext,
-        justify_overflow,
-        align_overflow,
-        flex_grow,
-        flex_shrink,
-        flex_basis,
-        grid_column_start,
-        grid_column_span,
-        grid_row_start,
-        grid_row_span,
-        order,
-    }
+    super::solver::translate_spec(node, uself)
 }
 
 #[cfg(test)]
@@ -667,8 +580,32 @@ mod tests {
         assert_eq!(spec.flex_grow, None);
         assert_eq!(spec.flex_shrink, None);
         assert_eq!(spec.flex_basis, None);
+        assert_eq!(spec.min_width, 0.0);
+        assert_eq!(spec.max_width, f32::INFINITY);
+        assert_eq!(spec.min_height, 0.0);
+        assert_eq!(spec.max_height, f32::INFINITY);
         assert_eq!(spec.grid_column_span, 1);
         assert_eq!(spec.grid_row_span, 1);
+    }
+
+    #[test]
+    fn build_constraints_respects_min_max_for_content_nodes() {
+        let node = UNode {
+            width: UVal::Content,
+            height: UVal::Auto,
+            min_width: 120.0,
+            max_width: 240.0,
+            min_height: 30.0,
+            max_height: 90.0,
+            ..default()
+        };
+
+        let constraints = build_constraints(Vec2::new(500.0, 200.0), &node);
+
+        assert_eq!(constraints.min_width, 120.0);
+        assert_eq!(constraints.max_width, 240.0);
+        assert_eq!(constraints.min_height, 30.0);
+        assert_eq!(constraints.max_height, 90.0);
     }
 
     #[test]
@@ -742,6 +679,151 @@ mod tests {
         assert_eq!(root_size.height, 200.0);
         assert_eq!(child_size.width, 200.0);
         assert_eq!(child_size.height, 50.0);
+    }
+
+    #[test]
+    fn fixed_child_width_respects_min_width_constraint() {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(400.0, 200.0)),
+                    canvas_size: Vec2::new(400.0, 200.0),
+                    camera_entity: None,
+                    meters_per_unit: 1.0,
+                    resolution_scale: 1.0,
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        let child = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    width: UVal::Px(40.0),
+                    height: UVal::Px(20.0),
+                    min_width: 120.0,
+                    ..default()
+                },
+                LayoutDepth(1),
+                ChildOf(root),
+            ))
+            .id();
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 1;
+        app.update();
+
+        let child_size = app
+            .world()
+            .entity(child)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("child should have computed size");
+
+        assert_eq!(child_size.width, 120.0);
+        assert_eq!(child_size.height, 20.0);
+    }
+
+    #[test]
+    fn content_sized_child_respects_max_width_constraint() {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::World2d,
+                    canvas: UiCanvasSize::Fixed(Vec2::new(400.0, 200.0)),
+                    canvas_size: Vec2::new(400.0, 200.0),
+                    camera_entity: None,
+                    meters_per_unit: 1.0,
+                    resolution_scale: 1.0,
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        let child = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    width: UVal::Content,
+                    height: UVal::Content,
+                    max_width: 100.0,
+                    ..default()
+                },
+                ULayout::default(),
+                LayoutDepth(1),
+                ChildOf(root),
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            UNode {
+                width: UVal::Px(200.0),
+                height: UVal::Px(20.0),
+                ..default()
+            },
+            LayoutDepth(2),
+            ChildOf(child),
+        ));
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 2;
+        app.update();
+
+        let child_size = app
+            .world()
+            .entity(child)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("child should have computed size");
+
+        assert_eq!(child_size.width, 100.0);
+        assert_eq!(child_size.height, 20.0);
     }
 
     #[test]

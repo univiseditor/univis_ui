@@ -36,9 +36,18 @@ pub enum UVal {
     Px(f32),
     /// A percentage of the parent's size (0.0 to 1.0).
     Percent(f32),
-    /// Sizes the element based on its content/children.
+    /// Legacy intrinsic-content mode.
+    ///
+    /// This is kept for backward compatibility and behaves like `MaxContent`.
     Content,
-    /// Automatic sizing (fills remaining space or adapts to context).
+    /// Sizes the element to the smallest intrinsic content width/height that still fits its contents.
+    MinContent,
+    /// Sizes the element to its full intrinsic content width/height.
+    MaxContent,
+    /// Contextual sizing.
+    ///
+    /// `Auto` uses intrinsic measurement as a fallback, but layout algorithms may
+    /// stretch or otherwise reinterpret it when the surrounding context calls for it.
     Auto,
     /// Flex grow factor. Takes a share of the remaining space.
     Flex(f32),
@@ -56,7 +65,9 @@ impl UVal {
         match *self {
             UVal::Px(v) => Some(v),
             UVal::Percent(p) => Some(p * base),
-            UVal::Content | UVal::Auto | UVal::Flex(_) => None,
+            UVal::Content | UVal::MinContent | UVal::MaxContent | UVal::Auto | UVal::Flex(_) => {
+                None
+            }
         }
     }
 
@@ -64,6 +75,14 @@ impl UVal {
     /// non-resolvable modes such as `Content`, `Auto`, and `Flex`.
     pub fn resolve_or_zero(&self, base: f32) -> f32 {
         self.resolve(base).unwrap_or(0.0)
+    }
+
+    /// Returns `true` when this value depends on intrinsic content measurement.
+    pub fn uses_intrinsic_measurement(&self) -> bool {
+        matches!(
+            self,
+            UVal::Content | UVal::MinContent | UVal::MaxContent | UVal::Auto
+        )
     }
 }
 

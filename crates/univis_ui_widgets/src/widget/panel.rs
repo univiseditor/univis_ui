@@ -207,13 +207,10 @@ fn sync_panel_visuals(
     for (entity, panel, existing_node) in query.iter() {
         commands.entity(entity).insert((
             UNode {
-                width: existing_node.width,
-                height: existing_node.height,
                 padding: panel.padding,
-                margin: existing_node.margin,
                 background_color: panel.background,
                 border_radius: panel.border_radius,
-                shape_mode: existing_node.shape_mode,
+                ..existing_node.clone()
             },
             UBorder {
                 color: panel.border_color,

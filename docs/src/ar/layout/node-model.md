@@ -6,6 +6,10 @@
 
 - `width: UVal`
 - `height: UVal`
+- `min_width: f32`
+- `max_width: f32`
+- `min_height: f32`
+- `max_height: f32`
 - `padding: USides`
 - `margin: USides`
 - `background_color: Color`
@@ -18,9 +22,21 @@
 
 - `Px(f32)`
 - `Percent(f32)`
+- `MinContent`
+- `MaxContent`
 - `Content`
 - `Auto`
 - `Flex(f32)`
+
+## ملاحظات الأحجام
+
+- `width` و`height` يمثلان طلب الحجم المفضل.
+- `min_width` و`max_width` و`min_height` و`max_height` تطبق `clamp` على الناتج النهائي.
+- `UVal::Content` يبقى الاسم القديم الموافق لـ `UVal::MaxContent`.
+- `UVal::Auto` صار نمطًا سياقيًا وليس مرادفًا مباشرًا لـ `Content`.
+- استخدم `MaxContent` أو `MinContent` عندما تريد حجمًا جوهريًا صريحًا من دون سلوك التمدد الضمني الخاص بـ `Auto`.
+
+راجع [دلالات الأحجام](sizing-semantics.md) للتفاصيل الحالية الكاملة.
 
 ## ComputedSize
 

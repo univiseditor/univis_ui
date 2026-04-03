@@ -18,8 +18,32 @@ pub struct LayoutDepth(pub usize);
 /// before any external constraints are applied.
 #[derive(Component, Default, Debug, Clone, Copy, Reflect)]
 pub struct IntrinsicSize {
+    /// Preferred intrinsic width used by the current sizing mode.
     pub width: f32,
+    /// Preferred intrinsic height used by the current sizing mode.
     pub height: f32,
+    /// Minimum intrinsic content width.
+    pub min_width: f32,
+    /// Maximum intrinsic content width.
+    pub max_width: f32,
+    /// Minimum intrinsic content height.
+    pub min_height: f32,
+    /// Maximum intrinsic content height.
+    pub max_height: f32,
+}
+
+impl IntrinsicSize {
+    /// Creates an intrinsic record whose preferred size matches its max-content size.
+    pub fn from_max_size(size: Vec2) -> Self {
+        Self {
+            width: size.x,
+            height: size.y,
+            min_width: size.x,
+            max_width: size.x,
+            min_height: size.y,
+            max_height: size.y,
+        }
+    }
 }
 
 /// A global resource that tracks the maximum depth of the UI tree.

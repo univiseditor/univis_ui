@@ -318,7 +318,7 @@ fn constrained_node_dimension(spec: &UVal, computed: f32, padding: f32) -> Optio
 }
 
 fn node_uses_intrinsic_dimension(spec: &UVal) -> bool {
-    matches!(spec, UVal::Content | UVal::Auto)
+    spec.uses_intrinsic_measurement()
 }
 
 fn parent_label_bounds(
@@ -443,23 +443,62 @@ fn measured_text_outer_size(node: &UNode, layout_cache: &UTextLabelLayoutCache) 
     )
 }
 
+fn measured_text_outer_bounds(node: &UNode, layout_cache: &UTextLabelLayoutCache) -> (Vec2, Vec2) {
+    (
+        Vec2::new(
+            layout_cache.min_content_size.x.max(0.0) + node.padding.width_sum(),
+            layout_cache.min_content_size.y.max(0.0) + node.padding.height_sum(),
+        ),
+        Vec2::new(
+            layout_cache.max_content_size.x.max(0.0) + node.padding.width_sum(),
+            layout_cache.max_content_size.y.max(0.0) + node.padding.height_sum(),
+        ),
+    )
+}
+
 fn desired_text_label_intrinsic_size(
     node: &UNode,
     layout_cache: &UTextLabelLayoutCache,
     current: IntrinsicSize,
 ) -> IntrinsicSize {
-    let outer_size = measured_text_outer_size(node, layout_cache);
+    let (min_outer_size, max_outer_size) = measured_text_outer_bounds(node, layout_cache);
 
     IntrinsicSize {
         width: if node_uses_intrinsic_dimension(&node.width) {
-            outer_size.x
+            match node.width {
+                UVal::MinContent => min_outer_size.x,
+                _ => max_outer_size.x,
+            }
         } else {
             current.width
         },
         height: if node_uses_intrinsic_dimension(&node.height) {
-            outer_size.y
+            match node.height {
+                UVal::MinContent => min_outer_size.y,
+                _ => max_outer_size.y,
+            }
         } else {
             current.height
+        },
+        min_width: if node_uses_intrinsic_dimension(&node.width) {
+            min_outer_size.x
+        } else {
+            current.min_width
+        },
+        max_width: if node_uses_intrinsic_dimension(&node.width) {
+            max_outer_size.x
+        } else {
+            current.max_width
+        },
+        min_height: if node_uses_intrinsic_dimension(&node.height) {
+            min_outer_size.y
+        } else {
+            current.min_height
+        },
+        max_height: if node_uses_intrinsic_dimension(&node.height) {
+            max_outer_size.y
+        } else {
+            current.max_height
         },
     }
 }
@@ -1854,18 +1893,47 @@ mod tests {
             ..default()
         };
         let layout_cache = UTextLabelLayoutCache {
-            measured_size: Vec2::new(120.0, 22.0),
+            min_content_size: Vec2::new(48.0, 14.0),
+            max_content_size: Vec2::new(120.0, 22.0),
             ..default()
         };
         let current = IntrinsicSize {
             width: 1.0,
             height: 48.0,
+            ..default()
         };
 
         let desired = desired_text_label_intrinsic_size(&node, &layout_cache, current);
 
         assert_eq!(desired.width, 132.0);
         assert_eq!(desired.height, 48.0);
+        assert_eq!(desired.min_width, 60.0);
+        assert_eq!(desired.max_width, 132.0);
+    }
+
+    #[test]
+    fn desired_intrinsic_size_uses_min_content_dimensions_when_requested() {
+        let node = UNode {
+            width: UVal::MinContent,
+            height: UVal::MinContent,
+            padding: USides::axes(6.0, 4.0),
+            ..default()
+        };
+        let layout_cache = UTextLabelLayoutCache {
+            min_content_size: Vec2::new(48.0, 14.0),
+            max_content_size: Vec2::new(120.0, 22.0),
+            ..default()
+        };
+
+        let desired =
+            desired_text_label_intrinsic_size(&node, &layout_cache, IntrinsicSize::default());
+
+        assert_eq!(desired.width, 60.0);
+        assert_eq!(desired.height, 22.0);
+        assert_eq!(desired.min_width, 60.0);
+        assert_eq!(desired.max_width, 132.0);
+        assert_eq!(desired.min_height, 22.0);
+        assert_eq!(desired.max_height, 30.0);
     }
 
     #[test]

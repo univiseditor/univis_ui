@@ -17,6 +17,7 @@
 | `hello_world` | `univis_ui` | ابدأ به إذا أردت أصغر مسار تشغيل على مستوى الواجهة المجمعة. | `cargo run -p univis_ui --example hello_world` | شغّل المثال |
 | `root_screen_hud` | `univis_ui_engine` | شغّله إذا أردت التأكد من سلوك الواجهة الثابتة على الشاشة مع حركة الكاميرا. | `cargo run -p univis_ui_engine --example root_screen_hud` | شغّل المثال |
 | `layout_cache` | `univis_ui_engine` | شغّله إذا أردت فحص الذاكرة المؤقتة للتخطيط وسلوك الإبطال وإعادة الحل. | `cargo run -p univis_ui_engine --example layout_cache` | شغّل المثال |
+| `layout_sizing_semantics` | `univis_ui_engine` | شغّله إذا أردت مشهدًا واحدًا يشرح `Auto` والأنماط الجوهرية وسلوك `min/max` داخل flex. | `cargo run -p univis_ui_engine --example layout_sizing_semantics` | شغّل المثال |
 
 ## الواجهات داخل العالم
 

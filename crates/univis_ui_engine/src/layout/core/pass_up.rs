@@ -76,8 +76,10 @@ pub fn upward_measure_pass_cached(
             // 2. الحساب الفعلي
             calculated_count += 1;
 
-            let mut calculated_width = 0.0;
-            let mut calculated_height = 0.0;
+            let mut calculated_min_width = 0.0;
+            let mut calculated_max_width = 0.0;
+            let mut calculated_min_height = 0.0;
+            let mut calculated_max_height = 0.0;
             let has_children = !children.is_empty();
 
             if has_children {
@@ -98,8 +100,10 @@ pub fn upward_measure_pass_cached(
                         .unwrap_or(legacy_gap)
                 };
 
-                let mut accum_main: f32 = 0.0;
-                let mut max_cross: f32 = 0.0;
+                let mut accum_main_min: f32 = 0.0;
+                let mut accum_main_max: f32 = 0.0;
+                let mut max_cross_min: f32 = 0.0;
+                let mut max_cross_max: f32 = 0.0;
                 let mut visible_count = 0;
 
                 let q_children = params.p0();
@@ -114,21 +118,27 @@ pub fn upward_measure_pass_cached(
                             }
                         }
 
-                        let w = child_intrinsic.width;
-                        let h = child_intrinsic.height;
+                        let min_w = child_intrinsic.min_width;
+                        let max_w = child_intrinsic.max_width;
+                        let min_h = child_intrinsic.min_height;
+                        let max_h = child_intrinsic.max_height;
                         let m = child_node.margin;
 
                         // === التحديث هنا: دمج الاتجاهات المعكوسة ===
                         match direction {
                             // الصفوف (عادي ومعكوس) تحسب العرض تراكمياً
                             UFlexDirection::Row | UFlexDirection::RowReverse => {
-                                accum_main += w + m.left + m.right;
-                                max_cross = max_cross.max(h + m.top + m.bottom);
+                                accum_main_min += min_w + m.left + m.right;
+                                accum_main_max += max_w + m.left + m.right;
+                                max_cross_min = max_cross_min.max(min_h + m.top + m.bottom);
+                                max_cross_max = max_cross_max.max(max_h + m.top + m.bottom);
                             }
                             // الأعمدة (عادي ومعكوس) تحسب الارتفاع تراكمياً
                             UFlexDirection::Column | UFlexDirection::ColumnReverse => {
-                                accum_main += h + m.top + m.bottom;
-                                max_cross = max_cross.max(w + m.left + m.right);
+                                accum_main_min += min_h + m.top + m.bottom;
+                                accum_main_max += max_h + m.top + m.bottom;
+                                max_cross_min = max_cross_min.max(min_w + m.left + m.right);
+                                max_cross_max = max_cross_max.max(max_w + m.left + m.right);
                             }
                         }
                         visible_count += 1;
@@ -136,18 +146,24 @@ pub fn upward_measure_pass_cached(
                 }
 
                 if visible_count > 1 {
-                    accum_main += (visible_count - 1) as f32 * gap;
+                    let gap_total = (visible_count - 1) as f32 * gap;
+                    accum_main_min += gap_total;
+                    accum_main_max += gap_total;
                 }
 
                 // === التحديث هنا أيضاً عند تعيين القيم النهائية ===
                 match direction {
                     UFlexDirection::Row | UFlexDirection::RowReverse => {
-                        calculated_width = accum_main;
-                        calculated_height = max_cross;
+                        calculated_min_width = accum_main_min;
+                        calculated_max_width = accum_main_max;
+                        calculated_min_height = max_cross_min;
+                        calculated_max_height = max_cross_max;
                     }
                     UFlexDirection::Column | UFlexDirection::ColumnReverse => {
-                        calculated_width = max_cross;
-                        calculated_height = accum_main;
+                        calculated_min_width = max_cross_min;
+                        calculated_max_width = max_cross_max;
+                        calculated_min_height = accum_main_min;
+                        calculated_max_height = accum_main_max;
                     }
                 }
             }
@@ -157,22 +173,51 @@ pub fn upward_measure_pass_cached(
 
             let mut q_write = params.p1();
             if let Ok((_, _, _, _, _, mut intrinsic)) = q_write.get_mut(entity) {
-                let new_width = match node_spec.width {
+                let raw_min_width = match node_spec.width {
                     UVal::Px(v) => v,
-                    _ => calculated_width + h_pad,
+                    _ => calculated_min_width + h_pad,
+                };
+                let raw_max_width = match node_spec.width {
+                    UVal::Px(v) => v,
+                    _ => calculated_max_width + h_pad,
+                };
+                let raw_min_height = match node_spec.height {
+                    UVal::Px(v) => v,
+                    _ => calculated_min_height + v_pad,
+                };
+                let raw_max_height = match node_spec.height {
+                    UVal::Px(v) => v,
+                    _ => calculated_max_height + v_pad,
                 };
 
+                let min_width = node_spec.clamp_width(raw_min_width);
+                let max_width = node_spec.clamp_width(raw_max_width).max(min_width);
+                let min_height = node_spec.clamp_height(raw_min_height);
+                let max_height = node_spec.clamp_height(raw_max_height).max(min_height);
+
+                let new_width = match node_spec.width {
+                    UVal::MinContent => min_width,
+                    _ => max_width,
+                };
                 let new_height = match node_spec.height {
-                    UVal::Px(v) => v,
-                    _ => calculated_height + v_pad,
+                    UVal::MinContent => min_height,
+                    _ => max_height,
                 };
 
                 // منع التكرار اللانهائي (Check diff > epsilon)
                 if (intrinsic.width - new_width).abs() > 0.001
                     || (intrinsic.height - new_height).abs() > 0.001
+                    || (intrinsic.min_width - min_width).abs() > 0.001
+                    || (intrinsic.max_width - max_width).abs() > 0.001
+                    || (intrinsic.min_height - min_height).abs() > 0.001
+                    || (intrinsic.max_height - max_height).abs() > 0.001
                 {
                     intrinsic.width = new_width;
                     intrinsic.height = new_height;
+                    intrinsic.min_width = min_width;
+                    intrinsic.max_width = max_width;
+                    intrinsic.min_height = min_height;
+                    intrinsic.max_height = max_height;
                 }
 
                 cache.cache_intrinsic(
@@ -180,6 +225,10 @@ pub fn upward_measure_pass_cached(
                     IntrinsicSize {
                         width: new_width,
                         height: new_height,
+                        min_width,
+                        max_width,
+                        min_height,
+                        max_height,
                     },
                 );
             }

@@ -68,6 +68,14 @@ pub struct UNode {
     pub width: UVal,
     /// Preferred height of the node.
     pub height: UVal,
+    /// Minimum width constraint applied after preferred or intrinsic sizing.
+    pub min_width: f32,
+    /// Maximum width constraint applied after preferred or intrinsic sizing.
+    pub max_width: f32,
+    /// Minimum height constraint applied after preferred or intrinsic sizing.
+    pub min_height: f32,
+    /// Maximum height constraint applied after preferred or intrinsic sizing.
+    pub max_height: f32,
 
     /// Inner spacing (affects children placement).
     pub padding: USides,
@@ -87,6 +95,10 @@ impl Default for UNode {
         Self {
             width: UVal::Content,
             height: UVal::Content,
+            min_width: 0.0,
+            max_width: f32::INFINITY,
+            min_height: 0.0,
+            max_height: f32::INFINITY,
             padding: USides::default(),
             margin: USides::default(),
             background_color: Color::NONE,
@@ -94,6 +106,41 @@ impl Default for UNode {
             shape_mode: UShapeMode::Round,
         }
     }
+}
+
+impl UNode {
+    /// Returns sanitized width bounds as `(min, max)`.
+    pub fn width_bounds(&self) -> (f32, f32) {
+        sanitize_bounds(self.min_width, self.max_width)
+    }
+
+    /// Returns sanitized height bounds as `(min, max)`.
+    pub fn height_bounds(&self) -> (f32, f32) {
+        sanitize_bounds(self.min_height, self.max_height)
+    }
+
+    /// Clamps a width against this node's min/max width bounds.
+    pub fn clamp_width(&self, width: f32) -> f32 {
+        let (min, max) = self.width_bounds();
+        width.clamp(min, max)
+    }
+
+    /// Clamps a height against this node's min/max height bounds.
+    pub fn clamp_height(&self, height: f32) -> f32 {
+        let (min, max) = self.height_bounds();
+        height.clamp(min, max)
+    }
+}
+
+fn sanitize_bounds(min: f32, max: f32) -> (f32, f32) {
+    let min = min.max(0.0);
+    let max = if max.is_finite() {
+        max.max(0.0)
+    } else {
+        f32::INFINITY
+    };
+
+    if max < min { (min, min) } else { (min, max) }
 }
 
 /// Defines a border rendered around a [`UNode`].

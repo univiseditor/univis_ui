@@ -17,6 +17,7 @@ This page is the curated view of the example surface. Use [Examples](index.md) f
 | `hello_world` | `univis_ui` | Start here when you want the smallest facade-level boot path. | `cargo run -p univis_ui --example hello_world` | run the example |
 | `root_screen_hud` | `univis_ui_engine` | Run this when you want to confirm true HUD behavior against camera motion. | `cargo run -p univis_ui_engine --example root_screen_hud` | run the example |
 | `layout_cache` | `univis_ui_engine` | Run this when you want to inspect cache invalidation and repeated solve behavior. | `cargo run -p univis_ui_engine --example layout_cache` | run the example |
+| `layout_sizing_semantics` | `univis_ui_engine` | Run this when you want one compact scene for `Auto`, intrinsic modes, and `min/max` flex behavior. | `cargo run -p univis_ui_engine --example layout_sizing_semantics` | run the example |
 
 ## World-Space UI
 

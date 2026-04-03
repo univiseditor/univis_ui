@@ -17,12 +17,18 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Added `mixed_bidi_text` and `text_edge_cases` as focused `univis_ui_widgets` examples for mixed Arabic + Latin labels, truncation sides, autosize clamping, and text-overflow edge cases.
 - Added embedded `NotoSansArabic-Regular.ttf` and `FreeSerif.otf` theme font handles so the shipped text examples can render Arabic and Latin coverage from repo-owned assets.
 - Added regression tests around grapheme-safe truncation, justify anchoring, local clip behavior, and autosize measurement under parent constraints in `UTextLabel`.
+- Added public `min_width`, `max_width`, `min_height`, and `max_height` controls to `UNode`, plus explicit `UVal::MinContent` and `UVal::MaxContent` sizing modes.
+- Added a dedicated sizing-semantics docs note in both English and Arabic to freeze the alpha-line meaning of `Auto`, `Content`, `MinContent`, `MaxContent`, and `min/max` constraints.
+- Added `layout_sizing_semantics` as a focused `univis_ui_engine` example for contextual `Auto` sizing, explicit intrinsic modes, and min/max-aware flex redistribution.
 
 ### Changed
 
 - Extended `UTextLabel` ellipsis handling with grapheme-aware truncation, bidi-aware segment isolation, and the new `UTextTruncateSide` API (`Auto`, `Start`, `End`, `Middle`).
 - Updated the English and Arabic text-rendering docs to describe the current clipping model: local glyph clipping in `sync_text_label_meshes` plus ancestor `UClip` material clipping in `sync_text_clipper_materials`.
 - Refreshed the widget and example docs in both languages so the text examples, clipping behavior, and troubleshooting guidance match the current implementation.
+- Taught the layout solver to clamp solved sizes against explicit node `min/max` bounds and to respect those bounds during flex grow/shrink redistribution.
+- Split `Auto` from `Content` inside the layout solver so contextual auto sizing no longer collapses into explicit intrinsic sizing.
+- Kept `UVal::Content` as a backward-compatible public alias for max-content semantics while making implicit stretch behavior depend on `Auto` instead of all intrinsic modes.
 
 ### Fixed
 
@@ -30,6 +36,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Fixed clipped single-line labels so `Justify::Left` and `Justify::Right` anchor to the expected edge instead of exposing the middle of the text.
 - Fixed local text clipping so `Clip` and `Ellipsis` still apply when `autosize` is enabled, while `Visible` keeps overflow unclipped.
 - Fixed the mixed-text demo card layouts by opting fixed-width flex items out of shrink, preventing overlap in wrapped example grids.
+- Fixed grid and flex stretch behavior so `Auto` items can still fill contextual space while `MinContent` and `MaxContent` keep their intrinsic size unless alignment explicitly overrides them.
 
 ## [0.2.0-alpha.2] - 2026-03-27
 

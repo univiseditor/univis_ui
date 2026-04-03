@@ -137,13 +137,10 @@ fn init_drag_value_visuals(
 
         commands.entity(entity).insert((
             UNode {
-                width: existing_node.width,
-                height: existing_node.height,
                 padding: drag.padding,
-                margin: existing_node.margin,
                 background_color: drag.background,
                 border_radius: radius,
-                shape_mode: existing_node.shape_mode,
+                ..existing_node.clone()
             },
             ULayout {
                 display: UDisplay::Flex,

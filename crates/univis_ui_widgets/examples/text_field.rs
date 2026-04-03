@@ -26,7 +26,6 @@ fn main() {
             UnivisInteractionPlugin,
             UnivisWidgetPlugin,
         ))
-        .add_plugins(UnivisTextFieldPlugin)
         .add_systems(Startup, setup_ui)
         .add_systems(Update, handle_text_events)
         .run();

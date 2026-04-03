@@ -12,6 +12,14 @@ pub(crate) struct TextFieldPluginInstalled;
 
 impl Plugin for UnivisTextFieldPlugin {
     fn build(&self, app: &mut App) {
+        if app
+            .world()
+            .get_resource::<TextFieldPluginInstalled>()
+            .is_some()
+        {
+            return;
+        }
+
         app.init_resource::<TextFieldPluginInstalled>()
             .register_type::<UTextField>()
             .add_message::<TextFieldChangedEvent>()
@@ -28,6 +36,10 @@ impl Plugin for UnivisTextFieldPlugin {
                 )
                     .chain(),
             );
+    }
+
+    fn is_unique(&self) -> bool {
+        false
     }
 }
 

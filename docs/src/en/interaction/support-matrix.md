@@ -12,7 +12,7 @@ Legend:
 | Picking + pointer events | Supported | Supported | Supported | Interaction resolves the camera from each root through `ResolvedRootUi`. For multi-camera scenes, prefer `UiCameraRef::Entity`. |
 | Clipping-aware hit testing | Supported | Supported | Supported | Ancestor clipping checks apply across all spaces. World roots are still hit-tested against their UI plane. |
 | `UPanelWindow` resize handles | Supported | Supported | Supported | Resize logic resolves cursor movement through the root camera and panel plane. |
-| `UTextField` input/events | Supported | Supported | Supported | Requires `UnivisTextFieldPlugin`. |
+| `UTextField` input/events | Supported | Supported | Supported | Included by default through `UnivisWidgetPlugin`; add `UnivisTextFieldPlugin` directly only for narrower manual widget composition. |
 | `UScrollContainer` interaction | Supported | Supported | Supported | Scroll interaction follows the resolved root camera path. |
 | `UPbr` controls (`metallic`, `roughness`, `emissive`) | N/A | N/A | Supported | Intended only for the `World3d` render path. |
 

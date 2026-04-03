@@ -554,7 +554,6 @@ fn setup_profiler_overlay(mut commands: Commands, theme: Res<Theme>) {
         TextLayout {
             justify: Justify::Left,
             linebreak: LineBreak::NoWrap,
-            ..default()
         },
         TextFont {
             font: theme.text.font.inter_regular.clone(),

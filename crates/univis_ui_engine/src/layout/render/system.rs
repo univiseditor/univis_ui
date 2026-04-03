@@ -1,20 +1,13 @@
+#![allow(clippy::type_complexity, clippy::too_many_arguments)]
+
 use crate::internal_prelude::*;
 use bevy::{ecs::relationship::Relationship, prelude::*};
 
 /// Cached material handles attached to a rendered node.
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct MaterialHandles {
     pub material_2d: Option<Handle<UNodeMaterial>>,
     pub material_3d: Option<Handle<UNodeMaterial3d>>,
-}
-
-impl Default for MaterialHandles {
-    fn default() -> Self {
-        Self {
-            material_2d: None,
-            material_3d: None,
-        }
-    }
 }
 
 /// Simple statistics resource for material pooling.
@@ -211,11 +204,7 @@ fn sync_entity_material(
     match render_context.mode {
         ResolvedRenderMode::World3d => {
             let (metallic, roughness, emissive_val) = if let Some(pbr) = pbr_opt {
-                (
-                    pbr.metallic,
-                    pbr.roughness,
-                    Vec4::from(pbr.emissive.to_vec4()),
-                )
+                (pbr.metallic, pbr.roughness, pbr.emissive.to_vec4())
             } else {
                 (0.0, 0.5, Vec4::ZERO)
             };
@@ -223,10 +212,10 @@ fn sync_entity_material(
             let material_handle = if let Some(mut handles) = handles_opt {
                 if let Some(existing_handle) = &handles.material_3d {
                     if let Some(existing_mat) = materials_3d.get_mut(existing_handle) {
-                        existing_mat.color = Vec4::from(base_color.to_vec4());
+                        existing_mat.color = base_color.to_vec4();
                         existing_mat.size = size_vec;
                         existing_mat.radius = radius;
-                        existing_mat.border_color = Vec4::from(b_color.to_vec4());
+                        existing_mat.border_color = b_color.to_vec4();
                         existing_mat.emissive = emissive_val;
                         existing_mat.border_width = b_width;
                         existing_mat.softness = softness;
@@ -450,18 +439,18 @@ fn find_clipper(
     let mut current_entity = start_entity;
     while let Ok(parent) = parents_query.get(current_entity) {
         current_entity = parent.get();
-        if let Ok((transform, size, node, clip)) = clipper_query.get(current_entity) {
-            if clip.enabled {
-                let center = transform.translation().truncate();
-                let clip_size = Vec2::new(size.width, size.height);
-                let radius = Vec4::new(
-                    node.border_radius.top_right,
-                    node.border_radius.bottom_right,
-                    node.border_radius.top_left,
-                    node.border_radius.bottom_left,
-                );
-                return (center, clip_size, radius, 1);
-            }
+        if let Ok((transform, size, node, clip)) = clipper_query.get(current_entity)
+            && clip.enabled
+        {
+            let center = transform.translation().truncate();
+            let clip_size = Vec2::new(size.width, size.height);
+            let radius = Vec4::new(
+                node.border_radius.top_right,
+                node.border_radius.bottom_right,
+                node.border_radius.top_left,
+                node.border_radius.bottom_left,
+            );
+            return (center, clip_size, radius, 1);
         }
     }
     (Vec2::ZERO, Vec2::ZERO, Vec4::ZERO, 0)
@@ -525,10 +514,10 @@ fn create_3d_material(
     tex: Option<Handle<Image>>,
 ) -> UNodeMaterial3d {
     UNodeMaterial3d {
-        color: Vec4::from(base_color.to_vec4()),
+        color: base_color.to_vec4(),
         size: size_vec,
         radius,
-        border_color: Vec4::from(b_color.to_vec4()),
+        border_color: b_color.to_vec4(),
         emissive,
         border_width: b_width,
         softness,

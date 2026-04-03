@@ -90,7 +90,8 @@ If you are upgrading from older docs, older example paths, or older root wrapper
 
 - local preview stays centered on `mdbook build docs` and `mdbook serve docs`
 - the hosted site is built from the same `docs/` tree
-- `.github/workflows/docs_publish.yml` is the Pages publishing workflow
+- `.github/workflows/docs_publish.yml` is the only Pages publishing workflow
+- `.github/workflows/docs_examples_api.yml` handles quality, docs, example, and API-doc validation
 
 ## Canonical Commands
 

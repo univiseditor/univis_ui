@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity, clippy::too_many_arguments)]
+
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
@@ -17,7 +19,7 @@ impl SolverItemOwned {
     pub fn as_solver_item(&mut self) -> SolverItem<'_> {
         SolverItem {
             spec: self.spec,
-            result: &mut *self.result,
+            result: &mut self.result,
             margin: self.margin,
         }
     }
@@ -97,11 +99,11 @@ pub fn downward_solve_pass_safe(
             };
 
             // تحديث الجذر
-            if depth == 0 {
-                if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
-                    computed.width = container_size.x;
-                    computed.height = container_size.y;
-                }
+            if depth == 0
+                && let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
+            {
+                computed.width = container_size.x;
+                computed.height = container_size.y;
             }
 
             // 3. جمع بيانات الأطفال
@@ -295,7 +297,7 @@ fn collect_children_layout_data(
             let (_, node, _, _, _, uself_opt, _, _) = nodes_query.get(child_entity).ok()?;
             let intrinsic = intrinsic_query.get(child_entity).ok()?;
 
-            let mut spec = translate_spec(node, uself_opt.as_deref());
+            let mut spec = translate_spec(node, uself_opt);
 
             if spec.width_mode == SolverSizeMode::MinContent {
                 spec.width_val = intrinsic.min_width;

@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use crate::internal_prelude::*;
 use bevy::{ecs::relationship::Relationship, platform::collections::*, prelude::*};
 
@@ -35,7 +37,7 @@ impl LayoutCache {
         for (entity, depth) in query.iter() {
             self.entities_by_depth
                 .entry(depth.0)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(entity);
         }
 
@@ -160,8 +162,8 @@ pub fn track_layout_changes(
         let change_flags = LayoutChangeFlags {
             intrinsic_changed: intrinsic.is_changed(),
             node_changed: node.is_changed(),
-            layout_changed: layout.map_or(false, |l| l.is_changed()),
-            uself_changed: uself.map_or(false, |s| s.is_changed()),
+            layout_changed: layout.is_some_and(|l| l.is_changed()),
+            uself_changed: uself.is_some_and(|s| s.is_changed()),
         };
 
         // إذا كان التغيير الوحيد IntrinsicSize على عقدة حاوية، نتجاهله لتفادي

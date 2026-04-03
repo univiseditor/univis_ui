@@ -99,7 +99,7 @@ cargo run -p <package> --example <name>
 
 - Package: `univis_ui_widgets`
 - Purpose: demonstrates editable input, filtering modes, and submit/change messages.
-- Best for: form input and optional text-field plugin setup.
+- Best for: form input and default text-field runtime coverage.
 - Kind: `Learning`
 
 ### `panel_window`

@@ -1,12 +1,10 @@
 //! Built-in widgets for Univis UI.
 //!
 //! The widgets in this module are composable Bevy components layered on top of
-//! the engine crate. Add [`UnivisWidgetPlugin`] for the common widget set, and
-//! opt into dedicated plugins such as `UnivisTextFieldPlugin` when a widget
-//! advertises extra runtime systems or events.
+//! the engine crate. Add [`UnivisWidgetPlugin`] for the common widget set, or
+//! compose dedicated widget plugins manually when you want a narrower surface.
 
 use crate::internal_prelude::*;
-use crate::widget::{badge::BadgePluginInstalled, text_field::TextFieldPluginInstalled};
 use bevy::prelude::*;
 
 /// Badge and tag widgets.
@@ -23,7 +21,6 @@ pub mod drag_value;
 pub mod icon_btn;
 /// Image widget.
 pub mod image;
-mod menu; // Internal placeholder module; not part of public API yet.
 /// Panel and panel-window widgets.
 pub mod panel;
 /// Progress-bar widget.
@@ -46,95 +43,101 @@ pub mod toggle;
 /// Common widget imports for applications that depend on `univis_ui_widgets` directly.
 pub mod prelude {
     pub use crate::widget::{
-        badge::*,
-        button::*,
-        checkbox::*,
-        divider::*,
-        drag_value::*,
-        icon_btn::*,
-        image::*,
-        panel::*,
-        progress::*,
-        radio::*,
-        // menu::*,
-        scroll_view::*,
-        seekbar::*,
-        select::*,
-        text_field::*,
-        text_label::*,
-        toggle::*,
+        badge::*, button::*, checkbox::*, divider::*, drag_value::*, icon_btn::*, image::*,
+        panel::*, progress::*, radio::*, scroll_view::*, seekbar::*, select::*, text_field::*,
+        text_label::*, toggle::*,
     };
 }
 
 /// Registers the default built-in widget suite.
 ///
 /// This plugin covers text rendering, panels, buttons, scrolling, toggles,
-/// selects, and other commonly used controls.
+/// text input, badges, selects, and other commonly used controls.
 pub struct UnivisWidgetPlugin;
 
 #[derive(Default)]
-struct MissingOptionalWidgetPluginWarnings {
-    text_field_missing_plugin: bool,
-    badge_missing_plugin: bool,
+struct WidgetRuntimeWarnings {
     tag_runtime_limited: bool,
 }
 
 impl Plugin for UnivisWidgetPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.register_type::<UImage>()
-            .add_systems(Update, warn_on_missing_optional_widget_plugins)
+            .add_systems(Update, warn_on_widget_runtime_limitations)
             .add_systems(
                 PostUpdate,
                 sync_image_geometry
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(UnivisPostUpdateSet::LayoutMeasure),
-            )
-            .add_plugins(UnivisTextPlugin)
-            .add_plugins(UnivisProgressPlugin)
-            .add_plugins(UnivisButtonPlugin)
-            .add_plugins(UnivisRadioPlugin)
-            .add_plugins(UnivisIconButtonPlugin)
-            .add_plugins(UnivisTogglePlugin)
-            .add_plugins(UnivisCheckboxPlugin)
-            .add_plugins(UnivisSeekBarPlugin)
-            .add_plugins(UnivisScrollViewPlugin)
-            .add_plugins(UnivisDividerPlugin)
-            .add_plugins(UnivisPanelPlugin)
-            // NOTE: UnivisBadgePlugin is intentionally optional and must be added explicitly.
-            .add_plugins(UnivisDragValuePlugin)
-            .add_plugins(UnivisSelectPlugin);
+            );
+
+        add_core_widget_plugins(app);
+        add_default_widget_runtime_plugins(app);
     }
 }
 
-fn warn_on_missing_optional_widget_plugins(
-    added_text_fields: Query<(), Added<UTextField>>,
-    added_badges: Query<(), Added<UBadge>>,
+fn add_core_widget_plugins(app: &mut App) {
+    app.add_plugins(UnivisTextPlugin)
+        .add_plugins(UnivisProgressPlugin)
+        .add_plugins(UnivisButtonPlugin)
+        .add_plugins(UnivisRadioPlugin)
+        .add_plugins(UnivisIconButtonPlugin)
+        .add_plugins(UnivisTogglePlugin)
+        .add_plugins(UnivisCheckboxPlugin)
+        .add_plugins(UnivisSeekBarPlugin)
+        .add_plugins(UnivisScrollViewPlugin)
+        .add_plugins(UnivisDividerPlugin)
+        .add_plugins(UnivisPanelPlugin);
+}
+
+fn add_default_widget_runtime_plugins(app: &mut App) {
+    app.add_plugins(UnivisBadgePlugin)
+        .add_plugins(UnivisDragValuePlugin)
+        .add_plugins(UnivisSelectPlugin)
+        .add_plugins(UnivisTextFieldPlugin);
+}
+
+fn warn_on_widget_runtime_limitations(
     added_tags: Query<(), Added<UTag>>,
-    text_field_plugin: Option<Res<TextFieldPluginInstalled>>,
-    badge_plugin: Option<Res<BadgePluginInstalled>>,
-    mut warnings: Local<MissingOptionalWidgetPluginWarnings>,
+    mut warnings: Local<WidgetRuntimeWarnings>,
 ) {
-    if text_field_plugin.is_none()
-        && !warnings.text_field_missing_plugin
-        && !added_text_fields.is_empty()
-    {
-        bevy::log::warn!(
-            "UTextField detected, but UnivisTextFieldPlugin is not added. Add .add_plugins(UnivisTextFieldPlugin) to enable text-field behavior and events."
-        );
-        warnings.text_field_missing_plugin = true;
-    }
-
-    if badge_plugin.is_none() && !warnings.badge_missing_plugin && !added_badges.is_empty() {
-        bevy::log::warn!(
-            "UBadge detected, but UnivisBadgePlugin is not added. Add .add_plugins(UnivisBadgePlugin) to enable badge visual update systems."
-        );
-        warnings.badge_missing_plugin = true;
-    }
-
     if !warnings.tag_runtime_limited && !added_tags.is_empty() {
         bevy::log::warn!(
             "UTag detected. UTag runtime systems are currently limited; validate behavior in your scene."
         );
         warnings.tag_runtime_limited = true;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::widget::{badge::BadgePluginInstalled, text_field::TextFieldPluginInstalled};
+
+    #[test]
+    fn default_widget_runtime_plugins_install_text_field_and_badge_support() {
+        let mut app = App::new();
+        add_default_widget_runtime_plugins(&mut app);
+
+        assert!(
+            app.world()
+                .get_resource::<TextFieldPluginInstalled>()
+                .is_some()
+        );
+        assert!(app.world().get_resource::<BadgePluginInstalled>().is_some());
+    }
+
+    #[test]
+    fn dedicated_widget_plugins_remain_safe_to_add_after_default_runtime_plugins() {
+        let mut app = App::new();
+        add_default_widget_runtime_plugins(&mut app);
+        app.add_plugins((UnivisTextFieldPlugin, UnivisBadgePlugin));
+
+        assert!(
+            app.world()
+                .get_resource::<TextFieldPluginInstalled>()
+                .is_some()
+        );
+        assert!(app.world().get_resource::<BadgePluginInstalled>().is_some());
     }
 }

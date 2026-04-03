@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use super::math::sd_rounded_box;
 use crate::internal_prelude::*;
 use bevy::ecs::relationship::Relationship;
@@ -19,31 +21,31 @@ fn is_clipped_by_ancestors(
     while let Ok(parent) = parents_query.get(current_entity) {
         current_entity = parent.get();
 
-        if let Ok((transform, size, node, clip)) = clipper_query.get(current_entity) {
-            if clip.enabled {
-                // 1. التحويل من العالم (World) إلى المحلي (Local) الخاص بالأب القاطع
-                let transform_matrix = transform.to_matrix();
-                let inverse_matrix = transform_matrix.inverse();
+        if let Ok((transform, size, node, clip)) = clipper_query.get(current_entity)
+            && clip.enabled
+        {
+            // 1. التحويل من العالم (World) إلى المحلي (Local) الخاص بالأب القاطع
+            let transform_matrix = transform.to_matrix();
+            let inverse_matrix = transform_matrix.inverse();
 
-                // تحويل النقطة
-                let cursor_in_clipper_space =
-                    inverse_matrix.transform_point3(cursor_world_pos).truncate();
+            // تحويل النقطة
+            let cursor_in_clipper_space =
+                inverse_matrix.transform_point3(cursor_world_pos).truncate();
 
-                // 2. حساب حدود القناع
-                let half_size = Vec2::new(size.width, size.height) * 0.5;
-                let radius = Vec4::new(
-                    node.border_radius.top_right,
-                    node.border_radius.bottom_right,
-                    node.border_radius.top_left,
-                    node.border_radius.bottom_left,
-                );
+            // 2. حساب حدود القناع
+            let half_size = Vec2::new(size.width, size.height) * 0.5;
+            let radius = Vec4::new(
+                node.border_radius.top_right,
+                node.border_radius.bottom_right,
+                node.border_radius.top_left,
+                node.border_radius.bottom_left,
+            );
 
-                // 3. اختبار SDF
-                let dist = sd_rounded_box(cursor_in_clipper_space, half_size, radius);
+            // 3. اختبار SDF
+            let dist = sd_rounded_box(cursor_in_clipper_space, half_size, radius);
 
-                if dist > 0.0 {
-                    return true; // نعم، العنصر مقصوص في هذه النقطة
-                }
+            if dist > 0.0 {
+                return true; // نعم، العنصر مقصوص في هذه النقطة
             }
         }
     }

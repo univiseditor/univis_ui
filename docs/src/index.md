@@ -16,6 +16,8 @@ Use the language switcher shown at the top of each page to jump to the mirrored 
 
 ## Fast Links
 
+- [Plugin Setup and First Examples](en/first-steps.md)
+- [إعداد الإضافات وأولى الأمثلة](ar/first-steps.md)
 - [English Example Gallery](en/examples/gallery.md)
 - [معرض الأمثلة](ar/examples/gallery.md)
 - [Alpha2 Stability](en/migration/alpha2-stability.md)

@@ -8,12 +8,23 @@ To reduce load on weaker machines, run tests one target at a time:
 cargo test --release <test_name> --lib
 ```
 
-## Build Validation
+## Quality Validation
 
 ```bash
-cargo check --workspace --all-targets
+./scripts/check_quality.sh
+./scripts/check_representative_examples.sh
 ./scripts/check_examples_serial_release.sh
 ```
+
+`./scripts/check_quality.sh` runs:
+
+- `cargo fmt --all --check`
+- `cargo clippy --workspace --all-targets` with the current CI allowlist for known Bevy-heavy lint debt
+- `cargo check --workspace --all-targets`
+- `cargo test --workspace --lib`
+
+`./scripts/check_representative_examples.sh` checks a curated release-mode set that covers the
+facade path, root modes, interaction, panel resize, text input, and the `World3d` render path.
 
 ## Documentation Validation
 
@@ -24,17 +35,19 @@ mdbook build docs
 
 ## CI Validation
 
-GitHub Actions now validates docs/examples/API docs through:
+GitHub Actions now validates quality, docs, examples, and API docs through:
 
 - `.github/workflows/docs_examples_api.yml`
 - `.github/workflows/docs_publish.yml`
 
 It runs:
 
+- `./scripts/check_quality.sh`
+- `./scripts/check_representative_examples.sh`
 - `mdbook build docs`
 - `cargo doc --no-deps` for each public crate
 - package-by-package example checking through `./scripts/check_examples_serial_release.sh -p ...`
-- a dedicated GitHub Pages publishing path for the hosted docs site on `main`
+- one dedicated GitHub Pages publishing path for the hosted docs site on `main`
 
 ## Sequential Validation On Low-End Machines
 
@@ -44,6 +57,9 @@ It runs:
 
 # all examples one by one
 ./scripts/check_examples_serial_release.sh
+
+# representative cross-surface smoke compile pass
+./scripts/check_representative_examples.sh
 
 # full validation: lib tests + examples
 ./scripts/verify_serial_release.sh
@@ -71,20 +87,22 @@ To validate only selected examples:
 ## Practical Pre-Merge Strategy
 
 1. run the unit tests related to the change
-2. run `cargo check --workspace --all-targets`
-3. run `./scripts/check_examples_serial_release.sh`
-4. launch at least one example related to the modified area
-5. use [Visual Validation](visual-validation.md) when the change is rendering-, layout-, or interaction-heavy
+2. run `./scripts/check_quality.sh`
+3. run `./scripts/check_representative_examples.sh`
+4. run `./scripts/check_examples_serial_release.sh` for the touched package or before release
+5. launch at least one example related to the modified area
+6. use [Visual Validation](visual-validation.md) when the change is rendering-, layout-, or interaction-heavy
 
 ## Required Before The Next Alpha Cut
 
-- `cargo check --workspace --all-targets`
+- `./scripts/check_quality.sh`
 - `mdbook build docs`
 - `cargo doc -p univis_ui_style --no-deps`
 - `cargo doc -p univis_ui_engine --no-deps`
 - `cargo doc -p univis_ui_interaction --no-deps`
 - `cargo doc -p univis_ui_widgets --no-deps`
 - `cargo doc -p univis_ui --no-deps`
+- `./scripts/check_representative_examples.sh`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_engine`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`

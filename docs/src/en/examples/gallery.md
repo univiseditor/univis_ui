@@ -1,6 +1,6 @@
 # Example Gallery
 
-This page is the curated view of the example surface. Use [Examples](index.md) for the full catalog and package inventory.
+This page is the curated view of the example surface. Use [Examples](index.md) for the full catalog and package inventory. For a task-oriented path that starts from setup and moves into examples, start with [Plugin Setup and First Examples](../first-steps.md).
 
 ## Best First Examples
 

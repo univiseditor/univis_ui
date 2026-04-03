@@ -1,4 +1,5 @@
 #![allow(deprecated)]
+#![allow(clippy::type_complexity)]
 //! Root model and root-resolution systems for Univis UI.
 //!
 //! [`URootUi`] is the modern public entry point for authoring UI roots.
@@ -11,6 +12,15 @@ use bevy::prelude::*;
 use std::collections::HashMap;
 
 use crate::internal_prelude::*;
+
+mod root_resolution;
+mod screen_transform;
+
+use self::root_resolution::{
+    RootResolutionIssue, clamp_canvas_size, effective_root_ui, emit_root_resolution_warning,
+    normalize_meters_per_unit, resolve_root_camera, resolve_root_canvas_size,
+};
+use self::screen_transform::compute_screen_root_transform;
 
 /// Describes where a root is projected after layout is solved.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Reflect)]
@@ -382,17 +392,6 @@ impl Default for UWorldRoot {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-enum RootResolutionIssue {
-    #[default]
-    None,
-    AutoMissingCamera,
-    AutoAmbiguousCamera,
-    ExplicitCameraMissing,
-    ExplicitCameraInactive,
-    ViewportSizeUnavailable,
-}
-
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct RootResolutionState {
     issue: RootResolutionIssue,
@@ -404,25 +403,6 @@ struct RootStackCandidate {
     authored_root_z: f32,
     spawn_rank: u64,
     band_width: f32,
-}
-
-#[derive(Clone, Copy)]
-struct EffectiveRootUi {
-    space: UiSpace,
-    canvas: UiCanvasSize,
-    camera: UiCameraRef,
-    meters_per_unit: f32,
-    resolution_scale: f32,
-}
-
-const PERSPECTIVE_SCREEN_DISTANCE: f32 = 1.0;
-
-fn normalize_meters_per_unit(value: f32) -> f32 {
-    if value.is_finite() && value > f32::EPSILON {
-        value
-    } else {
-        URootUi::DEFAULT_METERS_PER_UNIT
-    }
 }
 
 fn capture_authored_root_z(current_root_z: f32, stack: &ResolvedRootStack) -> f32 {
@@ -780,235 +760,6 @@ fn resolve_root_for_ui3d(
         let parent = parents_query.get(current).ok()?;
         current = parent.parent();
     }
-}
-
-fn effective_root_ui(
-    root_ui: Option<&URootUi>,
-    screen_root: Option<&UScreenRoot>,
-    world_root: Option<&UWorldRoot>,
-) -> Option<EffectiveRootUi> {
-    if let Some(root) = root_ui {
-        return Some(EffectiveRootUi {
-            space: root.space,
-            canvas: root.canvas,
-            camera: root.camera,
-            meters_per_unit: root.meters_per_unit,
-            resolution_scale: root.resolution_scale,
-        });
-    }
-
-    if let Some(root) = world_root {
-        return Some(EffectiveRootUi {
-            space: if root.is_3d {
-                UiSpace::World3d
-            } else {
-                UiSpace::World2d
-            },
-            canvas: UiCanvasSize::Fixed(root.size),
-            camera: UiCameraRef::Auto,
-            // `UWorldRoot` stays on the old 1 UI unit = 1 world unit behavior during alpha2.
-            meters_per_unit: LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT,
-            resolution_scale: root.resolution_scale,
-        });
-    }
-
-    screen_root.map(|_| EffectiveRootUi {
-        space: UiSpace::Screen,
-        canvas: UiCanvasSize::Viewport,
-        camera: UiCameraRef::Auto,
-        meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
-        resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
-    })
-}
-
-fn resolve_root_camera(
-    camera_ref: UiCameraRef,
-    cameras: &Query<(Entity, &Camera)>,
-) -> (Option<Entity>, RootResolutionIssue) {
-    match camera_ref {
-        UiCameraRef::Entity(entity) => match cameras.get(entity) {
-            Ok((_, camera)) if camera.is_active => (Some(entity), RootResolutionIssue::None),
-            Ok(_) => (None, RootResolutionIssue::ExplicitCameraInactive),
-            Err(_) => (None, RootResolutionIssue::ExplicitCameraMissing),
-        },
-        UiCameraRef::Auto => {
-            let mut candidates = cameras
-                .iter()
-                .filter_map(|(entity, camera)| camera.is_active.then_some(entity));
-
-            let first = candidates.next();
-            let second = candidates.next();
-
-            match (first, second) {
-                (Some(entity), None) => (Some(entity), RootResolutionIssue::None),
-                (Some(_), Some(_)) => (None, RootResolutionIssue::AutoAmbiguousCamera),
-                _ => (None, RootResolutionIssue::AutoMissingCamera),
-            }
-        }
-    }
-}
-
-fn resolve_root_canvas_size(
-    canvas: UiCanvasSize,
-    camera_entity: Option<Entity>,
-    cameras: &Query<(Entity, &Camera)>,
-    windows: &Query<&Window>,
-    issue: &mut RootResolutionIssue,
-) -> Vec2 {
-    match canvas {
-        UiCanvasSize::Fixed(size) => size,
-        UiCanvasSize::FitContent { min, max } => clamp_canvas_size(min.max(Vec2::ZERO), min, max),
-        UiCanvasSize::Viewport => {
-            if let Some(camera_entity) = camera_entity {
-                if let Ok((_, camera)) = cameras.get(camera_entity) {
-                    if let Some(size) = camera.logical_viewport_size() {
-                        return size;
-                    }
-                }
-
-                if *issue == RootResolutionIssue::None {
-                    *issue = RootResolutionIssue::ViewportSizeUnavailable;
-                }
-            }
-
-            if let Ok(window) = windows.single() {
-                Vec2::new(window.width(), window.height())
-            } else {
-                Vec2::new(800.0, 600.0)
-            }
-        }
-    }
-}
-
-fn clamp_canvas_size(size: Vec2, min: Vec2, max: Option<Vec2>) -> Vec2 {
-    let mut clamped = Vec2::new(size.x.max(min.x), size.y.max(min.y));
-
-    if let Some(max) = max {
-        clamped.x = clamped.x.min(max.x);
-        clamped.y = clamped.y.min(max.y);
-    }
-
-    clamped
-}
-
-fn emit_root_resolution_warning(entity: Entity, space: UiSpace, issue: RootResolutionIssue) {
-    match issue {
-        RootResolutionIssue::None => {}
-        RootResolutionIssue::AutoMissingCamera => warn!(
-            "URootUi on entity {:?} ({:?}) could not resolve `UiCameraRef::Auto`: no active compatible camera found.",
-            entity, space
-        ),
-        RootResolutionIssue::AutoAmbiguousCamera => warn!(
-            "URootUi on entity {:?} ({:?}) could not resolve `UiCameraRef::Auto`: multiple active compatible cameras were found. Bind `UiCameraRef::Entity` explicitly.",
-            entity, space
-        ),
-        RootResolutionIssue::ExplicitCameraMissing => warn!(
-            "URootUi on entity {:?} ({:?}) references a camera entity that does not exist or does not have a `Camera` component.",
-            entity, space
-        ),
-        RootResolutionIssue::ExplicitCameraInactive => warn!(
-            "URootUi on entity {:?} ({:?}) references an inactive camera.",
-            entity, space
-        ),
-        RootResolutionIssue::ViewportSizeUnavailable => warn!(
-            "URootUi on entity {:?} ({:?}) could not read a logical viewport size from the resolved camera yet.",
-            entity, space
-        ),
-    }
-}
-
-fn compute_screen_root_transform(
-    resolved: &ResolvedRootUi,
-    stack: &ResolvedRootStack,
-    camera_transform: &GlobalTransform,
-    projection: Option<&Projection>,
-) -> Option<Transform> {
-    if resolved.space != UiSpace::Screen {
-        return None;
-    }
-
-    let canvas_size = Vec2::new(
-        resolved.canvas_size.x.max(1.0),
-        resolved.canvas_size.y.max(1.0),
-    );
-    let camera_transform = camera_transform.compute_transform();
-
-    // Screen roots inherit the camera pose so camera movement and rotation cancel out in view
-    // space. The scale is then derived from the projection so the logical canvas stays visually
-    // stable on screen instead of behaving like an ordinary world canvas.
-    let stacking_offset = camera_transform.back().as_vec3() * stack.capsule_band_base;
-
-    match projection {
-        Some(Projection::Orthographic(orthographic)) => Some(Transform {
-            translation: camera_transform.translation
-                + camera_transform.forward().as_vec3() * orthographic_screen_distance(orthographic)
-                + stacking_offset,
-            rotation: camera_transform.rotation,
-            scale: orthographic_screen_scale(orthographic, canvas_size),
-        }),
-        Some(Projection::Perspective(perspective)) => {
-            let distance = perspective_screen_distance(perspective);
-            let frustum_size = perspective_screen_frustum_size(perspective, canvas_size, distance);
-
-            Some(Transform {
-                translation: camera_transform.translation
-                    + camera_transform.forward().as_vec3() * distance
-                    + stacking_offset,
-                rotation: camera_transform.rotation,
-                scale: Vec3::new(
-                    frustum_size.x / canvas_size.x,
-                    frustum_size.y / canvas_size.y,
-                    1.0,
-                ),
-            })
-        }
-        _ => Some(Transform {
-            translation: camera_transform.translation + stacking_offset,
-            rotation: camera_transform.rotation,
-            scale: Vec3::ONE,
-        }),
-    }
-}
-
-fn orthographic_screen_distance(projection: &OrthographicProjection) -> f32 {
-    let distance = if projection.near >= 0.0 {
-        (projection.near + projection.far) * 0.5
-    } else {
-        projection.far * 0.5
-    };
-
-    if distance <= f32::EPSILON {
-        1.0
-    } else {
-        distance
-    }
-}
-
-fn orthographic_screen_scale(projection: &OrthographicProjection, canvas_size: Vec2) -> Vec3 {
-    let world_size = projection.area.size();
-    Vec3::new(
-        world_size.x / canvas_size.x,
-        world_size.y / canvas_size.y,
-        1.0,
-    )
-}
-
-fn perspective_screen_distance(projection: &PerspectiveProjection) -> f32 {
-    (projection.near * 4.0).max(PERSPECTIVE_SCREEN_DISTANCE)
-}
-
-fn perspective_screen_frustum_size(
-    projection: &PerspectiveProjection,
-    canvas_size: Vec2,
-    distance: f32,
-) -> Vec2 {
-    let aspect = if canvas_size.y > 0.0 {
-        canvas_size.x / canvas_size.y
-    } else {
-        projection.aspect_ratio.max(f32::EPSILON)
-    };
-    let height = 2.0 * distance * (projection.fov * 0.5).tan();
-    Vec2::new(height * aspect, height)
 }
 
 #[cfg(test)]

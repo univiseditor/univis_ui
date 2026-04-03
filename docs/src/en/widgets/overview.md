@@ -20,10 +20,8 @@ Each Univis widget is an ECS component plus a small plugin that manages:
 
 ## Important Plugins
 
-- included by default through `UnivisWidgetPlugin`: most widgets, scrolling, and panel support
-- still optional:
-  - `UnivisTextFieldPlugin`
-  - `UnivisBadgePlugin`
+- included by default through `UnivisUiPlugin` -> `UnivisWidgetPlugin`: the standard widget set, scrolling, panel support, `UTextField` runtime, and `UBadge` runtime
+- dedicated widget plugins still remain available when you intentionally want a narrower surface than `UnivisWidgetPlugin`
 
 ## Related Examples
 
@@ -44,5 +42,6 @@ Each Univis widget is an ECS component plus a small plugin that manages:
 ## Where To Look Next
 
 - related example: [`widgets`](../examples/index.md#widgets)
+- related setup page: [Plugin Setup and First Examples](../first-steps.md)
 - related API index: [API Reference](../api/index.md)
 - related migration page: [Example Path Migration](../migration/example-paths.md)

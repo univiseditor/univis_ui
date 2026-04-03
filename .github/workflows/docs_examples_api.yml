@@ -1,4 +1,4 @@
-name: Docs, Examples, and API Docs
+name: Validation
 
 on:
   pull_request:
@@ -12,7 +12,46 @@ permissions:
   contents: read
 
 jobs:
+  quality:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run quality checks
+        run: ./scripts/check_quality.sh
+
+  representative_examples:
+    name: Representative Examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check representative examples
+        run: ./scripts/check_representative_examples.sh
+
   docs:
+    name: Docs Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -33,6 +72,7 @@ jobs:
         run: mdbook build docs
 
   api_docs:
+    name: API Docs (${{ matrix.package }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -59,6 +99,7 @@ jobs:
         run: cargo doc -p ${{ matrix.package }} --no-deps
 
   examples:
+    name: Examples (${{ matrix.package }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:

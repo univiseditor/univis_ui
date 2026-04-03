@@ -16,7 +16,7 @@
 ## نموذج النشر
 
 - يبقى التحقق ضمن `.github/workflows/docs_examples_api.yml`
-- يتولى `.github/workflows/docs_publish.yml` مهمة النشر
+- يتولى `.github/workflows/docs_publish.yml` وحده مهمة النشر
 - تُبنى النسخة المنشورة من نفس شجرة `docs/` التي يستخدمها المساهم محليًا
 - الوجهة العامة المقصودة للنشر هي صفحات GitHub
 

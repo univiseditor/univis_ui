@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
@@ -6,7 +8,7 @@ use bevy::prelude::*;
 /// Iterates from the deepest tree depth up to the root.
 /// Calculates the **Intrinsic Size** of containers based on their children.
 /// It ignores `Absolute` items as they are out-of-flow.
-
+///
 /// Upward Pass with Caching and Reverse Direction Support
 pub fn upward_measure_pass_cached(
     tree_depth: Res<LayoutTreeDepth>,
@@ -60,13 +62,12 @@ pub fn upward_measure_pass_cached(
             // 1. محاولة استخدام الكاش
             let mut used_cache = false;
 
-            if !is_dirty {
-                if let Some(cached) = cache.get_cached_intrinsic(entity) {
-                    if let Ok((_, _, _, _, _, mut intrinsic)) = params.p1().get_mut(entity) {
-                        *intrinsic = cached;
-                        used_cache = true;
-                    }
-                }
+            if !is_dirty
+                && let Some(cached) = cache.get_cached_intrinsic(entity)
+                && let Ok((_, _, _, _, _, mut intrinsic)) = params.p1().get_mut(entity)
+            {
+                *intrinsic = cached;
+                used_cache = true;
             }
 
             if used_cache {
@@ -112,10 +113,10 @@ pub fn upward_measure_pass_cached(
                     if let Ok((child_intrinsic, child_node, child_uself_opt)) =
                         q_children.get(child_entity)
                     {
-                        if let Some(uself) = child_uself_opt {
-                            if uself.position_type == UPositionType::Absolute {
-                                continue;
-                            }
+                        if let Some(uself) = child_uself_opt
+                            && uself.position_type == UPositionType::Absolute
+                        {
+                            continue;
                         }
 
                         let min_w = child_intrinsic.min_width;

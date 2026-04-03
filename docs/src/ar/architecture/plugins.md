@@ -5,22 +5,18 @@
 في `src/lib.rs`:
 
 - `UnivisUiPlugin` يضيف بالترتيب:
-  1. `UnivisInteractionPlugin`
-  2. `UnivisNodePlugin`
-  3. `UnivisLayoutPlugin`
-  4. `UnivisUiStylePlugin`
-  5. `UnivisWidgetPlugin`
+  1. `UnivisUiStylePlugin`
+  2. `UnivisEnginePlugin`
+  3. `UnivisInteractionPlugin`
+  4. `UnivisWidgetPlugin`
 
 ## التخطيط
 
-- `UnivisNodePlugin`:
-  - تسجيل أنواع التخطيط وامتدادات الانعكاس.
-- `UnivisLayoutPlugin`:
-  - المورد `LayoutTreeDepth`
-  - `LayoutCachePlugin`
-  - سلسلة التخطيط في `PostUpdate`.
-- `UnivisRenderPlugin`:
-  - مواد 2D/3D + مزامنة المواد.
+- `UnivisEnginePlugin`:
+  - `UnivisNodePlugin`
+  - `UnivisLayoutPlugin`
+  - `UnivisRenderPlugin`
+  - وتوفر معًا بدائيات العقدة وحسم الجذور وحل التخطيط ومزامنة الرندر.
 
 ## التفاعل
 
@@ -56,14 +52,12 @@
   - `UnivisScrollViewPlugin`
   - `UnivisDividerPlugin`
   - `UnivisPanelPlugin`
+  - `UnivisBadgePlugin`
   - `UnivisDragValuePlugin`
   - `UnivisSelectPlugin`
-
-- غير مضاف تلقائيًا:
   - `UnivisTextFieldPlugin`
-  - `UnivisBadgePlugin`
 
-> السبب: الحفاظ على اختيارية بعض السلوكيات وعدم فرضها على كل تطبيق.
+وتبقى الإضافات المخصصة نفسها متاحة عندما تريد تركيب سطح widgets أضيق من `UnivisWidgetPlugin`.
 
 ## مرجع سريع
 

@@ -67,15 +67,15 @@ fn setup(mut commands: Commands) {
 
 ## 5) ملاحظات مهمة مباشرة
 
-- `UnivisWidgetPlugin` لا يضيف `UnivisTextFieldPlugin` تلقائيًا؛ أضفه يدويًا عند استخدام `UTextField`.
-- `UnivisWidgetPlugin` لا يضيف `UnivisBadgePlugin` تلقائيًا.
+- `UnivisWidgetPlugin` يضيف الآن أنظمة Runtime المدمجة الخاصة بـ `UTextField` و`UBadge` تلقائيًا.
 - `UnivisScrollViewPlugin` مضاف تلقائيًا داخل `UnivisWidgetPlugin`.
 - التفاعل يحسم الكاميرا من كل `URootUi`.
 - في المشاهد متعددة الكاميرات يُفضّل ربط الجذر صراحة عبر `UiCameraRef::Entity`.
 - `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة خلال `alpha2`.
 - إذا احتجت نفس الحجم الفيزيائي التاريخي لأمثلة فضاء العالم القديمة، فاضبط `meters_per_unit: 1.0` صراحة.
+- إذا أردت قائمة إعداد موجزة ومسار أمثلة بحسب المهمة، فانتقل إلى [إعداد الإضافات وأولى الأمثلة](first-steps.md).
 
-إذا أردت تشغيل ميزات إضافية اختيارية عند تركيبك الجزئي للإضافات، فأضفها يدويًا.
+إذا كنت تركّب سطح widgets ضيقًا من دون `UnivisWidgetPlugin`، فما يزال بإمكانك إضافة `UnivisTextFieldPlugin` أو `UnivisBadgePlugin` يدويًا.
 
 ## 6) وضع الحزم المباشرة (متقدم)
 
@@ -119,5 +119,6 @@ fn main() {
 ## إلى أين بعد ذلك؟
 
 - المثال المرتبط: [`hello_world`](examples/index.md#hello_world)
+- صفحة الإعداد: [إعداد الإضافات وأولى الأمثلة](first-steps.md)
 - فهرس `API`: [مرجع الواجهة العامة](api/index.md)
 - صفحة الترحيل: [ترحيل الجذور إلى `URootUi`](migration/root-api.md)

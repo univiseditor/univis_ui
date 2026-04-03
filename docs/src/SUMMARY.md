@@ -4,6 +4,7 @@
 # العربية
   - [البدء](ar/intro.md)
     - [البدء السريع](ar/quick-start.md)
+    - [إعداد الإضافات وأولى الأمثلة](ar/first-steps.md)
   - [الجذور والتخطيط](ar/layout/overview.md)
     - [الجذور والمساحات](ar/layout/roots.md)
     - [`UNode` وقياسات الصندوق](ar/layout/node-model.md)
@@ -59,6 +60,7 @@
 # English
   - [Getting Started](en/intro.md)
     - [Quick Start](en/quick-start.md)
+    - [Plugin Setup and First Examples](en/first-steps.md)
   - [Roots and Layout](en/layout/overview.md)
     - [Roots and Spaces](en/layout/roots.md)
     - [UNode and Box Metrics](en/layout/node-model.md)

@@ -12,14 +12,18 @@ PACKAGES=(
   univis_ui
 )
 
-echo "== Cargo check =="
-cargo check --workspace
+echo "== Quality checks =="
+./scripts/check_quality.sh
 
 echo
-echo "== Library tests =="
+echo "== Release-mode library tests =="
 for PACKAGE in "${PACKAGES[@]}"; do
   ./scripts/test_lib_serial_release.sh -p "$PACKAGE"
 done
+
+echo
+echo "== Representative example checks =="
+./scripts/check_representative_examples.sh
 
 echo
 echo "== Example checks =="

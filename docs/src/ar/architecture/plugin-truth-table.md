@@ -6,10 +6,9 @@
 
 | الإضافة | تُضاف عبر `UnivisUiPlugin` | ملاحظات |
 |---|---|---|
-| `UnivisInteractionPlugin` | نعم | يضيف خلفية الالتقاط ومراقبي المؤشر. |
-| `UnivisNodePlugin` | نعم | أساسيات العقدة والمواد. |
-| `UnivisLayoutPlugin` | نعم | سلسلة التخطيط والموارد المرتبطة. |
 | `UnivisUiStylePlugin` | نعم | الخطوط/الأيقونات المضمنة + `Theme`. |
+| `UnivisEnginePlugin` | نعم | يضيف `UnivisNodePlugin` و`UnivisLayoutPlugin` و`UnivisRenderPlugin`. |
+| `UnivisInteractionPlugin` | نعم | يضيف خلفية الالتقاط ومراقبي المؤشر. |
 | `UnivisWidgetPlugin` | نعم | يسجّل مجموعة الإضافات الأساسية للوحدات الجاهزة. |
 | `LayoutProfilingPlugin` | لا | إضافة اختيارية للتشخيص وتُضاف يدويًا. |
 
@@ -28,13 +27,15 @@
 | `UnivisScrollViewPlugin` | نعم | `UScrollContainer`. |
 | `UnivisDividerPlugin` | نعم | `UDivider`. |
 | `UnivisPanelPlugin` | نعم | `UPanel` وسلوك `UPanelWindow`. |
+| `UnivisBadgePlugin` | نعم | `UBadge` مع تحديثات المرئيات الديناميكية للـ badge/tag. |
 | `UnivisDragValuePlugin` | نعم | `UDragValue`. |
 | `UnivisSelectPlugin` | نعم | `USelect`. |
-| `UnivisTextFieldPlugin` | لا | مطلوب يدويًا عند استخدام سلوك/أحداث `UTextField`. |
-| `UnivisBadgePlugin` | لا | مطلوب يدويًا لأنظمة تحديث `UBadge`/`UTag` الديناميكية. |
+| `UnivisTextFieldPlugin` | نعم | سلوك/أحداث `UTextField`. |
+
+وتبقى الإضافات المخصصة نفسها متاحة عندما تريد بناء سطح widgets أضيق من `UnivisWidgetPlugin`.
 
 ## مصادر التحقق
 
 - `src/lib.rs`
-- `src/widget/mod.rs`
-- `src/layout/mod.rs`
+- `crates/univis_ui_engine/src/lib.rs`
+- `crates/univis_ui_widgets/src/widget/mod.rs`

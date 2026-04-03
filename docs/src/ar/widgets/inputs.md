@@ -32,7 +32,8 @@
 
 - الملف: `src/widget/text_field.rs`
 - text input مع cursor blink وfocus logic.
-- الإضافة: `UnivisTextFieldPlugin` (اختيارية).
+- Runtime مضاف افتراضيًا عبر `UnivisWidgetPlugin`.
+- الإضافة المخصصة: `UnivisTextFieldPlugin` عند تركيب سطح widgets أضيق.
 - events:
   - `TextFieldChangedEvent`
   - `TextFieldSubmitEvent`

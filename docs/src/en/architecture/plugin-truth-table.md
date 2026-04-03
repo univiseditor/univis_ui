@@ -6,10 +6,9 @@ This page is the canonical plugin registration truth for the current repository 
 
 | Plugin | Added by `UnivisUiPlugin` | Notes |
 |---|---|---|
-| `UnivisInteractionPlugin` | Yes | Registers picking backend and pointer observers. |
-| `UnivisNodePlugin` | Yes | Core node/material foundations. |
-| `UnivisLayoutPlugin` | Yes | Layout chain + layout resources. |
 | `UnivisUiStylePlugin` | Yes | Embedded fonts/icons + `Theme` resource. |
+| `UnivisEnginePlugin` | Yes | Adds `UnivisNodePlugin`, `UnivisLayoutPlugin`, and `UnivisRenderPlugin`. |
+| `UnivisInteractionPlugin` | Yes | Registers picking backend and pointer observers. |
 | `UnivisWidgetPlugin` | Yes | Registers built-in widget plugin set. |
 | `LayoutProfilingPlugin` | No | Optional diagnostics plugin; add manually when needed. |
 
@@ -28,13 +27,15 @@ This page is the canonical plugin registration truth for the current repository 
 | `UnivisScrollViewPlugin` | Yes | `UScrollContainer`. |
 | `UnivisDividerPlugin` | Yes | `UDivider`. |
 | `UnivisPanelPlugin` | Yes | `UPanel`, `UPanelWindow` behavior. |
+| `UnivisBadgePlugin` | Yes | `UBadge`, plus dynamic badge/tag visual updates. |
 | `UnivisDragValuePlugin` | Yes | `UDragValue`. |
 | `UnivisSelectPlugin` | Yes | `USelect`. |
-| `UnivisTextFieldPlugin` | No | Required when using `UTextField` behavior/events. |
-| `UnivisBadgePlugin` | No | Required for dynamic `UBadge`/`UTag` update systems. |
+| `UnivisTextFieldPlugin` | Yes | `UTextField` behavior/events. |
+
+Dedicated widget plugins still remain available when you intentionally build a narrower widget surface than `UnivisWidgetPlugin`.
 
 ## Verification Sources
 
 - `src/lib.rs`
-- `src/widget/mod.rs`
-- `src/layout/mod.rs`
+- `crates/univis_ui_engine/src/lib.rs`
+- `crates/univis_ui_widgets/src/widget/mod.rs`

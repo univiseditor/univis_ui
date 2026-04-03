@@ -376,23 +376,12 @@ pub struct ULayoutContainerExt {
 }
 
 /// Extended container-level alignment options.
-#[derive(Debug, Clone, Copy, Reflect)]
+#[derive(Debug, Clone, Copy, Reflect, Default)]
 pub struct ULayoutBoxAlignContainer {
     pub justify_items: Option<UAlignItemsExt>,
     pub align_content: Option<UContentAlignExt>,
     pub row_gap: Option<f32>,
     pub column_gap: Option<f32>,
-}
-
-impl Default for ULayoutBoxAlignContainer {
-    fn default() -> Self {
-        Self {
-            justify_items: None,
-            align_content: None,
-            row_gap: None,
-            column_gap: None,
-        }
-    }
 }
 
 /// Extended flex container options.
@@ -462,21 +451,11 @@ impl Default for ULayoutBoxAlignSelf {
 }
 
 /// Extended flex item options.
-#[derive(Debug, Clone, Copy, Reflect)]
+#[derive(Debug, Clone, Copy, Reflect, Default)]
 pub struct ULayoutFlexItem {
     pub flex_grow: Option<f32>,
     pub flex_shrink: Option<f32>,
     pub flex_basis: Option<UVal>,
-}
-
-impl Default for ULayoutFlexItem {
-    fn default() -> Self {
-        Self {
-            flex_grow: None,
-            flex_shrink: None,
-            flex_basis: None,
-        }
-    }
 }
 
 /// Extended grid item placement options.

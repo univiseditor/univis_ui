@@ -67,15 +67,15 @@ fn setup(mut commands: Commands) {
 
 ## 5) Important Notes
 
-- `UnivisWidgetPlugin` does not auto-register `UnivisTextFieldPlugin`; add it explicitly when using `UTextField`.
-- `UnivisWidgetPlugin` does not auto-register `UnivisBadgePlugin`.
+- `UnivisWidgetPlugin` now auto-registers the built-in `UTextField` and `UBadge` runtime systems.
 - `UnivisScrollViewPlugin` is included by default in `UnivisWidgetPlugin`.
 - Interaction resolves the camera from each `URootUi`.
 - In multi-camera scenes, prefer binding the root explicitly with `UiCameraRef::Entity`.
 - `UScreenRoot` and `UWorldRoot` remain only as deprecated compatibility wrappers during `alpha2`.
 - If you need the historical world-space physical size from older examples, set `meters_per_unit: 1.0` explicitly.
+- For a task-oriented setup checklist and recommended first runs, continue with [Plugin Setup and First Examples](first-steps.md).
 
-If you compose plugins manually, add optional plugins explicitly when needed.
+If you compose widgets narrowly without `UnivisWidgetPlugin`, you can still add `UnivisTextFieldPlugin` or `UnivisBadgePlugin` directly.
 
 ## 6) Direct Crate Mode (Advanced)
 
@@ -119,5 +119,6 @@ fn main() {
 ## Where To Look Next
 
 - related example: [`hello_world`](examples/index.md#hello_world)
+- related setup page: [Plugin Setup and First Examples](first-steps.md)
 - related API index: [API Reference](api/index.md)
 - related migration page: [Root API Migration to `URootUi`](migration/root-api.md)

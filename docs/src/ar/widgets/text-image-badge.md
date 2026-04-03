@@ -40,4 +40,5 @@
 
 - أنماط badge (style/size presets).
 - `UnivisBadgePlugin` مسؤول عن أنظمة التحديث الديناميكي للأنماط.
-- هذه الإضافة **اختياري** وغير مسجل ضمن `UnivisWidgetPlugin` تلقائيًا.
+- هذا الـ runtime مضاف افتراضيًا عبر `UnivisWidgetPlugin`.
+- وتبقى الإضافة المخصصة نفسها متاحة عندما تريد سطح widgets أضيق.

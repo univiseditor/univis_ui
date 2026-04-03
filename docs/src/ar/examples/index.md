@@ -99,7 +99,7 @@ cargo run -p <package> --example <name>
 
 - الحزمة: `univis_ui_widgets`
 - الغرض: يشرح الإدخال النصي، وأنماط التصفية، ورسائل التغيير والإرسال.
-- الأنسب لـ: نماذج الإدخال و`UnivisTextFieldPlugin`.
+- الأنسب لـ: نماذج الإدخال وتغطية `UTextField` الافتراضية.
 - النوع: `تعليمي`
 
 ### `panel_window`

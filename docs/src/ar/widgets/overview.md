@@ -20,10 +20,8 @@
 
 ## الإضافات المهمة
 
-- مضافة تلقائيًا ضمن `UnivisWidgetPlugin`: أغلب الوحدات الجاهزة مع التمرير واللوحات.
-- اختيارية حاليًا:
-  - `UnivisTextFieldPlugin`
-  - `UnivisBadgePlugin`
+- مضافة تلقائيًا عبر `UnivisUiPlugin` -> `UnivisWidgetPlugin`: السطح القياسي للوحدات الجاهزة مع التمرير واللوحات وRuntime الخاص بـ `UTextField` و`UBadge`.
+- وتبقى الإضافات المخصصة نفسها متاحة عندما تريد سطح widgets أضيق من `UnivisWidgetPlugin`.
 
 ## أمثلة مرتبطة
 
@@ -44,5 +42,6 @@
 ## إلى أين بعد ذلك؟
 
 - المثال المرتبط: [`widgets`](../examples/index.md#widgets)
+- صفحة الإعداد: [إعداد الإضافات وأولى الأمثلة](../first-steps.md)
 - فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
 - صفحة الترحيل: [ترحيل مسارات الأمثلة](../migration/example-paths.md)

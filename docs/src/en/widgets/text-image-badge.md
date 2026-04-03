@@ -38,4 +38,5 @@ File: `src/widget/badge.rs`
 
 - badge style presets
 - dynamic badge styling lives in `UnivisBadgePlugin`
-- this plugin remains optional and is not auto-registered by `UnivisWidgetPlugin`
+- this runtime is included by default through `UnivisWidgetPlugin`
+- the dedicated plugin still remains available when you intentionally compose a narrower widget surface

@@ -9,6 +9,7 @@ Provide a lightweight manual runtime checklist after passing serial release comp
 Run compile validation first:
 
 ```bash
+./scripts/check_representative_examples.sh
 ./scripts/verify_serial_release.sh
 ```
 

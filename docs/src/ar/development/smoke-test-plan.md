@@ -9,6 +9,7 @@
 شغّل تحقق البناء أولًا:
 
 ```bash
+./scripts/check_representative_examples.sh
 ./scripts/verify_serial_release.sh
 ```
 

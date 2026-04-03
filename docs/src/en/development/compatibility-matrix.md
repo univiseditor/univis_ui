@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-Validation baseline date: March 6, 2026.
+Validation baseline date: April 3, 2026.
 
 Legend:
 - `Yes`: supported and validated in current baseline.
@@ -11,14 +11,14 @@ Legend:
 | Capability | Screen UI | World UI (2D) | World UI (3D) | Validation Source |
 |---|---|---|---|---|
 | Manual runtime smoke (`cargo run --release -p <package> --example ...`) | Deferred | Deferred | Deferred | skipped on March 6, 2026 (resource constraints), see [Smoke Test Plan](smoke-test-plan.md) |
-| Release example compilation | Yes | Yes | Yes | `./scripts/check_examples_serial_release.sh` (28/28 pass) |
+| Release example compilation | Yes | Yes | Yes | package-aware `./scripts/check_examples_serial_release.sh` validation |
 | Base rendering path | Yes | Yes | Yes | examples + render plugin setup |
-| Pointer interaction | Yes | Yes | Partial | `univis_picking_backend` currently queries `Camera2d` |
-| Clipping-aware picking | Yes | Yes | Partial | ancestor clipping checks in picking backend |
-| `UPanelWindow` resize | Yes | Yes | Partial | resize path currently queries `Camera2d` |
-| `UTextField` behavior/events | Yes | Yes | Partial | requires `UnivisTextFieldPlugin` |
-| `UBadge` dynamic visual updates | Yes | Yes | Yes | requires `UnivisBadgePlugin` |
-| `UScrollContainer` behavior | Yes | Yes | Partial | interaction path follows current picking limits |
+| Pointer interaction | Yes | Yes | Yes | camera resolves from each root through `ResolvedRootUi`; prefer `UiCameraRef::Entity` in multi-camera scenes |
+| Clipping-aware picking | Yes | Yes | Yes | ancestor clipping checks in the picking backend |
+| `UPanelWindow` resize | Yes | Yes | Yes | resize logic resolves cursor movement through the root camera and panel plane |
+| `UTextField` behavior/events | Yes | Yes | Yes | included by default through `UnivisWidgetPlugin` |
+| `UBadge` dynamic visual updates | Yes | Yes | Yes | included by default through `UnivisWidgetPlugin` |
+| `UScrollContainer` behavior | Yes | Yes | Yes | interaction follows the resolved root-camera path |
 | `UPbr` controls | No | No | Yes | intended for `UI3d` path |
 
 ## Related

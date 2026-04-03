@@ -8,9 +8,17 @@ pub(crate) struct BadgePluginInstalled;
 
 impl Plugin for UnivisBadgePlugin {
     fn build(&self, app: &mut App) {
+        if app.world().get_resource::<BadgePluginInstalled>().is_some() {
+            return;
+        }
+
         app.init_resource::<BadgePluginInstalled>()
             .register_type::<UBadge>()
             .add_systems(Update, update_badge_visuals);
+    }
+
+    fn is_unique(&self) -> bool {
+        false
     }
 }
 

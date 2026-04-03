@@ -19,4 +19,5 @@
 
 - file: `src/widget/text_field.rs`
 - text input with cursor blink and focus logic
-- plugin: `UnivisTextFieldPlugin` (optional)
+- runtime coverage: included by default through `UnivisWidgetPlugin`
+- dedicated plugin: `UnivisTextFieldPlugin` when composing a narrower widget surface

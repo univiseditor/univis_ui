@@ -229,10 +229,10 @@ pub fn solve_flex_layout(
             SolverSizeMode::Content => main_val,
             SolverSizeMode::Auto => main_val,
         };
-        if let Some(basis) = item.spec.flex_basis {
-            if let Some(resolved_basis) = resolve_flex_basis(basis, base_size, available_main) {
-                base_size = resolved_basis;
-            }
+        if let Some(basis) = item.spec.flex_basis
+            && let Some(resolved_basis) = resolve_flex_basis(basis, base_size, available_main)
+        {
+            base_size = resolved_basis;
         }
         base_size = clamp_main_size(&item.spec, &axis, base_size);
 
@@ -426,13 +426,11 @@ pub fn solve_flex_layout(
 
     // 6. Initial Container Size
     let container_main = (used_main + padding.main).clamp(min_main, max_main);
-    let container_cross = if constraints.min_width == constraints.max_width
-        && config.layout.flex_direction == UFlexDirection::Column
-    {
-        max_cross
-    } else if constraints.min_height == constraints.max_height
-        && config.layout.flex_direction == UFlexDirection::Row
-    {
+    let fixed_cross = (constraints.min_width == constraints.max_width
+        && config.layout.flex_direction == UFlexDirection::Column)
+        || (constraints.min_height == constraints.max_height
+            && config.layout.flex_direction == UFlexDirection::Row);
+    let container_cross = if fixed_cross {
         max_cross
     } else {
         max_child_cross + padding.cross

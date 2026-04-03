@@ -4,6 +4,18 @@ This short note is for users who read the repository root files first and want a
 
 This file is an operational alpha-line note. It is useful during the stabilization wave, but it is not part of the intended long-term root release file set.
 
+## Where This File Fits
+
+Use this file when you want the shortest stability-oriented answer.
+
+Use the other root files for different goals:
+
+- `README.md`: landing story and fastest overview
+- `MIGRATION.md`: upgrade path from older docs, examples, and root assumptions
+- `RELEASE_NOTES.md`: current alpha release-scale summary
+- `changelog.md`: dated historical record
+- `docs/src/index.md`: docs home and language entry point
+
 ## Intended Stable Surface For The Rest Of Alpha2
 
 - `URootUi` is the canonical public root model.

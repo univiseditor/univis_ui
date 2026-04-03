@@ -8,12 +8,23 @@
 cargo test --release <test_name> --lib
 ```
 
-## تحقق البناء
+## تحقق الجودة
 
 ```bash
-cargo check --workspace --all-targets
+./scripts/check_quality.sh
+./scripts/check_representative_examples.sh
 ./scripts/check_examples_serial_release.sh
 ```
+
+يشغّل `./scripts/check_quality.sh` ما يلي:
+
+- `cargo fmt --all --check`
+- `cargo clippy --workspace --all-targets` مع allowlist الحالية في `CI` للديون المعروفة في lints الخاصة بكود Bevy الثقيل
+- `cargo check --workspace --all-targets`
+- `cargo test --workspace --lib`
+
+ويفحص `./scripts/check_representative_examples.sh` مجموعة `release` مختارة تغطي مسار الواجهة
+المجمعة، وأنماط الجذور، والتفاعل، وتغيير حجم اللوحات، والإدخال النصي، ومسار `World3d`.
 
 ## تحقق التوثيق
 
@@ -24,17 +35,19 @@ mdbook build docs
 
 ## التحقق داخل `CI`
 
-أصبح GitHub Actions يتحقق من التوثيق والأمثلة و`API Docs` عبر:
+أصبح GitHub Actions يتحقق من الجودة والتوثيق والأمثلة و`API Docs` عبر:
 
 - `.github/workflows/docs_examples_api.yml`
 - `.github/workflows/docs_publish.yml`
 
 ويشغّل:
 
+- `./scripts/check_quality.sh`
+- `./scripts/check_representative_examples.sh`
 - `mdbook build docs`
 - `cargo doc --no-deps` لكل crate عامة
 - فحص الأمثلة لكل package على حدة عبر `./scripts/check_examples_serial_release.sh -p ...`
-- مسار نشر مستقل لصفحات الوثائق العامة على `main`
+- مسار نشر واحد مستقل لصفحات الوثائق العامة على `main`
 
 ## للأجهزة الضعيفة (تشغيل تسلسلي)
 
@@ -44,6 +57,9 @@ mdbook build docs
 
 # كل الأمثلة واحدة واحدة
 ./scripts/check_examples_serial_release.sh
+
+# مرور compile سريع على أمثلة ممثلة لأسطح المشروع
+./scripts/check_representative_examples.sh
 
 # التحقق الكامل: lib tests + examples
 ./scripts/verify_serial_release.sh
@@ -71,20 +87,22 @@ mdbook build docs
 ## استراتيجية عملية قبل الدمج
 
 1. شغل اختبارات الوحدة الخاصة بالتعديل.
-2. شغل `cargo check --workspace --all-targets`.
-3. شغل `./scripts/check_examples_serial_release.sh`.
-4. جرّب مثال واحد على الأقل مرتبط بالتعديل.
-5. استخدم [التحقق البصري](visual-validation.md) عندما يكون التعديل غنيًا بالرندر أو التخطيط أو التفاعل.
+2. شغّل `./scripts/check_quality.sh`.
+3. شغّل `./scripts/check_representative_examples.sh`.
+4. شغّل `./scripts/check_examples_serial_release.sh` للحزمة المتأثرة أو قبل الإصدار.
+5. جرّب مثالًا واحدًا على الأقل مرتبطًا بالتعديل.
+6. استخدم [التحقق البصري](visual-validation.md) عندما يكون التعديل غنيًا بالرندر أو التخطيط أو التفاعل.
 
 ## المطلوب قبل إصدار alpha القادم
 
-- `cargo check --workspace --all-targets`
+- `./scripts/check_quality.sh`
 - `mdbook build docs`
 - `cargo doc -p univis_ui_style --no-deps`
 - `cargo doc -p univis_ui_engine --no-deps`
 - `cargo doc -p univis_ui_interaction --no-deps`
 - `cargo doc -p univis_ui_widgets --no-deps`
 - `cargo doc -p univis_ui --no-deps`
+- `./scripts/check_representative_examples.sh`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_engine`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
 - `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`

@@ -98,6 +98,8 @@ fn setup(mut commands: Commands) {
 }
 ```
 
+Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default widget surface now covers the built-in `UTextField` and `UBadge` runtime systems too. If you intentionally compose a narrower widget surface, dedicated plugins such as `UnivisTextFieldPlugin` and `UnivisBadgePlugin` still remain available. For the shortest setup checklist and task-oriented example path, see [Plugin Setup and First Examples (EN)](docs/src/en/first-steps.md) and [إعداد الإضافات وأولى الأمثلة (AR)](docs/src/ar/first-steps.md).
+
 ## Core Strengths
 
 ### Roots That Match Real Use Cases
@@ -155,6 +157,8 @@ Good starting points:
 - [Alpha2 Status](ALPHA2_STATUS.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
+- [Plugin Setup and First Examples (EN)](docs/src/en/first-steps.md)
+- [إعداد الإضافات وأولى الأمثلة (AR)](docs/src/ar/first-steps.md)
 - [Example Gallery (EN)](docs/src/en/examples/gallery.md)
 - [Example Gallery (AR)](docs/src/ar/examples/gallery.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)

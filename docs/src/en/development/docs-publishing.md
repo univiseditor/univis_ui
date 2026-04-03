@@ -16,7 +16,7 @@ This page explains how the hosted documentation build is produced from the repos
 ## Publishing Model
 
 - validation remains in `.github/workflows/docs_examples_api.yml`
-- publishing is handled by `.github/workflows/docs_publish.yml`
+- publishing is handled only by `.github/workflows/docs_publish.yml`
 - the hosted site is built from the same `docs/` source tree used locally
 - the intended public deployment target is GitHub Pages
 

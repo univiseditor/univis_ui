@@ -14,6 +14,9 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 ### Added
 
+- Added `scripts/check_quality.sh` and `scripts/check_representative_examples.sh` to centralize formatting, linting, workspace checks, library tests, and a curated release-mode example pass around the facade path, root modes, interaction, panel resize, text input, and `World3d`.
+- Added a dedicated representative-examples GitHub Actions job and folded the same checks into the alpha release verification path.
+- Added task-oriented `first-steps` docs pages in English and Arabic so the recommended plugin setup and best-first example path now live in one short onboarding page per language.
 - Added `mixed_bidi_text` and `text_edge_cases` as focused `univis_ui_widgets` examples for mixed Arabic + Latin labels, truncation sides, autosize clamping, and text-overflow edge cases.
 - Added embedded `NotoSansArabic-Regular.ttf` and `FreeSerif.otf` theme font handles so the shipped text examples can render Arabic and Latin coverage from repo-owned assets.
 - Added regression tests around grapheme-safe truncation, justify anchoring, local clip behavior, and autosize measurement under parent constraints in `UTextLabel`.
@@ -24,6 +27,10 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 ### Changed
 
+- Consolidated docs publishing to one GitHub Pages path and aligned the validation workflow around quality gates, docs build, API docs, representative examples, and package-by-package example checks.
+- Refactored `layout_system.rs` by extracting root-resolution and screen-transform helpers into focused submodules, reducing the size of the main root-system file without changing its external behavior.
+- Made `UnivisWidgetPlugin` include `UnivisTextFieldPlugin` and `UnivisBadgePlugin` by default, while keeping the dedicated plugins safe to add manually for narrower custom composition.
+- Removed the empty internal `widget/menu.rs` placeholder and rewrote the bilingual plugin/setup docs so the truth tables, quick starts, compatibility notes, and widget pages all match the current runtime surface.
 - Extended `UTextLabel` ellipsis handling with grapheme-aware truncation, bidi-aware segment isolation, and the new `UTextTruncateSide` API (`Auto`, `Start`, `End`, `Middle`).
 - Updated the English and Arabic text-rendering docs to describe the current clipping model: local glyph clipping in `sync_text_label_meshes` plus ancestor `UClip` material clipping in `sync_text_clipper_materials`.
 - Refreshed the widget and example docs in both languages so the text examples, clipping behavior, and troubleshooting guidance match the current implementation.
@@ -34,6 +41,9 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 ### Fixed
 
+- Fixed the default widget facade so `UTextField` and `UBadge` runtime behavior are available through `UnivisUiPlugin` / `UnivisWidgetPlugin` without extra manual plugin registration.
+- Fixed duplicate-registration friction by making `UnivisTextFieldPlugin` and `UnivisBadgePlugin` idempotent when applications still add them explicitly after the default widget surface.
+- Fixed validation drift by documenting and checking a stable representative-example set instead of relying only on full package sweeps or ad-hoc manual selection.
 - Fixed `UTextLabel` autosize so constrained parents cap the measured size instead of letting labels grow past their available bounds.
 - Fixed clipped single-line labels so `Justify::Left` and `Justify::Right` anchor to the expected edge instead of exposing the middle of the text.
 - Fixed local text clipping so `Clip` and `Ellipsis` still apply when `autosize` is enabled, while `Visible` keeps overflow unclipped.

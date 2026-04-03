@@ -72,16 +72,16 @@ fn alignment_offset(align: UAlignSelfExt, free_space_raw: f32, overflow: UOverfl
 }
 
 fn resolve_cross_align(spec: &SolverSpec, container_align: UAlignItems) -> UAlignSelfExt {
-    if let Some(ext) = spec.align_self_ext {
-        if !matches!(ext, UAlignSelfExt::Auto | UAlignSelfExt::Normal) {
-            return canonical_align_self(ext);
-        }
+    if let Some(ext) = spec.align_self_ext
+        && !matches!(ext, UAlignSelfExt::Auto | UAlignSelfExt::Normal)
+    {
+        return canonical_align_self(ext);
     }
 
-    if let Some(legacy) = spec.align_self {
-        if legacy != UAlignSelf::Auto {
-            return canonical_align_self(map_legacy_align_self(legacy));
-        }
+    if let Some(legacy) = spec.align_self
+        && legacy != UAlignSelf::Auto
+    {
+        return canonical_align_self(map_legacy_align_self(legacy));
     }
 
     canonical_align_self(map_items_ext_to_self_ext(map_legacy_align_items(
@@ -90,10 +90,10 @@ fn resolve_cross_align(spec: &SolverSpec, container_align: UAlignItems) -> UAlig
 }
 
 fn resolve_justify_self(spec: &SolverSpec, ctx: &PlacementContext) -> UAlignSelfExt {
-    if let Some(ext) = spec.justify_self_ext {
-        if !matches!(ext, UAlignSelfExt::Auto | UAlignSelfExt::Normal) {
-            return canonical_align_self(ext);
-        }
+    if let Some(ext) = spec.justify_self_ext
+        && !matches!(ext, UAlignSelfExt::Auto | UAlignSelfExt::Normal)
+    {
+        return canonical_align_self(ext);
     }
 
     if let Some(container_justify_items) = ctx.justify_items {
@@ -223,7 +223,7 @@ fn ensure_grid_rows(occupancy: &mut Vec<Vec<bool>>, rows: usize, cols: usize) {
 }
 
 fn can_place_span(
-    occupancy: &Vec<Vec<bool>>,
+    occupancy: &[Vec<bool>],
     row: usize,
     col: usize,
     row_span: usize,
@@ -234,14 +234,14 @@ fn can_place_span(
         return false;
     }
 
-    for rr in row..(row + row_span) {
-        if rr >= occupancy.len() {
-            continue;
-        }
-        for cc in col..(col + col_span) {
-            if occupancy[rr][cc] {
-                return false;
-            }
+    for row_cells in occupancy.iter().skip(row).take(row_span) {
+        if row_cells
+            .iter()
+            .skip(col)
+            .take(col_span)
+            .any(|occupied| *occupied)
+        {
+            return false;
         }
     }
 
@@ -249,15 +249,15 @@ fn can_place_span(
 }
 
 fn mark_span(
-    occupancy: &mut Vec<Vec<bool>>,
+    occupancy: &mut [Vec<bool>],
     row: usize,
     col: usize,
     row_span: usize,
     col_span: usize,
 ) {
-    for rr in row..(row + row_span) {
-        for cc in col..(col + col_span) {
-            occupancy[rr][cc] = true;
+    for row_cells in occupancy.iter_mut().skip(row).take(row_span) {
+        for cell in row_cells.iter_mut().skip(col).take(col_span) {
+            *cell = true;
         }
     }
 }
@@ -287,8 +287,7 @@ impl LayoutPlacer for FlexPlacer {
         let mut line_main = 0.0;
         let mut line_cross = 0.0;
 
-        for i in 0..items.len() {
-            let item = &items[i];
+        for (i, item) in items.iter().enumerate() {
             let (child_main, child_cross) = axis.from_world(item.result.size);
             let (m_main_start, m_main_end, m_cross_start, m_cross_end) =
                 axis.extract_margin_sides(item.margin);
@@ -673,16 +672,16 @@ impl LayoutPlacer for GridPlacer {
             let cell_cross_start = ctx.padding_cross_start + row_starts[row];
 
             let mut cell_main_size = 0.0;
-            for c in col..(col + col_span).min(cols) {
-                cell_main_size += col_sizes[c];
+            for size in col_sizes.iter().take((col + col_span).min(cols)).skip(col) {
+                cell_main_size += *size;
             }
             if col_span > 1 {
                 cell_main_size += (col_span as f32 - 1.0) * ctx.main_gap;
             }
 
             let mut cell_cross_size = 0.0;
-            for r in row..(row + row_span).min(rows) {
-                cell_cross_size += row_sizes[r];
+            for size in row_sizes.iter().take((row + row_span).min(rows)).skip(row) {
+                cell_cross_size += *size;
             }
             if row_span > 1 {
                 cell_cross_size += (row_span as f32 - 1.0) * ctx.cross_gap;

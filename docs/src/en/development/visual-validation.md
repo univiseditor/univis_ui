@@ -52,5 +52,5 @@ cargo run -p univis_ui_interaction --example interaction
 ## Related Pages
 
 - [Smoke Test Plan](smoke-test-plan.md)
-- [Alpha2 Release Readiness](alpha2-release-readiness.md)
+- [Release Readiness](release-readiness.md)
 - [Example Gallery](../examples/gallery.md)

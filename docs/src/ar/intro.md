@@ -60,4 +60,3 @@ cargo doc --no-deps -p univis_ui
 - العرض المنسق: [معرض الأمثلة](examples/gallery.md)
 - فهرس `API`: [مرجع الواجهة العامة](api/index.md)
 - صفحة الترحيل: [الترحيل والقيود](migration/index.md)
-- ملاحظة استقرار `alpha2`: [استقرار `alpha2`](migration/alpha2-stability.md)

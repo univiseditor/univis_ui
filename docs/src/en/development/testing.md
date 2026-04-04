@@ -33,6 +33,17 @@ cargo doc --no-deps
 mdbook build docs
 ```
 
+## Performance Baselines
+
+```bash
+./scripts/run_perf_baselines.sh
+./scripts/run_perf_baselines.sh --check
+```
+
+Use the benchmark harness when changing the solver or other hot layout paths. The current baseline
+run covers solver, root, text, picking, widget-heavy, and world3d-heavy scenarios, and reports
+average / `p95` / max times for each one.
+
 ## CI Validation
 
 GitHub Actions now validates quality, docs, examples, and API docs through:
@@ -108,7 +119,7 @@ To validate only selected examples:
 - `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
 - `./scripts/check_examples_serial_release.sh -p univis_ui`
 - one manual pass through the representative examples in [Visual Validation](visual-validation.md)
-- one pass through [Alpha2 Release Readiness](alpha2-release-readiness.md)
+- one pass through [Release Readiness](release-readiness.md)
 
 ## Screenshot Policy
 

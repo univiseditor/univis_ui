@@ -10,6 +10,37 @@ Use this file for the dated chronological record.
 Use `RELEASE_NOTES.md` for the current alpha release summary.
 Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
+## [2026-04-04]
+
+### Added
+
+- Added `TECH_DEBT_INVENTORY.md` as a maintainer-facing backlog for the current large-file refactor wave, covering `text_label.rs`, `layout_system.rs`, `solver.rs`, and `select.rs` with proposed module splits and execution order.
+- Added general `release-readiness` docs pages in English and Arabic so release prep guidance no longer depends on the removed alpha2-specific naming.
+- Added `crates/univis_ui_engine/examples/solver_benchmarks.rs` as a CLI performance harness for the layout solver, covering dense flex, wrapped-card, and grid-dashboard scenarios with `p95` budget checks.
+- Added `crates/univis_ui_engine/examples/runtime_benchmarks.rs` as a second CLI performance harness covering root resolution, text measurement, picking, widget-heavy panels, and world-3d panel scenes.
+- Added `scripts/run_perf_baselines.sh` plus bilingual benchmark docs so the current solver and runtime baselines can be run and reviewed from one documented entry point.
+
+### Changed
+
+- Rewrote the root docs and release notes around the current alpha surface, explicitly separating stable public APIs, deprecated compatibility wrappers, and still-settling areas.
+- Updated the root discovery path so `README.md`, `README_AR.md`, `MIGRATION.md`, `MIGRATION_AR.md`, `RELEASE_NOTES.md`, and `ROADMAP_POST_REVIEW.md` now point at the current planning and migration story without the removed alpha2-specific root notes.
+- Tightened pre-merge validation expectations in `.github/PULL_REQUEST_TEMPLATE.md` and the bilingual docs review checklists so `check_quality`, representative examples, and docs build requirements are visible at review time.
+- Replaced the four large target files with dedicated folder-based module trees while preserving behavior:
+  - `crates/univis_ui_engine/src/layout/layout_system/`
+  - `crates/univis_ui_engine/src/layout/core/solver/`
+  - `crates/univis_ui_widgets/src/widget/select/`
+  - `crates/univis_ui_widgets/src/widget/text_label/`
+- Split the root system into focused modules for root types, stacking, and cached `UI3d` sync while keeping `root_resolution.rs` and `screen_transform.rs` as the public-facing resolution flow.
+- Split the layout solver into focused helper, type, translation, and absolute-positioning modules without changing the existing solve entry points.
+- Split the `select` widget into model, runtime, interaction, visuals, and event modules so widget state, entity-tree wiring, and visual updates are no longer concentrated in one file.
+- Split the `text_label` widget into model, measurement, and render modules so text sizing, bidi/truncation logic, and SDF rendering no longer live in one monolithic implementation file.
+- Recorded the current structure in `ROADMAP_POST_REVIEW.md` and `TECH_DEBT_INVENTORY.md`, then revalidated the refactor with `cargo check --workspace`, `./scripts/check_quality.sh`, and `./scripts/check_representative_examples.sh`.
+- Updated the performance overview, testing docs, and benchmark docs in both languages so the repository baseline flow now includes solver and runtime harnesses plus the shared `--check` gate.
+
+### Removed
+
+- Removed the alpha2-specific root planning/status files and their paired docs pages after the project moved on to the current post-review roadmap and generic release-readiness flow.
+
 ## [2026-04-03]
 
 ### Added

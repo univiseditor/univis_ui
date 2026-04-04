@@ -71,7 +71,7 @@ fn setup(mut commands: Commands) {
 - `UnivisScrollViewPlugin` is included by default in `UnivisWidgetPlugin`.
 - Interaction resolves the camera from each `URootUi`.
 - In multi-camera scenes, prefer binding the root explicitly with `UiCameraRef::Entity`.
-- `UScreenRoot` and `UWorldRoot` remain only as deprecated compatibility wrappers during `alpha2`.
+- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers.
 - If you need the historical world-space physical size from older examples, set `meters_per_unit: 1.0` explicitly.
 - For a task-oriented setup checklist and recommended first runs, continue with [Plugin Setup and First Examples](first-steps.md).
 

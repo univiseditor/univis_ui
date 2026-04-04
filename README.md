@@ -5,7 +5,7 @@
 
 Arabic version: [README_AR.md](README_AR.md)
 Migration summary: [MIGRATION.md](MIGRATION.md)
-Alpha2 status: [ALPHA2_STATUS.md](ALPHA2_STATUS.md)
+Current roadmap: [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md)
 Hosted docs target: `https://univiseditor.github.io/univis_ui/`
 
 Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit interfaces with one ECS-native stack.
@@ -100,6 +100,26 @@ fn setup(mut commands: Commands) {
 
 Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default widget surface now covers the built-in `UTextField` and `UBadge` runtime systems too. If you intentionally compose a narrower widget surface, dedicated plugins such as `UnivisTextFieldPlugin` and `UnivisBadgePlugin` still remain available. For the shortest setup checklist and task-oriented example path, see [Plugin Setup and First Examples (EN)](docs/src/en/first-steps.md) and [إعداد الإضافات وأولى الأمثلة (AR)](docs/src/ar/first-steps.md).
 
+## Current Alpha Surface
+
+### Stable Enough To Build On
+
+- `URootUi` is the canonical public root API
+- `URootUi::screen()`, `URootUi::world_2d(...)`, and `URootUi::world_3d(...)` are the intended entry points
+- `UiSpace`, `UiCameraRef`, and `UiCanvasSize`, including `UiCanvasSize::FitContent { min, max }`, are part of the public root story
+- examples are expected to use crate-owned paths and package-aware commands
+
+### Deprecated But Still Supported
+
+- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers
+- `meters_per_unit: 1.0` remains the legacy escape hatch when you need the exact historical world-root physical size from older examples
+
+### Still Settling
+
+- fit-content world roots under heavy `%` sizing or strongly root-relative flex layouts
+- some of the more polished `World3d` showcase defaults
+- visual validation for rendering-heavy changes still relies partly on manual review
+
 ## Core Strengths
 
 ### Roots That Match Real Use Cases
@@ -154,7 +174,8 @@ Good starting points:
 
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
-- [Alpha2 Status](ALPHA2_STATUS.md)
+- [Current Roadmap](ROADMAP_POST_REVIEW.md)
+- [Technical Debt Inventory](TECH_DEBT_INVENTORY.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
 - [Plugin Setup and First Examples (EN)](docs/src/en/first-steps.md)
@@ -171,7 +192,7 @@ Good starting points:
 ## GitHub Discovery Path
 
 1. Read this `README.md` for the project story and crate map.
-2. Check [Alpha2 Status](ALPHA2_STATUS.md) if you want to know what is stable enough to build on.
+2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story and [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md) for active priorities.
 3. Open [Docs Home](docs/src/index.md) or the hosted docs URL and jump into the relevant guide.
 4. Use the language-specific [Example Gallery (EN)](docs/src/en/examples/gallery.md) or [Example Gallery (AR)](docs/src/ar/examples/gallery.md) before dropping to the full index.
 5. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
@@ -183,9 +204,9 @@ Good starting points:
 - `MIGRATION.md`: migration path from older docs, example paths, and root assumptions.
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
+- `ROADMAP_POST_REVIEW.md`: active planning and post-review priorities.
+- `TECH_DEBT_INVENTORY.md`: maintainer-facing backlog for the current large-file refactor wave.
 - `changelog.md`: dated chronological record of notable changes.
-
-`ALPHA2_STATUS.md` is a temporary stabilization note for the current alpha line, not part of the long-term root release file set.
 
 ## API Docs
 
@@ -233,6 +254,6 @@ cargo run -p univis_ui_engine --example root_fit_content
 
 ## Current Status
 
-The `alpha2` line is actively evolving around `URootUi`, world scaling, root capsules, unified docs, and API cleanup.
+The current alpha phase is focused on `URootUi`, world scaling, root capsules, unified docs, API cleanup, and the active post-review roadmap.
 
 If you want a single Bevy UI stack that can handle HUDs, world-space panels, and 3D-lit interfaces without splitting your mental model across multiple systems, this is what Univis UI is trying to deliver.

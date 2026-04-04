@@ -6,7 +6,7 @@
 ابنِ واجهات حادة وقابلة للتوسع في Bevy للشاشة، ولوحات العالم، والواجهات ثلاثية الأبعاد المضاءة، عبر طبقة ECS واحدة.
 
 ملخص الترحيل: [MIGRATION_AR.md](MIGRATION_AR.md)
-حالة `alpha2`: [ALPHA2_STATUS_AR.md](ALPHA2_STATUS_AR.md)
+خارطة الطريق الحالية: [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md)
 رابط الوثائق العامة: `https://univiseditor.github.io/univis_ui/`
 
 > مهم:
@@ -97,6 +97,26 @@ fn setup(mut commands: Commands) {
 }
 ```
 
+## السطح الحالي في مرحلة alpha
+
+### ما يكفي للبناء عليه
+
+- `URootUi` هو واجهة الجذور العامة الرسمية
+- `URootUi::screen()` و`URootUi::world_2d(...)` و`URootUi::world_3d(...)` هي نقاط الدخول المقصودة
+- `UiSpace` و`UiCameraRef` و`UiCanvasSize` بما فيه `UiCanvasSize::FitContent { min, max }` جزء من قصة الجذور العامة الحالية
+- يفترض أن تستخدم الأمثلة مسارات تتبع الـ crate المالكة وأوامر مرتبطة بالحزمة
+
+### ما هو مهجور لكنه ما يزال مدعومًا
+
+- `UScreenRoot` و`UWorldRoot` متاحان فقط كطبقات توافق مهجورة
+- تبقى قيمة `meters_per_unit: 1.0` مخرج توافق قديم عندما تحتاج الحجم الفيزيائي التاريخي نفسه لبعض أمثلة العالم الأقدم
+
+### ما يزال في طور الاستقرار
+
+- جذور `fit-content` العالمية عند وجود اعتماد قوي على `%` أو على flex مرتبط بالجذر نفسه
+- بعض الضبط البصري المصقول لأمثلة `World3d`
+- ما يزال التحقق البصري للتغييرات الرسومية الثقيلة يعتمد جزئيًا على المراجعة اليدوية
+
 ## نقاط القوة الأساسية
 
 ### جذور UI تطابق الاستخدام الحقيقي
@@ -151,7 +171,8 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 - [صفحة الوثائق الرئيسية](docs/src/index.md)
 - [ملخص الترحيل](MIGRATION_AR.md)
-- [حالة `alpha2`](ALPHA2_STATUS_AR.md)
+- [خارطة الطريق الحالية](ROADMAP_POST_REVIEW.md)
+- [جرد الدين التقني الحالي](TECH_DEBT_INVENTORY.md)
 - [البدء السريع (AR)](docs/src/ar/quick-start.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md)
@@ -166,7 +187,7 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 ## مسار الاكتشاف من GitHub
 
 1. اقرأ `README.md` أو `README_AR.md` لفهم قصة المشروع وخريطة الحزم.
-2. راجع [حالة `alpha2`](ALPHA2_STATUS_AR.md) إذا أردت معرفة ما الذي يعتبر مستقرًا بما يكفي للبناء عليه.
+2. راجع [RELEASE_NOTES.md](RELEASE_NOTES.md) لفهم قصة الإصدار الحالية و[ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md) لمعرفة الأولويات النشطة.
 3. افتح [صفحة الوثائق الرئيسية](docs/src/index.md) أو رابط الوثائق العامة ثم انتقل إلى فصل الشرح المناسب.
 4. استخدم [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md) أو [Example Gallery (EN)](docs/src/en/examples/gallery.md) قبل الرجوع إلى الفهرس الكامل.
 5. ولّد `cargo doc --no-deps -p univis_ui` عندما تحتاج المسارات الدقيقة والتواقيع.
@@ -178,9 +199,9 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 - `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم ومسارات الأمثلة القديمة وافتراضات الجذور القديمة.
 - `MIGRATION_AR.md`: مسار الترحيل العربي.
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha.
+- `ROADMAP_POST_REVIEW.md`: خارطة الطريق النشطة وأولويات ما بعد المراجعة.
+- `TECH_DEBT_INVENTORY.md`: قائمة الصيانة الحالية الخاصة بالملفات الكبيرة وإعادة تقسيمها.
 - `changelog.md`: السجل الزمني المرتب حسب التواريخ للتغييرات الملحوظة.
-
-ويظل `ALPHA2_STATUS_AR.md` ملاحظة تثبيت مؤقتة مرتبطة بالـ alpha الحالي، وليس جزءًا من مجموعة ملفات الإصدار الجذرية طويلة الأمد.
 
 ## `API Docs`
 
@@ -228,6 +249,6 @@ cargo run -p univis_ui_engine --example root_fit_content
 
 ## الحالة الحالية
 
-سطر `alpha2` يتطور حاليًا حول `URootUi`، والقياس داخل العالم، وroot capsules، والوثائق الموحدة، وتنظيف الـ API.
+تتركز المرحلة alpha الحالية حول `URootUi`، والقياس داخل العالم، وroot capsules، والوثائق الموحدة، وتنظيف الـ API، وخارطة الطريق النشطة بعد المراجعة.
 
 إذا كنت تريد طبقة UI واحدة في Bevy تستطيع التعامل مع HUD، ولوحات العالم، والواجهات ثلاثية الأبعاد المضاءة من دون تقسيم النموذج الذهني بين أنظمة متفرقة، فهذا هو الاتجاه الذي تحاول Univis UI أن تقدمه.

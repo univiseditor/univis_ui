@@ -17,7 +17,7 @@
 
 ## Legacy Compatibility Notes
 
-- `UScreenRoot` and `UWorldRoot` remain deprecated compatibility wrappers during `alpha2`.
+- `UScreenRoot` and `UWorldRoot` remain deprecated compatibility wrappers.
 - If you need the historical world-root size from older examples, set `meters_per_unit: 1.0` explicitly.
 
 ## Related Guides

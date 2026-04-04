@@ -71,7 +71,7 @@ fn setup(mut commands: Commands) {
 - `UnivisScrollViewPlugin` مضاف تلقائيًا داخل `UnivisWidgetPlugin`.
 - التفاعل يحسم الكاميرا من كل `URootUi`.
 - في المشاهد متعددة الكاميرات يُفضّل ربط الجذر صراحة عبر `UiCameraRef::Entity`.
-- `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة خلال `alpha2`.
+- `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة.
 - إذا احتجت نفس الحجم الفيزيائي التاريخي لأمثلة فضاء العالم القديمة، فاضبط `meters_per_unit: 1.0` صراحة.
 - إذا أردت قائمة إعداد موجزة ومسار أمثلة بحسب المهمة، فانتقل إلى [إعداد الإضافات وأولى الأمثلة](first-steps.md).
 

@@ -114,9 +114,9 @@ UiCameraRef::Entity(camera_entity)
 
 That keeps viewport resolution, interaction, and screen-root anchoring deterministic.
 
-## Alpha2 Migration Note
+## Legacy Compatibility Note
 
-`UScreenRoot` and `UWorldRoot` are deprecated compatibility wrappers during `alpha2`.
+`UScreenRoot` and `UWorldRoot` are deprecated compatibility wrappers.
 
 Migration rules:
 
@@ -124,7 +124,7 @@ Migration rules:
 - `UWorldRoot { size, is_3d: false }` -> `URootUi::world_2d(size)`
 - `UWorldRoot { size, is_3d: true }` -> `URootUi::world_3d(size)`
 
-If you need the historical world-space physical size from legacy examples during `alpha2`,
+If you need the historical world-space physical size from legacy examples,
 set:
 
 ```rust

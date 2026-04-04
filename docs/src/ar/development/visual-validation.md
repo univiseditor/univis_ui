@@ -52,5 +52,5 @@ cargo run -p univis_ui_interaction --example interaction
 ## صفحات مرتبطة
 
 - [خطة الاختبارات السريعة](smoke-test-plan.md)
-- [الجاهزية لإصدار `alpha2`](alpha2-release-readiness.md)
+- [الجاهزية للإصدار](release-readiness.md)
 - [معرض الأمثلة](../examples/gallery.md)

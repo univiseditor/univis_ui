@@ -33,6 +33,17 @@ cargo doc --no-deps
 mdbook build docs
 ```
 
+## خطوط أساس الأداء
+
+```bash
+./scripts/run_perf_baselines.sh
+./scripts/run_perf_baselines.sh --check
+```
+
+استخدم حزمة القياس عند تعديل المحلل أو مسارات التخطيط والأداء الساخنة. يشغّل المسار الحالي
+سيناريوهات للمحلل، والجذور، والنصوص، والالتقاط، ومشاهد الوحدات الجاهزة، ومشاهد `World3d`,
+ويعرض المتوسط و`p95` وأعلى زمن لكل سيناريو.
+
 ## التحقق داخل `CI`
 
 أصبح GitHub Actions يتحقق من الجودة والتوثيق والأمثلة و`API Docs` عبر:
@@ -108,7 +119,7 @@ mdbook build docs
 - `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
 - `./scripts/check_examples_serial_release.sh -p univis_ui`
 - جولة يدوية واحدة على الأمثلة المرجعية في [التحقق البصري](visual-validation.md)
-- مراجعة صفحة [الجاهزية لإصدار `alpha2`](alpha2-release-readiness.md)
+- مراجعة صفحة [الجاهزية للإصدار](release-readiness.md)
 
 ## سياسة لقطات الشاشة
 

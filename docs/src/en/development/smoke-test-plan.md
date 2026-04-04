@@ -57,4 +57,4 @@ cargo run --release -p univis_ui_engine --features example_bloom --example borde
 3. Classify as compile/runtime/interaction/rendering regression.
 4. Add issue note with repro command and environment details.
 
-See also: [Visual Validation](visual-validation.md) and [Alpha2 Release Readiness](alpha2-release-readiness.md).
+See also: [Visual Validation](visual-validation.md) and [Release Readiness](release-readiness.md).

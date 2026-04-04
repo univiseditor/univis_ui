@@ -114,9 +114,9 @@ UiCameraRef::Entity(camera_entity)
 
 حتى يبقى حسم مساحة الرؤية والتفاعل وتثبيت جذور الشاشة واضحًا وغير ملتبس.
 
-## ملاحظة ترحيل لـ alpha2
+## ملاحظة التوافق مع السلوك القديم
 
-`UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة خلال `alpha2`.
+`UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة.
 
 قواعد الترحيل:
 
@@ -124,7 +124,7 @@ UiCameraRef::Entity(camera_entity)
 - `UWorldRoot { size, is_3d: false }` -> `URootUi::world_2d(size)`
 - `UWorldRoot { size, is_3d: true }` -> `URootUi::world_3d(size)`
 
-إذا احتجت الحفاظ على نفس الحجم الفيزيائي التاريخي لأمثلة فضاء العالم القديمة خلال `alpha2`,
+إذا احتجت الحفاظ على نفس الحجم الفيزيائي التاريخي لأمثلة فضاء العالم القديمة،
 فاستخدم:
 
 ```rust

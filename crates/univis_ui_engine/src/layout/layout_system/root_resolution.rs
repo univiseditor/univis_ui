@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
-use super::{
-    LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT, URootUi, UScreenRoot, UWorldRoot, UiCameraRef,
-    UiCanvasSize, UiSpace,
-};
+use super::types::LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT;
+use super::{URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum RootResolutionIssue {
@@ -57,7 +55,7 @@ pub(super) fn effective_root_ui(
             },
             canvas: UiCanvasSize::Fixed(root.size),
             camera: UiCameraRef::Auto,
-            // `UWorldRoot` stays on the old 1 UI unit = 1 world unit behavior during alpha2.
+            // `UWorldRoot` keeps the old 1 UI unit = 1 world unit behavior as a legacy compatibility path.
             meters_per_unit: LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT,
             resolution_scale: root.resolution_scale,
         });

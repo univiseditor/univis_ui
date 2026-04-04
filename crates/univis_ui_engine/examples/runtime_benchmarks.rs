@@ -1,0 +1,916 @@
+//! Runtime-oriented performance harness.
+//!
+//! Related docs:
+//! - `docs/src/en/performance/benchmarks.md`
+//! - `docs/src/ar/performance/benchmarks.md`
+
+use std::env;
+use std::time::Instant;
+
+use bevy::camera::{
+    CameraProjection, ComputedCameraValues, NormalizedRenderTarget, RenderTargetInfo,
+};
+use bevy::picking::backend::prelude::*;
+use bevy::picking::pointer::Location;
+use bevy::prelude::*;
+use bevy::text::{ComputedTextBlock, Font, TextPlugin};
+use univis_ui_engine::layout::UnivisLayoutPlugin;
+use univis_ui_engine::layout::geometry::ComputedSize;
+use univis_ui_engine::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
+use univis_ui_engine::prelude::*;
+use univis_ui_interaction::interaction::picking::univis_picking_backend;
+use univis_ui_interaction::prelude::UInteraction;
+use univis_ui_widgets::prelude::UButton;
+use univis_ui_widgets::widget::button::UnivisButtonPlugin;
+use univis_ui_widgets::widget::text_label::{
+    UTextLabel, fit_node_to_text_size, measure_text_label_layout, sync_text_label_intrinsic_size,
+};
+
+const DEFAULT_WARMUP: usize = 32;
+const DEFAULT_ITERATIONS: usize = 120;
+const VIEWPORT_SIZE: UVec2 = UVec2::new(1600, 900);
+const SCREEN_CANVAS: Vec2 = Vec2::new(1600.0, 900.0);
+const TEXT_FONT_BYTES: &[u8] =
+    include_bytes!("../../univis_ui_style/src/style/assets/fonts/Inter-Regular.ttf");
+
+#[derive(Clone, Copy)]
+struct BenchmarkSummary {
+    average_ms: f64,
+    p95_ms: f64,
+    max_ms: f64,
+}
+
+struct RuntimeWorkload {
+    name: &'static str,
+    item_count: usize,
+    budget_ms: f64,
+    build: fn() -> RuntimeScenario,
+}
+
+struct RuntimeScenario {
+    app: App,
+    before_update: fn(&mut App, usize),
+    after_update: fn(&mut App),
+}
+
+#[derive(Component)]
+struct BenchRootIndex(usize);
+
+#[derive(Component)]
+struct BenchLabelIndex(usize);
+
+#[derive(Component)]
+struct BenchPanelIndex(usize);
+
+#[derive(Component)]
+struct BenchPointerMarker;
+
+fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
+    let enforce_budgets = args.iter().any(|arg| arg == "--check");
+    let warmup = parse_env_usize("UNIVIS_PERF_WARMUP", DEFAULT_WARMUP);
+    let iterations = parse_env_usize("UNIVIS_PERF_ITERATIONS", DEFAULT_ITERATIONS);
+
+    let workloads = vec![
+        RuntimeWorkload {
+            name: "root_capsules_96",
+            item_count: 96,
+            budget_ms: 6.000,
+            build: build_root_capsules_scenario,
+        },
+        RuntimeWorkload {
+            name: "text_measure_180",
+            item_count: 180,
+            budget_ms: 4.750,
+            build: build_text_measure_scenario,
+        },
+        RuntimeWorkload {
+            name: "picking_grid_512",
+            item_count: 512,
+            budget_ms: 4.000,
+            build: build_picking_scenario,
+        },
+        RuntimeWorkload {
+            name: "widget_panels_240",
+            item_count: 240,
+            budget_ms: 8.000,
+            build: build_widget_panels_scenario,
+        },
+        RuntimeWorkload {
+            name: "world3d_panels_48",
+            item_count: 48,
+            budget_ms: 6.000,
+            build: build_world3d_panels_scenario,
+        },
+    ];
+
+    println!("Univis runtime benchmark");
+    println!(
+        "warmup={} iterations={} enforce_budgets={}",
+        warmup, iterations, enforce_budgets
+    );
+    println!(
+        "{:<24} {:>8} {:>10} {:>10} {:>10} {:>10} {:>8}",
+        "scenario", "items", "avg_ms", "p95_ms", "max_ms", "budget", "status"
+    );
+
+    let mut failed = Vec::new();
+
+    for workload in &workloads {
+        let summary = benchmark_workload(workload, warmup, iterations);
+        let within_budget = summary.p95_ms <= workload.budget_ms;
+        let status = if within_budget { "ok" } else { "over" };
+
+        println!(
+            "{:<24} {:>8} {:>10.3} {:>10.3} {:>10.3} {:>10.3} {:>8}",
+            workload.name,
+            workload.item_count,
+            summary.average_ms,
+            summary.p95_ms,
+            summary.max_ms,
+            workload.budget_ms,
+            status
+        );
+
+        if enforce_budgets && !within_budget {
+            failed.push((workload.name, summary, workload.budget_ms));
+        }
+    }
+
+    if !failed.is_empty() {
+        eprintln!();
+        eprintln!("Budget failures:");
+        for (name, summary, budget_ms) in failed {
+            eprintln!(
+                "- {}: p95 {:.3}ms > budget {:.3}ms (avg {:.3}ms, max {:.3}ms)",
+                name, summary.p95_ms, budget_ms, summary.average_ms, summary.max_ms
+            );
+        }
+        std::process::exit(1);
+    }
+}
+
+fn parse_env_usize(key: &str, default_value: usize) -> usize {
+    env::var(key)
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(default_value)
+}
+
+fn benchmark_workload(
+    workload: &RuntimeWorkload,
+    warmup: usize,
+    iterations: usize,
+) -> BenchmarkSummary {
+    let mut scenario = (workload.build)();
+
+    for step in 0..warmup {
+        (scenario.before_update)(&mut scenario.app, step);
+        scenario.app.update();
+        (scenario.after_update)(&mut scenario.app);
+    }
+
+    let mut samples = Vec::with_capacity(iterations);
+    for step in 0..iterations {
+        (scenario.before_update)(&mut scenario.app, step);
+        let start = Instant::now();
+        scenario.app.update();
+        samples.push(start.elapsed().as_secs_f64() * 1000.0);
+        (scenario.after_update)(&mut scenario.app);
+    }
+
+    samples.sort_by(|left, right| left.total_cmp(right));
+
+    let average_ms = samples.iter().sum::<f64>() / samples.len() as f64;
+    let p95_index = ((samples.len() - 1) as f64 * 0.95).round() as usize;
+    let p95_ms = samples[p95_index];
+    let max_ms = *samples.last().unwrap_or(&0.0);
+
+    BenchmarkSummary {
+        average_ms,
+        p95_ms,
+        max_ms,
+    }
+}
+
+fn build_root_capsules_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app.add_plugins(UnivisLayoutPlugin);
+
+    let camera_entity = spawn_orthographic_camera(&mut app, 1200.0);
+
+    for index in 0..96usize {
+        let root = match index % 4 {
+            0 => URootUi {
+                camera: UiCameraRef::Entity(camera_entity),
+                ..URootUi::screen()
+            },
+            1 => URootUi {
+                camera: UiCameraRef::Entity(camera_entity),
+                meters_per_unit: 0.0015,
+                ..URootUi::world_2d(Vec2::new(720.0, 420.0))
+            },
+            2 => URootUi {
+                camera: UiCameraRef::Entity(camera_entity),
+                meters_per_unit: 0.0020,
+                ..URootUi::world_3d(Vec2::new(640.0, 360.0))
+            },
+            _ => URootUi {
+                camera: UiCameraRef::Entity(camera_entity),
+                canvas: UiCanvasSize::FitContent {
+                    min: Vec2::new(280.0, 180.0),
+                    max: Some(Vec2::new(960.0, 640.0)),
+                },
+                ..URootUi::world_2d_fit_content()
+            },
+        };
+
+        let root_entity = app
+            .world_mut()
+            .spawn((
+                root,
+                BenchRootIndex(index),
+                Transform::from_xyz(
+                    (index % 12) as f32 * 0.12,
+                    (index / 12) as f32 * 0.08,
+                    (index % 9) as f32 * 0.02,
+                ),
+            ))
+            .id();
+
+        for panel_index in 0..6usize {
+            let panel = app
+                .world_mut()
+                .spawn((
+                    ChildOf(root_entity),
+                    UNode {
+                        width: UVal::Px(180.0 + (panel_index % 3) as f32 * 36.0),
+                        height: if index % 4 == 3 {
+                            UVal::Content
+                        } else {
+                            UVal::Px(92.0 + (panel_index % 2) as f32 * 22.0)
+                        },
+                        padding: USides::all(8.0),
+                        margin: USides::all(4.0),
+                        ..default()
+                    },
+                    ULayout {
+                        display: UDisplay::Flex,
+                        flex_direction: UFlexDirection::Column,
+                        gap: 6.0,
+                        ..default()
+                    },
+                ))
+                .id();
+
+            for leaf_index in 0..4usize {
+                app.world_mut().spawn((
+                    ChildOf(panel),
+                    UNode {
+                        width: UVal::Px(112.0 + (leaf_index % 2) as f32 * 24.0),
+                        height: UVal::Px(20.0 + (leaf_index % 3) as f32 * 6.0),
+                        margin: USides::all(2.0),
+                        ..default()
+                    },
+                ));
+            }
+        }
+    }
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_root_capsules,
+        after_update: no_op_after_update,
+    }
+}
+
+fn build_text_measure_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        TextPlugin,
+    ));
+    app.add_systems(
+        Update,
+        (
+            measure_text_label_layout,
+            sync_text_label_intrinsic_size,
+            fit_node_to_text_size,
+        )
+            .chain(),
+    );
+
+    let font = insert_benchmark_font(&mut app);
+
+    let parent_widths = [260.0, 320.0, 380.0, 440.0];
+    for column in 0..4usize {
+        let parent = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    width: UVal::Px(parent_widths[column]),
+                    height: UVal::Px(900.0),
+                    padding: USides::all(12.0),
+                    ..default()
+                },
+                ComputedSize {
+                    width: parent_widths[column],
+                    height: 900.0,
+                    ..default()
+                },
+            ))
+            .id();
+
+        for row in 0..45usize {
+            let index = column * 45 + row;
+            app.world_mut().spawn((
+                ChildOf(parent),
+                BenchLabelIndex(index),
+                UNode {
+                    width: if index % 5 == 0 {
+                        UVal::Auto
+                    } else {
+                        UVal::Px(180.0 + (index % 4) as f32 * 24.0)
+                    },
+                    height: UVal::Auto,
+                    padding: USides::axes(6.0, 4.0),
+                    margin: USides::all(2.0),
+                    ..default()
+                },
+                UTextLabel {
+                    text: benchmark_text_variant(index, 0).to_string(),
+                    font: font.clone(),
+                    font_size: 14.0 + (index % 5) as f32 * 2.0,
+                    autosize: index % 5 == 0,
+                    max_lines: if index % 4 == 0 { Some(2) } else { None },
+                    overflow: match index % 3 {
+                        0 => univis_ui_widgets::widget::text_label::UTextOverflow::Ellipsis,
+                        1 => univis_ui_widgets::widget::text_label::UTextOverflow::Clip,
+                        _ => univis_ui_widgets::widget::text_label::UTextOverflow::Visible,
+                    },
+                    linebreak: if index % 2 == 0 {
+                        LineBreak::WordBoundary
+                    } else {
+                        LineBreak::AnyCharacter
+                    },
+                    ..default()
+                },
+                ComputedSize::default(),
+                ComputedTextBlock::default(),
+            ));
+        }
+    }
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_text_labels,
+        after_update: no_op_after_update,
+    }
+}
+
+fn build_picking_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_message::<PointerHits>();
+    app.add_systems(Update, univis_picking_backend);
+
+    let screen_camera = spawn_cached_camera(
+        &mut app,
+        false,
+        GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1200.0)),
+    );
+    let perspective_camera = spawn_cached_camera(
+        &mut app,
+        true,
+        GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 5.0)),
+    );
+
+    let screen_root = app.world_mut().spawn_empty().id();
+    let screen_root_state = sample_resolved_root(screen_root, UiSpace::Screen, screen_camera);
+    app.world_mut()
+        .entity_mut(screen_root)
+        .insert(screen_root_state)
+        .insert(GlobalTransform::default());
+
+    let world_root = app.world_mut().spawn_empty().id();
+    let world_root_state = sample_resolved_root(world_root, UiSpace::World3d, perspective_camera);
+    app.world_mut()
+        .entity_mut(world_root)
+        .insert(world_root_state)
+        .insert(GlobalTransform::default());
+
+    for index in 0..256usize {
+        let x = (index % 16) as f32 * 54.0 - 405.0;
+        let y = (index / 16) as f32 * 34.0 - 255.0;
+        app.world_mut().spawn((
+            ChildOf(screen_root),
+            UInteraction::default(),
+            UNode {
+                width: UVal::Px(42.0),
+                height: UVal::Px(24.0),
+                ..default()
+            },
+            ComputedSize {
+                width: 42.0,
+                height: 24.0,
+                local_pos: Vec2::ZERO,
+            },
+            GlobalTransform::from(Transform::from_xyz(x, y, 0.0)),
+        ));
+    }
+
+    for index in 0..256usize {
+        let x = (index % 16) as f32 * 0.11 - 0.82;
+        let y = (index / 16) as f32 * 0.07 - 0.56;
+        app.world_mut().spawn((
+            ChildOf(world_root),
+            UInteraction::default(),
+            UNode {
+                width: UVal::Px(160.0),
+                height: UVal::Px(92.0),
+                ..default()
+            },
+            ComputedSize {
+                width: 160.0,
+                height: 92.0,
+                local_pos: Vec2::ZERO,
+            },
+            GlobalTransform::from(Transform::from_xyz(x, y, 0.0)),
+        ));
+    }
+
+    app.world_mut().spawn((
+        BenchPointerMarker,
+        PointerId::Mouse,
+        PointerLocation::new(Location {
+            target: NormalizedRenderTarget::None {
+                width: VIEWPORT_SIZE.x,
+                height: VIEWPORT_SIZE.y,
+            },
+            position: Vec2::new(800.0, 450.0),
+        }),
+    ));
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_pointer_location,
+        after_update: drain_pointer_hits,
+    }
+}
+
+fn build_widget_panels_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        TextPlugin,
+    ));
+    app.add_plugins(UnivisLayoutPlugin);
+    app.add_plugins(UnivisButtonPlugin);
+    app.add_systems(
+        Update,
+        (
+            measure_text_label_layout,
+            sync_text_label_intrinsic_size,
+            fit_node_to_text_size,
+        )
+            .chain(),
+    );
+
+    let font = insert_benchmark_font(&mut app);
+    let camera = spawn_orthographic_camera(&mut app, 1400.0);
+    let root = app
+        .world_mut()
+        .spawn((
+            URootUi {
+                camera: UiCameraRef::Entity(camera),
+                ..URootUi::screen()
+            },
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                padding: USides::all(20.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Grid,
+                grid_columns: 6,
+                gap: 12.0,
+                container_ext: ULayoutContainerExt {
+                    grid: ULayoutGridContainer {
+                        template_columns: vec![UTrackSize::Fr(1.0); 6],
+                        auto_rows: UTrackSize::Auto,
+                        ..default()
+                    },
+                    ..default()
+                },
+                ..default()
+            },
+        ))
+        .id();
+
+    for index in 0..60usize {
+        let panel = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                BenchPanelIndex(index),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    min_width: 180.0,
+                    height: UVal::Content,
+                    padding: USides::all(12.0),
+                    background_color: Color::srgb(0.12, 0.14, 0.18),
+                    border_radius: UCornerRadius::all(14.0),
+                    ..default()
+                },
+                UBorder {
+                    color: Color::srgba(0.78, 0.84, 0.94, 0.24),
+                    width: 1.0,
+                    radius: UCornerRadius::all(14.0),
+                    ..default()
+                },
+                ULayout {
+                    flex_direction: UFlexDirection::Column,
+                    gap: 10.0 + (index % 3) as f32 * 2.0,
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(panel),
+            BenchLabelIndex(index * 3),
+            UTextLabel {
+                text: format!("Panel {}", index),
+                font: font.clone(),
+                font_size: 18.0,
+                ..default()
+            },
+        ));
+
+        for button_index in 0..3usize {
+            let button = app
+                .world_mut()
+                .spawn((
+                    ChildOf(panel),
+                    UButton::secondary(),
+                    UNode {
+                        width: UVal::Percent(1.0),
+                        height: UVal::Px(34.0),
+                        ..default()
+                    },
+                ))
+                .id();
+
+            app.world_mut().spawn((
+                ChildOf(button),
+                BenchLabelIndex(index * 3 + button_index + 1),
+                UTextLabel {
+                    text: format!("Action {}-{}", index, button_index),
+                    font: font.clone(),
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        }
+    }
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_widget_panels,
+        after_update: no_op_after_update,
+    }
+}
+
+fn build_world3d_panels_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        TextPlugin,
+    ));
+    app.add_plugins(UnivisLayoutPlugin);
+    app.add_plugins(UnivisButtonPlugin);
+    app.add_systems(
+        Update,
+        (
+            measure_text_label_layout,
+            sync_text_label_intrinsic_size,
+            fit_node_to_text_size,
+        )
+            .chain(),
+    );
+
+    let font = insert_benchmark_font(&mut app);
+    let camera = spawn_perspective_camera(&mut app);
+
+    for index in 0..48usize {
+        let root = app
+            .world_mut()
+            .spawn((
+                BenchRootIndex(index),
+                URootUi {
+                    camera: UiCameraRef::Entity(camera),
+                    meters_per_unit: 0.0015 + (index % 3) as f32 * 0.00025,
+                    ..URootUi::world_3d(Vec2::new(420.0, 240.0))
+                },
+                Transform::from_xyz(
+                    (index % 8) as f32 * 0.32 - 1.12,
+                    (index / 8) as f32 * 0.24 - 0.72,
+                    (index % 6) as f32 * 0.03,
+                ),
+            ))
+            .id();
+
+        let panel = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                BenchPanelIndex(index),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    padding: USides::all(12.0),
+                    background_color: Color::srgba(0.10, 0.12, 0.16, 0.78),
+                    border_radius: UCornerRadius::all(14.0),
+                    ..default()
+                },
+                UBorder {
+                    color: Color::srgba(0.92, 0.96, 1.0, 0.28),
+                    width: 1.0,
+                    radius: UCornerRadius::all(14.0),
+                    ..default()
+                },
+                ULayout {
+                    flex_direction: UFlexDirection::Column,
+                    gap: 10.0,
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(panel),
+            BenchLabelIndex(index * 2),
+            UTextLabel {
+                text: format!("World panel {}", index),
+                font: font.clone(),
+                font_size: 20.0,
+                ..default()
+            },
+        ));
+
+        let button = app
+            .world_mut()
+            .spawn((
+                ChildOf(panel),
+                UButton::primary(),
+                UNode {
+                    width: UVal::Px(160.0),
+                    height: UVal::Px(36.0),
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(button),
+            BenchLabelIndex(index * 2 + 1),
+            UTextLabel {
+                text: format!("Commit {}", index),
+                font: font.clone(),
+                font_size: 14.0,
+                ..default()
+            },
+        ));
+    }
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_world3d_panels,
+        after_update: no_op_after_update,
+    }
+}
+
+fn mutate_root_capsules(app: &mut App, iteration: usize) {
+    let phase = (iteration % 24) as f32 * 0.01;
+    let mut query = app.world_mut().query::<(&BenchRootIndex, &mut Transform)>();
+    for (index, mut transform) in query.iter_mut(app.world_mut()) {
+        if index.0 % 8 < 2 {
+            transform.translation.z = (index.0 % 9) as f32 * 0.02 + phase;
+        }
+    }
+}
+
+fn mutate_text_labels(app: &mut App, iteration: usize) {
+    let mut query = app
+        .world_mut()
+        .query::<(&BenchLabelIndex, &mut UTextLabel, &mut UNode)>();
+    for (index, mut label, mut node) in query.iter_mut(app.world_mut()) {
+        if index.0 % 7 == iteration % 7 {
+            label.text = benchmark_text_variant(index.0, iteration).to_string();
+            if index.0 % 5 == 0 {
+                node.width = if iteration.is_multiple_of(2) {
+                    UVal::Auto
+                } else {
+                    UVal::Px(190.0 + (index.0 % 4) as f32 * 20.0)
+                };
+            }
+        }
+    }
+}
+
+fn mutate_pointer_location(app: &mut App, iteration: usize) {
+    let step = iteration % 18;
+    let position = Vec2::new(760.0 + step as f32 * 3.0, 420.0 + (step % 6) as f32 * 4.0);
+
+    let mut query = app
+        .world_mut()
+        .query_filtered::<&mut PointerLocation, With<BenchPointerMarker>>();
+    for mut pointer in query.iter_mut(app.world_mut()) {
+        *pointer = PointerLocation::new(Location {
+            target: NormalizedRenderTarget::None {
+                width: VIEWPORT_SIZE.x,
+                height: VIEWPORT_SIZE.y,
+            },
+            position,
+        });
+    }
+}
+
+fn mutate_widget_panels(app: &mut App, iteration: usize) {
+    let mut panels = app.world_mut().query::<(&BenchPanelIndex, &mut ULayout)>();
+    for (index, mut layout) in panels.iter_mut(app.world_mut()) {
+        if index.0 % 6 == iteration % 6 {
+            layout.gap = 8.0 + ((iteration + index.0) % 5) as f32 * 2.0;
+        }
+    }
+
+    let mut labels = app
+        .world_mut()
+        .query::<(&BenchLabelIndex, &mut UTextLabel)>();
+    for (index, mut label) in labels.iter_mut(app.world_mut()) {
+        if index.0 % 9 == iteration % 9 {
+            label.text = format!("Panel metric {}", (iteration + index.0) % 128);
+        }
+    }
+}
+
+fn mutate_world3d_panels(app: &mut App, iteration: usize) {
+    let phase = (iteration % 20) as f32 * 0.015;
+
+    let mut roots = app.world_mut().query::<(&BenchRootIndex, &mut Transform)>();
+    for (index, mut transform) in roots.iter_mut(app.world_mut()) {
+        if index.0 % 5 == iteration % 5 {
+            transform.translation.z = (index.0 % 6) as f32 * 0.03 + phase;
+        }
+    }
+
+    let mut labels = app
+        .world_mut()
+        .query::<(&BenchLabelIndex, &mut UTextLabel)>();
+    for (index, mut label) in labels.iter_mut(app.world_mut()) {
+        if index.0 % 6 == iteration % 6 {
+            label.text = format!("World {}", (iteration + index.0) % 96);
+        }
+    }
+}
+
+fn no_op_after_update(_app: &mut App) {}
+
+fn drain_pointer_hits(app: &mut App) {
+    let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();
+    for _ in hits.drain() {}
+}
+
+fn insert_benchmark_font(app: &mut App) -> Handle<Font> {
+    let font = Font::try_from_bytes(TEXT_FONT_BYTES.to_vec()).expect("benchmark font should load");
+    app.world_mut().resource_mut::<Assets<Font>>().add(font)
+}
+
+fn benchmark_text_variant(index: usize, iteration: usize) -> &'static str {
+    match (index + iteration) % 4 {
+        0 => "Realtime panels keep layout stable while text wraps across compact surfaces.",
+        1 => "Arabic and Latin labels should stay measurable without clipping regressions.",
+        2 => "Autosize cards adapt to changing labels, counters, and operator notes.",
+        _ => "Cache churn matters when dashboards rewrite short status lines every frame.",
+    }
+}
+
+fn spawn_orthographic_camera(app: &mut App, z: f32) -> Entity {
+    let projection = OrthographicProjection {
+        area: Rect::new(
+            -SCREEN_CANVAS.x * 0.5,
+            -SCREEN_CANVAS.y * 0.5,
+            SCREEN_CANVAS.x * 0.5,
+            SCREEN_CANVAS.y * 0.5,
+        ),
+        ..OrthographicProjection::default_2d()
+    };
+    let mut camera = Camera::default();
+    camera.computed = ComputedCameraValues {
+        target_info: Some(RenderTargetInfo {
+            physical_size: VIEWPORT_SIZE,
+            scale_factor: 1.0,
+        }),
+        clip_from_view: projection.get_clip_from_view(),
+        ..default()
+    };
+
+    app.world_mut()
+        .spawn((
+            camera,
+            Projection::Orthographic(projection),
+            GlobalTransform::from(Transform::from_xyz(0.0, 0.0, z)),
+        ))
+        .id()
+}
+
+fn spawn_perspective_camera(app: &mut App) -> Entity {
+    let projection = PerspectiveProjection {
+        fov: core::f32::consts::FRAC_PI_3,
+        aspect_ratio: SCREEN_CANVAS.x / SCREEN_CANVAS.y,
+        near: 0.1,
+        ..default()
+    };
+    let mut camera = Camera::default();
+    camera.computed = ComputedCameraValues {
+        target_info: Some(RenderTargetInfo {
+            physical_size: VIEWPORT_SIZE,
+            scale_factor: 1.0,
+        }),
+        clip_from_view: projection.get_clip_from_view(),
+        ..default()
+    };
+
+    app.world_mut()
+        .spawn((
+            camera,
+            Projection::Perspective(projection),
+            GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 5.0)),
+        ))
+        .id()
+}
+
+fn spawn_cached_camera(app: &mut App, perspective: bool, transform: GlobalTransform) -> Entity {
+    let mut camera = Camera::default();
+    camera.computed = ComputedCameraValues {
+        target_info: Some(RenderTargetInfo {
+            physical_size: VIEWPORT_SIZE,
+            scale_factor: 1.0,
+        }),
+        clip_from_view: if perspective {
+            PerspectiveProjection {
+                fov: core::f32::consts::FRAC_PI_2,
+                aspect_ratio: SCREEN_CANVAS.x / SCREEN_CANVAS.y,
+                near: 0.1,
+                ..default()
+            }
+            .get_clip_from_view()
+        } else {
+            OrthographicProjection {
+                area: Rect::new(
+                    -SCREEN_CANVAS.x * 0.5,
+                    -SCREEN_CANVAS.y * 0.5,
+                    SCREEN_CANVAS.x * 0.5,
+                    SCREEN_CANVAS.y * 0.5,
+                ),
+                ..OrthographicProjection::default_2d()
+            }
+            .get_clip_from_view()
+        },
+        ..default()
+    };
+
+    app.world_mut().spawn((camera, transform)).id()
+}
+
+fn sample_resolved_root(
+    root_entity: Entity,
+    space: UiSpace,
+    camera_entity: Entity,
+) -> (ResolvedRootUi, ResolvedRootStack) {
+    let root = ResolvedRootUi {
+        root_entity,
+        space,
+        canvas: match space {
+            UiSpace::Screen => UiCanvasSize::Viewport,
+            UiSpace::World2d | UiSpace::World3d => UiCanvasSize::Fixed(Vec2::new(800.0, 600.0)),
+        },
+        canvas_size: Vec2::new(800.0, 600.0),
+        camera_entity: Some(camera_entity),
+        meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
+        resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
+    };
+
+    let band_width = if matches!(space, UiSpace::Screen) {
+        0.004
+    } else {
+        root.ui_units_to_world_scale() * 0.04
+    };
+
+    (root, ResolvedRootStack::with_capsule(0.0, band_width))
+}

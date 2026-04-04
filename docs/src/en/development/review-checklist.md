@@ -2,6 +2,9 @@
 
 Use this checklist for docs-heavy pull requests.
 
+- [ ] `./scripts/check_quality.sh` completed before merge
+- [ ] `./scripts/check_representative_examples.sh` completed before merge
+- [ ] `mdbook build docs` completed when docs, examples, or root copy changed
 - [ ] English and Arabic pages were updated together when the change is user-facing
 - [ ] the page was added to `docs/src/SUMMARY.md`
 - [ ] the example lives in the owning crate

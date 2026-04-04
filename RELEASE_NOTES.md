@@ -22,13 +22,13 @@ Use them like this:
 - `RELEASE_NOTES.md`: current alpha release-scale summary
 - `changelog.md`: dated historical record
 
-`ALPHA2_STATUS.md` and `ALPHA2_STATUS_AR.md` remain temporary stabilization notes for the current alpha line rather than long-term root release files.
+Active planning now lives in `ROADMAP_POST_REVIEW.md` and stays intentionally separate from the root release file set.
 
 ## Current Release Story
 
-Current target release: `0.2.0-alpha.2`
+Latest published release tracked here: `0.2.0-alpha.2`
 
-The current `alpha2` line should be understood as a structural continuation of the `0.2.0-alpha.1` transition, not as a small patch over the old `0.1.x` line.
+That release should be understood as a structural continuation of the `0.2.0-alpha.1` transition, not as a small patch over the old `0.1.x` line. The project is now using it as the baseline while moving into the next alpha planning phase.
 
 Public docs URL:
 
@@ -45,12 +45,12 @@ The project has changed substantially in these areas:
 - generated `API Docs` are part of the intended learning path
 - release validation now includes explicit sequential checks for docs, examples, and public crates
 
-For `0.2.0-alpha.2`, the intended message is:
+For `0.2.0-alpha.2`, the intended message was:
 
 - the `URootUi` migration baseline is in place
 - the docs surface, migration surface, and release surface now have clearer roles
 - the example catalog has matured into a gallery plus a package-aware reference index
-- the `alpha2` line is considered complete enough to cut as a coherent milestone
+- that release closed the previous docs/examples/release cleanup wave as one coherent milestone
 
 ## Main Upgrade Themes
 
@@ -67,6 +67,27 @@ For `0.2.0-alpha.2`, the intended message is:
 - content-sized world roots are supported through `UiCanvasSize::FitContent { min, max }`
 - root capsules prevent cross-root stacking leaks between separate UI trees
 
+## Current Public Surface
+
+### Stable Enough To Build On
+
+- `URootUi` as the canonical root API
+- `URootUi::screen()`, `URootUi::world_2d(...)`, and `URootUi::world_3d(...)`
+- `UiSpace`, `UiCameraRef`, and `UiCanvasSize`, including fit-content world roots
+- crate-owned example locations plus package-aware example commands
+
+### Deprecated But Still Supported
+
+- `UScreenRoot`
+- `UWorldRoot`
+- explicit `meters_per_unit: 1.0` when preserving the exact historical physical size of older world-root examples
+
+### Still Settling
+
+- fit-content world roots under heavy `%` sizing or strongly root-relative flex layouts
+- some `World3d` showcase polish defaults
+- manual visual validation remains part of release prep for rendering-heavy changes
+
 ### Docs And Examples
 
 - `README.md` and `README_AR.md` are the GitHub landing pages
@@ -81,8 +102,6 @@ If you are upgrading from older docs, older example paths, or older root wrapper
 
 - `MIGRATION.md`
 - `MIGRATION_AR.md`
-- `ALPHA2_STATUS.md`
-- `ALPHA2_STATUS_AR.md`
 - `docs/src/en/migration/`
 - `docs/src/ar/migration/`
 
@@ -121,7 +140,8 @@ cargo run -p univis_ui_interaction --example interaction
 - release history and implementation highlights: `changelog.md`
 - migration summary: `MIGRATION.md`
 - Arabic migration summary: `MIGRATION_AR.md`
-- alpha2 stability note: `ALPHA2_STATUS.md`
+- current planning: `ROADMAP_POST_REVIEW.md`
+- current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`
 - docs home: `docs/src/index.md`
 
 ## Notes
@@ -129,4 +149,4 @@ cargo run -p univis_ui_interaction --example interaction
 - the completed `URootUi` migration baseline from `Phase 0` through `Phase 10` remains the foundation for the current alpha line
 - the old version-specific release note file was removed to keep one stable root-level release note entry point
 - this file should stay focused on release-scale summary rather than acting as a duplicate of `README` or `MIGRATION`
-- `0.2.0-alpha.2` is the point where the current docs/examples/release cleanup wave is considered complete enough for a release cut
+- `0.2.0-alpha.2` is the release that closed the previous docs/examples/release cleanup wave; use `ROADMAP_POST_REVIEW.md` for the current planning phase

@@ -20,8 +20,8 @@ Use the language switcher shown at the top of each page to jump to the mirrored 
 - [إعداد الإضافات وأولى الأمثلة](ar/first-steps.md)
 - [English Example Gallery](en/examples/gallery.md)
 - [معرض الأمثلة](ar/examples/gallery.md)
-- [Alpha2 Stability](en/migration/alpha2-stability.md)
-- [استقرار `alpha2`](ar/migration/alpha2-stability.md)
+- [Migration and Limitations](en/migration/index.md)
+- [الترحيل والقيود](ar/migration/index.md)
 
 ## Guides vs API Docs
 

@@ -24,6 +24,22 @@ Use the other root files for different goals:
 - layout sizing now has explicit `min_width/max_width/min_height/max_height`, `MinContent`, and `MaxContent`
 - `UVal::Auto` is no longer treated as the same thing as `Content`
 
+## Canonical Surface vs Legacy Compatibility
+
+Use these as the current public assumptions:
+
+- canonical public roots: `URootUi`, `URootUi::screen()`, `URootUi::world_2d(...)`, `URootUi::world_3d(...)`
+- canonical root support types: `UiSpace`, `UiCameraRef`, `UiCanvasSize`
+- canonical example flow: crate-owned example paths plus package-aware `cargo run -p ... --example ...`
+- deprecated but still supported wrappers: `UScreenRoot`, `UWorldRoot`
+- legacy physical-size compatibility path: `meters_per_unit: 1.0` on `URootUi`
+
+Still worth rechecking during migration:
+
+- fit-content world roots under heavy relative sizing
+- visual behavior in `World3d` showcase scenes
+- any rendering-, layout-, or picking-heavy change that still needs manual visual validation
+
 ## Sizing Migration
 
 If you built layouts against older alpha behavior, recheck these assumptions:
@@ -83,11 +99,12 @@ Arabic mirrors:
 
 - project story and crate map: `README.md`
 - Arabic landing page: `README_AR.md`
-- alpha2 stability note: `ALPHA2_STATUS.md`
+- current roadmap and active cleanup priorities: `ROADMAP_POST_REVIEW.md`
+- current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`
 - guides: `docs/src/en/*` and `docs/src/ar/*`
 - example catalog: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
 - API reference: generated `cargo doc --no-deps -p univis_ui`
 
-## Why The Roadmap Files Were Removed
+## Why The Older Roadmap Files Were Removed
 
-The roadmap checklists were useful while the work was in progress, but they are now historical implementation notes. The repository now keeps a migration summary instead of open-ended planning files at the root.
+The older completed roadmap checklists were useful while that work was in progress, but they are now historical implementation notes. Active planning now lives in `ROADMAP_POST_REVIEW.md`, while this file stays focused on migration guidance.

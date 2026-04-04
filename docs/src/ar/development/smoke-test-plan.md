@@ -57,4 +57,4 @@ cargo run --release -p univis_ui_engine --features example_bloom --example borde
 3. صنّف المشكلة: بناء أو تشغيل أو تفاعل أو رندر.
 4. أضف ملاحظة issue فيها أمر إعادة الإنتاج وبيئة التشغيل.
 
-راجع أيضًا: [التحقق البصري](visual-validation.md) و[الجاهزية لإصدار `alpha2`](alpha2-release-readiness.md).
+راجع أيضًا: [التحقق البصري](visual-validation.md) و[الجاهزية للإصدار](release-readiness.md).

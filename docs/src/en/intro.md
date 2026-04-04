@@ -60,4 +60,3 @@ cargo doc --no-deps -p univis_ui
 - curated gallery: [Example Gallery](examples/gallery.md)
 - related API index: [API Reference](api/index.md)
 - related migration notes: [Migration and Limitations](migration/index.md)
-- alpha2 stability note: [Alpha2 Stability](migration/alpha2-stability.md)

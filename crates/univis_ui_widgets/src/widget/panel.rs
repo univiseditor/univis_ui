@@ -15,15 +15,22 @@ impl Plugin for UnivisPanelPlugin {
             .register_type::<UPanelWindow>()
             .add_systems(
                 Update,
+                init_panel_window_handles.in_set(UnivisWidgetUpdateSet::Build),
+            )
+            .add_systems(
+                Update,
+                handle_panel_window_resize.in_set(UnivisWidgetUpdateSet::Logic),
+            )
+            .add_systems(
+                Update,
                 (
                     sync_panel_visuals,
-                    init_panel_window_handles,
-                    sync_panel_resize_handles,
-                    handle_panel_window_resize,
                     cleanup_orphan_panel_resize_handles,
+                    sync_panel_resize_handles,
                     update_panel_resize_cursor,
                 )
-                    .chain(),
+                    .chain()
+                    .in_set(UnivisWidgetUpdateSet::Visual),
             );
     }
 }

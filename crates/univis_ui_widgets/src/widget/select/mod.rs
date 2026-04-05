@@ -1,3 +1,4 @@
+use crate::internal_prelude::UnivisWidgetUpdateSet;
 use bevy::prelude::*;
 
 mod events;
@@ -34,18 +35,29 @@ impl Plugin for UnivisSelectPlugin {
             .init_resource::<ActiveSelect>()
             .add_systems(
                 Update,
+                init_select_visuals.in_set(UnivisWidgetUpdateSet::Build),
+            )
+            .add_systems(
+                Update,
+                (sync_select_dropdown_tree, update_select_visuals)
+                    .chain()
+                    .in_set(UnivisWidgetUpdateSet::Visual),
+            )
+            .add_systems(
+                Update,
+                emit_select_events.in_set(UnivisWidgetUpdateSet::Events),
+            )
+            .add_systems(
+                Update,
                 (
-                    init_select_visuals,
                     enforce_select_invariants,
                     handle_select_trigger_interaction,
                     handle_select_option_interaction,
                     handle_select_keyboard,
                     close_select_on_outside_click,
-                    sync_select_dropdown_tree,
-                    update_select_visuals,
-                    emit_select_events,
                 )
-                    .chain(),
+                    .chain()
+                    .in_set(UnivisWidgetUpdateSet::Logic),
             );
     }
 }

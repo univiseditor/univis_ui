@@ -10,6 +10,31 @@ Use this file for the dated chronological record.
 Use `RELEASE_NOTES.md` for the current alpha release summary.
 Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
+## [2026-04-05]
+
+### Added
+
+- Added `ROADMAP_FRAME_ZERO.md` as the maintainer roadmap for frame-zero settlement, architecture cleanup, rollout safety, and follow-up optimization work.
+- Added a frozen performance baseline capture under `perf_baselines/current_max/2026-04-05/` with human-readable notes, a machine-readable manifest, and raw solver/runtime benchmark outputs for the pre-optimization maximum built-in load.
+- Added explicit rollout controls and shadow-validation state through `UiRolloutConfig`, `UiValidationMode`, and `UiValidationState`, so cached ancestry, incremental solve, mesh reuse, and post-settle picking can be validated before defaults are tightened.
+- Added `scripts/verify_frame_zero_rollout.sh` to run the frame-zero rollout gate in one command across library tests, representative release-mode examples, and benchmark budget checks.
+- Added a stress-only runtime benchmark workload, `roots_10k_nodes_1m`, covering `10,000` roots and `1,000,000` nodes without folding that load into the default baseline pass.
+
+### Changed
+
+- Reworked the UI update architecture around an explicit bounded settlement loop in `PostUpdate`, with tracked work generations and verified idle semantics instead of inferring settlement from empty queries.
+- Moved hierarchy refresh, cached ancestry sync, depth-cache rebuild, dirty propagation, measurement, solve, render sync, and post-settle picking into one ordered current-frame settlement path so freshly spawned UI can finish in the same frame.
+- Split stateful widget runtime work into dedicated `Build`, `Logic`, `Visual`, and `Events` sets, and migrated the complex built-in widgets and text-label sync paths onto that structure.
+- Changed layout solve to preserve and drain dirty solve frontiers, reuse cached root context when enabled, and avoid treating the downward pass as a full-tree walk by default.
+- Reduced render-sync overhead by caching root/clip ancestry for downstream systems and reusing rectangle meshes by logical size instead of allocating a fresh mesh on every eligible sync.
+- Changed picking so the compatibility `PreUpdate` path remains available while a post-settle refresh can resolve against current-frame geometry and compare cached-vs-legacy hit resolution in validation mode.
+- Extended the runtime benchmark harness with scenario filtering and stress-only workload selection so very large stress runs can be executed on demand without distorting the default perf gate.
+- Updated `README.md` to point maintainers at the frame-zero rollout gate and the validation resources that now protect behavior during optimization work.
+
+### Fixed
+
+- Fixed the widget embedded-asset registration path so the SDF text-label shader is registered from the widget plugin instead of relying on a missing runtime asset path lookup.
+
 ## [2026-04-04]
 
 ### Added

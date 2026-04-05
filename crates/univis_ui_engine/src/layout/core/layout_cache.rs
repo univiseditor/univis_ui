@@ -12,6 +12,9 @@ pub struct LayoutCache {
     /// Nodes that need to be recomputed.
     dirty_nodes: HashSet<Entity>,
 
+    /// Nodes whose subtrees still need a downward solve pass.
+    solve_nodes: HashSet<Entity>,
+
     /// Entities grouped by tree depth.
     entities_by_depth: HashMap<usize, Vec<Entity>>,
 
@@ -94,6 +97,32 @@ impl LayoutCache {
         self.dirty_nodes.clear();
     }
 
+    /// Seeds the downward solve frontier from the current dirty set.
+    pub fn begin_solve_from_dirty(&mut self) {
+        self.solve_nodes.clear();
+        self.solve_nodes.extend(self.dirty_nodes.iter().copied());
+    }
+
+    /// Returns `true` when the entity still needs downward solve work.
+    pub fn is_solve_dirty(&self, entity: Entity) -> bool {
+        self.solve_nodes.contains(&entity)
+    }
+
+    /// Marks one entity for downward solve work.
+    pub fn mark_solve_dirty(&mut self, entity: Entity) {
+        self.solve_nodes.insert(entity);
+    }
+
+    /// Clears the downward solve flag for one entity.
+    pub fn clear_solve_dirty(&mut self, entity: Entity) {
+        self.solve_nodes.remove(&entity);
+    }
+
+    /// Returns how many nodes are still queued for downward solve work.
+    pub fn solve_dirty_count(&self) -> usize {
+        self.solve_nodes.len()
+    }
+
     /// Stores an intrinsic size entry.
     pub fn cache_intrinsic(&mut self, entity: Entity, size: IntrinsicSize) {
         self.intrinsic_sizes.insert(entity, size);
@@ -141,7 +170,6 @@ pub fn track_layout_changes(
             Ref<UNode>,
             Option<Ref<ULayout>>,
             Option<Ref<USelf>>,
-            Ref<IntrinsicSize>,
         ),
         // الفلتر العام: نمر فقط على العقد التي تغير فيها شيء ما
         Or<(
@@ -149,7 +177,6 @@ pub fn track_layout_changes(
             Changed<ULayout>,
             Changed<USelf>,
             Changed<Children>,
-            Changed<IntrinsicSize>,
         )>,
     >,
 
@@ -158,9 +185,9 @@ pub fn track_layout_changes(
     parents_query: Query<&ChildOf>,
 ) {
     // 1. معالجة التغييرات
-    for (entity, children, node, layout, uself, intrinsic) in nodes.iter() {
+    for (entity, children, node, layout, uself) in nodes.iter() {
         let change_flags = LayoutChangeFlags {
-            intrinsic_changed: intrinsic.is_changed(),
+            intrinsic_changed: false,
             node_changed: node.is_changed(),
             layout_changed: layout.is_some_and(|l| l.is_changed()),
             uself_changed: uself.is_some_and(|s| s.is_changed()),
@@ -243,8 +270,7 @@ pub struct LayoutCachePlugin;
 
 impl Plugin for LayoutCachePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<LayoutCache>()
-            .add_systems(Update, (track_layout_changes, update_depth_cache).chain());
+        app.init_resource::<LayoutCache>();
     }
 }
 

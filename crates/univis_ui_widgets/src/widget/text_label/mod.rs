@@ -5,7 +5,6 @@
 //! in screen and world roots.
 
 use crate::internal_prelude::*;
-use bevy::asset::embedded_asset;
 use bevy::prelude::*;
 use bevy::sprite_render::Material2dPlugin;
 
@@ -46,7 +45,7 @@ pub struct UnivisTextPlugin;
 
 impl Plugin for UnivisTextPlugin {
     fn build(&self, app: &mut App) {
-        embedded_asset!(app, "../shaders/text_label_sdf.wgsl");
+        super::register_widget_embedded_assets(app);
 
         app.register_type::<UTextLabel>()
             .register_type::<UTextOverflow>()
@@ -55,37 +54,37 @@ impl Plugin for UnivisTextPlugin {
             .init_resource::<UTextLabelAtlasCache>()
             .add_plugins(Material2dPlugin::<UTextLabelSdfMaterial>::default())
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 measure_text_label_layout
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(sync_text_label_intrinsic_size),
             )
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 sync_text_label_intrinsic_size
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(fit_node_to_text_size),
             )
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 fit_node_to_text_size
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(mark_text_label_layout_dirty),
             )
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 mark_text_label_layout_dirty
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(sync_text_label_meshes),
             )
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 sync_text_label_meshes
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(UnivisPostUpdateSet::LayoutMeasure),
             )
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 sync_text_clipper_materials.in_set(UnivisPostUpdateSet::RenderSync),
             );
     }

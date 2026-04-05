@@ -4,6 +4,7 @@
 //! - `docs/src/en/performance/benchmarks.md`
 //! - `docs/src/ar/performance/benchmarks.md`
 
+use std::collections::BTreeSet;
 use std::env;
 use std::time::Instant;
 
@@ -30,6 +31,11 @@ const DEFAULT_WARMUP: usize = 32;
 const DEFAULT_ITERATIONS: usize = 120;
 const VIEWPORT_SIZE: UVec2 = UVec2::new(1600, 900);
 const SCREEN_CANVAS: Vec2 = Vec2::new(1600.0, 900.0);
+const STRESS_ROOT_COUNT: usize = 10_000;
+const STRESS_NODE_COUNT: usize = 1_000_000;
+const STRESS_NODES_PER_ROOT: usize = STRESS_NODE_COUNT / STRESS_ROOT_COUNT;
+const STRESS_PANELS_PER_ROOT: usize = 1;
+const STRESS_LEAVES_PER_ROOT: usize = STRESS_NODES_PER_ROOT - STRESS_PANELS_PER_ROOT;
 const TEXT_FONT_BYTES: &[u8] =
     include_bytes!("../../univis_ui_style/src/style/assets/fonts/Inter-Regular.ttf");
 
@@ -44,6 +50,7 @@ struct RuntimeWorkload {
     name: &'static str,
     item_count: usize,
     budget_ms: f64,
+    stress_only: bool,
     build: fn() -> RuntimeScenario,
 }
 
@@ -67,47 +74,100 @@ struct BenchPointerMarker;
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
+    let selected_scenarios = parse_multi_value_flag(&args, "--scenario");
+    let selected_lookup: BTreeSet<&str> = selected_scenarios.iter().map(String::as_str).collect();
+    let include_stress = args.iter().any(|arg| arg == "--include-stress");
     let enforce_budgets = args.iter().any(|arg| arg == "--check");
     let warmup = parse_env_usize("UNIVIS_PERF_WARMUP", DEFAULT_WARMUP);
     let iterations = parse_env_usize("UNIVIS_PERF_ITERATIONS", DEFAULT_ITERATIONS);
 
-    let workloads = vec![
+    let all_workloads = vec![
         RuntimeWorkload {
             name: "root_capsules_96",
             item_count: 96,
             budget_ms: 6.000,
+            stress_only: false,
             build: build_root_capsules_scenario,
         },
         RuntimeWorkload {
             name: "text_measure_180",
             item_count: 180,
             budget_ms: 4.750,
+            stress_only: false,
             build: build_text_measure_scenario,
         },
         RuntimeWorkload {
             name: "picking_grid_512",
             item_count: 512,
             budget_ms: 4.000,
+            stress_only: false,
             build: build_picking_scenario,
         },
         RuntimeWorkload {
             name: "widget_panels_240",
             item_count: 240,
             budget_ms: 8.000,
+            stress_only: false,
             build: build_widget_panels_scenario,
         },
         RuntimeWorkload {
             name: "world3d_panels_48",
             item_count: 48,
             budget_ms: 6.000,
+            stress_only: false,
             build: build_world3d_panels_scenario,
+        },
+        RuntimeWorkload {
+            name: "roots_10k_nodes_1m",
+            item_count: STRESS_NODE_COUNT,
+            budget_ms: f64::INFINITY,
+            stress_only: true,
+            build: build_roots_10k_nodes_1m_scenario,
         },
     ];
 
+    if args.iter().any(|arg| arg == "--list") {
+        println!("Available runtime workloads:");
+        for workload in &all_workloads {
+            let tag = if workload.stress_only {
+                " [stress]"
+            } else {
+                ""
+            };
+            println!("- {}{}", workload.name, tag);
+        }
+        return;
+    }
+
+    let known_workloads: BTreeSet<&str> =
+        all_workloads.iter().map(|workload| workload.name).collect();
+    for selected in &selected_lookup {
+        if !known_workloads.contains(selected) {
+            eprintln!("Unknown runtime workload: {selected}");
+            std::process::exit(2);
+        }
+    }
+
+    let workloads: Vec<_> = all_workloads
+        .into_iter()
+        .filter(|workload| {
+            let matches_selection =
+                selected_lookup.is_empty() || selected_lookup.contains(workload.name);
+            let enabled_by_default_or_flag =
+                !workload.stress_only || include_stress || selected_lookup.contains(workload.name);
+            matches_selection && enabled_by_default_or_flag
+        })
+        .collect();
+
+    if workloads.is_empty() {
+        eprintln!("No runtime workloads selected.");
+        std::process::exit(2);
+    }
+
     println!("Univis runtime benchmark");
     println!(
-        "warmup={} iterations={} enforce_budgets={}",
-        warmup, iterations, enforce_budgets
+        "warmup={} iterations={} enforce_budgets={} include_stress={}",
+        warmup, iterations, enforce_budgets, include_stress
     );
     println!(
         "{:<24} {:>8} {:>10} {:>10} {:>10} {:>10} {:>8}",
@@ -156,6 +216,26 @@ fn parse_env_usize(key: &str, default_value: usize) -> usize {
         .and_then(|value| value.parse::<usize>().ok())
         .filter(|value| *value > 0)
         .unwrap_or(default_value)
+}
+
+fn parse_multi_value_flag(args: &[String], flag: &str) -> Vec<String> {
+    let mut values = Vec::new();
+    let mut index = 0;
+
+    while index < args.len() {
+        if args[index] == flag {
+            let Some(value) = args.get(index + 1) else {
+                eprintln!("Expected a value after {flag}");
+                std::process::exit(2);
+            };
+            values.push(value.clone());
+            index += 2;
+        } else {
+            index += 1;
+        }
+    }
+
+    values
 }
 
 fn benchmark_workload(
@@ -695,6 +775,90 @@ fn build_world3d_panels_scenario() -> RuntimeScenario {
     }
 }
 
+fn build_roots_10k_nodes_1m_scenario() -> RuntimeScenario {
+    assert_eq!(
+        STRESS_ROOT_COUNT * STRESS_NODES_PER_ROOT,
+        STRESS_NODE_COUNT,
+        "stress node count should divide evenly across roots"
+    );
+    assert_eq!(
+        STRESS_PANELS_PER_ROOT + STRESS_LEAVES_PER_ROOT,
+        STRESS_NODES_PER_ROOT,
+        "stress per-root layout should account for every node"
+    );
+
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app.add_plugins(UnivisLayoutPlugin);
+
+    let camera_entity = spawn_orthographic_camera(&mut app, 1200.0);
+
+    for root_index in 0..STRESS_ROOT_COUNT {
+        let root = app
+            .world_mut()
+            .spawn((
+                BenchRootIndex(root_index),
+                URootUi {
+                    camera: UiCameraRef::Entity(camera_entity),
+                    ..URootUi::screen()
+                },
+                Transform::from_xyz(0.0, 0.0, 0.0),
+            ))
+            .id();
+
+        let panel = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                BenchPanelIndex(root_index),
+                UNode {
+                    width: UVal::Px(340.0 + (root_index % 3) as f32 * 8.0),
+                    height: UVal::Px(212.0 + (root_index % 4) as f32 * 6.0),
+                    padding: USides::all(6.0),
+                    margin: USides::all(2.0),
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Grid,
+                    grid_columns: 9,
+                    gap: 4.0 + (root_index % 2) as f32,
+                    container_ext: ULayoutContainerExt {
+                        grid: ULayoutGridContainer {
+                            template_columns: vec![UTrackSize::Fr(1.0); 9],
+                            auto_rows: UTrackSize::Auto,
+                            ..default()
+                        },
+                        ..default()
+                    },
+                    ..default()
+                },
+            ))
+            .id();
+
+        for leaf_index in 0..STRESS_LEAVES_PER_ROOT {
+            app.world_mut().spawn((
+                ChildOf(panel),
+                UNode {
+                    width: if leaf_index % 5 == 0 {
+                        UVal::Percent(1.0)
+                    } else {
+                        UVal::Px(18.0 + (leaf_index % 4) as f32 * 4.0)
+                    },
+                    height: UVal::Px(12.0 + (leaf_index % 3) as f32 * 3.0),
+                    margin: USides::all(1.0),
+                    ..default()
+                },
+            ));
+        }
+    }
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_roots_10k_nodes_1m,
+        after_update: no_op_after_update,
+    }
+}
+
 fn mutate_root_capsules(app: &mut App, iteration: usize) {
     let phase = (iteration % 24) as f32 * 0.01;
     let mut query = app.world_mut().query::<(&BenchRootIndex, &mut Transform)>();
@@ -775,6 +939,24 @@ fn mutate_world3d_panels(app: &mut App, iteration: usize) {
     for (index, mut label) in labels.iter_mut(app.world_mut()) {
         if index.0 % 6 == iteration % 6 {
             label.text = format!("World {}", (iteration + index.0) % 96);
+        }
+    }
+}
+
+fn mutate_roots_10k_nodes_1m(app: &mut App, iteration: usize) {
+    let phase = (iteration % 32) as f32 * 0.0005;
+
+    let mut roots = app.world_mut().query::<(&BenchRootIndex, &mut Transform)>();
+    for (index, mut transform) in roots.iter_mut(app.world_mut()) {
+        if index.0 % 128 == iteration % 128 {
+            transform.translation.z = phase + (index.0 % 16) as f32 * 0.00025;
+        }
+    }
+
+    let mut panels = app.world_mut().query::<(&BenchPanelIndex, &mut ULayout)>();
+    for (index, mut layout) in panels.iter_mut(app.world_mut()) {
+        if index.0 % 128 == iteration % 128 {
+            layout.gap = 3.0 + ((iteration + index.0) % 4) as f32;
         }
     }
 }

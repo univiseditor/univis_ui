@@ -7,6 +7,14 @@ use bevy::picking::backend::prelude::*;
 use bevy::picking::pointer::Location;
 use bevy::prelude::*;
 use std::collections::HashMap;
+use univis_ui_engine::schedule::UiWorkState;
+
+#[derive(Resource, Default)]
+pub struct PickingSyncState {
+    pub pointer_generation: u64,
+    settled_pointer_generation: u64,
+    settled_ui_generation: u64,
+}
 
 // Accurate clipping check using ancestor transforms and rounded-box SDF tests.
 fn is_clipped_by_ancestors(
@@ -53,6 +61,35 @@ fn is_clipped_by_ancestors(
     false // غير مقصوص
 }
 
+fn is_clipped_by_cached_context(
+    cached_context: Option<&CachedUiContext>,
+    start_entity: Entity,
+    cursor_world_pos: Vec3,
+    parents_query: &Query<&ChildOf>,
+    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+) -> bool {
+    if let Some(clip_entity) = cached_context.and_then(|value| value.clip_ancestor)
+        && let Ok((transform, size, node, clip)) = clipper_query.get(clip_entity)
+        && clip.enabled
+    {
+        let cursor_in_clipper_space = transform
+            .to_matrix()
+            .inverse()
+            .transform_point3(cursor_world_pos)
+            .truncate();
+        let half_size = Vec2::new(size.width, size.height) * 0.5;
+        let radius = Vec4::new(
+            node.border_radius.top_right,
+            node.border_radius.bottom_right,
+            node.border_radius.top_left,
+            node.border_radius.bottom_left,
+        );
+        return sd_rounded_box(cursor_in_clipper_space, half_size, radius) > 0.0;
+    }
+
+    is_clipped_by_ancestors(start_entity, cursor_world_pos, parents_query, clipper_query)
+}
+
 #[derive(Clone, Copy)]
 struct CachedPointerRay {
     order: f32,
@@ -61,8 +98,11 @@ struct CachedPointerRay {
 }
 
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 struct ResolvedEntityRootContext {
-    root: ResolvedRootUi,
+    root_entity: Entity,
+    space: UiSpace,
+    camera_entity: Option<Entity>,
     stack: ResolvedRootStack,
 }
 
@@ -101,16 +141,30 @@ fn is_ancestor_of(
 }
 
 fn resolve_root_for_entity(
+    cached_context: Option<&CachedUiContext>,
     entity: Entity,
     parents_query: &Query<&ChildOf>,
     root_query: &Query<(&ResolvedRootUi, &ResolvedRootStack)>,
 ) -> Option<ResolvedEntityRootContext> {
+    if let Some(context) = cached_context
+        && let Some(root_entity) = context.root_entity
+    {
+        return Some(ResolvedEntityRootContext {
+            root_entity,
+            space: context.space,
+            camera_entity: context.camera_entity,
+            stack: context.root_stack,
+        });
+    }
+
     let mut current = entity;
 
     loop {
         if let Ok((root, stack)) = root_query.get(current) {
             return Some(ResolvedEntityRootContext {
-                root: *root,
+                root_entity: root.root_entity,
+                space: root.space,
+                camera_entity: root.camera_entity,
                 stack: *stack,
             });
         }
@@ -174,6 +228,7 @@ fn intersect_ray_with_node_plane(
 }
 
 pub fn univis_picking_backend(
+    rollout: Option<Res<UiRolloutConfig>>,
     pointers: Query<(&PointerId, &PointerLocation)>,
     cameras: Query<(Entity, &Camera, &GlobalTransform)>,
     root_query: Query<(&ResolvedRootUi, &ResolvedRootStack)>,
@@ -185,6 +240,7 @@ pub fn univis_picking_backend(
             &ComputedSize,
             Option<&LayoutDepth>,
             Option<&USelf>,
+            Option<&CachedUiContext>,
         ),
         With<UInteraction>,
     >,
@@ -192,6 +248,196 @@ pub fn univis_picking_backend(
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     mut output: MessageWriter<PointerHits>,
 ) {
+    let prefer_cached_context = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_cached_ui_context);
+    emit_pointer_hits(
+        &pointers,
+        &cameras,
+        &root_query,
+        &nodes_query,
+        &parents_query,
+        &clipper_query,
+        prefer_cached_context,
+        &mut output,
+    );
+}
+
+pub fn track_pointer_generation(
+    changed_pointers: Query<(), Or<(Added<PointerLocation>, Changed<PointerLocation>)>>,
+    mut removed_pointers: RemovedComponents<PointerLocation>,
+    mut sync_state: ResMut<PickingSyncState>,
+) {
+    if !changed_pointers.is_empty() || removed_pointers.read().next().is_some() {
+        sync_state.pointer_generation += 1;
+    }
+}
+
+pub fn post_settle_picking_backend(
+    rollout: Option<Res<UiRolloutConfig>>,
+    pointers: Query<(&PointerId, &PointerLocation)>,
+    cameras: Query<(Entity, &Camera, &GlobalTransform)>,
+    root_query: Query<(&ResolvedRootUi, &ResolvedRootStack)>,
+    nodes_query: Query<
+        (
+            Entity,
+            &UNode,
+            &GlobalTransform,
+            &ComputedSize,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+            Option<&CachedUiContext>,
+        ),
+        With<UInteraction>,
+    >,
+    parents_query: Query<&ChildOf>,
+    clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    work_state: Option<Res<UiWorkState>>,
+    mut validation_state: ResMut<UiValidationState>,
+    mut sync_state: ResMut<PickingSyncState>,
+    mut output: MessageWriter<PointerHits>,
+) {
+    let rollout = rollout
+        .as_deref()
+        .cloned()
+        .unwrap_or_else(UiRolloutConfig::default);
+    let current_ui_generation = work_state
+        .as_ref()
+        .map_or(0, |value| value.current_generation());
+    let geometry_pending = work_state.as_ref().is_some_and(|value| {
+        let pending = value.pending();
+        pending.root_resolve || pending.hierarchy || pending.measure || pending.solve
+    });
+
+    if geometry_pending {
+        return;
+    }
+
+    let validation_enabled = rollout.validation != UiValidationMode::Disabled;
+    if !rollout.use_post_settle_picking && !validation_enabled {
+        return;
+    }
+
+    if current_ui_generation == sync_state.settled_ui_generation
+        && sync_state.pointer_generation == sync_state.settled_pointer_generation
+    {
+        return;
+    }
+
+    let current_hits = collect_pointer_hits(
+        &pointers,
+        &cameras,
+        &root_query,
+        &nodes_query,
+        &parents_query,
+        &clipper_query,
+        rollout.use_cached_ui_context,
+    );
+
+    if validation_enabled {
+        let legacy_hits = collect_pointer_hits(
+            &pointers,
+            &cameras,
+            &root_query,
+            &nodes_query,
+            &parents_query,
+            &clipper_query,
+            false,
+        );
+        let shadow_hits = collect_pointer_hits(
+            &pointers,
+            &cameras,
+            &root_query,
+            &nodes_query,
+            &parents_query,
+            &clipper_query,
+            true,
+        );
+        let mismatch_count = count_pointer_hit_mismatches(&legacy_hits, &shadow_hits);
+        validation_state.record_picking_shadow_check(
+            current_ui_generation,
+            sync_state.pointer_generation,
+            mismatch_count,
+        );
+
+        if mismatch_count > 0
+            && validation_state.picking_shadow_warning
+                != Some((current_ui_generation, sync_state.pointer_generation))
+        {
+            bevy::log::warn!(
+                "Univis picking shadow validation mismatch detected (ui_generation={}, pointer_generation={}, mismatches={})",
+                current_ui_generation,
+                sync_state.pointer_generation,
+                mismatch_count
+            );
+            validation_state.picking_shadow_warning =
+                Some((current_ui_generation, sync_state.pointer_generation));
+        }
+    }
+
+    if rollout.use_post_settle_picking {
+        write_pointer_hits(&current_hits, &mut output);
+    }
+
+    sync_state.settled_ui_generation = current_ui_generation;
+    sync_state.settled_pointer_generation = sync_state.pointer_generation;
+}
+
+fn emit_pointer_hits(
+    pointers: &Query<(&PointerId, &PointerLocation)>,
+    cameras: &Query<(Entity, &Camera, &GlobalTransform)>,
+    root_query: &Query<(&ResolvedRootUi, &ResolvedRootStack)>,
+    nodes_query: &Query<
+        (
+            Entity,
+            &UNode,
+            &GlobalTransform,
+            &ComputedSize,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+            Option<&CachedUiContext>,
+        ),
+        With<UInteraction>,
+    >,
+    parents_query: &Query<&ChildOf>,
+    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    prefer_cached_context: bool,
+    output: &mut MessageWriter<PointerHits>,
+) {
+    let hits = collect_pointer_hits(
+        pointers,
+        cameras,
+        root_query,
+        nodes_query,
+        parents_query,
+        clipper_query,
+        prefer_cached_context,
+    );
+    write_pointer_hits(&hits, output);
+}
+
+fn collect_pointer_hits(
+    pointers: &Query<(&PointerId, &PointerLocation)>,
+    cameras: &Query<(Entity, &Camera, &GlobalTransform)>,
+    root_query: &Query<(&ResolvedRootUi, &ResolvedRootStack)>,
+    nodes_query: &Query<
+        (
+            Entity,
+            &UNode,
+            &GlobalTransform,
+            &ComputedSize,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+            Option<&CachedUiContext>,
+        ),
+        With<UInteraction>,
+    >,
+    parents_query: &Query<&ChildOf>,
+    clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    prefer_cached_context: bool,
+) -> Vec<(PointerId, Vec<(Entity, HitData)>, f32)> {
+    let mut output_hits = Vec::new();
+
     for (pointer_id, pointer_loc) in pointers.iter() {
         let Some(location) = pointer_loc.location() else {
             continue;
@@ -200,12 +446,20 @@ pub fn univis_picking_backend(
         let mut ray_cache: HashMap<Entity, Option<CachedPointerRay>> = HashMap::new();
         let mut hits_by_camera: HashMap<Entity, CameraHitBucket> = HashMap::new();
 
-        for (entity, node, global_transform, size, depth_comp, uself) in nodes_query.iter() {
-            let Some(root_context) = resolve_root_for_entity(entity, &parents_query, &root_query)
+        for (entity, node, global_transform, size, depth_comp, uself, cached_context) in
+            nodes_query.iter()
+        {
+            let resolved_cached_context = if prefer_cached_context {
+                cached_context
+            } else {
+                None
+            };
+            let Some(root_context) =
+                resolve_root_for_entity(resolved_cached_context, entity, parents_query, root_query)
             else {
                 continue;
             };
-            let Some(camera_entity) = root_context.root.camera_entity else {
+            let Some(camera_entity) = root_context.camera_entity else {
                 continue;
             };
 
@@ -234,7 +488,13 @@ pub fn univis_picking_backend(
             let dist = sd_rounded_box(cursor_pos_local, half_size, radius_vec);
 
             if dist <= 0.0 {
-                if is_clipped_by_ancestors(entity, hit_world, &parents_query, &clipper_query) {
+                if is_clipped_by_cached_context(
+                    resolved_cached_context,
+                    entity,
+                    hit_world,
+                    parents_query,
+                    clipper_query,
+                ) {
                     continue;
                 }
 
@@ -296,10 +556,47 @@ pub fn univis_picking_backend(
             }
 
             if !filtered_hits.is_empty() {
-                output.write(PointerHits::new(*pointer_id, filtered_hits, bucket.order));
+                output_hits.push((*pointer_id, filtered_hits, bucket.order));
             }
         }
     }
+
+    output_hits
+}
+
+fn write_pointer_hits(
+    hits: &[(PointerId, Vec<(Entity, HitData)>, f32)],
+    output: &mut MessageWriter<PointerHits>,
+) {
+    for (pointer_id, picks, order) in hits.iter() {
+        output.write(PointerHits::new(*pointer_id, picks.clone(), *order));
+    }
+}
+
+fn count_pointer_hit_mismatches(
+    left: &[(PointerId, Vec<(Entity, HitData)>, f32)],
+    right: &[(PointerId, Vec<(Entity, HitData)>, f32)],
+) -> usize {
+    if left.len() != right.len() {
+        return left.len().abs_diff(right.len()).max(1);
+    }
+
+    left.iter()
+        .zip(right.iter())
+        .map(
+            |((left_pointer, left_hits, _), (right_pointer, right_hits, _))| {
+                let pointer_mismatch = usize::from(left_pointer != right_pointer);
+                let len_mismatch = left_hits.len().abs_diff(right_hits.len());
+                let entity_mismatches = left_hits
+                    .iter()
+                    .zip(right_hits.iter())
+                    .filter(|((left_entity, _), (right_entity, _))| left_entity != right_entity)
+                    .count();
+
+                pointer_mismatch + len_mismatch + entity_mismatches
+            },
+        )
+        .sum()
 }
 
 #[cfg(test)]
@@ -428,6 +725,209 @@ mod tests {
     }
 
     #[test]
+    fn post_settle_picking_hits_first_frame_geometry_with_cached_context() {
+        let mut app = App::new();
+        app.add_message::<PointerHits>();
+        app.init_resource::<PickingSyncState>();
+        app.init_resource::<UiValidationState>();
+        app.add_systems(Update, post_settle_picking_backend);
+
+        let mut work_state = UiWorkState::default();
+        work_state.begin_generation(univis_ui_engine::schedule::UiPendingStages {
+            render: true,
+            ..Default::default()
+        });
+        app.insert_resource(work_state);
+
+        let mut camera = Camera::default();
+        camera.computed = ComputedCameraValues {
+            target_info: Some(RenderTargetInfo {
+                physical_size: UVec2::new(800, 600),
+                scale_factor: 1.0,
+            }),
+            clip_from_view: OrthographicProjection {
+                area: Rect::new(-400.0, -300.0, 400.0, 300.0),
+                ..OrthographicProjection::default_2d()
+            }
+            .get_clip_from_view(),
+            ..default()
+        };
+
+        let camera_entity = app
+            .world_mut()
+            .spawn((
+                camera,
+                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1000.0)),
+            ))
+            .id();
+        let root = app.world_mut().spawn_empty().id();
+        let (_, root_stack) = sample_root(root, UiSpace::Screen);
+
+        let node = app
+            .world_mut()
+            .spawn((
+                UInteraction::default(),
+                LayoutDepth(1),
+                UNode {
+                    width: UVal::Px(200.0),
+                    height: UVal::Px(120.0),
+                    ..default()
+                },
+                ComputedSize {
+                    width: 200.0,
+                    height: 120.0,
+                    local_pos: Vec2::ZERO,
+                },
+                GlobalTransform::default(),
+                CachedUiContext {
+                    root_entity: Some(root),
+                    camera_entity: Some(camera_entity),
+                    space: UiSpace::Screen,
+                    ui_to_world_scale: 1.0,
+                    root_stack,
+                    clip_ancestor: None,
+                },
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            PointerId::Mouse,
+            PointerLocation::new(Location {
+                target: NormalizedRenderTarget::None {
+                    width: 800,
+                    height: 600,
+                },
+                position: Vec2::new(400.0, 300.0),
+            }),
+        ));
+        app.world_mut()
+            .resource_mut::<PickingSyncState>()
+            .pointer_generation = 1;
+
+        app.update();
+
+        let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();
+        let collected = hits.drain().collect::<Vec<_>>();
+        assert_eq!(collected.len(), 1);
+        assert_eq!(collected[0].picks.len(), 1);
+        assert_eq!(collected[0].picks[0].0, node);
+    }
+
+    #[test]
+    fn post_settle_picking_validation_records_shadow_mismatches_without_emitting_hits() {
+        let mut app = App::new();
+        app.add_message::<PointerHits>();
+        app.init_resource::<PickingSyncState>();
+        app.init_resource::<UiValidationState>();
+        app.insert_resource(UiRolloutConfig {
+            use_post_settle_picking: false,
+            validation: UiValidationMode::LogWarnings,
+            ..default()
+        });
+        app.add_systems(Update, post_settle_picking_backend);
+
+        let mut work_state = UiWorkState::default();
+        work_state.begin_generation(univis_ui_engine::schedule::UiPendingStages {
+            render: true,
+            ..Default::default()
+        });
+        app.insert_resource(work_state);
+
+        let mut camera = Camera::default();
+        camera.computed = ComputedCameraValues {
+            target_info: Some(RenderTargetInfo {
+                physical_size: UVec2::new(800, 600),
+                scale_factor: 1.0,
+            }),
+            clip_from_view: OrthographicProjection {
+                area: Rect::new(-400.0, -300.0, 400.0, 300.0),
+                ..OrthographicProjection::default_2d()
+            }
+            .get_clip_from_view(),
+            ..default()
+        };
+
+        let camera_entity = app
+            .world_mut()
+            .spawn((
+                camera,
+                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1000.0)),
+            ))
+            .id();
+        let root = app.world_mut().spawn_empty().id();
+        let (_, root_stack) = sample_root(root, UiSpace::Screen);
+        let clipper = app
+            .world_mut()
+            .spawn((
+                GlobalTransform::from(Transform::from_xyz(500.0, 500.0, 0.0)),
+                ComputedSize {
+                    width: 20.0,
+                    height: 20.0,
+                    ..default()
+                },
+                UNode::default(),
+                UClip { enabled: true },
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(root),
+            UInteraction::default(),
+            LayoutDepth(1),
+            UNode {
+                width: UVal::Px(200.0),
+                height: UVal::Px(120.0),
+                ..default()
+            },
+            ComputedSize {
+                width: 200.0,
+                height: 120.0,
+                local_pos: Vec2::ZERO,
+            },
+            GlobalTransform::default(),
+            CachedUiContext {
+                root_entity: Some(root),
+                camera_entity: Some(camera_entity),
+                space: UiSpace::Screen,
+                ui_to_world_scale: 1.0,
+                root_stack,
+                clip_ancestor: Some(clipper),
+            },
+        ));
+
+        let (mut resolved_root, resolved_stack) = sample_root(root, UiSpace::Screen);
+        resolved_root.camera_entity = Some(camera_entity);
+        app.world_mut()
+            .entity_mut(root)
+            .insert((resolved_root, resolved_stack));
+
+        app.world_mut().spawn((
+            PointerId::Mouse,
+            PointerLocation::new(Location {
+                target: NormalizedRenderTarget::None {
+                    width: 800,
+                    height: 600,
+                },
+                position: Vec2::new(400.0, 300.0),
+            }),
+        ));
+        app.world_mut()
+            .resource_mut::<PickingSyncState>()
+            .pointer_generation = 1;
+
+        app.update();
+
+        let validation_state = app.world().resource::<UiValidationState>();
+        assert_eq!(validation_state.picking_shadow_ui_generation, 1);
+        assert_eq!(validation_state.picking_shadow_pointer_generation, 1);
+        assert_eq!(validation_state.picking_shadow_mismatches, 1);
+
+        let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();
+        let collected = hits.drain().collect::<Vec<_>>();
+        assert!(collected.is_empty());
+    }
+
+    #[test]
     fn resolve_root_for_entity_walks_up_the_parent_chain() {
         let mut app = App::new();
 
@@ -445,10 +945,10 @@ mod tests {
         )>::new(app.world_mut());
         let (parents, roots) = state.get(app.world());
 
-        let resolved = resolve_root_for_entity(grandchild, &parents, &roots)
+        let resolved = resolve_root_for_entity(None, grandchild, &parents, &roots)
             .expect("descendants should resolve to the ancestor root");
-        assert_eq!(resolved.root.root_entity, root);
-        assert_eq!(resolved.root.space, UiSpace::Screen);
+        assert_eq!(resolved.root_entity, root);
+        assert_eq!(resolved.space, UiSpace::Screen);
     }
 
     #[test]

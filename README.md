@@ -120,6 +120,12 @@ Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default wi
 - some of the more polished `World3d` showcase defaults
 - visual validation for rendering-heavy changes still relies partly on manual review
 
+### Frame-Zero Rollout Gate
+
+- `UiRolloutConfig` exposes internal switches for cached ancestry, incremental solve, mesh reuse, and post-settle picking during rollout
+- `UiValidationState` records shadow-check mismatches so validation runs can detect parity regressions without changing public behavior
+- run `./scripts/verify_frame_zero_rollout.sh` before changing rollout defaults or relaxing validation
+
 ## Core Strengths
 
 ### Roots That Match Real Use Cases
@@ -175,6 +181,7 @@ Good starting points:
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
 - [Current Roadmap](ROADMAP_POST_REVIEW.md)
+- [Frame-Zero Roadmap](ROADMAP_FRAME_ZERO.md)
 - [Technical Debt Inventory](TECH_DEBT_INVENTORY.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
@@ -205,6 +212,7 @@ Good starting points:
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
 - `ROADMAP_POST_REVIEW.md`: active planning and post-review priorities.
+- `ROADMAP_FRAME_ZERO.md`: frame-zero settlement and performance architecture roadmap.
 - `TECH_DEBT_INVENTORY.md`: maintainer-facing backlog for the current large-file refactor wave.
 - `changelog.md`: dated chronological record of notable changes.
 

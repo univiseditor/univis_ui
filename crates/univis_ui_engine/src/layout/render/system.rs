@@ -2,6 +2,7 @@
 
 use crate::internal_prelude::*;
 use bevy::{ecs::relationship::Relationship, prelude::*};
+use std::collections::HashMap;
 
 /// Cached material handles attached to a rendered node.
 #[derive(Component, Default)]
@@ -26,6 +27,51 @@ impl MaterialPool {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+struct MeshCacheKey {
+    width_bits: u32,
+    height_bits: u32,
+}
+
+impl MeshCacheKey {
+    fn from_size(size: Vec2) -> Self {
+        Self {
+            width_bits: size.x.to_bits(),
+            height_bits: size.y.to_bits(),
+        }
+    }
+}
+
+/// Shared rectangle mesh cache keyed by the final logical size used for
+/// rendering.
+#[derive(Resource, Default)]
+pub struct MeshPool {
+    meshes_by_size: HashMap<MeshCacheKey, Handle<Mesh>>,
+    pub reused_count: usize,
+    pub created_count: usize,
+}
+
+impl MeshPool {
+    pub fn mesh_for_size(&mut self, size: Vec2, meshes: &mut Assets<Mesh>) -> Handle<Mesh> {
+        let key = MeshCacheKey::from_size(size);
+
+        if let Some(existing) = self.meshes_by_size.get(&key) {
+            self.reused_count += 1;
+            return existing.clone();
+        }
+
+        let mesh = meshes.add(Rectangle::new(size.x, size.y));
+        self.meshes_by_size.insert(key, mesh.clone());
+        self.created_count += 1;
+        mesh
+    }
+
+    pub fn reset_stats(&mut self) {
+        self.reused_count = 0;
+        self.created_count = 0;
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ResolvedRenderMode {
     Flat2d,
@@ -42,9 +88,12 @@ struct ResolvedRenderContext {
 #[doc(hidden)]
 pub fn update_materials_optimized(
     mut commands: Commands,
+    rollout: Option<Res<UiRolloutConfig>>,
     mut pool: ResMut<MaterialPool>,
+    mut mesh_pool: ResMut<MeshPool>,
     mut profiler: Option<ResMut<LayoutProfiler>>,
     roots_changed: Query<(), Changed<ResolvedRootUi>>,
+    clips_changed: Query<(), Or<(Changed<UClip>, Added<UClip>)>>,
     mut queries: ParamSet<(
         Query<(
             Entity,
@@ -53,6 +102,7 @@ pub fn update_materials_optimized(
             Option<&UBorder>,
             Option<&UImage>,
             Option<&UPbr>,
+            Option<&CachedUiContext>,
             Option<&mut MaterialHandles>,
         )>,
         Query<
@@ -63,6 +113,7 @@ pub fn update_materials_optimized(
                 Option<&UBorder>,
                 Option<&UImage>,
                 Option<&UPbr>,
+                Option<&CachedUiContext>,
                 Option<&mut MaterialHandles>,
             ),
             Or<(
@@ -86,11 +137,21 @@ pub fn update_materials_optimized(
     mut materials_3d: ResMut<Assets<UNodeMaterial3d>>,
 ) {
     let start = std::time::Instant::now();
+    let use_cached_ui_context = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_cached_ui_context);
+    let use_mesh_cache = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_mesh_cache);
     let created_before = pool.created_count;
     let reused_before = pool.reused_count;
+    let mesh_created_before = mesh_pool.created_count;
+    let mesh_reused_before = mesh_pool.reused_count;
 
-    if roots_changed.is_empty() {
-        for (entity, node, size, border, image, pbr_opt, handles_opt) in queries.p1().iter_mut() {
+    if roots_changed.is_empty() && clips_changed.is_empty() {
+        for (entity, node, size, border, image, pbr_opt, cached_context, handles_opt) in
+            queries.p1().iter_mut()
+        {
             sync_entity_material(
                 entity,
                 node,
@@ -98,19 +159,25 @@ pub fn update_materials_optimized(
                 border,
                 image,
                 pbr_opt,
+                cached_context,
+                use_cached_ui_context,
                 handles_opt,
                 &parents_query,
                 &clipper_query,
                 &root_query,
                 &mut commands,
                 &mut pool,
+                &mut mesh_pool,
+                use_mesh_cache,
                 &mut meshes,
                 &mut materials_2d,
                 &mut materials_3d,
             );
         }
     } else {
-        for (entity, node, size, border, image, pbr_opt, handles_opt) in queries.p0().iter_mut() {
+        for (entity, node, size, border, image, pbr_opt, cached_context, handles_opt) in
+            queries.p0().iter_mut()
+        {
             sync_entity_material(
                 entity,
                 node,
@@ -118,12 +185,16 @@ pub fn update_materials_optimized(
                 border,
                 image,
                 pbr_opt,
+                cached_context,
+                use_cached_ui_context,
                 handles_opt,
                 &parents_query,
                 &clipper_query,
                 &root_query,
                 &mut commands,
                 &mut pool,
+                &mut mesh_pool,
+                use_mesh_cache,
                 &mut meshes,
                 &mut materials_2d,
                 &mut materials_3d,
@@ -134,6 +205,8 @@ pub fn update_materials_optimized(
     if let Some(ref mut prof) = profiler {
         prof.materials_created = pool.created_count - created_before;
         prof.materials_reused = pool.reused_count - reused_before;
+        prof.meshes_created = mesh_pool.created_count - mesh_created_before;
+        prof.meshes_reused = mesh_pool.reused_count - mesh_reused_before;
         prof.material_update_time = start.elapsed().as_secs_f64() * 1000.0;
     }
 }
@@ -145,12 +218,16 @@ fn sync_entity_material(
     border: Option<&UBorder>,
     image: Option<&UImage>,
     pbr_opt: Option<&UPbr>,
+    cached_context: Option<&CachedUiContext>,
+    use_cached_ui_context: bool,
     handles_opt: Option<Mut<'_, MaterialHandles>>,
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     root_query: &Query<&ResolvedRootUi>,
     commands: &mut Commands,
     pool: &mut MaterialPool,
+    mesh_pool: &mut MeshPool,
+    use_mesh_cache: bool,
     meshes: &mut Assets<Mesh>,
     materials_2d: &mut Assets<UNodeMaterial>,
     materials_3d: &mut Assets<UNodeMaterial3d>,
@@ -160,7 +237,12 @@ fn sync_entity_material(
         return;
     }
 
-    let render_context = resolve_render_context(entity, parents_query, root_query);
+    let cached_context = if use_cached_ui_context {
+        cached_context
+    } else {
+        None
+    };
+    let render_context = resolve_render_context(entity, cached_context, parents_query, root_query);
     let world_scale = render_context.ui_to_world_scale;
     let size_vec = logical_size * world_scale;
     let softness = minimum_local_softness(world_scale);
@@ -195,11 +277,15 @@ fn sync_entity_material(
     };
 
     let (clip_center, clip_size, clip_radius, use_clip) =
-        find_clipper(entity, parents_query, clipper_query);
+        resolve_clipper(cached_context, entity, parents_query, clipper_query);
     let clip_size = clip_size * world_scale;
     let clip_radius = clip_radius * world_scale;
 
-    let mesh = meshes.add(Rectangle::new(size_vec.x, size_vec.y));
+    let mesh = if use_mesh_cache {
+        mesh_pool.mesh_for_size(size_vec, meshes)
+    } else {
+        meshes.add(Rectangle::new(size_vec.x, size_vec.y))
+    };
 
     match render_context.mode {
         ResolvedRenderMode::World3d => {
@@ -391,9 +477,24 @@ fn sync_entity_material(
 
 fn resolve_render_context(
     entity: Entity,
+    cached_context: Option<&CachedUiContext>,
     parents_query: &Query<&ChildOf>,
     root_query: &Query<&ResolvedRootUi>,
 ) -> ResolvedRenderContext {
+    if let Some(context) = cached_context
+        && context.root_entity.is_some()
+    {
+        let mode = match context.space {
+            UiSpace::World3d => ResolvedRenderMode::World3d,
+            UiSpace::Screen | UiSpace::World2d => ResolvedRenderMode::Flat2d,
+        };
+
+        return ResolvedRenderContext {
+            mode,
+            ui_to_world_scale: context.ui_to_world_scale,
+        };
+    }
+
     let Some(root) = resolve_root_for_entity(entity, parents_query, root_query) else {
         return ResolvedRenderContext {
             mode: ResolvedRenderMode::Flat2d,
@@ -431,11 +532,27 @@ fn resolve_root_for_entity(
 
 // ===== Helper Functions =====
 // 1. دالة البحث عن القص (مشتركة)
-fn find_clipper(
+fn resolve_clipper(
+    cached_context: Option<&CachedUiContext>,
     start_entity: Entity,
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
 ) -> (Vec2, Vec2, Vec4, u32) {
+    if let Some(clip_entity) = cached_context.and_then(|context| context.clip_ancestor)
+        && let Ok((transform, size, node, clip)) = clipper_query.get(clip_entity)
+        && clip.enabled
+    {
+        let center = transform.translation().truncate();
+        let clip_size = Vec2::new(size.width, size.height);
+        let radius = Vec4::new(
+            node.border_radius.top_right,
+            node.border_radius.bottom_right,
+            node.border_radius.top_left,
+            node.border_radius.bottom_left,
+        );
+        return (center, clip_size, radius, 1);
+    }
+
     let mut current_entity = start_entity;
     while let Ok(parent) = parents_query.get(current_entity) {
         current_entity = parent.get();

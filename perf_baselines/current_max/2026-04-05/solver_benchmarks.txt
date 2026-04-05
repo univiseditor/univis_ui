@@ -1,0 +1,9 @@
+   Compiling univis_ui_engine v0.2.0-alpha.2 (/home/abdellah/Univis-project/univis_ui/crates/univis_ui_engine)
+    Finished `release` profile [optimized] target(s) in 7.60s
+     Running `target/release/examples/solver_benchmarks`
+Univis solver benchmark
+warmup=48 iterations=240 enforce_budgets=false
+scenario                    items     avg_ms     p95_ms     max_ms     budget   status
+dense_row_512                 512      0.042      0.058      0.315      1.000       ok
+wrap_cards_400                400      0.037      0.044      0.389      1.400       ok
+grid_dashboard_196            196      0.022      0.022      0.025      1.800       ok

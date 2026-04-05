@@ -26,15 +26,23 @@ impl Plugin for UnivisTextFieldPlugin {
             .add_message::<TextFieldSubmitEvent>()
             .add_systems(
                 Update,
-                (
-                    init_textfield_visuals,
-                    handle_global_unfocus, // ✅ نظام جديد
-                    handle_textfield_input,
-                    update_textfield_visuals,
-                    animate_textfield_cursor,
-                    emit_textfield_events,
-                )
-                    .chain(),
+                init_textfield_visuals.in_set(UnivisWidgetUpdateSet::Build),
+            )
+            .add_systems(
+                Update,
+                (handle_global_unfocus, handle_textfield_input)
+                    .chain()
+                    .in_set(UnivisWidgetUpdateSet::Logic),
+            )
+            .add_systems(
+                Update,
+                (update_textfield_visuals, animate_textfield_cursor)
+                    .chain()
+                    .in_set(UnivisWidgetUpdateSet::Visual),
+            )
+            .add_systems(
+                Update,
+                emit_textfield_events.in_set(UnivisWidgetUpdateSet::Events),
             );
     }
 

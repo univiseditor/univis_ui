@@ -11,7 +11,9 @@ pub(crate) mod internal_prelude {
     pub use univis_ui_engine::internal::{ComputedSize, ResolvedRootStack, ResolvedRootUi};
     pub use univis_ui_engine::layout::geometry::{UCornerRadius, USides, UVal};
     pub use univis_ui_engine::prelude::*;
-    pub use univis_ui_engine::schedule::UnivisPostUpdateSet;
+    pub use univis_ui_engine::schedule::{
+        UiSettlementSchedule, UnivisPostUpdateSet, UnivisWidgetUpdateSet,
+    };
     pub use univis_ui_interaction::prelude::*;
     pub use univis_ui_style::prelude::*;
 }

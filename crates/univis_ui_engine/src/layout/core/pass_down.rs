@@ -35,6 +35,7 @@ struct NodeData {
     layout: ULayout,
     children: Vec<Entity>,
     computed_size: ComputedSize,
+    cached_context: Option<CachedUiContext>,
 }
 
 struct ChildLayoutData {
@@ -55,7 +56,8 @@ struct SolvedChild {
 #[doc(hidden)]
 pub fn downward_solve_pass_safe(
     tree_depth: Res<LayoutTreeDepth>,
-    cache: Res<LayoutCache>,
+    rollout: Option<Res<UiRolloutConfig>>,
+    mut cache: ResMut<LayoutCache>,
     mut profiler: Option<ResMut<LayoutProfiler>>, // إضافة Profiler اختياري
 
     mut nodes: Query<(
@@ -65,6 +67,7 @@ pub fn downward_solve_pass_safe(
         &LayoutDepth,
         Option<&Children>,
         Option<&USelf>,
+        Option<&CachedUiContext>,
         &mut ComputedSize,
         &mut Transform,
     )>,
@@ -75,16 +78,28 @@ pub fn downward_solve_pass_safe(
     parents_query: Query<&ChildOf>,
 ) {
     let start = std::time::Instant::now();
+    let mut solved_count = 0;
+    let use_incremental_solve = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_incremental_solve);
+    let use_cached_ui_context = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_cached_ui_context);
 
     for depth in 0..=tree_depth.max_depth {
         // استخدام Cache
-        let Some(layer_entities) = cache.get_entities_at_depth(depth) else {
+        let Some(layer_entities) = cache.get_entities_at_depth(depth).cloned() else {
             continue;
         };
 
-        for &entity in layer_entities {
+        for entity in layer_entities {
+            if use_incremental_solve && !cache.is_solve_dirty(entity) {
+                continue;
+            }
+
             // 1. استخراج البيانات
             let Some(node_data) = extract_node_data(entity, &nodes) else {
+                cache.clear_solve_dirty(entity);
                 continue;
             };
 
@@ -100,7 +115,7 @@ pub fn downward_solve_pass_safe(
 
             // تحديث الجذر
             if depth == 0
-                && let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
+                && let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
             {
                 computed.width = container_size.x;
                 computed.height = container_size.y;
@@ -111,6 +126,7 @@ pub fn downward_solve_pass_safe(
                 collect_children_layout_data(&node_data.children, &nodes, &intrinsic_query);
 
             if children_layout_data.is_empty() {
+                cache.clear_solve_dirty(entity);
                 continue;
             }
 
@@ -135,18 +151,24 @@ pub fn downward_solve_pass_safe(
             let solver_config = translate_config(&node_data.layout, &node_data.spec);
             let solved_size =
                 solve_flex_layout(&solver_config, constraints, &mut solver_items_refs);
+            solved_count += 1;
             let final_size = if depth == 0 {
                 container_size
             } else {
                 solved_size
             };
-            let world_scale = resolved_world_scale_for_entity(entity, &parents_query, &root_query);
-            let root_stack =
-                resolved_root_stack_for_entity(entity, &parents_query, &root_stack_query)
-                    .unwrap_or_default();
+            let (world_scale, root_stack) = resolve_solver_context(
+                entity,
+                use_cached_ui_context
+                    .then_some(node_data.cached_context)
+                    .flatten(),
+                &parents_query,
+                &root_query,
+                &root_stack_query,
+            );
 
             // 8. تحديث حجم الحاوية
-            if let Ok((_, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+            if let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
                 computed.width = final_size.x;
                 computed.height = final_size.y;
             }
@@ -167,14 +189,21 @@ pub fn downward_solve_pass_safe(
                 final_size,
                 world_scale,
                 root_stack,
+                use_incremental_solve,
+                &mut cache,
                 &mut nodes,
             );
+
+            if use_incremental_solve {
+                cache.clear_solve_dirty(entity);
+            }
         }
     }
 
     // تحديث Profiler
     if let Some(ref mut prof) = profiler {
         prof.downward_pass_time = start.elapsed().as_secs_f64() * 1000.0;
+        prof.solved_nodes += solved_count;
     }
 }
 
@@ -191,17 +220,20 @@ fn extract_node_data(
         &LayoutDepth,
         Option<&Children>,
         Option<&USelf>,
+        Option<&CachedUiContext>,
         &mut ComputedSize,
         &mut Transform,
     )>,
 ) -> Option<NodeData> {
-    let (_, node, layout_opt, _, children_opt, _, computed, _) = query.get(entity).ok()?;
+    let (_, node, layout_opt, _, children_opt, _, cached_context, computed, _) =
+        query.get(entity).ok()?;
 
     Some(NodeData {
         spec: node.clone(),
         layout: layout_opt.cloned().unwrap_or_default(),
         children: children_opt.map(|c| c.iter().collect()).unwrap_or_default(),
         computed_size: *computed,
+        cached_context: cached_context.copied(),
     })
 }
 
@@ -277,6 +309,25 @@ fn resolved_root_stack_for_entity(
     }
 }
 
+fn resolve_solver_context(
+    entity: Entity,
+    cached_context: Option<CachedUiContext>,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<&ResolvedRootUi>,
+    root_stack_query: &Query<&ResolvedRootStack>,
+) -> (f32, ResolvedRootStack) {
+    if let Some(context) = cached_context
+        && context.root_entity.is_some()
+    {
+        return (context.ui_to_world_scale, context.root_stack);
+    }
+
+    (
+        resolved_world_scale_for_entity(entity, parents_query, root_query),
+        resolved_root_stack_for_entity(entity, parents_query, root_stack_query).unwrap_or_default(),
+    )
+}
+
 fn collect_children_layout_data(
     children: &[Entity],
     nodes_query: &Query<(
@@ -286,6 +337,7 @@ fn collect_children_layout_data(
         &LayoutDepth,
         Option<&Children>,
         Option<&USelf>,
+        Option<&CachedUiContext>,
         &mut ComputedSize,
         &mut Transform,
     )>,
@@ -294,7 +346,7 @@ fn collect_children_layout_data(
     children
         .iter()
         .filter_map(|&child_entity| {
-            let (_, node, _, _, _, uself_opt, _, _) = nodes_query.get(child_entity).ok()?;
+            let (_, node, _, _, _, uself_opt, _, _, _) = nodes_query.get(child_entity).ok()?;
             let intrinsic = intrinsic_query.get(child_entity).ok()?;
 
             let mut spec = translate_spec(node, uself_opt);
@@ -366,6 +418,8 @@ fn apply_results_to_children(
     parent_size: Vec2,
     world_scale: f32,
     root_stack: ResolvedRootStack,
+    use_incremental_solve: bool,
+    cache: &mut LayoutCache,
     nodes_query: &mut Query<(
         Entity,
         &UNode,
@@ -373,14 +427,18 @@ fn apply_results_to_children(
         &LayoutDepth,
         Option<&Children>,
         Option<&USelf>,
+        Option<&CachedUiContext>,
         &mut ComputedSize,
         &mut Transform,
     )>,
 ) {
     for solved in solved_children.iter() {
-        if let Ok((_, _, _, layout_depth, _, uself, mut computed, mut transform)) =
+        if let Ok((_, _, _, layout_depth, children, uself, _, mut computed, mut transform)) =
             nodes_query.get_mut(solved.entity)
         {
+            let size_changed = (computed.width - solved.result.size.x).abs() > 0.001
+                || (computed.height - solved.result.size.y).abs() > 0.001;
+
             computed.width = solved.result.size.x;
             computed.height = solved.result.size.y;
 
@@ -395,6 +453,13 @@ fn apply_results_to_children(
 
             let order = uself.map(|value| value.order).unwrap_or(0);
             transform.translation.z = root_stack.local_depth_offset(layout_depth.0, order);
+
+            if use_incremental_solve
+                && size_changed
+                && children.is_some_and(|value| !value.is_empty())
+            {
+                cache.mark_solve_dirty(solved.entity);
+            }
         }
     }
 }

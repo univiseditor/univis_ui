@@ -5,6 +5,7 @@
 //! compose dedicated widget plugins manually when you want a narrower surface.
 
 use crate::internal_prelude::*;
+use bevy::asset::embedded_asset;
 use bevy::prelude::*;
 
 /// Badge and tag widgets.
@@ -63,9 +64,19 @@ struct WidgetRuntimeWarnings {
 impl Plugin for UnivisWidgetPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.register_type::<UImage>()
+            .configure_sets(
+                Update,
+                (
+                    UnivisWidgetUpdateSet::Build,
+                    UnivisWidgetUpdateSet::Logic,
+                    UnivisWidgetUpdateSet::Visual,
+                    UnivisWidgetUpdateSet::Events,
+                )
+                    .chain(),
+            )
             .add_systems(Update, warn_on_widget_runtime_limitations)
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 sync_image_geometry
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(UnivisPostUpdateSet::LayoutMeasure),
@@ -88,6 +99,10 @@ fn add_core_widget_plugins(app: &mut App) {
         .add_plugins(UnivisScrollViewPlugin)
         .add_plugins(UnivisDividerPlugin)
         .add_plugins(UnivisPanelPlugin);
+}
+
+pub(super) fn register_widget_embedded_assets(app: &mut App) {
+    embedded_asset!(app, "shaders/text_label_sdf.wgsl");
 }
 
 fn add_default_widget_runtime_plugins(app: &mut App) {

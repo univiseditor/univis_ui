@@ -1,3 +1,4 @@
+use crate::layout::layout_system::{ResolvedRootStack, UiSpace};
 use bevy::prelude::*;
 
 /// Indicates the depth level of a node in the UI tree.
@@ -62,3 +63,31 @@ pub struct LayoutTreeDepth {
 #[derive(Component, Reflect, Default, Clone, Copy, Debug)]
 #[reflect(Component)]
 pub struct UI3d;
+
+/// Cached root and clip ancestry derived during the hierarchy phase.
+///
+/// This avoids repeated parent-chain walks in solve, render, and picking hot
+/// paths. The nearest enabled clip ancestor is stored separately so render and
+/// hit tests can fetch the current clip geometry directly from that entity.
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub struct CachedUiContext {
+    pub root_entity: Option<Entity>,
+    pub camera_entity: Option<Entity>,
+    pub space: UiSpace,
+    pub ui_to_world_scale: f32,
+    pub root_stack: ResolvedRootStack,
+    pub clip_ancestor: Option<Entity>,
+}
+
+impl Default for CachedUiContext {
+    fn default() -> Self {
+        Self {
+            root_entity: None,
+            camera_entity: None,
+            space: UiSpace::Screen,
+            ui_to_world_scale: 1.0,
+            root_stack: ResolvedRootStack::default(),
+            clip_ancestor: None,
+        }
+    }
+}

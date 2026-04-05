@@ -236,6 +236,7 @@ pub fn upward_measure_pass_cached(
         }
     }
 
+    cache.begin_solve_from_dirty();
     cache.clear_all_dirty();
     cache.increment_frame();
 

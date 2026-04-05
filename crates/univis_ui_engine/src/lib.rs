@@ -15,10 +15,12 @@ pub mod schedule;
 
 #[doc(hidden)]
 pub mod internal {
-    pub use crate::layout::components::{IntrinsicSize, LayoutDepth, LayoutTreeDepth, UI3d};
+    pub use crate::layout::components::{
+        CachedUiContext, IntrinsicSize, LayoutDepth, LayoutTreeDepth, UI3d,
+    };
     pub use crate::layout::geometry::ComputedSize;
     pub use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
-    pub use crate::layout::render::system::{MaterialHandles, MaterialPool};
+    pub use crate::layout::render::system::{MaterialHandles, MaterialPool, MeshPool};
 }
 
 #[allow(unused_imports)]
@@ -50,6 +52,9 @@ pub mod prelude {
     };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;
+    pub use crate::schedule::{
+        UiRolloutConfig, UiSettlementConfig, UiValidationMode, UiValidationState,
+    };
     pub use crate::{UnivisEnginePlugin, layout::prelude::*};
 }
 
@@ -59,10 +64,12 @@ pub struct UnivisEnginePlugin;
 
 impl Plugin for UnivisEnginePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            layout::univis_node::UnivisNodePlugin,
-            layout::UnivisLayoutPlugin,
-            layout::render::UnivisRenderPlugin,
-        ));
+        app.init_resource::<schedule::UiRolloutConfig>()
+            .init_resource::<schedule::UiValidationState>()
+            .add_plugins((
+                layout::univis_node::UnivisNodePlugin,
+                layout::UnivisLayoutPlugin,
+                layout::render::UnivisRenderPlugin,
+            ));
     }
 }

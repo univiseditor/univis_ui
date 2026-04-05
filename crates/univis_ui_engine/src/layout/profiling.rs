@@ -38,6 +38,7 @@ pub struct LayoutProfiler {
     // Node stats
     pub total_nodes: usize,
     pub dirty_nodes: usize,
+    pub solved_nodes: usize,
     pub visible_nodes: usize,
 
     // Frame history
@@ -47,6 +48,8 @@ pub struct LayoutProfiler {
     // Optimization stats
     pub materials_created: usize,
     pub materials_reused: usize,
+    pub meshes_created: usize,
+    pub meshes_reused: usize,
     pub cache_hits: usize,
     pub cache_misses: usize,
 }
@@ -71,11 +74,14 @@ impl Default for LayoutProfiler {
             material_update_time: 0.0,
             total_nodes: 0,
             dirty_nodes: 0,
+            solved_nodes: 0,
             visible_nodes: 0,
             frame_history: Vec::new(),
             max_history: 300,
             materials_created: 0,
             materials_reused: 0,
+            meshes_created: 0,
+            meshes_reused: 0,
             cache_hits: 0,
             cache_misses: 0,
         }
@@ -182,6 +188,14 @@ impl LayoutProfiler {
             return 0.0;
         }
         (self.materials_reused as f64 / total as f64) * 100.0
+    }
+
+    pub fn mesh_reuse_rate(&self) -> f64 {
+        let total = self.meshes_created + self.meshes_reused;
+        if total == 0 {
+            return 0.0;
+        }
+        (self.meshes_reused as f64 / total as f64) * 100.0
     }
 
     pub fn dirty_ratio(&self) -> f64 {

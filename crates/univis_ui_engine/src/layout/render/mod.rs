@@ -21,14 +21,15 @@ impl Plugin for UnivisRenderPlugin {
             .register_type::<UI3d>()
             .register_type::<UPbr>()
             .init_resource::<MaterialPool>()
+            .init_resource::<MeshPool>()
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 sync_cached_ui3d
                     .in_set(UnivisPostUpdateSet::RenderSync)
                     .after(UnivisPostUpdateSet::LayoutSolve),
             )
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 update_materials_optimized
                     .in_set(UnivisPostUpdateSet::RenderSync)
                     .after(sync_cached_ui3d),

@@ -9,11 +9,11 @@ pub mod interaction;
 pub(crate) mod internal_prelude {
     pub use crate::interaction::prelude::*;
     pub use univis_ui_engine::internal::{
-        ComputedSize, LayoutDepth, ResolvedRootStack, ResolvedRootUi,
+        CachedUiContext, ComputedSize, LayoutDepth, ResolvedRootStack, ResolvedRootUi,
     };
     pub use univis_ui_engine::layout::geometry::{UCornerRadius, USides, UVal};
     pub use univis_ui_engine::prelude::*;
-    pub use univis_ui_engine::schedule::UnivisPostUpdateSet;
+    pub use univis_ui_engine::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 }
 
 /// The recommended import surface when depending on `univis_ui_interaction` directly.

@@ -25,7 +25,7 @@ pub(crate) use self::root_stacking::{
 pub(crate) use self::types::RootSpawnRankCounter;
 pub use self::types::{
     ResolvedRootStack, ResolvedRootUi, URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize,
-    UiSpace,
+    UiRootSettlementState, UiSpace,
 };
 use self::types::{RootResolutionState, RootSpawnRank};
 pub use self::ui3d_sync::sync_cached_ui3d;

@@ -53,100 +53,101 @@ pub(super) fn init_select_visuals(
         let mut value_label_entity = None;
         let mut chevron_entity = None;
 
-        commands.entity(entity).insert((
-            UNode {
-                width: UVal::Px(select.width),
-                height: UVal::Content,
-                background_color: Color::NONE,
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                gap: 4.0,
-                ..default()
-            },
-        ));
+        commands
+            .entity(entity)
+            .insert((
+                UNode {
+                    width: UVal::Px(select.width),
+                    height: UVal::Content,
+                    background_color: Color::NONE,
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Column,
+                    gap: 4.0,
+                    ..default()
+                },
+            ))
+            .with_children(|parent| {
+                let trigger = parent
+                    .spawn((
+                        UNode {
+                            width: UVal::Percent(1.0),
+                            height: UVal::Px(select.trigger_height),
+                            padding: select.padding,
+                            background_color: select.background,
+                            border_radius: UCornerRadius::all(8.0),
+                            ..default()
+                        },
+                        UBorder {
+                            color: select.border_color,
+                            width: 1.0,
+                            radius: UCornerRadius::all(8.0),
+                            offset: 0.0,
+                        },
+                        ULayout {
+                            display: UDisplay::Flex,
+                            flex_direction: UFlexDirection::Row,
+                            justify_content: UJustifyContent::SpaceBetween,
+                            align_items: UAlignItems::Center,
+                            ..default()
+                        },
+                        Pickable::default(),
+                        UInteraction::default(),
+                        UInteractionColors {
+                            normal: select.background,
+                            hovered: select.hover_color,
+                            pressed: select.pressed_color,
+                        },
+                        SelectTrigger { select: entity },
+                    ))
+                    .with_children(|trigger_parent| {
+                        let text = selected_option(&select)
+                            .map(|opt| opt.label.clone())
+                            .unwrap_or_else(|| select.placeholder.clone());
+                        let color = if select.selected_index.is_some() {
+                            select.text_color
+                        } else {
+                            select.placeholder_color
+                        };
 
-        commands.entity(entity).with_children(|parent| {
-            let trigger = parent
-                .spawn((
-                    UNode {
-                        width: UVal::Percent(1.0),
-                        height: UVal::Px(select.trigger_height),
-                        padding: select.padding,
-                        background_color: select.background,
-                        border_radius: UCornerRadius::all(8.0),
-                        ..default()
-                    },
-                    UBorder {
-                        color: select.border_color,
-                        width: 1.0,
-                        radius: UCornerRadius::all(8.0),
-                        offset: 0.0,
-                    },
-                    ULayout {
-                        display: UDisplay::Flex,
-                        flex_direction: UFlexDirection::Row,
-                        justify_content: UJustifyContent::SpaceBetween,
-                        align_items: UAlignItems::Center,
-                        ..default()
-                    },
-                    Pickable::default(),
-                    UInteraction::default(),
-                    UInteractionColors {
-                        normal: select.background,
-                        hovered: select.hover_color,
-                        pressed: select.pressed_color,
-                    },
-                    SelectTrigger { select: entity },
-                ))
-                .with_children(|trigger_parent| {
-                    let text = selected_option(&select)
-                        .map(|opt| opt.label.clone())
-                        .unwrap_or_else(|| select.placeholder.clone());
-                    let color = if select.selected_index.is_some() {
-                        select.text_color
-                    } else {
-                        select.placeholder_color
-                    };
+                        let value_label = trigger_parent
+                            .spawn((
+                                UTextLabel {
+                                    text,
+                                    font_size: select.font_size,
+                                    color,
+                                    autosize: false,
+                                    ..default()
+                                },
+                                SelectValueLabel,
+                                Pickable::IGNORE,
+                            ))
+                            .id();
 
-                    let value_label = trigger_parent
-                        .spawn((
-                            UTextLabel {
-                                text,
-                                font_size: select.font_size,
-                                color,
-                                autosize: false,
-                                ..default()
-                            },
-                            SelectValueLabel,
-                            Pickable::IGNORE,
-                        ))
-                        .id();
+                        let chevron = trigger_parent
+                            .spawn((
+                                UTextLabel {
+                                    text: Icon::CHEVRON_DOWN.to_string(),
+                                    font_size: select.font_size,
+                                    color: select.text_color,
+                                    font: theme.icon.font.clone(),
+                                    autosize: true,
+                                    ..default()
+                                },
+                                SelectChevronLabel,
+                                Pickable::IGNORE,
+                            ))
+                            .id();
 
-                    let chevron = trigger_parent
-                        .spawn((
-                            UTextLabel {
-                                text: Icon::CHEVRON_DOWN.to_string(),
-                                font_size: select.font_size,
-                                color: select.text_color,
-                                font: theme.icon.font.clone(),
-                                autosize: true,
-                                ..default()
-                            },
-                            SelectChevronLabel,
-                            Pickable::IGNORE,
-                        ))
-                        .id();
+                        value_label_entity = Some(value_label);
+                        chevron_entity = Some(chevron);
+                    })
+                    .id();
 
-                    value_label_entity = Some(value_label);
-                    chevron_entity = Some(chevron);
-                })
-                .id();
-
-            trigger_entity = Some(trigger);
-        });
+                trigger_entity = Some(trigger);
+            });
 
         commands.entity(entity).insert(SelectRuntime {
             trigger_entity: trigger_entity.expect("select trigger must exist"),

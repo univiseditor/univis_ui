@@ -7,6 +7,7 @@ use bevy::picking::backend::prelude::*;
 use bevy::picking::pointer::Location;
 use bevy::prelude::*;
 use std::collections::HashMap;
+use univis_ui_engine::layout::profiling::LayoutProfiler;
 use univis_ui_engine::schedule::UiWorkState;
 
 #[derive(Resource, Default)]
@@ -119,6 +120,22 @@ struct RankedHit {
 struct CameraHitBucket {
     order: f32,
     hits: Vec<RankedHit>,
+}
+
+#[derive(Clone)]
+struct PreparedPickingCandidate {
+    entity: Entity,
+    global_transform: GlobalTransform,
+    half_size: Vec2,
+    radius_vec: Vec4,
+    cached_context: Option<CachedUiContext>,
+    root_sort_key: f32,
+    local_depth_key: f32,
+}
+
+#[derive(Default)]
+struct PreparedCameraBucket {
+    candidates: Vec<PreparedPickingCandidate>,
 }
 
 // Returns `true` when `potential_ancestor` appears in the parent chain.
@@ -246,6 +263,7 @@ pub fn univis_picking_backend(
     >,
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    mut profiler: Option<ResMut<LayoutProfiler>>,
     mut output: MessageWriter<PointerHits>,
 ) {
     let prefer_cached_context = rollout
@@ -259,6 +277,7 @@ pub fn univis_picking_backend(
         &parents_query,
         &clipper_query,
         prefer_cached_context,
+        profiler.as_deref_mut(),
         &mut output,
     );
 }
@@ -295,6 +314,7 @@ pub fn post_settle_picking_backend(
     work_state: Option<Res<UiWorkState>>,
     mut validation_state: ResMut<UiValidationState>,
     mut sync_state: ResMut<PickingSyncState>,
+    mut profiler: Option<ResMut<LayoutProfiler>>,
     mut output: MessageWriter<PointerHits>,
 ) {
     let rollout = rollout
@@ -332,6 +352,7 @@ pub fn post_settle_picking_backend(
         &parents_query,
         &clipper_query,
         rollout.use_cached_ui_context,
+        profiler.as_deref_mut(),
     );
 
     if validation_enabled {
@@ -343,6 +364,7 @@ pub fn post_settle_picking_backend(
             &parents_query,
             &clipper_query,
             false,
+            None,
         );
         let shadow_hits = collect_pointer_hits(
             &pointers,
@@ -352,6 +374,7 @@ pub fn post_settle_picking_backend(
             &parents_query,
             &clipper_query,
             true,
+            None,
         );
         let mismatch_count = count_pointer_hit_mismatches(&legacy_hits, &shadow_hits);
         validation_state.record_picking_shadow_check(
@@ -402,6 +425,7 @@ fn emit_pointer_hits(
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     prefer_cached_context: bool,
+    profiler: Option<&mut LayoutProfiler>,
     output: &mut MessageWriter<PointerHits>,
 ) {
     let hits = collect_pointer_hits(
@@ -412,8 +436,75 @@ fn emit_pointer_hits(
         parents_query,
         clipper_query,
         prefer_cached_context,
+        profiler,
     );
     write_pointer_hits(&hits, output);
+}
+
+fn build_picking_candidate_buckets(
+    root_query: &Query<(&ResolvedRootUi, &ResolvedRootStack)>,
+    nodes_query: &Query<
+        (
+            Entity,
+            &UNode,
+            &GlobalTransform,
+            &ComputedSize,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+            Option<&CachedUiContext>,
+        ),
+        With<UInteraction>,
+    >,
+    parents_query: &Query<&ChildOf>,
+    prefer_cached_context: bool,
+) -> HashMap<Entity, PreparedCameraBucket> {
+    let mut buckets: HashMap<Entity, PreparedCameraBucket> = HashMap::new();
+
+    for (entity, node, global_transform, size, depth_comp, uself, cached_context) in
+        nodes_query.iter()
+    {
+        let resolved_cached_context = if prefer_cached_context {
+            cached_context.copied()
+        } else {
+            None
+        };
+        let Some(root_context) = resolve_root_for_entity(
+            resolved_cached_context.as_ref(),
+            entity,
+            parents_query,
+            root_query,
+        ) else {
+            continue;
+        };
+        let Some(camera_entity) = root_context.camera_entity else {
+            continue;
+        };
+
+        let layout_depth = depth_comp.map(|d| d.0).unwrap_or(0);
+        let order = uself.map(|value| value.order).unwrap_or(0);
+        let local_depth_key = root_context.stack.local_depth_key(layout_depth, order);
+
+        buckets
+            .entry(camera_entity)
+            .or_default()
+            .candidates
+            .push(PreparedPickingCandidate {
+                entity,
+                global_transform: *global_transform,
+                half_size: Vec2::new(size.width, size.height) * 0.5,
+                radius_vec: Vec4::new(
+                    node.border_radius.top_right,
+                    node.border_radius.bottom_right,
+                    node.border_radius.top_left,
+                    node.border_radius.bottom_left,
+                ),
+                cached_context: resolved_cached_context,
+                root_sort_key: root_context.stack.capsule_sort_key,
+                local_depth_key,
+            });
+    }
+
+    buckets
 }
 
 fn collect_pointer_hits(
@@ -435,7 +526,22 @@ fn collect_pointer_hits(
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     prefer_cached_context: bool,
+    profiler: Option<&mut LayoutProfiler>,
 ) -> Vec<(PointerId, Vec<(Entity, HitData)>, f32)> {
+    let candidate_buckets = build_picking_candidate_buckets(
+        root_query,
+        nodes_query,
+        parents_query,
+        prefer_cached_context,
+    );
+    if let Some(profiler) = profiler {
+        profiler.picking_bucket_count = candidate_buckets.len();
+        profiler.picking_candidate_count = candidate_buckets
+            .values()
+            .map(|bucket| bucket.candidates.len())
+            .sum();
+    }
+
     let mut output_hits = Vec::new();
 
     for (pointer_id, pointer_loc) in pointers.iter() {
@@ -446,81 +552,56 @@ fn collect_pointer_hits(
         let mut ray_cache: HashMap<Entity, Option<CachedPointerRay>> = HashMap::new();
         let mut hits_by_camera: HashMap<Entity, CameraHitBucket> = HashMap::new();
 
-        for (entity, node, global_transform, size, depth_comp, uself, cached_context) in
-            nodes_query.iter()
-        {
-            let resolved_cached_context = if prefer_cached_context {
-                cached_context
-            } else {
-                None
-            };
-            let Some(root_context) =
-                resolve_root_for_entity(resolved_cached_context, entity, parents_query, root_query)
-            else {
-                continue;
-            };
-            let Some(camera_entity) = root_context.camera_entity else {
-                continue;
-            };
-
+        for (camera_entity, bucket) in candidate_buckets.iter() {
             let ray = ray_cache
-                .entry(camera_entity)
-                .or_insert_with(|| pointer_ray_for_camera(location, camera_entity, &cameras))
+                .entry(*camera_entity)
+                .or_insert_with(|| pointer_ray_for_camera(location, *camera_entity, &cameras))
                 .as_ref();
             let Some(ray) = ray else {
                 continue;
             };
 
-            let Some((hit_world, cursor_pos_local, hit_normal, hit_distance)) =
-                intersect_ray_with_node_plane(ray, global_transform)
-            else {
-                continue;
-            };
-
-            let half_size = Vec2::new(size.width, size.height) * 0.5;
-            let radius_vec = Vec4::new(
-                node.border_radius.top_right,
-                node.border_radius.bottom_right,
-                node.border_radius.top_left,
-                node.border_radius.bottom_left,
-            );
-
-            let dist = sd_rounded_box(cursor_pos_local, half_size, radius_vec);
-
-            if dist <= 0.0 {
-                if is_clipped_by_cached_context(
-                    resolved_cached_context,
-                    entity,
-                    hit_world,
-                    parents_query,
-                    clipper_query,
-                ) {
+            for candidate in bucket.candidates.iter() {
+                let Some((hit_world, cursor_pos_local, hit_normal, hit_distance)) =
+                    intersect_ray_with_node_plane(ray, &candidate.global_transform)
+                else {
                     continue;
+                };
+
+                let dist =
+                    sd_rounded_box(cursor_pos_local, candidate.half_size, candidate.radius_vec);
+
+                if dist <= 0.0 {
+                    if is_clipped_by_cached_context(
+                        candidate.cached_context.as_ref(),
+                        candidate.entity,
+                        hit_world,
+                        parents_query,
+                        clipper_query,
+                    ) {
+                        continue;
+                    }
+
+                    hits_by_camera
+                        .entry(*camera_entity)
+                        .or_insert_with(|| CameraHitBucket {
+                            order: ray.order,
+                            ..default()
+                        })
+                        .hits
+                        .push(RankedHit {
+                            entity: candidate.entity,
+                            hit_data: HitData::new(
+                                *camera_entity,
+                                hit_distance.max(0.0),
+                                Some(hit_world),
+                                Some(hit_normal),
+                            ),
+                            root_sort_key: candidate.root_sort_key,
+                            local_depth_key: candidate.local_depth_key,
+                            hit_distance,
+                        });
                 }
-
-                let layout_depth = depth_comp.map(|d| d.0).unwrap_or(0);
-                let order = uself.map(|value| value.order).unwrap_or(0);
-                let local_depth_key = root_context.stack.local_depth_key(layout_depth, order);
-
-                hits_by_camera
-                    .entry(camera_entity)
-                    .or_insert_with(|| CameraHitBucket {
-                        order: ray.order,
-                        ..default()
-                    })
-                    .hits
-                    .push(RankedHit {
-                        entity,
-                        hit_data: HitData::new(
-                            camera_entity,
-                            hit_distance.max(0.0),
-                            Some(hit_world),
-                            Some(hit_normal),
-                        ),
-                        root_sort_key: root_context.stack.capsule_sort_key,
-                        local_depth_key,
-                        hit_distance,
-                    });
             }
         }
 

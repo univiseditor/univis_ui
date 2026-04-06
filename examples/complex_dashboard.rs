@@ -13,6 +13,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins((UnivisUiPlugin, UnivisBadgePlugin))
+        .insert_resource(UiSettlementConfig { max_iterations: 16 })
         .add_systems(Startup, setup)
         .add_systems(
             Update,

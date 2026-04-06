@@ -10,6 +10,36 @@ Use this file for the dated chronological record.
 Use `RELEASE_NOTES.md` for the current alpha release summary.
 Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
+## [2026-04-06]
+
+### Added
+
+- Added `ROADMAP_INCREMENTAL_SETTLEMENT.md` as the maintainer roadmap for incremental settlement, per-root completion tracking, frontier queues, and follow-up optimization work.
+- Added `examples/visual_regression_lab.rs` as a focused visual regression scene that stresses nested cards, dynamic text, select/toggle controls, meters, and width changes in one place.
+- Added per-node stage generations and per-root settlement state so measure, solve, and render completion can be tracked explicitly instead of inferred from broad dirty scans.
+- Added reusable layout scratch instrumentation and picking candidate counters to the profiler overlay so scratch growth, peak queue sizes, and prepared picking buckets are visible during debugging.
+
+### Changed
+
+- Changed layout invalidation and settlement to operate through scoped measure/solve/render frontiers, per-root generations, and dependency-aware propagation instead of repeatedly walking unchanged subtrees.
+- Changed the upward and downward layout passes to reuse scratch buffers, avoid rebuilding temporary child vectors and solver-ref vectors per container, and keep solve ordering tied to the dirty frontier.
+- Changed picking to prepare camera-scoped candidate buckets before pointer evaluation, reducing repeated root-resolution and candidate-preparation work for the same frame.
+- Changed text measurement to cache parent bounds alongside label metrics so constrained labels can detect width and height changes coming from their container, not only from direct label mutations.
+- Changed the maintainer docs, release-readiness notes, migration docs, and root notes to point at the current incremental-settlement rollout, verification gate, and roadmap files.
+
+### Fixed
+
+- Fixed write-noise across root stacking, solve output, and text measurement so unchanged values no longer trigger broad downstream work through avoidable component rewrites.
+- Fixed a depth-order regression where tiny root-capsule `z` steps could be skipped by epsilon checks, causing transient visual stacking glitches even when size and position stayed correct.
+- Fixed nested container settlement after root canvas changes so child containers are requeued with the active solve generation instead of being left on stale solve state.
+- Fixed `UTextLabel` remeasurement under changing parent bounds, resolving visual mix-ups where select rows, toggle rows, and clipped labels could keep stale truncation or stale inner widths.
+- Fixed startup ordering in several widgets so child entities are spawned through the same chained parent command path, preventing hierarchy warnings caused by partially initialized parent entities.
+- Fixed the benchmark/example compatibility fallout from the solver scratch refactor by updating the solver benchmark harness, the complex dashboard example, and the representative rollout checks to the current pipeline.
+
+### Removed
+
+- Removed `ROADMAP_FRAME_ZERO.md` and `ROADMAP_POST_REVIEW.md` after consolidating the active maintainer work under `ROADMAP_INCREMENTAL_SETTLEMENT.md`.
+
 ## [2026-04-05]
 
 ### Added

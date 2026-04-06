@@ -22,8 +22,6 @@ Use them like this:
 - `RELEASE_NOTES.md`: current alpha release-scale summary
 - `changelog.md`: dated historical record
 
-Active planning now lives in `ROADMAP_POST_REVIEW.md` and stays intentionally separate from the root release file set.
-
 ## Current Release Story
 
 Latest published release tracked here: `0.2.0-alpha.2`
@@ -140,7 +138,6 @@ cargo run -p univis_ui_interaction --example interaction
 - release history and implementation highlights: `changelog.md`
 - migration summary: `MIGRATION.md`
 - Arabic migration summary: `MIGRATION_AR.md`
-- current planning: `ROADMAP_POST_REVIEW.md`
 - current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`
 - docs home: `docs/src/index.md`
 
@@ -149,4 +146,4 @@ cargo run -p univis_ui_interaction --example interaction
 - the completed `URootUi` migration baseline from `Phase 0` through `Phase 10` remains the foundation for the current alpha line
 - the old version-specific release note file was removed to keep one stable root-level release note entry point
 - this file should stay focused on release-scale summary rather than acting as a duplicate of `README` or `MIGRATION`
-- `0.2.0-alpha.2` is the release that closed the previous docs/examples/release cleanup wave; use `ROADMAP_POST_REVIEW.md` for the current planning phase
+- `0.2.0-alpha.2` is the release that closed the previous docs/examples/release cleanup wave

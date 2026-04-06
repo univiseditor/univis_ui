@@ -5,7 +5,6 @@
 
 Arabic version: [README_AR.md](README_AR.md)
 Migration summary: [MIGRATION.md](MIGRATION.md)
-Current roadmap: [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md)
 Hosted docs target: `https://univiseditor.github.io/univis_ui/`
 
 Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit interfaces with one ECS-native stack.
@@ -180,8 +179,6 @@ Good starting points:
 
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
-- [Current Roadmap](ROADMAP_POST_REVIEW.md)
-- [Frame-Zero Roadmap](ROADMAP_FRAME_ZERO.md)
 - [Technical Debt Inventory](TECH_DEBT_INVENTORY.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
@@ -199,7 +196,7 @@ Good starting points:
 ## GitHub Discovery Path
 
 1. Read this `README.md` for the project story and crate map.
-2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story and [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md) for active priorities.
+2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story and [changelog.md](changelog.md) for dated implementation history.
 3. Open [Docs Home](docs/src/index.md) or the hosted docs URL and jump into the relevant guide.
 4. Use the language-specific [Example Gallery (EN)](docs/src/en/examples/gallery.md) or [Example Gallery (AR)](docs/src/ar/examples/gallery.md) before dropping to the full index.
 5. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
@@ -211,8 +208,6 @@ Good starting points:
 - `MIGRATION.md`: migration path from older docs, example paths, and root assumptions.
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
-- `ROADMAP_POST_REVIEW.md`: active planning and post-review priorities.
-- `ROADMAP_FRAME_ZERO.md`: frame-zero settlement and performance architecture roadmap.
 - `TECH_DEBT_INVENTORY.md`: maintainer-facing backlog for the current large-file refactor wave.
 - `changelog.md`: dated chronological record of notable changes.
 
@@ -262,6 +257,6 @@ cargo run -p univis_ui_engine --example root_fit_content
 
 ## Current Status
 
-The current alpha phase is focused on `URootUi`, world scaling, root capsules, unified docs, API cleanup, and the active post-review roadmap.
+The current alpha phase is focused on `URootUi`, world scaling, root capsules, unified docs, and API cleanup.
 
 If you want a single Bevy UI stack that can handle HUDs, world-space panels, and 3D-lit interfaces without splitting your mental model across multiple systems, this is what Univis UI is trying to deliver.

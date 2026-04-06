@@ -18,7 +18,7 @@ const DEFAULT_TARGET_FPS: f32 = 60.0;
 const DEFAULT_PANEL_WIDTH: f32 = 520.0;
 const DEFAULT_GRAPH_HEIGHT: f32 = 92.0;
 const DEFAULT_GRAPH_SAMPLES: usize = 120;
-const DEFAULT_TEXT_SECTION_HEIGHT: f32 = 132.0;
+const DEFAULT_TEXT_SECTION_HEIGHT: f32 = 152.0;
 const DEFAULT_BARS_SECTION_HEIGHT: f32 = 64.0;
 const DEFAULT_PANEL_PADDING: f32 = 14.0;
 const DEFAULT_SECTION_GAP: f32 = 10.0;
@@ -52,6 +52,14 @@ pub struct LayoutProfiler {
     pub meshes_reused: usize,
     pub cache_hits: usize,
     pub cache_misses: usize,
+    pub measure_scratch_alloc_grows: usize,
+    pub solve_scratch_alloc_grows: usize,
+    pub solve_ref_alloc_grows: usize,
+    pub measure_scratch_peak: usize,
+    pub solve_scratch_peak: usize,
+    pub solve_ref_peak: usize,
+    pub picking_bucket_count: usize,
+    pub picking_candidate_count: usize,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -84,11 +92,31 @@ impl Default for LayoutProfiler {
             meshes_reused: 0,
             cache_hits: 0,
             cache_misses: 0,
+            measure_scratch_alloc_grows: 0,
+            solve_scratch_alloc_grows: 0,
+            solve_ref_alloc_grows: 0,
+            measure_scratch_peak: 0,
+            solve_scratch_peak: 0,
+            solve_ref_peak: 0,
+            picking_bucket_count: 0,
+            picking_candidate_count: 0,
         }
     }
 }
 
 impl LayoutProfiler {
+    pub fn begin_frame(&mut self) {
+        self.solved_nodes = 0;
+        self.measure_scratch_alloc_grows = 0;
+        self.solve_scratch_alloc_grows = 0;
+        self.solve_ref_alloc_grows = 0;
+        self.measure_scratch_peak = 0;
+        self.solve_scratch_peak = 0;
+        self.solve_ref_peak = 0;
+        self.picking_bucket_count = 0;
+        self.picking_candidate_count = 0;
+    }
+
     pub fn total_time(&self) -> f64 {
         self.upward_pass_time + self.downward_pass_time + self.material_update_time
     }
@@ -627,6 +655,8 @@ Budget @{:>3.0}fps: {:>6.2}ms  usage {:>6.1}%\n\
 Breakdown up/down/mat: {:>4.1}% / {:>4.1}% / {:>4.1}%\n\
 Nodes total/dirty/visible: {} / {} / {}\n\
 Cache hit: {:>5.1}%   Material reuse: {:>5.1}%\n\
+Scratch grow m/s/r: {} / {} / {}   peaks: {} / {} / {}\n\
+Picking buckets/candidates: {} / {}\n\
 History: {:>3} frames | Recent30 avg: {:>6.2}ms | Graph: {}\n\
 Keys: F10 profiler  F11 overlay  F9 graph  F12 move",
         perf_state,
@@ -648,6 +678,14 @@ Keys: F10 profiler  F11 overlay  F9 graph  F12 move",
         profiler.visible_nodes,
         profiler.cache_hit_rate(),
         profiler.material_reuse_rate(),
+        profiler.measure_scratch_alloc_grows,
+        profiler.solve_scratch_alloc_grows,
+        profiler.solve_ref_alloc_grows,
+        profiler.measure_scratch_peak,
+        profiler.solve_scratch_peak,
+        profiler.solve_ref_peak,
+        profiler.picking_bucket_count,
+        profiler.picking_candidate_count,
         profiler.frame_history.len(),
         recent_avg,
         if settings.show_graph { "ON" } else { "OFF" },

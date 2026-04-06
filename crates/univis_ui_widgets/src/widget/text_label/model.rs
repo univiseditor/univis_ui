@@ -56,12 +56,14 @@ pub struct UTextLabel {
 }
 
 /// Cached measurement output for [`UTextLabel`].
-#[derive(Component, Reflect, Default, Debug, Clone)]
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
 #[reflect(Component)]
 pub struct UTextLabelLayoutCache {
     pub measured_size: Vec2,
     pub min_content_size: Vec2,
     pub max_content_size: Vec2,
+    pub parent_bound_width: Option<f32>,
+    pub parent_bound_height: Option<f32>,
     pub displayed_text: String,
     pub line_count: usize,
     pub overflowed: bool,

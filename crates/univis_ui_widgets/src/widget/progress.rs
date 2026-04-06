@@ -74,18 +74,28 @@ fn update_progress_bars(
 
         // إذا لم يكن موجوداً، قم بإنشائه (Lazy Initialization)
         if !fill_found {
-            commands.entity(entity).with_children(|parent| {
-                parent.spawn((
-                    UNode {
-                        width: UVal::Percent(bar.value.clamp(0.0, 1.0)),
-                        height: UVal::Percent(1.0), // ارتفاع كامل للأب
-                        background_color: bar.bar_color,
-                        border_radius: UCornerRadius::all(5.0),
-                        ..default()
-                    },
-                    ProgressBarFill,
-                ));
-            });
+            commands
+                .entity(entity)
+                .insert(UNode {
+                    height: UVal::Px(10.0),    // ارتفاع افتراضي
+                    width: UVal::Percent(1.0), // عرض كامل
+                    background_color: Color::BLACK.with_alpha(0.3),
+                    border_radius: UCornerRadius::all(5.0),
+                    padding: USides::all(0.0), // لا هوامش
+                    ..default()
+                })
+                .with_children(|parent| {
+                    parent.spawn((
+                        UNode {
+                            width: UVal::Percent(bar.value.clamp(0.0, 1.0)),
+                            height: UVal::Percent(1.0), // ارتفاع كامل للأب
+                            background_color: bar.bar_color,
+                            border_radius: UCornerRadius::all(5.0),
+                            ..default()
+                        },
+                        ProgressBarFill,
+                    ));
+                });
         }
     }
 }

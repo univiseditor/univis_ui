@@ -64,6 +64,51 @@ pub struct LayoutTreeDepth {
 #[reflect(Component)]
 pub struct UI3d;
 
+/// Per-node settlement generations for the main layout/render stages.
+///
+/// Each `*_input_generation` is bumped when a node receives new work for that
+/// stage. The matching `*_done_generation` catches up only after the stage has
+/// actually processed the latest inputs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct UiNodeStageVersions {
+    pub measure_input_generation: u64,
+    pub measure_done_generation: u64,
+    pub solve_input_generation: u64,
+    pub solve_done_generation: u64,
+    pub render_input_generation: u64,
+    pub render_done_generation: u64,
+}
+
+impl UiNodeStageVersions {
+    pub fn mark_measure_dirty(&mut self, generation: u64) {
+        self.measure_input_generation = self.measure_input_generation.max(generation);
+    }
+
+    pub fn complete_measure(&mut self) {
+        self.measure_done_generation = self
+            .measure_done_generation
+            .max(self.measure_input_generation);
+    }
+
+    pub fn mark_solve_dirty(&mut self, generation: u64) {
+        self.solve_input_generation = self.solve_input_generation.max(generation);
+    }
+
+    pub fn complete_solve(&mut self) {
+        self.solve_done_generation = self.solve_done_generation.max(self.solve_input_generation);
+    }
+
+    pub fn mark_render_dirty(&mut self, generation: u64) {
+        self.render_input_generation = self.render_input_generation.max(generation);
+    }
+
+    pub fn complete_render(&mut self) {
+        self.render_done_generation = self
+            .render_done_generation
+            .max(self.render_input_generation);
+    }
+}
+
 /// Cached root and clip ancestry derived during the hierarchy phase.
 ///
 /// This avoids repeated parent-chain walks in solve, render, and picking hot

@@ -507,8 +507,8 @@ mod tests {
         let mut auto_result = SolverResult::default();
         let mut content_result = SolverResult::default();
         let mut items = vec![
-            SolverItem {
-                spec: SolverSpec {
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 40.0,
                     width_flex: 0.0,
@@ -538,11 +538,11 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut auto_result,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: SolverSpec {
+                &mut auto_result,
+                USides::default(),
+            ),
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 40.0,
                     width_flex: 0.0,
@@ -572,9 +572,9 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut content_result,
-                margin: USides::default(),
-            },
+                &mut content_result,
+                USides::default(),
+            ),
         ];
 
         solve_flex_layout(&config, constraints, &mut items);
@@ -590,8 +590,8 @@ mod tests {
         let mut first = SolverResult::default();
         let mut second = SolverResult::default();
         let mut items = vec![
-            SolverItem {
-                spec: SolverSpec {
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 80.0,
                     width_flex: 0.0,
@@ -621,11 +621,11 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut first,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: SolverSpec {
+                &mut first,
+                USides::default(),
+            ),
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 80.0,
                     width_flex: 0.0,
@@ -655,9 +655,9 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut second,
-                margin: USides::default(),
-            },
+                &mut second,
+                USides::default(),
+            ),
         ];
 
         let solved = solve_flex_layout(&config, constraints, &mut items);
@@ -674,8 +674,8 @@ mod tests {
         let mut first = SolverResult::default();
         let mut second = SolverResult::default();
         let mut items = vec![
-            SolverItem {
-                spec: SolverSpec {
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 50.0,
                     width_flex: 0.0,
@@ -705,11 +705,11 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut first,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: SolverSpec {
+                &mut first,
+                USides::default(),
+            ),
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 50.0,
                     width_flex: 0.0,
@@ -739,9 +739,9 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut second,
-                margin: USides::default(),
-            },
+                &mut second,
+                USides::default(),
+            ),
         ];
 
         let solved = solve_flex_layout(&config, constraints, &mut items);
@@ -759,8 +759,8 @@ mod tests {
         let mut first = SolverResult::default();
         let mut second = SolverResult::default();
         let mut items = vec![
-            SolverItem {
-                spec: SolverSpec {
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 100.0,
                     width_flex: 0.0,
@@ -790,11 +790,11 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut first,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: SolverSpec {
+                &mut first,
+                USides::default(),
+            ),
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 100.0,
                     width_flex: 0.0,
@@ -824,9 +824,9 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut second,
-                margin: USides::default(),
-            },
+                &mut second,
+                USides::default(),
+            ),
         ];
 
         solve_flex_layout(&config, constraints, &mut items);
@@ -845,8 +845,8 @@ mod tests {
         let mut first = SolverResult::default();
         let mut second = SolverResult::default();
         let mut items = vec![
-            SolverItem {
-                spec: SolverSpec {
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 24.0,
                     width_flex: 0.0,
@@ -876,11 +876,11 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut first,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: SolverSpec {
+                &mut first,
+                USides::default(),
+            ),
+            SolverItem::new(
+                SolverSpec {
                     width_mode: SolverSizeMode::Fixed,
                     width_val: 24.0,
                     width_flex: 0.0,
@@ -910,9 +910,9 @@ mod tests {
                     grid_row_span: 1,
                     order: 0,
                 },
-                result: &mut second,
-                margin: USides::default(),
-            },
+                &mut second,
+                USides::default(),
+            ),
         ];
 
         solve_flex_layout(&config, constraints, &mut items);

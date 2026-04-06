@@ -43,7 +43,7 @@ pub mod prelude {
     pub use crate::layout::image::UImage;
     #[allow(deprecated)]
     pub use crate::layout::layout_system::{
-        URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace,
+        URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;
@@ -51,6 +51,7 @@ pub mod prelude {
 
 use crate::internal_prelude::*;
 use bevy::asset::AssetEventSystems;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::sprite::update_text2d_layout;
 
@@ -64,6 +65,7 @@ impl Plugin for UnivisLayoutPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<USelf>()
             .register_type::<URootUi>()
+            .register_type::<UiRootSettlementState>()
             .register_type::<UiSpace>()
             .register_type::<UiCanvasSize>()
             .register_type::<UiCameraRef>()
@@ -125,6 +127,7 @@ impl Plugin for UnivisLayoutPlugin {
                     update_layout_hierarchy,
                     update_cached_ui_contexts,
                     update_depth_cache,
+                    track_root_layout_changes,
                     track_layout_changes,
                     mark_hierarchy_complete,
                 )
@@ -136,14 +139,13 @@ impl Plugin for UnivisLayoutPlugin {
                 (
                     upward_measure_pass_cached,
                     sync_fit_content_root_canvas_sizes,
-                    mark_measure_complete,
                 )
                     .chain()
                     .in_set(UnivisPostUpdateSet::LayoutMeasure),
             )
             .add_systems(
                 UiSettlementSchedule,
-                (downward_solve_pass_safe, mark_solve_complete)
+                (downward_solve_pass_safe,)
                     .chain()
                     .in_set(UnivisPostUpdateSet::LayoutSolve),
             )
@@ -155,7 +157,20 @@ impl Plugin for UnivisLayoutPlugin {
             )
             .add_systems(
                 UiSettlementSchedule,
-                (mark_render_complete, validate_cached_ui_contexts)
+                track_render_stage_changes
+                    .in_set(UnivisPostUpdateSet::RenderSync)
+                    .after(UnivisPostUpdateSet::LayoutSolve)
+                    .before(sync_cached_ui3d),
+            )
+            .add_systems(
+                UiSettlementSchedule,
+                (
+                    refresh_root_settlement_state,
+                    mark_measure_complete,
+                    mark_solve_complete,
+                    mark_render_complete,
+                    validate_cached_ui_contexts,
+                )
                     .chain()
                     .in_set(UnivisPostUpdateSet::UiSettled),
             );
@@ -249,8 +264,18 @@ mod tests {
         assert_eq!(child_size.height, 50.0);
 
         let work_state = app.world().resource::<UiWorkState>();
+        let root_settlement = app
+            .world()
+            .entity(root)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root should expose settlement state after the first frame");
         assert_eq!(work_state.current_generation(), 1);
-        assert!(work_state.is_settled());
+        assert!(
+            work_state.is_settled(),
+            "pending={:?}, root_settlement={root_settlement:?}",
+            work_state.pending()
+        );
         assert_eq!(work_state.last_frame_iterations(), 2);
         assert!(!work_state.budget_exhausted());
         assert_eq!(work_state.completed_generation(UiWorkStage::RootResolve), 1);
@@ -258,6 +283,11 @@ mod tests {
         assert_eq!(work_state.completed_generation(UiWorkStage::Measure), 1);
         assert_eq!(work_state.completed_generation(UiWorkStage::Solve), 1);
         assert_eq!(work_state.completed_generation(UiWorkStage::Render), 1);
+        assert_eq!(root_settlement.current_generation, 1);
+        assert_eq!(root_settlement.pending_measure, 0);
+        assert_eq!(root_settlement.pending_solve, 0);
+        assert_eq!(root_settlement.pending_render, 0);
+        assert!(root_settlement.is_settled());
     }
 
     #[test]
@@ -464,6 +494,360 @@ mod tests {
         assert_eq!(branch_b_size.width, 50.0);
         assert_eq!(leaf_b_size.width, 50.0);
     }
+
+    #[test]
+    fn root_canvas_resize_requeues_nested_containers() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+        let root = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Column,
+                    ..default()
+                },
+            ))
+            .id();
+
+        let branch = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Column,
+                    ..default()
+                },
+            ))
+            .id();
+
+        let nested = app
+            .world_mut()
+            .spawn((
+                ChildOf(branch),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    ..default()
+                },
+            ))
+            .id();
+
+        let leaf = app
+            .world_mut()
+            .spawn((
+                ChildOf(nested),
+                UNode {
+                    width: UVal::Flex(1.0),
+                    height: UVal::Px(40.0),
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.update();
+
+        let initial_nested_size = app
+            .world()
+            .entity(nested)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("nested container should be solved on the first frame");
+        let initial_leaf_size = app
+            .world()
+            .entity(leaf)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("leaf should be solved on the first frame");
+
+        assert_eq!(initial_nested_size.width, 400.0);
+        assert_eq!(initial_leaf_size.width, 400.0);
+
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<URootUi>()
+            .expect("root should keep its root component")
+            .canvas = UiCanvasSize::Fixed(Vec2::new(520.0, 200.0));
+
+        app.update();
+
+        let resized_nested_size = app
+            .world()
+            .entity(nested)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("nested container should be re-solved after root resize");
+        let resized_leaf_size = app
+            .world()
+            .entity(leaf)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("leaf should be re-solved after root resize");
+
+        assert_eq!(resized_nested_size.width, 520.0);
+        assert_eq!(resized_leaf_size.width, 520.0);
+    }
+
+    #[test]
+    fn root_settlement_generation_stays_scoped_to_the_changed_root() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+        let root_a = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let leaf_a = app
+            .world_mut()
+            .spawn((
+                ChildOf(root_a),
+                UNode {
+                    width: UVal::Px(100.0),
+                    height: UVal::Px(50.0),
+                    ..default()
+                },
+            ))
+            .id();
+
+        let root_b = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(320.0, 180.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(root_b),
+            UNode {
+                width: UVal::Px(80.0),
+                height: UVal::Px(40.0),
+                ..default()
+            },
+        ));
+
+        app.update();
+
+        let root_a_state = app
+            .world()
+            .entity(root_a)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root_a should expose settlement state");
+        let root_b_state = app
+            .world()
+            .entity(root_b)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root_b should expose settlement state");
+        assert_eq!(root_a_state.current_generation, 1);
+        assert_eq!(root_b_state.current_generation, 1);
+        assert!(root_a_state.is_settled());
+        assert!(root_b_state.is_settled());
+
+        app.world_mut()
+            .entity_mut(leaf_a)
+            .get_mut::<UNode>()
+            .expect("leaf_a should keep its UNode")
+            .width = UVal::Px(140.0);
+
+        app.update();
+
+        let root_a_state = app
+            .world()
+            .entity(root_a)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root_a should keep settlement state");
+        let root_b_state = app
+            .world()
+            .entity(root_b)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root_b should keep settlement state");
+
+        assert_eq!(
+            root_a_state.current_generation,
+            2,
+            "work_state={:?}, root_a={root_a_state:?}, root_b={root_b_state:?}",
+            app.world().resource::<UiWorkState>()
+        );
+        assert_eq!(root_a_state.pending_measure, 0);
+        assert_eq!(root_a_state.pending_solve, 0);
+        assert_eq!(root_a_state.pending_render, 0);
+        assert!(root_a_state.is_settled());
+
+        assert_eq!(root_b_state.current_generation, 1);
+        assert_eq!(root_b_state.pending_measure, 0);
+        assert_eq!(root_b_state.pending_solve, 0);
+        assert_eq!(root_b_state.pending_render, 0);
+        assert!(root_b_state.is_settled());
+    }
+
+    #[test]
+    fn render_only_node_change_skips_solve_work() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+        app.init_resource::<LayoutProfiler>();
+
+        let root = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let child = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Px(100.0),
+                    height: UVal::Px(50.0),
+                    background_color: Color::srgb(0.1, 0.1, 0.1),
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.update();
+
+        app.world_mut()
+            .entity_mut(child)
+            .get_mut::<UNode>()
+            .expect("child should keep its UNode")
+            .background_color = Color::srgb(0.8, 0.2, 0.1);
+
+        app.update();
+
+        let profiler = app.world().resource::<LayoutProfiler>();
+        assert_eq!(profiler.solved_nodes, 0);
+
+        let child_size = app
+            .world()
+            .entity(child)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("child should keep its computed size");
+        assert_eq!(child_size.width, 100.0);
+        assert_eq!(child_size.height, 50.0);
+    }
+
+    #[test]
+    fn root_resolution_change_stays_scoped_to_the_changed_root() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+        let root_a = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(root_a),
+            UNode {
+                width: UVal::Px(100.0),
+                height: UVal::Px(50.0),
+                ..default()
+            },
+        ));
+
+        let root_b = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(320.0, 180.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(root_b),
+            UNode {
+                width: UVal::Px(80.0),
+                height: UVal::Px(40.0),
+                ..default()
+            },
+        ));
+
+        app.update();
+
+        app.world_mut()
+            .entity_mut(root_a)
+            .get_mut::<URootUi>()
+            .expect("root_a should keep its root component")
+            .canvas = UiCanvasSize::Fixed(Vec2::new(520.0, 200.0));
+
+        app.update();
+
+        let root_a_state = app
+            .world()
+            .entity(root_a)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root_a should expose settlement state");
+        let root_b_state = app
+            .world()
+            .entity(root_b)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root_b should expose settlement state");
+
+        assert_eq!(root_a_state.current_generation, 2);
+        assert!(root_a_state.is_settled());
+        assert_eq!(root_b_state.current_generation, 1);
+        assert!(root_b_state.is_settled());
+    }
 }
 
 fn run_ui_settlement_loop(world: &mut World) {
@@ -471,7 +855,7 @@ fn run_ui_settlement_loop(world: &mut World) {
 
     world.resource_mut::<UiWorkState>().begin_frame();
     if let Some(mut profiler) = world.get_resource_mut::<LayoutProfiler>() {
-        profiler.solved_nodes = 0;
+        profiler.begin_frame();
     }
 
     let mut exhausted = true;
@@ -572,14 +956,74 @@ fn mark_hierarchy_complete(mut work_state: ResMut<UiWorkState>) {
     work_state.complete_stage(UiWorkStage::Hierarchy);
 }
 
-fn mark_measure_complete(mut work_state: ResMut<UiWorkState>) {
-    work_state.complete_stage(UiWorkStage::Measure);
+fn refresh_root_settlement_state(
+    cache: Res<LayoutCache>,
+    nodes: Query<(Entity, Option<&CachedUiContext>), With<UNode>>,
+    mut roots: Query<(Entity, &mut UiRootSettlementState), With<ResolvedRootUi>>,
+) {
+    let root_entities: Vec<Entity> = roots.iter_mut().map(|(entity, _)| entity).collect();
+    let mut next_states = HashMap::<Entity, UiRootSettlementState>::default();
+
+    for entity in root_entities {
+        next_states.insert(entity, UiRootSettlementState::default());
+    }
+
+    for (entity, cached) in nodes.iter() {
+        let root_entity = cached
+            .and_then(|context| context.root_entity)
+            .unwrap_or(entity);
+        let Some(root_state) = next_states.get_mut(&root_entity) else {
+            continue;
+        };
+
+        root_state.observe_node(cache.stage_versions(entity));
+    }
+
+    for (entity, mut state) in roots.iter_mut() {
+        let next = next_states.get(&entity).copied().unwrap_or_default();
+        if *state != next {
+            *state = next;
+        }
+    }
 }
 
-fn mark_solve_complete(mut work_state: ResMut<UiWorkState>) {
-    work_state.complete_stage(UiWorkStage::Solve);
+fn root_stage_has_pending_work(
+    roots: &Query<&UiRootSettlementState, With<ResolvedRootUi>>,
+    generation: u64,
+    pending_count: fn(&UiRootSettlementState) -> u32,
+) -> bool {
+    generation != 0
+        && roots
+            .iter()
+            .any(|state| state.current_generation == generation && pending_count(state) > 0)
 }
 
-fn mark_render_complete(mut work_state: ResMut<UiWorkState>) {
-    work_state.complete_stage(UiWorkStage::Render);
+fn mark_measure_complete(
+    mut work_state: ResMut<UiWorkState>,
+    roots: Query<&UiRootSettlementState, With<ResolvedRootUi>>,
+) {
+    let generation = work_state.current_generation();
+    if !root_stage_has_pending_work(&roots, generation, |state| state.pending_measure) {
+        work_state.complete_stage(UiWorkStage::Measure);
+    }
+}
+
+fn mark_solve_complete(
+    mut work_state: ResMut<UiWorkState>,
+    roots: Query<&UiRootSettlementState, With<ResolvedRootUi>>,
+) {
+    let generation = work_state.current_generation();
+    if !root_stage_has_pending_work(&roots, generation, |state| state.pending_solve) {
+        work_state.complete_stage(UiWorkStage::Solve);
+    }
+}
+
+fn mark_render_complete(
+    mut work_state: ResMut<UiWorkState>,
+    roots: Query<&UiRootSettlementState, With<ResolvedRootUi>>,
+) {
+    let generation = work_state.current_generation();
+    if !root_stage_has_pending_work(&roots, generation, |state| state.pending_render) {
+        work_state.complete_stage(UiWorkStage::Render);
+    }
 }

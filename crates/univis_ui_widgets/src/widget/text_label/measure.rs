@@ -6,11 +6,12 @@ use bevy::text::{
     ComputedTextBlock, CosmicFontSystem, FontHinting, LineBreak, LineHeight, TextBounds, TextFont,
     TextLayout, TextPipeline,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use unicode_bidi::BidiInfo;
 use unicode_segmentation::UnicodeSegmentation;
 use univis_ui_engine::internal::IntrinsicSize;
 use univis_ui_engine::layout::core::layout_cache::LayoutCache;
+use univis_ui_engine::schedule::UiWorkState;
 
 use super::model::{UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide};
 
@@ -364,6 +365,45 @@ fn resolve_final_measured_text(
     Ok((final_text, final_measured, overflowed))
 }
 
+fn next_text_label_layout_cache(
+    displayed_text: String,
+    measured: MeasuredTextInfo,
+    parent_bounds: TextBounds,
+    overflowed: bool,
+) -> UTextLabelLayoutCache {
+    UTextLabelLayoutCache {
+        measured_size: measured.size,
+        min_content_size: measured.min_content_size,
+        max_content_size: measured.max_content_size,
+        parent_bound_width: parent_bounds.width,
+        parent_bound_height: parent_bounds.height,
+        displayed_text,
+        line_count: measured.line_count,
+        overflowed,
+        dirty: false,
+    }
+}
+
+fn reset_text_label_layout_cache(cache: &mut UTextLabelLayoutCache) {
+    let next = UTextLabelLayoutCache::default();
+    if *cache != next {
+        *cache = next;
+    }
+}
+
+fn optional_bound_changed(previous: Option<f32>, current: Option<f32>) -> bool {
+    match (previous, current) {
+        (Some(previous), Some(current)) => (previous - current).abs() > 0.1,
+        (None, None) => false,
+        _ => true,
+    }
+}
+
+fn parent_bounds_changed(cache: &UTextLabelLayoutCache, parent_bounds: TextBounds) -> bool {
+    optional_bound_changed(cache.parent_bound_width, parent_bounds.width)
+        || optional_bound_changed(cache.parent_bound_height, parent_bounds.height)
+}
+
 fn text_fits_constraints(
     measured: &MeasuredTextInfo,
     bounds: TextBounds,
@@ -603,10 +643,15 @@ pub fn measure_text_label_layout(
 
     for (entity, label, node, computed_size, mut computed, mut cache) in query.iter_mut() {
         let font_changed = changed_fonts.contains(&label.font.id());
+        let parent_bounds =
+            parent_label_bounds(entity, &label, &node, &parents_query, &parent_query);
+        let bounds_changed = parent_bounds_changed(&cache, parent_bounds);
+
         if !(label.is_changed()
             || node.is_changed()
             || computed_size.is_changed()
             || cache.dirty
+            || bounds_changed
             || font_changed)
         {
             continue;
@@ -615,8 +660,6 @@ pub fn measure_text_label_layout(
         let text_font = label_text_font(&label);
         let text_layout = label_text_layout(&label);
         let text_color = label.color;
-        let parent_bounds =
-            parent_label_bounds(entity, &label, &node, &parents_query, &parent_query);
         let bounds = label_measure_bounds(&label, &node, Some(&computed_size), parent_bounds);
 
         match measure_layout_for_text(
@@ -645,32 +688,22 @@ pub fn measure_text_label_layout(
                     &mut font_system,
                     measured,
                 ) else {
-                    cache.measured_size = Vec2::ZERO;
-                    cache.min_content_size = Vec2::ZERO;
-                    cache.max_content_size = Vec2::ZERO;
-                    cache.displayed_text.clear();
-                    cache.line_count = 0;
-                    cache.overflowed = false;
-                    cache.dirty = false;
+                    reset_text_label_layout_cache(&mut cache);
                     continue;
                 };
 
-                cache.min_content_size = final_measured.min_content_size;
-                cache.max_content_size = final_measured.max_content_size;
-                cache.measured_size = final_measured.size;
-                cache.displayed_text = final_text;
-                cache.line_count = final_measured.line_count;
-                cache.overflowed = overflowed;
-                cache.dirty = false;
+                let next_cache = next_text_label_layout_cache(
+                    final_text,
+                    final_measured,
+                    parent_bounds,
+                    overflowed,
+                );
+                if *cache != next_cache {
+                    *cache = next_cache;
+                }
             }
             Err(_) => {
-                cache.measured_size = Vec2::ZERO;
-                cache.min_content_size = Vec2::ZERO;
-                cache.max_content_size = Vec2::ZERO;
-                cache.displayed_text.clear();
-                cache.line_count = 0;
-                cache.overflowed = false;
-                cache.dirty = false;
+                reset_text_label_layout_cache(&mut cache);
             }
         }
     }
@@ -683,52 +716,37 @@ pub fn fit_node_to_text_size(
         Query<(Entity, &UTextLabel, &mut UNode, &UTextLabelLayoutCache)>,
     )>,
 ) {
-    let label_snapshot: Vec<_> = {
+    let autosize_snapshot: Vec<_> = {
         let labels = params.p1();
         labels
             .iter()
-            .map(|(entity, label, node, _)| {
-                (
+            .filter_map(|(entity, label, node, _)| {
+                label.autosize.then_some((
                     entity,
                     parents_query.get(entity).ok().map(|p| p.get()),
                     label.overflow,
                     node.margin,
-                )
+                ))
             })
             .collect()
     };
 
-    let parent_bounds_by_entity: HashMap<Entity, TextBounds> = {
-        let parent_bounds_query = params.p0();
-        label_snapshot
-            .into_iter()
-            .map(|(entity, parent_entity, overflow, margin)| {
-                (
-                    entity,
-                    parent_label_bounds_from_ids(
-                        parent_entity,
-                        overflow,
-                        margin,
-                        &parent_bounds_query,
-                    ),
-                )
-            })
-            .collect()
-    };
+    if autosize_snapshot.is_empty() {
+        return;
+    }
 
-    for (entity, label, mut node, layout_cache) in params.p1().iter_mut() {
-        if !label.autosize {
+    for (entity, parent_entity, overflow, margin) in autosize_snapshot {
+        let parent_bounds = {
+            let parent_bounds_query = params.p0();
+            parent_label_bounds_from_ids(parent_entity, overflow, margin, &parent_bounds_query)
+        };
+
+        let mut labels = params.p1();
+        let Ok((_, _, mut node, layout_cache)) = labels.get_mut(entity) else {
             continue;
-        }
+        };
 
         let outer_size = measured_text_outer_size(&node, layout_cache);
-        let parent_bounds = parent_bounds_by_entity
-            .get(&entity)
-            .copied()
-            .unwrap_or(TextBounds {
-                width: None,
-                height: None,
-            });
         let clamped_outer_size = clamp_outer_size_to_bounds(outer_size, parent_bounds);
         let target_width = clamped_outer_size.x;
         let target_height = clamped_outer_size.y;
@@ -793,6 +811,7 @@ pub fn sync_text_label_intrinsic_size(
 }
 
 pub(super) fn mark_text_label_layout_dirty(
+    work_state: Option<Res<UiWorkState>>,
     mut layout_cache: ResMut<LayoutCache>,
     changed_labels: Query<
         Entity,
@@ -801,11 +820,74 @@ pub(super) fn mark_text_label_layout_dirty(
             Or<(Added<UTextLabel>, Changed<IntrinsicSize>, Changed<UNode>)>,
         ),
     >,
-    children_query: Query<&Children>,
     parents_query: Query<&ChildOf>,
 ) {
+    let current_generation = work_state
+        .as_ref()
+        .map_or(0, |state| state.current_generation());
     for entity in changed_labels.iter() {
-        layout_cache.mark_dirty_recursive(entity, &children_query);
+        layout_cache.mark_dirty(entity);
         layout_cache.mark_dirty_ancestors(entity, &parents_query);
+        layout_cache.mark_measure_dirty(entity, current_generation);
+        layout_cache.mark_measure_dirty_ancestors(entity, current_generation, &parents_query);
+        layout_cache.mark_solve_dirty_generation(entity, current_generation);
+        layout_cache.mark_solve_dirty_ancestors_generation(
+            entity,
+            current_generation,
+            &parents_query,
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parent_bounds_change_is_detected_from_cached_width() {
+        let cache = UTextLabelLayoutCache {
+            parent_bound_width: Some(120.0),
+            parent_bound_height: None,
+            ..default()
+        };
+
+        assert!(parent_bounds_changed(
+            &cache,
+            TextBounds {
+                width: Some(180.0),
+                height: None,
+            }
+        ));
+        assert!(!parent_bounds_changed(
+            &cache,
+            TextBounds {
+                width: Some(120.0),
+                height: None,
+            }
+        ));
+    }
+
+    #[test]
+    fn parent_bounds_change_is_detected_when_bounds_appear_or_disappear() {
+        let cache = UTextLabelLayoutCache {
+            parent_bound_width: None,
+            parent_bound_height: Some(40.0),
+            ..default()
+        };
+
+        assert!(parent_bounds_changed(
+            &cache,
+            TextBounds {
+                width: Some(200.0),
+                height: Some(40.0),
+            }
+        ));
+        assert!(parent_bounds_changed(
+            &cache,
+            TextBounds {
+                width: None,
+                height: None,
+            }
+        ));
     }
 }

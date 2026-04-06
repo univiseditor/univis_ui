@@ -1,6 +1,6 @@
 # Migration Summary
 
-This file replaces the temporary docs/examples/API roadmap files now that the migration work has been applied to the repository.
+This file replaces the older temporary planning files now that the migration work has been applied to the repository.
 
 ## When To Read This File
 
@@ -99,7 +99,6 @@ Arabic mirrors:
 
 - project story and crate map: `README.md`
 - Arabic landing page: `README_AR.md`
-- current roadmap and active cleanup priorities: `ROADMAP_POST_REVIEW.md`
 - current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`
 - guides: `docs/src/en/*` and `docs/src/ar/*`
 - example catalog: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
@@ -107,4 +106,4 @@ Arabic mirrors:
 
 ## Why The Older Roadmap Files Were Removed
 
-The older completed roadmap checklists were useful while that work was in progress, but they are now historical implementation notes. Active planning now lives in `ROADMAP_POST_REVIEW.md`, while this file stays focused on migration guidance.
+The older completed roadmap checklists were useful while that work was in progress, but they are now historical implementation notes. This file stays focused on migration guidance, while release context and dated implementation history live in `RELEASE_NOTES.md` and `changelog.md`.

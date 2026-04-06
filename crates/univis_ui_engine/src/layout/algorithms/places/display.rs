@@ -1041,11 +1041,7 @@ mod tests {
         };
         let mut spec = default_spec();
         spec.justify_self_ext = Some(UAlignSelfExt::Center);
-        let mut items = vec![SolverItem {
-            spec,
-            result: &mut result,
-            margin: USides::default(),
-        }];
+        let mut items = vec![SolverItem::new(spec, &mut result, USides::default())];
 
         let mut ctx = base_ctx();
         ctx.container_main_size = 100.0;
@@ -1076,21 +1072,9 @@ mod tests {
         };
         let spec = default_spec();
         let mut items = vec![
-            SolverItem {
-                spec,
-                result: &mut r1,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec,
-                result: &mut r2,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec,
-                result: &mut r3,
-                margin: USides::default(),
-            },
+            SolverItem::new(spec, &mut r1, USides::default()),
+            SolverItem::new(spec, &mut r2, USides::default()),
+            SolverItem::new(spec, &mut r3, USides::default()),
         ];
 
         let mut ctx = base_ctx();
@@ -1122,16 +1106,8 @@ mod tests {
         };
         let spec = default_spec();
         let mut items = vec![
-            SolverItem {
-                spec,
-                result: &mut r1,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec,
-                result: &mut r2,
-                margin: USides::default(),
-            },
+            SolverItem::new(spec, &mut r1, USides::default()),
+            SolverItem::new(spec, &mut r2, USides::default()),
         ];
 
         let mut ctx = base_ctx();
@@ -1155,11 +1131,7 @@ mod tests {
             pos: Vec2::ZERO,
         };
         let spec = default_spec();
-        let mut items = vec![SolverItem {
-            spec,
-            result: &mut result,
-            margin: USides::default(),
-        }];
+        let mut items = vec![SolverItem::new(spec, &mut result, USides::default())];
 
         let mut ctx = base_ctx();
         ctx.container_main_size = 200.0;
@@ -1197,21 +1169,9 @@ mod tests {
         let s3 = default_spec();
 
         let mut items = vec![
-            SolverItem {
-                spec: s1,
-                result: &mut r1,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: s2,
-                result: &mut r2,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: s3,
-                result: &mut r3,
-                margin: USides::default(),
-            },
+            SolverItem::new(s1, &mut r1, USides::default()),
+            SolverItem::new(s2, &mut r2, USides::default()),
+            SolverItem::new(s3, &mut r3, USides::default()),
         ];
 
         let mut ctx = base_ctx();
@@ -1263,31 +1223,11 @@ mod tests {
         let s5 = default_spec();
 
         let mut items = vec![
-            SolverItem {
-                spec: s1,
-                result: &mut r1,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: s2,
-                result: &mut r2,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: s3,
-                result: &mut r3,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: s4,
-                result: &mut r4,
-                margin: USides::default(),
-            },
-            SolverItem {
-                spec: s5,
-                result: &mut r5,
-                margin: USides::default(),
-            },
+            SolverItem::new(s1, &mut r1, USides::default()),
+            SolverItem::new(s2, &mut r2, USides::default()),
+            SolverItem::new(s3, &mut r3, USides::default()),
+            SolverItem::new(s4, &mut r4, USides::default()),
+            SolverItem::new(s5, &mut r5, USides::default()),
         ];
 
         let mut ctx = base_ctx();
@@ -1329,11 +1269,7 @@ mod tests {
         spec.width_val = 0.0;
         spec.height_val = 0.0;
 
-        let mut items = vec![SolverItem {
-            spec,
-            result: &mut result,
-            margin: USides::default(),
-        }];
+        let mut items = vec![SolverItem::new(spec, &mut result, USides::default())];
 
         let mut ctx = base_ctx();
         ctx.container_main_size = 100.0;
@@ -1367,11 +1303,7 @@ mod tests {
         spec.width_val = 42.0;
         spec.height_val = 18.0;
 
-        let mut items = vec![SolverItem {
-            spec,
-            result: &mut result,
-            margin: USides::default(),
-        }];
+        let mut items = vec![SolverItem::new(spec, &mut result, USides::default())];
 
         let mut ctx = base_ctx();
         ctx.container_main_size = 100.0;

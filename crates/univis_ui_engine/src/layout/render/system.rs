@@ -89,42 +89,19 @@ struct ResolvedRenderContext {
 pub fn update_materials_optimized(
     mut commands: Commands,
     rollout: Option<Res<UiRolloutConfig>>,
+    mut cache: ResMut<LayoutCache>,
     mut pool: ResMut<MaterialPool>,
     mut mesh_pool: ResMut<MeshPool>,
     mut profiler: Option<ResMut<LayoutProfiler>>,
-    roots_changed: Query<(), Changed<ResolvedRootUi>>,
-    clips_changed: Query<(), Or<(Changed<UClip>, Added<UClip>)>>,
-    mut queries: ParamSet<(
-        Query<(
-            Entity,
-            &UNode,
-            &ComputedSize,
-            Option<&UBorder>,
-            Option<&UImage>,
-            Option<&UPbr>,
-            Option<&CachedUiContext>,
-            Option<&mut MaterialHandles>,
-        )>,
-        Query<
-            (
-                Entity,
-                &UNode,
-                &ComputedSize,
-                Option<&UBorder>,
-                Option<&UImage>,
-                Option<&UPbr>,
-                Option<&CachedUiContext>,
-                Option<&mut MaterialHandles>,
-            ),
-            Or<(
-                Changed<UNode>,
-                Changed<ComputedSize>,
-                Changed<UBorder>,
-                Changed<UImage>,
-                Changed<UPbr>,
-                Changed<ChildOf>,
-            )>,
-        >,
+    mut nodes: Query<(
+        Entity,
+        &UNode,
+        &ComputedSize,
+        Option<&UBorder>,
+        Option<&UImage>,
+        Option<&UPbr>,
+        Option<&CachedUiContext>,
+        Option<&mut MaterialHandles>,
     )>,
     // استعلامات القص
     parents_query: Query<&ChildOf>,
@@ -147,59 +124,37 @@ pub fn update_materials_optimized(
     let reused_before = pool.reused_count;
     let mesh_created_before = mesh_pool.created_count;
     let mesh_reused_before = mesh_pool.reused_count;
+    let render_frontier = cache.take_render_frontier();
 
-    if roots_changed.is_empty() && clips_changed.is_empty() {
-        for (entity, node, size, border, image, pbr_opt, cached_context, handles_opt) in
-            queries.p1().iter_mut()
-        {
-            sync_entity_material(
-                entity,
-                node,
-                size,
-                border,
-                image,
-                pbr_opt,
-                cached_context,
-                use_cached_ui_context,
-                handles_opt,
-                &parents_query,
-                &clipper_query,
-                &root_query,
-                &mut commands,
-                &mut pool,
-                &mut mesh_pool,
-                use_mesh_cache,
-                &mut meshes,
-                &mut materials_2d,
-                &mut materials_3d,
-            );
-        }
-    } else {
-        for (entity, node, size, border, image, pbr_opt, cached_context, handles_opt) in
-            queries.p0().iter_mut()
-        {
-            sync_entity_material(
-                entity,
-                node,
-                size,
-                border,
-                image,
-                pbr_opt,
-                cached_context,
-                use_cached_ui_context,
-                handles_opt,
-                &parents_query,
-                &clipper_query,
-                &root_query,
-                &mut commands,
-                &mut pool,
-                &mut mesh_pool,
-                use_mesh_cache,
-                &mut meshes,
-                &mut materials_2d,
-                &mut materials_3d,
-            );
-        }
+    for entity in render_frontier {
+        let Ok((entity, node, size, border, image, pbr_opt, cached_context, handles_opt)) =
+            nodes.get_mut(entity)
+        else {
+            continue;
+        };
+
+        sync_entity_material(
+            entity,
+            node,
+            size,
+            border,
+            image,
+            pbr_opt,
+            cached_context,
+            use_cached_ui_context,
+            handles_opt,
+            &parents_query,
+            &clipper_query,
+            &root_query,
+            &mut commands,
+            &mut pool,
+            &mut mesh_pool,
+            use_mesh_cache,
+            &mut meshes,
+            &mut materials_2d,
+            &mut materials_3d,
+        );
+        cache.complete_render(entity);
     }
 
     if let Some(ref mut prof) = profiler {

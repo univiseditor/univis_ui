@@ -16,7 +16,7 @@ pub mod schedule;
 #[doc(hidden)]
 pub mod internal {
     pub use crate::layout::components::{
-        CachedUiContext, IntrinsicSize, LayoutDepth, LayoutTreeDepth, UI3d,
+        CachedUiContext, IntrinsicSize, LayoutDepth, LayoutTreeDepth, UI3d, UiNodeStageVersions,
     };
     pub use crate::layout::geometry::ComputedSize;
     pub use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
@@ -48,7 +48,7 @@ pub mod prelude {
     pub use crate::layout::image::UImage;
     #[allow(deprecated)]
     pub use crate::layout::layout_system::{
-        URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace,
+        URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;

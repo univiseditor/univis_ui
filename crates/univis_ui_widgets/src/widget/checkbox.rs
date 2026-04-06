@@ -64,65 +64,66 @@ fn init_checkbox(
 ) {
     for (entity, checkbox) in query.iter() {
         // إعداد الحاوية الرئيسية (Row Layout)
-        commands.entity(entity).insert((
-            UNode {
-                // الحجم يتحدد بالمحتوى (المربع + النص)
-                width: UVal::Content,
-                height: UVal::Content,
-                padding: USides::all(4.0),     // مساحة للنقر
-                background_color: Color::NONE, // خلفية شفافة للحاوية الكلية
-                ..default()
-            },
-            ULayout {
-                align_items: UAlignItems::Center, // محاذاة النص مع المربع
-                justify_content: UJustifyContent::Center,
-                gap: 8.0, // مسافة بين المربع والنص
-                ..default()
-            },
-        ));
-
-        commands.entity(entity).with_children(|parent| {
-            let color;
-            let border_color;
-            if checkbox.checked {
-                color = checkbox.checked_color;
-                border_color = checkbox.border_color;
-            } else {
-                border_color = checkbox.border_color;
-                color = checkbox.unchecked_color;
-            }
-
-            // أ) المربع نفسه (The Box)
-            parent.spawn((
+        commands
+            .entity(entity)
+            .insert((
                 UNode {
-                    width: UVal::Px(checkbox.size),
-                    height: UVal::Px(checkbox.size),
-                    border_radius: UCornerRadius::all(checkbox.size * 0.25), // زوايا دائرية قليلاً
-                    background_color: color,
+                    // الحجم يتحدد بالمحتوى (المربع + النص)
+                    width: UVal::Content,
+                    height: UVal::Content,
+                    padding: USides::all(4.0),     // مساحة للنقر
+                    background_color: Color::NONE, // خلفية شفافة للحاوية الكلية
                     ..default()
                 },
-                UBorder {
-                    width: 2.0,
-                    color: border_color,
-                    offset: 4.0,
-                    radius: UCornerRadius::all(checkbox.size * 0.25),
+                ULayout {
+                    align_items: UAlignItems::Center, // محاذاة النص مع المربع
+                    justify_content: UJustifyContent::Center,
+                    gap: 8.0, // مسافة بين المربع والنص
+                    ..default()
                 },
-                // نحتاج لمعرفة هذا المربع لتغيير لونه لاحقاً
-            ));
+            ))
+            .with_children(|parent| {
+                let color;
+                let border_color;
+                if checkbox.checked {
+                    color = checkbox.checked_color;
+                    border_color = checkbox.border_color;
+                } else {
+                    border_color = checkbox.border_color;
+                    color = checkbox.unchecked_color;
+                }
 
-            // ج) النص (Label) - إذا وجد
-            if let Some(text) = &checkbox.label {
+                // أ) المربع نفسه (The Box)
                 parent.spawn((
-                    UTextLabel {
-                        text: text.clone(),
-                        font_size: checkbox.size * 0.75,
-                        color: Color::WHITE,
+                    UNode {
+                        width: UVal::Px(checkbox.size),
+                        height: UVal::Px(checkbox.size),
+                        border_radius: UCornerRadius::all(checkbox.size * 0.25), // زوايا دائرية قليلاً
+                        background_color: color,
                         ..default()
                     },
-                    Pickable::IGNORE,
+                    UBorder {
+                        width: 2.0,
+                        color: border_color,
+                        offset: 4.0,
+                        radius: UCornerRadius::all(checkbox.size * 0.25),
+                    },
+                    // نحتاج لمعرفة هذا المربع لتغيير لونه لاحقاً
                 ));
-            }
-        });
+
+                // ج) النص (Label) - إذا وجد
+                if let Some(text) = &checkbox.label {
+                    parent.spawn((
+                        UTextLabel {
+                            text: text.clone(),
+                            font_size: checkbox.size * 0.75,
+                            color: Color::WHITE,
+                            ..default()
+                        },
+                        Pickable::IGNORE,
+                    ));
+                }
+            });
     }
 }
 

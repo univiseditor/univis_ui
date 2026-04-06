@@ -3,50 +3,30 @@
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
-// =========================================================
-// نسخة Owned آمنة من SolverItem
-// =========================================================
+const LAYOUT_WRITE_EPSILON: f32 = 0.001;
 
-#[doc(hidden)]
-pub struct SolverItemOwned {
-    pub spec: SolverSpec,
-    pub result: Box<SolverResult>,
-    pub margin: USides,
+fn z_translation_changed(current: f32, next: f32) -> bool {
+    current.to_bits() != next.to_bits()
 }
 
-impl SolverItemOwned {
-    #[doc(hidden)]
-    pub fn as_solver_item(&mut self) -> SolverItem<'_> {
-        SolverItem {
-            spec: self.spec,
-            result: &mut self.result,
-            margin: self.margin,
-        }
-    }
-}
-
-// =========================================================
-// Data Structures
-// =========================================================
-
-#[derive(Clone)]
-struct NodeData {
-    spec: UNode,
-    layout: ULayout,
-    children: Vec<Entity>,
-    computed_size: ComputedSize,
-    cached_context: Option<CachedUiContext>,
-}
-
-struct ChildLayoutData {
+struct SolverScratchItem {
     entity: Entity,
     spec: SolverSpec,
+    result: SolverResult,
     margin: USides,
 }
 
-struct SolvedChild {
-    entity: Entity,
-    result: SolverResult,
+impl SolverScratchItem {
+    fn as_solver_item(&mut self) -> SolverItem {
+        SolverItem::new(self.spec, &mut self.result, self.margin)
+    }
+}
+
+#[derive(Default)]
+#[doc(hidden)]
+pub struct LayoutSolveScratch {
+    solver_items: Vec<SolverScratchItem>,
+    solver_refs: Vec<SolverItem>,
 }
 
 // =========================================================
@@ -55,10 +35,11 @@ struct SolvedChild {
 
 #[doc(hidden)]
 pub fn downward_solve_pass_safe(
-    tree_depth: Res<LayoutTreeDepth>,
+    _tree_depth: Res<LayoutTreeDepth>,
     rollout: Option<Res<UiRolloutConfig>>,
     mut cache: ResMut<LayoutCache>,
     mut profiler: Option<ResMut<LayoutProfiler>>, // إضافة Profiler اختياري
+    mut scratch: Local<LayoutSolveScratch>,
 
     mut nodes: Query<(
         Entity,
@@ -85,118 +66,149 @@ pub fn downward_solve_pass_safe(
     let use_cached_ui_context = rollout
         .as_ref()
         .map_or(true, |config| config.use_cached_ui_context);
+    let solve_frontier = if use_incremental_solve {
+        cache.take_solve_frontier()
+    } else {
+        cache.all_entities_top_down()
+    };
 
-    for depth in 0..=tree_depth.max_depth {
-        // استخدام Cache
-        let Some(layer_entities) = cache.get_entities_at_depth(depth).cloned() else {
-            continue;
-        };
+    for entity in solve_frontier {
+        let depth = cache.depth_for_entity(entity).unwrap_or_default();
 
-        for entity in layer_entities {
-            if use_incremental_solve && !cache.is_solve_dirty(entity) {
-                continue;
-            }
-
-            // 1. استخراج البيانات
-            let Some(node_data) = extract_node_data(entity, &nodes) else {
-                cache.clear_solve_dirty(entity);
-                continue;
+        let Some((container_size, constraints, solver_config, cached_context)) = (|| {
+            let (node, layout_opt, children_opt, cached_context, computed) = match nodes.get(entity)
+            {
+                Ok((_, node, layout_opt, _, children_opt, _, cached_context, computed, _)) => {
+                    (node, layout_opt, children_opt, cached_context, computed)
+                }
+                Err(_) => return None,
             };
 
-            // 2. حساب حجم الحاوية
             let container_size = if depth == 0 {
                 calculate_root_size(entity, &root_query, &intrinsic_query)
             } else {
-                Vec2::new(
-                    node_data.computed_size.width,
-                    node_data.computed_size.height,
-                )
+                Vec2::new(computed.width, computed.height)
             };
 
-            // تحديث الجذر
-            if depth == 0
-                && let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
+            let solver_items_capacity_before = scratch.solver_items.capacity();
+            scratch.solver_items.clear();
+            if let Some(children) = children_opt
+                && !children.is_empty()
             {
+                collect_solver_items_into(
+                    children,
+                    &nodes,
+                    &intrinsic_query,
+                    &mut scratch.solver_items,
+                );
+            }
+            if let Some(prof) = profiler.as_mut() {
+                if scratch.solver_items.capacity() > solver_items_capacity_before {
+                    prof.solve_scratch_alloc_grows += 1;
+                }
+                prof.solve_scratch_peak = prof.solve_scratch_peak.max(scratch.solver_items.len());
+            }
+
+            let default_layout;
+            let layout = if let Some(layout) = layout_opt {
+                layout
+            } else {
+                default_layout = ULayout::default();
+                &default_layout
+            };
+
+            Some((
+                container_size,
+                if depth == 0 {
+                    BoxConstraints::tight(container_size)
+                } else {
+                    build_constraints(container_size, node)
+                },
+                translate_config(layout, node),
+                cached_context.copied(),
+            ))
+        })() else {
+            cache.clear_solve_dirty(entity);
+            continue;
+        };
+
+        if depth == 0
+            && let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
+        {
+            if (computed.width - container_size.x).abs() > LAYOUT_WRITE_EPSILON {
                 computed.width = container_size.x;
+            }
+            if (computed.height - container_size.y).abs() > LAYOUT_WRITE_EPSILON {
                 computed.height = container_size.y;
             }
+        }
 
-            // 3. جمع بيانات الأطفال
-            let children_layout_data =
-                collect_children_layout_data(&node_data.children, &nodes, &intrinsic_query);
+        if scratch.solver_items.is_empty() {
+            cache.complete_solve(entity);
+            cache.clear_solve_dirty(entity);
+            continue;
+        }
 
-            if children_layout_data.is_empty() {
-                cache.clear_solve_dirty(entity);
-                continue;
+        let solved_size = {
+            let (solver_refs_capacity_before, solver_refs_len) = {
+                let LayoutSolveScratch {
+                    solver_items,
+                    solver_refs,
+                } = &mut *scratch;
+                let solver_refs_capacity_before = solver_refs.capacity();
+                solver_refs.clear();
+                solver_refs.reserve(solver_items.len());
+                for item in solver_items.iter_mut() {
+                    solver_refs.push(item.as_solver_item());
+                }
+                (solver_refs_capacity_before, solver_refs.len())
+            };
+            if let Some(prof) = profiler.as_mut() {
+                if scratch.solver_refs.capacity() > solver_refs_capacity_before {
+                    prof.solve_ref_alloc_grows += 1;
+                }
+                prof.solve_ref_peak = prof.solve_ref_peak.max(solver_refs_len);
             }
+            solve_flex_layout(&solver_config, constraints, &mut scratch.solver_refs)
+        };
+        solved_count += 1;
+        let final_size = if depth == 0 {
+            container_size
+        } else {
+            solved_size
+        };
+        let solve_generation = cache.stage_versions(entity).solve_input_generation;
+        let (world_scale, root_stack) = resolve_solver_context(
+            entity,
+            use_cached_ui_context.then_some(cached_context).flatten(),
+            &parents_query,
+            &root_query,
+            &root_stack_query,
+        );
 
-            // 4. تحويل إلى Solver (الطريقة الآمنة)
-            let (mut solver_items_owned, entities_map) =
-                prepare_solver_data_safe(children_layout_data);
-
-            // 5. تحويل مؤقت إلى SolverItem
-            let mut solver_items_refs: Vec<SolverItem> = solver_items_owned
-                .iter_mut()
-                .map(|item| item.as_solver_item())
-                .collect();
-
-            // 6. إعداد القيود
-            let constraints = if depth == 0 {
-                BoxConstraints::tight(container_size)
-            } else {
-                build_constraints(container_size, &node_data.spec)
-            };
-
-            // 7. تشغيل Solver
-            let solver_config = translate_config(&node_data.layout, &node_data.spec);
-            let solved_size =
-                solve_flex_layout(&solver_config, constraints, &mut solver_items_refs);
-            solved_count += 1;
-            let final_size = if depth == 0 {
-                container_size
-            } else {
-                solved_size
-            };
-            let (world_scale, root_stack) = resolve_solver_context(
-                entity,
-                use_cached_ui_context
-                    .then_some(node_data.cached_context)
-                    .flatten(),
-                &parents_query,
-                &root_query,
-                &root_stack_query,
-            );
-
-            // 8. تحديث حجم الحاوية
-            if let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+        if let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+            if (computed.width - final_size.x).abs() > LAYOUT_WRITE_EPSILON {
                 computed.width = final_size.x;
+            }
+            if (computed.height - final_size.y).abs() > LAYOUT_WRITE_EPSILON {
                 computed.height = final_size.y;
             }
+        }
 
-            // 9. ترجمة النتائج
-            let solved_children: Vec<SolvedChild> = solver_items_owned
-                .iter()
-                .zip(entities_map.iter())
-                .map(|(item, &entity)| SolvedChild {
-                    entity,
-                    result: *item.result,
-                })
-                .collect();
+        apply_results_to_children(
+            &scratch.solver_items,
+            final_size,
+            solve_generation,
+            world_scale,
+            root_stack,
+            use_incremental_solve,
+            &mut cache,
+            &mut nodes,
+        );
+        cache.complete_solve(entity);
 
-            // 10. تطبيق النتائج
-            apply_results_to_children(
-                &solved_children,
-                final_size,
-                world_scale,
-                root_stack,
-                use_incremental_solve,
-                &mut cache,
-                &mut nodes,
-            );
-
-            if use_incremental_solve {
-                cache.clear_solve_dirty(entity);
-            }
+        if use_incremental_solve {
+            cache.clear_solve_dirty(entity);
         }
     }
 
@@ -210,32 +222,6 @@ pub fn downward_solve_pass_safe(
 // =========================================================
 // Helper Functions
 // =========================================================
-
-fn extract_node_data(
-    entity: Entity,
-    query: &Query<(
-        Entity,
-        &UNode,
-        Option<&ULayout>,
-        &LayoutDepth,
-        Option<&Children>,
-        Option<&USelf>,
-        Option<&CachedUiContext>,
-        &mut ComputedSize,
-        &mut Transform,
-    )>,
-) -> Option<NodeData> {
-    let (_, node, layout_opt, _, children_opt, _, cached_context, computed, _) =
-        query.get(entity).ok()?;
-
-    Some(NodeData {
-        spec: node.clone(),
-        layout: layout_opt.cloned().unwrap_or_default(),
-        children: children_opt.map(|c| c.iter().collect()).unwrap_or_default(),
-        computed_size: *computed,
-        cached_context: cached_context.copied(),
-    })
-}
 
 fn calculate_root_size(
     entity: Entity,
@@ -328,8 +314,8 @@ fn resolve_solver_context(
     )
 }
 
-fn collect_children_layout_data(
-    children: &[Entity],
+fn collect_solver_items_into(
+    children: &Children,
     nodes_query: &Query<(
         Entity,
         &UNode,
@@ -342,57 +328,42 @@ fn collect_children_layout_data(
         &mut Transform,
     )>,
     intrinsic_query: &Query<&IntrinsicSize>,
-) -> Vec<ChildLayoutData> {
-    children
-        .iter()
-        .filter_map(|&child_entity| {
-            let (_, node, _, _, _, uself_opt, _, _, _) = nodes_query.get(child_entity).ok()?;
-            let intrinsic = intrinsic_query.get(child_entity).ok()?;
+    scratch: &mut Vec<SolverScratchItem>,
+) {
+    scratch.reserve(children.len());
 
-            let mut spec = translate_spec(node, uself_opt);
+    for child_entity in children.iter() {
+        let Ok((_, node, _, _, _, uself_opt, _, _, _)) = nodes_query.get(child_entity) else {
+            continue;
+        };
+        let Ok(intrinsic) = intrinsic_query.get(child_entity) else {
+            continue;
+        };
 
-            if spec.width_mode == SolverSizeMode::MinContent {
-                spec.width_val = intrinsic.min_width;
-            } else if spec.width_mode == SolverSizeMode::Content {
-                spec.width_val = intrinsic.max_width;
-            } else if spec.width_mode == SolverSizeMode::Auto {
-                spec.width_val = intrinsic.width;
-            }
-            if spec.height_mode == SolverSizeMode::MinContent {
-                spec.height_val = intrinsic.min_height;
-            } else if spec.height_mode == SolverSizeMode::Content {
-                spec.height_val = intrinsic.max_height;
-            } else if spec.height_mode == SolverSizeMode::Auto {
-                spec.height_val = intrinsic.height;
-            }
+        let mut spec = translate_spec(node, uself_opt);
 
-            Some(ChildLayoutData {
-                entity: child_entity,
-                spec,
-                margin: node.margin,
-            })
-        })
-        .collect()
-}
+        if spec.width_mode == SolverSizeMode::MinContent {
+            spec.width_val = intrinsic.min_width;
+        } else if spec.width_mode == SolverSizeMode::Content {
+            spec.width_val = intrinsic.max_width;
+        } else if spec.width_mode == SolverSizeMode::Auto {
+            spec.width_val = intrinsic.width;
+        }
+        if spec.height_mode == SolverSizeMode::MinContent {
+            spec.height_val = intrinsic.min_height;
+        } else if spec.height_mode == SolverSizeMode::Content {
+            spec.height_val = intrinsic.max_height;
+        } else if spec.height_mode == SolverSizeMode::Auto {
+            spec.height_val = intrinsic.height;
+        }
 
-/// ✅ الطريقة الآمنة لتحضير بيانات Solver
-fn prepare_solver_data_safe(
-    children_data: Vec<ChildLayoutData>,
-) -> (Vec<SolverItemOwned>, Vec<Entity>) {
-    let mut entities_map = Vec::new();
-    let mut solver_items = Vec::new();
-
-    for child_data in children_data {
-        entities_map.push(child_data.entity);
-
-        solver_items.push(SolverItemOwned {
-            spec: child_data.spec,
-            result: Box::new(SolverResult::default()),
-            margin: child_data.margin,
+        scratch.push(SolverScratchItem {
+            entity: child_entity,
+            spec,
+            result: SolverResult::default(),
+            margin: node.margin,
         });
     }
-
-    (solver_items, entities_map)
 }
 
 fn build_constraints(container_size: Vec2, node_spec: &UNode) -> BoxConstraints {
@@ -414,8 +385,9 @@ fn build_constraints(container_size: Vec2, node_spec: &UNode) -> BoxConstraints 
 }
 
 fn apply_results_to_children(
-    solved_children: &[SolvedChild],
+    solved_children: &[SolverScratchItem],
     parent_size: Vec2,
+    solve_generation: u64,
     world_scale: f32,
     root_stack: ResolvedRootStack,
     use_incremental_solve: bool,
@@ -436,29 +408,44 @@ fn apply_results_to_children(
         if let Ok((_, _, _, layout_depth, children, uself, _, mut computed, mut transform)) =
             nodes_query.get_mut(solved.entity)
         {
-            let size_changed = (computed.width - solved.result.size.x).abs() > 0.001
-                || (computed.height - solved.result.size.y).abs() > 0.001;
+            let size_changed = (computed.width - solved.result.size.x).abs() > LAYOUT_WRITE_EPSILON
+                || (computed.height - solved.result.size.y).abs() > LAYOUT_WRITE_EPSILON;
 
-            computed.width = solved.result.size.x;
-            computed.height = solved.result.size.y;
+            if size_changed {
+                computed.width = solved.result.size.x;
+                computed.height = solved.result.size.y;
+            }
 
             let child_w = solved.result.size.x;
             let child_h = solved.result.size.y;
 
-            transform.translation.x =
+            let next_x =
                 ((-parent_size.x / 2.0) + solved.result.pos.x + (child_w / 2.0)) * world_scale;
-
-            transform.translation.y =
+            let next_y =
                 ((parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0)) * world_scale;
 
             let order = uself.map(|value| value.order).unwrap_or(0);
-            transform.translation.z = root_stack.local_depth_offset(layout_depth.0, order);
+            let next_z = root_stack.local_depth_offset(layout_depth.0, order);
+
+            if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
+                transform.translation.x = next_x;
+            }
+            if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
+                transform.translation.y = next_y;
+            }
+            if z_translation_changed(transform.translation.z, next_z) {
+                transform.translation.z = next_z;
+            }
 
             if use_incremental_solve
                 && size_changed
                 && children.is_some_and(|value| !value.is_empty())
             {
-                cache.mark_solve_dirty(solved.entity);
+                cache.mark_solve_dirty_generation(solved.entity, solve_generation);
+            }
+
+            if children.is_none_or(|value| value.is_empty()) {
+                cache.complete_solve(solved.entity);
             }
         }
     }
@@ -1156,5 +1143,87 @@ mod tests {
             .expect("child should have a transform");
 
         assert!(child_transform.translation.z < upper_root_floor);
+    }
+
+    #[test]
+    fn child_depth_updates_for_tiny_root_capsule_steps() {
+        let mut app = App::new();
+        app.init_resource::<LayoutTreeDepth>();
+        app.init_resource::<LayoutCache>();
+        app.add_systems(
+            Update,
+            (
+                track_layout_changes,
+                update_depth_cache,
+                upward_measure_pass_cached,
+                downward_solve_pass_safe,
+            )
+                .chain(),
+        );
+
+        let root = app
+            .world_mut()
+            .spawn((
+                UNode::default(),
+                ULayout::default(),
+                LayoutDepth(0),
+                ResolvedRootUi {
+                    root_entity: Entity::PLACEHOLDER,
+                    space: UiSpace::Screen,
+                    canvas: UiCanvasSize::Viewport,
+                    canvas_size: Vec2::new(400.0, 200.0),
+                    camera_entity: None,
+                    meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
+                    resolution_scale: 1.0,
+                },
+                ResolvedRootStack {
+                    capsule_sort_key: 0.0,
+                    capsule_band_base: 0.0,
+                    capsule_band_width: 0.004,
+                    capsule_band_step: 0.004 / 2048.0,
+                    initialized: true,
+                    ..default()
+                },
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should have resolved state")
+            .root_entity = root;
+
+        let child = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    width: UVal::Px(100.0),
+                    height: UVal::Px(50.0),
+                    ..default()
+                },
+                LayoutDepth(1),
+                ChildOf(root),
+            ))
+            .id();
+
+        app.world_mut().resource_mut::<LayoutTreeDepth>().max_depth = 1;
+        app.update();
+
+        let expected_z = app
+            .world()
+            .entity(root)
+            .get::<ResolvedRootStack>()
+            .expect("root should keep a stack")
+            .local_depth_offset(1, 0);
+        let child_transform = *app
+            .world()
+            .entity(child)
+            .get::<Transform>()
+            .expect("child should have a transform");
+
+        assert_eq!(
+            child_transform.translation.z.to_bits(),
+            expected_z.to_bits()
+        );
+        assert!(expected_z.abs() < LAYOUT_WRITE_EPSILON);
     }
 }

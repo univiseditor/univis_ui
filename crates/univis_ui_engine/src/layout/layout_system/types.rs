@@ -43,6 +43,7 @@ pub enum UiCameraRef {
     UNode,
     ResolvedRootUi,
     ResolvedRootStack,
+    UiRootSettlementState,
     RootResolutionState,
     RootSpawnRank
 )]
@@ -287,6 +288,51 @@ impl ResolvedRootStack {
     }
 }
 
+/// Derived settlement counters for one root subtree.
+///
+/// `current_generation` tracks the latest generation observed anywhere under
+/// the root, while the pending counters show how many nodes have not finished
+/// each stage yet.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
+pub struct UiRootSettlementState {
+    pub current_generation: u64,
+    pub pending_measure: u32,
+    pub pending_solve: u32,
+    pub pending_render: u32,
+}
+
+impl UiRootSettlementState {
+    pub fn has_pending(&self) -> bool {
+        self.pending_measure > 0 || self.pending_solve > 0 || self.pending_render > 0
+    }
+
+    pub fn is_settled(&self) -> bool {
+        !self.has_pending()
+    }
+
+    pub fn observe_node(&mut self, versions: UiNodeStageVersions) {
+        self.current_generation = self.current_generation.max(
+            versions
+                .measure_input_generation
+                .max(versions.solve_input_generation)
+                .max(versions.render_input_generation),
+        );
+
+        if versions.measure_done_generation < versions.measure_input_generation {
+            self.pending_measure += 1;
+        }
+
+        if versions.solve_done_generation < versions.solve_input_generation {
+            self.pending_solve += 1;
+        }
+
+        if versions.render_done_generation < versions.render_input_generation {
+            self.pending_render += 1;
+        }
+    }
+}
+
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct RootSpawnRank(pub(crate) u64);
 
@@ -305,6 +351,7 @@ pub(crate) struct RootSpawnRankCounter {
     UNode,
     ResolvedRootUi,
     ResolvedRootStack,
+    UiRootSettlementState,
     RootResolutionState,
     RootSpawnRank
 )]
@@ -320,6 +367,7 @@ pub struct UScreenRoot;
     UNode,
     ResolvedRootUi,
     ResolvedRootStack,
+    UiRootSettlementState,
     RootResolutionState,
     RootSpawnRank
 )]

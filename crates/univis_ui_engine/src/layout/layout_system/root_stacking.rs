@@ -182,8 +182,12 @@ pub(crate) fn sync_root_capsule_transforms(
             }
         }
 
-        stack.applied_root_z = transform.translation.z;
-        stack.initialized = true;
+        if (stack.applied_root_z - transform.translation.z).abs() > f32::EPSILON {
+            stack.applied_root_z = transform.translation.z;
+        }
+        if !stack.initialized {
+            stack.initialized = true;
+        }
     }
 }
 

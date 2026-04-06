@@ -6,7 +6,6 @@
 ابنِ واجهات حادة وقابلة للتوسع في Bevy للشاشة، ولوحات العالم، والواجهات ثلاثية الأبعاد المضاءة، عبر طبقة ECS واحدة.
 
 ملخص الترحيل: [MIGRATION_AR.md](MIGRATION_AR.md)
-خارطة الطريق الحالية: [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md)
 رابط الوثائق العامة: `https://univiseditor.github.io/univis_ui/`
 
 > مهم:
@@ -171,7 +170,6 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 - [صفحة الوثائق الرئيسية](docs/src/index.md)
 - [ملخص الترحيل](MIGRATION_AR.md)
-- [خارطة الطريق الحالية](ROADMAP_POST_REVIEW.md)
 - [جرد الدين التقني الحالي](TECH_DEBT_INVENTORY.md)
 - [البدء السريع (AR)](docs/src/ar/quick-start.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
@@ -187,7 +185,7 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 ## مسار الاكتشاف من GitHub
 
 1. اقرأ `README.md` أو `README_AR.md` لفهم قصة المشروع وخريطة الحزم.
-2. راجع [RELEASE_NOTES.md](RELEASE_NOTES.md) لفهم قصة الإصدار الحالية و[ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md) لمعرفة الأولويات النشطة.
+2. راجع [RELEASE_NOTES.md](RELEASE_NOTES.md) لفهم قصة الإصدار الحالية و[changelog.md](changelog.md) لمراجعة السجل الزمني للتنفيذ.
 3. افتح [صفحة الوثائق الرئيسية](docs/src/index.md) أو رابط الوثائق العامة ثم انتقل إلى فصل الشرح المناسب.
 4. استخدم [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md) أو [Example Gallery (EN)](docs/src/en/examples/gallery.md) قبل الرجوع إلى الفهرس الكامل.
 5. ولّد `cargo doc --no-deps -p univis_ui` عندما تحتاج المسارات الدقيقة والتواقيع.
@@ -199,7 +197,6 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 - `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم ومسارات الأمثلة القديمة وافتراضات الجذور القديمة.
 - `MIGRATION_AR.md`: مسار الترحيل العربي.
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha.
-- `ROADMAP_POST_REVIEW.md`: خارطة الطريق النشطة وأولويات ما بعد المراجعة.
 - `TECH_DEBT_INVENTORY.md`: قائمة الصيانة الحالية الخاصة بالملفات الكبيرة وإعادة تقسيمها.
 - `changelog.md`: السجل الزمني المرتب حسب التواريخ للتغييرات الملحوظة.
 

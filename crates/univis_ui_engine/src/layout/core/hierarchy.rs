@@ -1,5 +1,5 @@
 use crate::internal_prelude::*;
-use bevy::{ecs::relationship::Relationship, prelude::*};
+use bevy::{ecs::relationship::Relationship, platform::collections::HashSet, prelude::*};
 
 /// System to update the `LayoutDepth` component for all UI nodes.
 ///
@@ -54,22 +54,22 @@ fn traverse_and_mark(
 pub fn update_cached_ui_contexts(
     mut commands: Commands,
     all_nodes: Query<(Entity, Option<&CachedUiContext>), With<UNode>>,
+    node_contexts: Query<Option<&CachedUiContext>, With<UNode>>,
     incremental_nodes: Query<
         (Entity, Option<&CachedUiContext>),
         Or<(Added<UNode>, Changed<ChildOf>)>,
     >,
-    roots_changed: Query<(), Or<(Changed<ResolvedRootUi>, Changed<ResolvedRootStack>)>>,
-    clips_changed: Query<(), Or<(Added<UClip>, Changed<UClip>)>>,
+    changed_roots: Query<Entity, Or<(Changed<ResolvedRootUi>, Changed<ResolvedRootStack>)>>,
+    changed_clips: Query<Entity, Or<(Added<UClip>, Changed<UClip>)>>,
     mut removed_children: RemovedComponents<ChildOf>,
     mut removed_clips: RemovedComponents<UClip>,
+    children_query: Query<&Children>,
     parents_query: Query<&ChildOf>,
     root_query: Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
     clipper_query: Query<&UClip>,
 ) {
-    let requires_full_refresh = !roots_changed.is_empty()
-        || !clips_changed.is_empty()
-        || removed_children.read().next().is_some()
-        || removed_clips.read().next().is_some();
+    let requires_full_refresh =
+        removed_children.read().next().is_some() || removed_clips.read().next().is_some();
 
     if requires_full_refresh {
         for (entity, cached) in all_nodes.iter() {
@@ -83,7 +83,13 @@ pub fn update_cached_ui_contexts(
             );
         }
     } else {
+        let mut visited = HashSet::default();
+
         for (entity, cached) in incremental_nodes.iter() {
+            if !visited.insert(entity) {
+                continue;
+            }
+
             sync_cached_context_for_entity(
                 entity,
                 cached.copied(),
@@ -91,6 +97,32 @@ pub fn update_cached_ui_contexts(
                 &root_query,
                 &clipper_query,
                 &mut commands,
+            );
+        }
+
+        for entity in changed_roots.iter() {
+            sync_cached_context_subtree(
+                entity,
+                &node_contexts,
+                &children_query,
+                &parents_query,
+                &root_query,
+                &clipper_query,
+                &mut commands,
+                &mut visited,
+            );
+        }
+
+        for entity in changed_clips.iter() {
+            sync_cached_context_subtree(
+                entity,
+                &node_contexts,
+                &children_query,
+                &parents_query,
+                &root_query,
+                &clipper_query,
+                &mut commands,
+                &mut visited,
             );
         }
     }
@@ -172,6 +204,47 @@ fn sync_cached_context_for_entity(
 
     if cached != Some(updated) {
         commands.entity(entity).insert(updated);
+    }
+}
+
+fn sync_cached_context_subtree(
+    entity: Entity,
+    node_contexts: &Query<Option<&CachedUiContext>, With<UNode>>,
+    children_query: &Query<&Children>,
+    parents_query: &Query<&ChildOf>,
+    root_query: &Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
+    clipper_query: &Query<&UClip>,
+    commands: &mut Commands,
+    visited: &mut HashSet<Entity>,
+) {
+    if !visited.insert(entity) {
+        return;
+    }
+
+    if let Ok(cached) = node_contexts.get(entity) {
+        sync_cached_context_for_entity(
+            entity,
+            cached.copied(),
+            parents_query,
+            root_query,
+            clipper_query,
+            commands,
+        );
+    }
+
+    if let Ok(children) = children_query.get(entity) {
+        for child in children.iter() {
+            sync_cached_context_subtree(
+                child,
+                node_contexts,
+                children_query,
+                parents_query,
+                root_query,
+                clipper_query,
+                commands,
+                visited,
+            );
+        }
     }
 }
 

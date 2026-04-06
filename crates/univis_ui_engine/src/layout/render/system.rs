@@ -117,6 +117,9 @@ pub fn update_materials_optimized(
     let use_cached_ui_context = rollout
         .as_ref()
         .map_or(true, |config| config.use_cached_ui_context);
+    let use_incremental_render = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_incremental_render);
     let use_mesh_cache = rollout
         .as_ref()
         .map_or(true, |config| config.use_mesh_cache);
@@ -124,7 +127,11 @@ pub fn update_materials_optimized(
     let reused_before = pool.reused_count;
     let mesh_created_before = mesh_pool.created_count;
     let mesh_reused_before = mesh_pool.reused_count;
-    let render_frontier = cache.take_render_frontier();
+    let render_frontier = if use_incremental_render {
+        cache.take_render_frontier()
+    } else {
+        cache.all_entities_top_down()
+    };
 
     for entity in render_frontier {
         let Ok((entity, node, size, border, image, pbr_opt, cached_context, handles_opt)) =

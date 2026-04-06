@@ -688,6 +688,7 @@ mod tests {
     };
     use bevy::ecs::message::Messages;
     use bevy::ecs::system::SystemState;
+    use univis_ui_engine::layout::core::hierarchy::update_cached_ui_contexts;
 
     fn sample_root(root_entity: Entity, space: UiSpace) -> (ResolvedRootUi, ResolvedRootStack) {
         let root = ResolvedRootUi {
@@ -1002,6 +1003,141 @@ mod tests {
         assert_eq!(validation_state.picking_shadow_ui_generation, 1);
         assert_eq!(validation_state.picking_shadow_pointer_generation, 1);
         assert_eq!(validation_state.picking_shadow_mismatches, 1);
+
+        let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();
+        let collected = hits.drain().collect::<Vec<_>>();
+        assert!(collected.is_empty());
+    }
+
+    #[test]
+    fn post_settle_picking_refreshes_cached_camera_after_root_state_change() {
+        let mut app = App::new();
+        app.add_message::<PointerHits>();
+        app.init_resource::<PickingSyncState>();
+        app.init_resource::<UiValidationState>();
+        app.add_systems(
+            Update,
+            (update_cached_ui_contexts, post_settle_picking_backend).chain(),
+        );
+
+        let mut camera_a = Camera::default();
+        camera_a.computed = ComputedCameraValues {
+            target_info: Some(RenderTargetInfo {
+                physical_size: UVec2::new(800, 600),
+                scale_factor: 1.0,
+            }),
+            clip_from_view: OrthographicProjection {
+                area: Rect::new(-400.0, -300.0, 400.0, 300.0),
+                ..OrthographicProjection::default_2d()
+            }
+            .get_clip_from_view(),
+            ..default()
+        };
+        let camera_a = app
+            .world_mut()
+            .spawn((
+                camera_a,
+                GlobalTransform::from(Transform::from_xyz(0.0, 0.0, 1000.0)),
+            ))
+            .id();
+
+        let mut camera_b = Camera::default();
+        camera_b.computed = ComputedCameraValues {
+            target_info: Some(RenderTargetInfo {
+                physical_size: UVec2::new(800, 600),
+                scale_factor: 1.0,
+            }),
+            clip_from_view: OrthographicProjection {
+                area: Rect::new(-400.0, -300.0, 400.0, 300.0),
+                ..OrthographicProjection::default_2d()
+            }
+            .get_clip_from_view(),
+            ..default()
+        };
+        let camera_b = app
+            .world_mut()
+            .spawn((
+                camera_b,
+                GlobalTransform::from(Transform::from_xyz(250.0, 0.0, 1000.0)),
+            ))
+            .id();
+
+        let root = app.world_mut().spawn(UNode::default()).id();
+        let (mut resolved_root, resolved_stack) = sample_root(root, UiSpace::Screen);
+        resolved_root.camera_entity = Some(camera_a);
+        app.world_mut()
+            .entity_mut(root)
+            .insert((resolved_root, resolved_stack));
+
+        let node = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UInteraction::default(),
+                LayoutDepth(1),
+                UNode {
+                    width: UVal::Px(120.0),
+                    height: UVal::Px(80.0),
+                    ..default()
+                },
+                ComputedSize {
+                    width: 120.0,
+                    height: 80.0,
+                    local_pos: Vec2::ZERO,
+                },
+                GlobalTransform::default(),
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            PointerId::Mouse,
+            PointerLocation::new(Location {
+                target: NormalizedRenderTarget::None {
+                    width: 800,
+                    height: 600,
+                },
+                position: Vec2::new(400.0, 300.0),
+            }),
+        ));
+        app.world_mut()
+            .resource_mut::<PickingSyncState>()
+            .pointer_generation = 1;
+
+        app.update();
+
+        let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();
+        let collected = hits.drain().collect::<Vec<_>>();
+        assert_eq!(collected.len(), 1);
+        assert_eq!(collected[0].picks.len(), 1);
+        assert_eq!(collected[0].picks[0].0, node);
+        drop(hits);
+
+        let cached_before = app
+            .world()
+            .entity(node)
+            .get::<CachedUiContext>()
+            .copied()
+            .expect("node should have cached context after the first update");
+        assert_eq!(cached_before.camera_entity, Some(camera_a));
+
+        app.world_mut()
+            .entity_mut(root)
+            .get_mut::<ResolvedRootUi>()
+            .expect("root should keep resolved root state")
+            .camera_entity = Some(camera_b);
+        app.world_mut()
+            .resource_mut::<PickingSyncState>()
+            .pointer_generation = 2;
+
+        app.update();
+
+        let cached_after = app
+            .world()
+            .entity(node)
+            .get::<CachedUiContext>()
+            .copied()
+            .expect("node should keep cached context after camera reassignment");
+        assert_eq!(cached_after.camera_entity, Some(camera_b));
 
         let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();
         let collected = hits.drain().collect::<Vec<_>>();

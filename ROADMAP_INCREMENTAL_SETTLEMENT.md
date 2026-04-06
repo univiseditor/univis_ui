@@ -84,29 +84,29 @@
 
 ## Phase 8: Cached context w root refresh
 
-- [ ] rbat full refresh dyal `CachedUiContext` ghir b real root state changes
-- [ ] ma t3tabrch `ResolvedRootStack` changed ila ghir write-noise
-- [ ] ila root/camera/clip ma tbeddlouch, khdem incremental mode fa9at
-- [ ] verify belli moving root ma kaydirch refresh l roots okhrin
-- [ ] verify belli removing child aw clip kayb9a incremental ila momkin
+- [x] rbat full refresh dyal `CachedUiContext` ghir b real root state changes
+- [x] ma t3tabrch `ResolvedRootStack` changed ila ghir write-noise
+- [x] ila root/camera/clip ma tbeddlouch, khdem incremental mode fa9at
+- [x] verify belli moving root ma kaydirch refresh l roots okhrin
+- [x] verify belli removing child aw clip kayb9a incremental ila momkin
 
 ## Phase 9: Tests dyal correctness
 
-- [ ] test: node tbeddel text dyalo w output ma tbeddelch, parent ma y3awdch solve
-- [ ] test: node tbeddel text dyalo w output tbeddel, parent kaytwasakh ghir wa7d lmarra
-- [ ] test: root wa7d tbeddel, root akhor ma ytsiftch lqueue
-- [ ] test: root settled means ga3 nodes dyalo `done_version == input_version`
-- [ ] test: no infinite requeue m3a autosize text
-- [ ] test: no stale layout mlli child size tbeddel
+- [x] test: node tbeddel text dyalo w output ma tbeddelch, parent ma y3awdch solve
+- [x] test: node tbeddel text dyalo w output tbeddel, parent kaytwasakh ghir wa7d lmarra
+- [x] test: root wa7d tbeddel, root akhor ma ytsiftch lqueue
+- [x] test: root settled means ga3 nodes dyalo `done_version == input_version`
+- [x] test: no infinite requeue m3a autosize text
+- [x] test: no stale layout mlli child size tbeddel
 - [ ] test: no stale clip/picking/render mlli root state tbeddel
 
 ## Phase 10: Rollout b amane
 
-- [ ] dir feature gates aw rollout flags l versioning w frontier queues
-- [ ] khlli old path kayb9a kayn 7tta tkon parity wad7a
-- [ ] zid shadow validation bin old path w new path f scenarios m3yana
-- [ ] 3awd baseline b nafs warmup/iterations
-- [ ] dwi 3la regressions b `p95` 9bl `avg`
+- [x] dir feature gates aw rollout flags l versioning w frontier queues
+- [x] khlli old path kayb9a kayn 7tta tkon parity wad7a
+- [x] zid shadow validation bin old path w new path f scenarios m3yana
+- [x] 3awd baseline b nafs warmup/iterations
+- [x] dwi 3la regressions b `p95` 9bl `avg`
 - [ ] mlli parity ttbata, 7yed path 9dim b chwiya
 
 ## Definition dyal success

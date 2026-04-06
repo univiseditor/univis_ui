@@ -121,7 +121,7 @@ Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default wi
 
 ### Frame-Zero Rollout Gate
 
-- `UiRolloutConfig` exposes internal switches for cached ancestry, incremental solve, mesh reuse, and post-settle picking during rollout
+- `UiRolloutConfig` exposes internal switches for cached ancestry, incremental measure/solve/render frontiers, mesh reuse, and post-settle picking during rollout
 - `UiValidationState` records shadow-check mismatches so validation runs can detect parity regressions without changing public behavior
 - run `./scripts/verify_frame_zero_rollout.sh` before changing rollout defaults or relaxing validation
 

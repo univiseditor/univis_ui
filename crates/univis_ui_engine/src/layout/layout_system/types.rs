@@ -268,6 +268,19 @@ impl ResolvedRootStack {
         }
     }
 
+    /// Returns the descendant-facing stack data used by cached solve context.
+    ///
+    /// Child local depth placement only depends on the reserved band metrics.
+    /// Root ordering, authored z, and transform-sync bookkeeping stay on the
+    /// root entity itself and should not invalidate descendant cached context.
+    pub(crate) fn descendant_context_snapshot(self) -> Self {
+        Self {
+            capsule_band_width: self.capsule_band_width,
+            capsule_band_step: self.capsule_band_step,
+            ..default()
+        }
+    }
+
     pub fn capsule_ceiling(&self) -> f32 {
         self.capsule_band_base + self.capsule_band_width
     }

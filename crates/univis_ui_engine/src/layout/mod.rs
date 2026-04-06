@@ -772,6 +772,224 @@ mod tests {
     }
 
     #[test]
+    fn settled_root_means_all_node_stage_versions_are_clean() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+        let root = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let parent = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Content,
+                    height: UVal::Content,
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        app.world_mut().spawn((
+            ChildOf(parent),
+            UNode {
+                width: UVal::Px(100.0),
+                height: UVal::Px(50.0),
+                ..default()
+            },
+        ));
+
+        app.update();
+
+        let root_state = app
+            .world()
+            .entity(root)
+            .get::<UiRootSettlementState>()
+            .copied()
+            .expect("root should expose settlement state");
+        assert!(root_state.is_settled());
+
+        let node_roots = {
+            let world = app.world_mut();
+            let mut query = world.query::<(Entity, Option<&CachedUiContext>)>();
+            query
+                .iter(world)
+                .map(|(entity, cached)| {
+                    let root_entity = cached
+                        .and_then(|context| context.root_entity)
+                        .unwrap_or(entity);
+                    (entity, root_entity)
+                })
+                .collect::<Vec<_>>()
+        };
+        let cache = app.world().resource::<LayoutCache>();
+        for (entity, node_root) in node_roots {
+            if node_root != root {
+                continue;
+            }
+
+            let versions = cache.stage_versions(entity);
+            assert_eq!(
+                versions.measure_done_generation,
+                versions.measure_input_generation
+            );
+            assert_eq!(
+                versions.solve_done_generation,
+                versions.solve_input_generation
+            );
+            assert_eq!(
+                versions.render_done_generation,
+                versions.render_input_generation
+            );
+        }
+    }
+
+    #[test]
+    fn parent_layout_updates_immediately_after_child_size_change() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+        let root = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let parent = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Content,
+                    height: UVal::Content,
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let leaf = app
+            .world_mut()
+            .spawn((
+                ChildOf(parent),
+                UNode {
+                    width: UVal::Px(100.0),
+                    height: UVal::Px(24.0),
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.update();
+
+        let initial_parent = app
+            .world()
+            .entity(parent)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("parent should have computed size");
+        assert_eq!(initial_parent.width, 100.0);
+        assert_eq!(initial_parent.height, 24.0);
+
+        app.world_mut()
+            .entity_mut(leaf)
+            .get_mut::<UNode>()
+            .expect("leaf should keep its UNode")
+            .width = UVal::Px(160.0);
+
+        app.update();
+
+        let updated_parent = app
+            .world()
+            .entity(parent)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("parent should keep its computed size");
+        let updated_leaf = app
+            .world()
+            .entity(leaf)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("leaf should keep its computed size");
+        let work_state = app.world().resource::<UiWorkState>();
+
+        assert_eq!(updated_leaf.width, 160.0);
+        assert_eq!(updated_parent.width, 160.0);
+        assert_eq!(updated_parent.height, 24.0);
+        assert!(work_state.is_settled());
+    }
+
+    #[test]
+    fn rollout_flags_can_fall_back_to_full_scan_layout_paths() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+        app.insert_resource(UiRolloutConfig {
+            use_incremental_measure: false,
+            use_incremental_solve: false,
+            use_incremental_render: false,
+            ..default()
+        });
+
+        let root = app
+            .world_mut()
+            .spawn((
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let child = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Px(120.0),
+                    height: UVal::Px(36.0),
+                    ..default()
+                },
+            ))
+            .id();
+
+        app.update();
+
+        let child_size = app
+            .world()
+            .entity(child)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("child should have computed size");
+        let work_state = app.world().resource::<UiWorkState>();
+
+        assert_eq!(child_size.width, 120.0);
+        assert_eq!(child_size.height, 36.0);
+        assert!(work_state.is_settled());
+    }
+
+    #[test]
     fn root_resolution_change_stays_scoped_to_the_changed_root() {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));

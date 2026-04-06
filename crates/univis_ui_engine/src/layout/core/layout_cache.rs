@@ -24,7 +24,7 @@ pub struct LayoutCache {
     /// Last observed resolved root state for each root entity.
     root_snapshots: HashMap<Entity, ResolvedRootUi>,
 
-    /// Last observed root stacking capsule state for each root entity.
+    /// Last observed descendant-facing root stacking state for each root entity.
     root_stack_snapshots: HashMap<Entity, ResolvedRootStack>,
 
     /// Last observed clip state for clip entities.
@@ -635,8 +635,12 @@ pub fn track_root_layout_changes(
 
     for (entity, root, stack) in changed_roots.iter() {
         let previous_root = cache.update_root_snapshot(entity, *root);
-        let previous_stack =
-            cache.update_root_stack_snapshot(entity, stack.as_ref().map(|stack| **stack));
+        let previous_stack = cache.update_root_stack_snapshot(
+            entity,
+            stack
+                .as_ref()
+                .map(|stack| stack.descendant_context_snapshot()),
+        );
         let mut solve_subtree = false;
         let mut render_subtree = false;
 
@@ -661,7 +665,8 @@ pub fn track_root_layout_changes(
         if let Some(stack) = stack.as_ref()
             && stack.is_changed()
         {
-            if previous_stack.is_none_or(|previous| previous != **stack) {
+            let current_stack = stack.descendant_context_snapshot();
+            if previous_stack.is_none_or(|previous| previous != current_stack) {
                 solve_subtree = true;
             }
         }
@@ -1009,6 +1014,39 @@ mod tests {
         }
     }
 
+    fn set_generation(work_state: &mut UiWorkState) {
+        assert!(work_state.begin_generation(UiPendingStages {
+            hierarchy: true,
+            solve: true,
+            render: true,
+            ..default()
+        }));
+    }
+
+    fn sample_root(root_entity: Entity) -> (ResolvedRootUi, ResolvedRootStack) {
+        let resolved = ResolvedRootUi {
+            root_entity,
+            space: UiSpace::Screen,
+            canvas: UiCanvasSize::Viewport,
+            canvas_size: Vec2::new(800.0, 600.0),
+            camera_entity: None,
+            meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
+            resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
+        };
+        let band_width = 0.04;
+        let stack = ResolvedRootStack {
+            authored_root_z: 0.0,
+            spawn_rank: 0,
+            capsule_sort_key: 0.0,
+            capsule_band_base: 0.0,
+            capsule_band_width: band_width,
+            capsule_band_step: band_width / 2048.0,
+            applied_root_z: 0.0,
+            initialized: true,
+        };
+        (resolved, stack)
+    }
+
     #[test]
     fn intrinsic_only_change_on_container_is_skipped() {
         assert!(should_skip_intrinsic_only_container_change(
@@ -1111,6 +1149,110 @@ mod tests {
         cache.mark_solve_dirty_generation(child, 1);
         cache.mark_solve_dirty_generation(leaf, 1);
         assert_eq!(cache.take_solve_frontier(), vec![root, child, leaf]);
+    }
+
+    #[test]
+    fn root_stack_position_noise_does_not_dirty_any_subtree() {
+        let mut app = App::new();
+        app.init_resource::<LayoutCache>();
+
+        let mut work_state = UiWorkState::default();
+        set_generation(&mut work_state);
+        app.insert_resource(work_state);
+        app.add_systems(Update, track_root_layout_changes);
+
+        let root = app.world_mut().spawn((UNode::default(),)).id();
+        let child = app
+            .world_mut()
+            .spawn((UNode::default(), ChildOf(root)))
+            .id();
+        let (resolved, stack) = sample_root(root);
+        app.world_mut().entity_mut(root).insert((resolved, stack));
+
+        {
+            let mut cache = app.world_mut().resource_mut::<LayoutCache>();
+            cache.update_root_snapshot(root, resolved);
+            cache.update_root_stack_snapshot(root, Some(stack.descendant_context_snapshot()));
+        }
+
+        {
+            let world = app.world_mut();
+            let mut entity = world.entity_mut(root);
+            let mut stack = entity
+                .get_mut::<ResolvedRootStack>()
+                .expect("root should have stack");
+            stack.authored_root_z = 24.0;
+            stack.capsule_sort_key = 24.0;
+            stack.capsule_band_base = 24.0;
+            stack.applied_root_z = 96.0;
+        }
+
+        app.update();
+
+        let cache = app.world().resource::<LayoutCache>();
+        assert!(!cache.is_solve_dirty(root));
+        assert!(!cache.is_solve_dirty(child));
+    }
+
+    #[test]
+    fn root_stack_band_change_dirties_only_the_affected_subtree() {
+        let mut app = App::new();
+        app.init_resource::<LayoutCache>();
+
+        let mut work_state = UiWorkState::default();
+        set_generation(&mut work_state);
+        app.insert_resource(work_state);
+        app.add_systems(Update, track_root_layout_changes);
+
+        let root_a = app.world_mut().spawn((UNode::default(),)).id();
+        let child_a = app
+            .world_mut()
+            .spawn((UNode::default(), ChildOf(root_a)))
+            .id();
+        let root_b = app.world_mut().spawn((UNode::default(),)).id();
+        let child_b = app
+            .world_mut()
+            .spawn((UNode::default(), ChildOf(root_b)))
+            .id();
+
+        let (mut resolved_a, stack_a) = sample_root(root_a);
+        let (mut resolved_b, stack_b) = sample_root(root_b);
+        resolved_a.space = UiSpace::World2d;
+        resolved_a.canvas = UiCanvasSize::Fixed(Vec2::new(800.0, 600.0));
+        resolved_b.space = UiSpace::World2d;
+        resolved_b.canvas = UiCanvasSize::Fixed(Vec2::new(800.0, 600.0));
+        app.world_mut()
+            .entity_mut(root_a)
+            .insert((resolved_a, stack_a));
+        app.world_mut()
+            .entity_mut(root_b)
+            .insert((resolved_b, stack_b));
+
+        {
+            let mut cache = app.world_mut().resource_mut::<LayoutCache>();
+            cache.update_root_snapshot(root_a, resolved_a);
+            cache.update_root_stack_snapshot(root_a, Some(stack_a.descendant_context_snapshot()));
+            cache.update_root_snapshot(root_b, resolved_b);
+            cache.update_root_stack_snapshot(root_b, Some(stack_b.descendant_context_snapshot()));
+        }
+
+        {
+            let world = app.world_mut();
+            let mut entity = world.entity_mut(root_a);
+            let mut stack = entity
+                .get_mut::<ResolvedRootStack>()
+                .expect("root_a should have stack");
+            stack.capsule_band_width *= 2.0;
+            stack.capsule_band_step *= 2.0;
+        }
+
+        app.update();
+
+        let cache = app.world().resource::<LayoutCache>();
+        assert!(cache.is_solve_dirty(root_a));
+        assert!(cache.is_solve_dirty(child_a));
+        assert!(!cache.is_solve_dirty(root_b));
+        assert!(!cache.is_solve_dirty(child_b));
     }
 }
 

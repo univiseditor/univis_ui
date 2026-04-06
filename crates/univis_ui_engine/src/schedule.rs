@@ -112,7 +112,9 @@ pub enum UiValidationMode {
 #[derive(Resource, Debug, Clone)]
 pub struct UiRolloutConfig {
     pub use_cached_ui_context: bool,
+    pub use_incremental_measure: bool,
     pub use_incremental_solve: bool,
+    pub use_incremental_render: bool,
     pub use_mesh_cache: bool,
     pub use_post_settle_picking: bool,
     pub validation: UiValidationMode,
@@ -122,7 +124,9 @@ impl Default for UiRolloutConfig {
     fn default() -> Self {
         Self {
             use_cached_ui_context: true,
+            use_incremental_measure: true,
             use_incremental_solve: true,
+            use_incremental_render: true,
             use_mesh_cache: true,
             use_post_settle_picking: true,
             validation: UiValidationMode::Disabled,
@@ -372,7 +376,9 @@ mod tests {
         let config = UiRolloutConfig::default();
 
         assert!(config.use_cached_ui_context);
+        assert!(config.use_incremental_measure);
         assert!(config.use_incremental_solve);
+        assert!(config.use_incremental_render);
         assert!(config.use_mesh_cache);
         assert!(config.use_post_settle_picking);
         assert_eq!(config.validation, UiValidationMode::Disabled);

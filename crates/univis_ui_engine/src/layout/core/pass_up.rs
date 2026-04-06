@@ -31,6 +31,7 @@ pub struct MeasurePassScratch {
 /// Upward Pass with Caching and Reverse Direction Support
 pub fn upward_measure_pass_cached(
     _tree_depth: Res<LayoutTreeDepth>,
+    rollout: Option<Res<UiRolloutConfig>>,
     mut cache: ResMut<LayoutCache>,
     mut profiler: Option<ResMut<LayoutProfiler>>,
     mut scratch: Local<MeasurePassScratch>,
@@ -41,7 +42,14 @@ pub fn upward_measure_pass_cached(
     )>,
 ) {
     let start = std::time::Instant::now();
-    let frontier = cache.take_measure_frontier();
+    let use_incremental_measure = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_incremental_measure);
+    let frontier = if use_incremental_measure {
+        cache.take_measure_frontier()
+    } else {
+        cache.all_entities_bottom_up()
+    };
     let mut calculated_count = 0;
 
     for entity in frontier {

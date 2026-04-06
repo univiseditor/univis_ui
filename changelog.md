@@ -18,6 +18,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Added `examples/visual_regression_lab.rs` as a focused visual regression scene that stresses nested cards, dynamic text, select/toggle controls, meters, and width changes in one place.
 - Added per-node stage generations and per-root settlement state so measure, solve, and render completion can be tracked explicitly instead of inferred from broad dirty scans.
 - Added reusable layout scratch instrumentation and picking candidate counters to the profiler overlay so scratch growth, peak queue sizes, and prepared picking buckets are visible during debugging.
+- Added regression coverage for settled-node stage generations, full-scan rollout fallback paths, autosize text stabilization, child-size propagation, and cached-camera picking refreshes so rollout validation exercises the current incremental settlement rules directly.
 
 ### Changed
 
@@ -25,6 +26,8 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Changed the upward and downward layout passes to reuse scratch buffers, avoid rebuilding temporary child vectors and solver-ref vectors per container, and keep solve ordering tied to the dirty frontier.
 - Changed picking to prepare camera-scoped candidate buckets before pointer evaluation, reducing repeated root-resolution and candidate-preparation work for the same frame.
 - Changed text measurement to cache parent bounds alongside label metrics so constrained labels can detect width and height changes coming from their container, not only from direct label mutations.
+- Changed cached root-context refresh to stay scoped to real descendant-facing root, clip, and hierarchy deltas, so root-stack write noise and child/clip removals no longer force unnecessary broad refreshes.
+- Changed `UiRolloutConfig` to gate incremental measure and render frontiers alongside solve, keeping the full-scan fallback paths available while rollout parity is still being verified.
 - Changed the maintainer docs, release-readiness notes, migration docs, and root notes to point at the current incremental-settlement rollout, verification gate, and roadmap files.
 
 ### Fixed
@@ -33,6 +36,8 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Fixed a depth-order regression where tiny root-capsule `z` steps could be skipped by epsilon checks, causing transient visual stacking glitches even when size and position stayed correct.
 - Fixed nested container settlement after root canvas changes so child containers are requeued with the active solve generation instead of being left on stale solve state.
 - Fixed `UTextLabel` remeasurement under changing parent bounds, resolving visual mix-ups where select rows, toggle rows, and clipped labels could keep stale truncation or stale inner widths.
+- Fixed incremental text-label invalidation so same-size text edits no longer dirty parent solve work, while real intrinsic-size deltas still queue one deduped solve pass for the affected label and ancestor chain.
+- Fixed post-settle picking cache refresh after root camera changes so descendants pick against the updated root context instead of keeping stale cached camera ancestry.
 - Fixed startup ordering in several widgets so child entities are spawned through the same chained parent command path, preventing hierarchy warnings caused by partially initialized parent entities.
 - Fixed the benchmark/example compatibility fallout from the solver scratch refactor by updating the solver benchmark harness, the complex dashboard example, and the representative rollout checks to the current pipeline.
 

@@ -146,14 +146,14 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 ### Changed
 
 - Bumped the facade crate and all public workspace crates from `0.2.0-alpha.1` to `0.2.0-alpha.2`.
-- Promoted the current `alpha2` line from an in-progress stabilization wave to a release-ready milestone after completing the `URootUi` baseline, the docs and API-doc cleanup, the crate-owned example migration, and the alpha2 stabilization roadmap through Phase 6.
+- Promoted the current `alpha2` line from an in-progress stabilization wave to a release-ready milestone after finishing the `URootUi` baseline, the docs and API-doc cleanup, the crate-owned example migration, and the alpha2 stabilization work.
 - Clarified the long-term root-level file set around `README.md`, `README_AR.md`, `MIGRATION.md`, `MIGRATION_AR.md`, `RELEASE_NOTES.md`, and `changelog.md`, while keeping `ALPHA2_STATUS.md` / `ALPHA2_STATUS_AR.md` as temporary stabilization notes for the current alpha line.
 - Finalized the release communication path so the hosted docs URL, example gallery, migration story, and release-readiness checklist all point at the same `0.2.0-alpha.2` public surface.
 
 ### Notes
 
 - The detailed implementation log that led into this release remains captured under the dated entries for `2026-03-25` and `2026-03-26`.
-- This release still builds on the completed `URootUi` migration baseline from `Phase 0` through `Phase 10`.
+- This release still builds on the completed `URootUi` migration baseline captured in the dated entries below.
 
 ## [2026-03-26]
 
@@ -176,43 +176,40 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Replaced the version-specific `RELEASE_NOTES_0.2.0-alpha.1.md` root note with a stable root-level `RELEASE_NOTES.md`.
 - Expanded the generated Rust API docs across the facade crate and core workspace crates by adding crate-level and module-level `rustdoc`, documenting `URootUi`, layout primitives, common widgets, interaction state, and theme resources, and hiding several internal scheduling helpers from the public documentation surface.
 - Redistributed examples so each one now lives under the crate it primarily represents (`univis_ui`, `univis_ui_engine`, `univis_ui_interaction`, or `univis_ui_widgets`), then updated example manifests, package-specific example commands, example indexes, smoke-test docs, and release-validation scripts to follow the new package-aware layout.
-- Completed Phase 1 of the docs/examples/API roadmap by freezing the bilingual `docs/` information architecture around a mirrored English/Arabic navigation model, adding dedicated migration pages, and introducing editorial rules for language separation, naming, and example-link conventions.
-- Completed Phase 2 of the docs/examples/API roadmap by turning the examples chapter into a canonical package-aware catalog with purpose statements, learning/showcase/smoke tags, guide-to-example links, and reverse links from representative example source files back to their related docs pages.
-- Completed Phase 3 of the docs/examples/API roadmap by auditing the public API surface again, expanding curated `rustdoc` on high-value entry points such as `UnivisUiPlugin`, `URootUi`, `UNode`, `UInteractionColors`, `Theme`, `UTextLabel`, and `UButton`, and hiding several engine-internal modules from the generated documentation story.
-- Completed Phase 4 of the docs/examples/API roadmap by wiring `README`, the docs landing pages, and the key guide chapters to their canonical examples, migration pages, and fully qualified public API entry points.
-- Completed Phase 5 of the docs/examples/API roadmap by adding a dedicated docs authoring workflow, a docs review checklist, and a pull-request template that codifies bilingual docs updates, crate-owned examples, and public `rustdoc` expectations.
-- Completed Phase 6 of the docs/examples/API roadmap by adding a GitHub Actions workflow for `mdbook build docs`, sequential package-by-package example validation, sequential public-crate `cargo doc --no-deps`, and explicit pre-alpha documentation validation requirements.
-- Completed Phase 7 of the docs/examples/API roadmap by refreshing the release notes around the unified `docs/` book and crate-owned example layout, adding a dedicated migration page for users coming from older docs/example assumptions, tightening the GitHub discovery path across `README -> docs -> examples -> API docs`, and performing a final consistency pass on names, commands, and package-aware example invocations.
-- Completed Phase 1 of the alpha2 stabilization roadmap by freezing the current `URootUi`-centered public surface, explicitly keeping `UScreenRoot` and `UWorldRoot` only as deprecated wrappers for the remainder of `alpha2`, re-auditing the shipped examples, and publishing root-level plus in-book stability notes.
-- Completed Phase 2 of the alpha2 stabilization roadmap by wiring a GitHub Pages docs publishing workflow, defining the hosted docs URL, documenting how the published build is produced from `docs/`, and keeping the local `mdbook build docs` path as the canonical contributor flow.
-- Completed Phase 3 of the alpha2 stabilization roadmap by adding a curated example gallery, a best-first example list, purpose-driven grouped example sections, and static visual references for representative showcase and solver scenes.
-- Completed Phase 4 of the alpha2 stabilization roadmap by deciding the long-term root-level release file set, clarifying the unique role of each root file, adding “where to read what” guidance, and tightening `RELEASE_NOTES.md` so it stays release-focused instead of duplicating the landing or migration files.
-- Completed Phase 5 of the alpha2 stabilization roadmap by hardening docs/example validation around clearer CI job boundaries, adding a lightweight visual-validation checklist, and explicitly keeping screenshots as manual release-prep material rather than a required CI artifact.
-- Completed Phase 6 of the alpha2 stabilization roadmap by rechecking the canonical root examples, confirming that docs/migration/release notes describe the same current reality, adding a final alpha2 release-readiness checklist, and deciding not to remove deprecated root wrappers immediately after the next alpha cut.
+- Froze the bilingual `docs/` information architecture around a mirrored English/Arabic navigation model, added dedicated migration pages, and introduced editorial rules for language separation, naming, and example-link conventions.
+- Turned the examples chapter into a canonical package-aware catalog with purpose statements, learning/showcase/smoke tags, guide-to-example links, and reverse links from representative example source files back to their related docs pages.
+- Audited the public API surface again, expanded curated `rustdoc` on high-value entry points such as `UnivisUiPlugin`, `URootUi`, `UNode`, `UInteractionColors`, `Theme`, `UTextLabel`, and `UButton`, and hid several engine-internal modules from the generated documentation story.
+- Wired `README`, the docs landing pages, and the key guide chapters to their canonical examples, migration pages, and fully qualified public API entry points.
+- Added a dedicated docs authoring workflow, a docs review checklist, and a pull-request template that codifies bilingual docs updates, crate-owned examples, and public `rustdoc` expectations.
+- Added a GitHub Actions workflow for `mdbook build docs`, sequential package-by-package example validation, sequential public-crate `cargo doc --no-deps`, and explicit pre-alpha documentation validation requirements.
+- Refreshed the release notes around the unified `docs/` book and crate-owned example layout, added a dedicated migration page for users coming from older docs/example assumptions, tightened the GitHub discovery path across `README -> docs -> examples -> API docs`, and performed a final consistency pass on names, commands, and package-aware example invocations.
+- Froze the current `URootUi`-centered public surface, explicitly kept `UScreenRoot` and `UWorldRoot` only as deprecated wrappers for the remainder of `alpha2`, re-audited the shipped examples, and published root-level plus in-book stability notes.
+- Wired a GitHub Pages docs publishing workflow, defined the hosted docs URL, documented how the published build is produced from `docs/`, and kept the local `mdbook build docs` path as the canonical contributor flow.
+- Added a curated example gallery, a best-first example list, purpose-driven grouped example sections, and static visual references for representative showcase and solver scenes.
+- Decided the long-term root-level release file set, clarified the unique role of each root file, added “where to read what” guidance, and tightened `RELEASE_NOTES.md` so it stays release-focused instead of duplicating the landing or migration files.
+- Hardened docs/example validation around clearer CI job boundaries, added a lightweight visual-validation checklist, and explicitly kept screenshots as manual release-prep material rather than a required CI artifact.
+- Rechecked the canonical root examples, confirmed that docs/migration/release notes describe the same current reality, added a final alpha2 release-readiness checklist, and decided not to remove deprecated root wrappers immediately after the next alpha cut.
 
 ### Notes
 
-- The completed `URootUi` migration baseline from `Phase 0` through `Phase 10` remains the foundation for this follow-up example work.
+- The completed `URootUi` migration baseline remains the foundation for this follow-up example work.
 
 ## [2026-03-25]
 
 ### Changed
 
-- Started the `alpha2` `URootUi` root-system migration and documented the frozen Phase 0 decisions in the roadmap:
-  - unify public roots around `URootUi`
-  - keep `UScreenRoot` and `UWorldRoot` as compatibility wrappers during `alpha2`
-  - freeze the default `meters_per_unit` and `UiCameraRef::Auto` behavior
-- Completed Phase 1 of the `URootUi` refactor by introducing shared root resolution through `URootUi`, `UiSpace`, `UiCanvasSize`, `UiCameraRef`, and internal `ResolvedRootUi`.
-- Completed Phase 2 of the `URootUi` refactor by making screen roots behave as real HUD roots tied to the resolved camera and projection instead of acting like ordinary window-sized world canvases.
-- Completed Phase 3 of the `URootUi` refactor by removing hardcoded `Camera2d` assumptions from picking and panel resize paths and resolving interaction cameras from each root.
-- Completed Phase 4 of the `URootUi` refactor by making the render path derive from `ResolvedRootUi.space`, mapping `World3d` to the 3D material path and `Screen` / `World2d` to the 2D material path.
-- Completed Phase 5 of the `URootUi` refactor by replacing `UI3d` propagation with derived cached state from each node's resolved root, including stale-state removal when roots switch mode and correct inheritance for newly spawned children.
-- Completed Phase 6 of the `URootUi` refactor by normalizing the unit model around logical UI units, applying `meters_per_unit` consistently to world-space mesh sizing and transforms, and keeping `resolution_scale` separate from physical world size.
-- Completed Phase 7 of the `URootUi` refactor by promoting `URootUi` as the public root API, documenting `screen/world_2d/world_3d` constructors, and marking `UScreenRoot` / `UWorldRoot` as deprecated compatibility wrappers with migration notes for `alpha2`.
+- Started the `alpha2` `URootUi` root-system migration by unifying public roots around `URootUi`, keeping `UScreenRoot` and `UWorldRoot` as compatibility wrappers during `alpha2`, and freezing the default `meters_per_unit` and `UiCameraRef::Auto` behavior.
+- Introduced shared root resolution through `URootUi`, `UiSpace`, `UiCanvasSize`, `UiCameraRef`, and internal `ResolvedRootUi`.
+- Made screen roots behave as real HUD roots tied to the resolved camera and projection instead of acting like ordinary window-sized world canvases.
+- Removed hardcoded `Camera2d` assumptions from picking and panel resize paths and resolved interaction cameras from each root.
+- Made the render path derive from `ResolvedRootUi.space`, mapping `World3d` to the 3D material path and `Screen` / `World2d` to the 2D material path.
+- Replaced `UI3d` propagation with derived cached state from each node's resolved root, including stale-state removal when roots switch mode and correct inheritance for newly spawned children.
+- Normalized the unit model around logical UI units, applied `meters_per_unit` consistently to world-space mesh sizing and transforms, and kept `resolution_scale` separate from physical world size.
+- Promoted `URootUi` as the public root API, documented `screen/world_2d/world_3d` constructors, and marked `UScreenRoot` / `UWorldRoot` as deprecated compatibility wrappers with migration notes for `alpha2`.
 - Migrated all shipped examples to the `URootUi` API so the example surface now demonstrates `screen()`, `world_2d(...)`, and `world_3d(...)` directly instead of the deprecated root wrappers.
-- Completed Phase 8 of the `URootUi` refactor by finishing the example migration, adding explicit `screen` HUD and world-scale showcase examples, and rechecking example semantics around the new root model.
-- Completed Phase 9 of the `URootUi` refactor by rewriting root docs, quick-start snippets, and interaction support docs around `URootUi`, logical UI units, viewport semantics, and explicit world scaling.
-- Completed Phase 10 verification by running `cargo check --workspace`, sequential targeted tests for `univis_ui_engine`, `univis_ui_widgets`, and `univis_ui_interaction`, refreshed smoke checks for screen, world, and 3D examples, and final manual visual validation through `root_screen_hud` and `root_world_scale`, while also adding direct verification tests for root resolution, root-bound layout sizing, `Screen`/`World2d`/`World3d` picking paths, panel root-camera resize behavior, world-root attachment, and `meters_per_unit` physical scaling.
+- Finished the example migration, added explicit `screen` HUD and world-scale showcase examples, and rechecked example semantics around the new root model.
+- Rewrote root docs, quick-start snippets, and interaction support docs around `URootUi`, logical UI units, viewport semantics, and explicit world scaling.
+- Verified the migration by running `cargo check --workspace`, sequential targeted tests for `univis_ui_engine`, `univis_ui_widgets`, and `univis_ui_interaction`, refreshed smoke checks for screen, world, and 3D examples, and final manual visual validation through `root_screen_hud` and `root_world_scale`, while also adding direct verification tests for root resolution, root-bound layout sizing, `Screen`/`World2d`/`World3d` picking paths, panel root-camera resize behavior, world-root attachment, and `meters_per_unit` physical scaling.
 - Made `URootUi` behave as a closed stacking capsule across layout, rendering, text, and picking so descendants never interleave above another root automatically; root-vs-root order is now resolved first, and same-`z` roots break ties by spawn order.
 
 ### Added
@@ -225,18 +222,18 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 ### Fixed
 
 - Restored legacy `UWorldRoot` example visibility during `alpha2` by preserving its historical `1 UI unit = 1 world unit` behavior as a compatibility path while the newer `URootUi` scale model continues to use `meters_per_unit`.
-- Fixed the `UTextLabel` SDF edge filtering regression that made some examples render text with an exaggerated halo after the phase 6 unit-model changes.
+- Fixed the `UTextLabel` SDF edge filtering regression that made some examples render text with an exaggerated halo after the unit-model changes.
 - Fixed bloom-enabled examples such as `border_light_3d`, `card_profile`, and `sci_fi` by pinning camera tonemapping to a LUT-free mode instead of relying on the default `TonyMcMapFace` path, which can fail at runtime when Bevy's `tonemapping_luts` feature is not enabled.
-- Fixed `root_screen_hud` after verification by updating its camera query to the current Bevy `single_mut()` result-based API, allowing the new Phase 8 example set to compile cleanly.
+- Fixed `root_screen_hud` after verification by updating its camera query to the current Bevy `single_mut()` result-based API, allowing the updated example set to compile cleanly.
 - Fixed cross-root stacking leaks where a child such as a port or button could visually or interactively rise above another `URootUi` root even though its own root was below that other root.
 - Fixed the world-root sizing gap where `World2d` and `World3d` roots had to be declared with fixed canvas sizes even when the desired behavior was to wrap measured content.
 
 ### Notes
 
-- The `URootUi` migration is still in progress for `alpha2`; additional breaking changes are expected in later phases.
-- Phase 10 visual validation confirmed that `URootUi::screen()` stays viewport-fixed while the world canvas continues to move, rotate, and scale with the camera, and that `root_world_scale` keeps screen HUD behavior separate from world-root physical sizing.
+- The `URootUi` migration is still in progress for `alpha2`; additional breaking changes are expected in later iterations.
+- Visual validation confirmed that `URootUi::screen()` stays viewport-fixed while the world canvas continues to move, rotate, and scale with the camera, and that `root_world_scale` keeps screen HUD behavior separate from world-root physical sizing.
 - The new fit-content world-root mode works best when the root content has intrinsic or fixed sizing; heavy `%` or root-relative flex can still create circular sizing expectations.
-- This changelog entry still backfills the previously undocumented completed phases: `Phase 0`, `Phase 1`, `Phase 2`, `Phase 3`, `Phase 4`, `Phase 5`, `Phase 6`, `Phase 7`, `Phase 8`, `Phase 9`, and `Phase 10`.
+- This changelog entry backfills the previously undocumented `URootUi` migration work that led into `alpha2`.
 
 ## [2026-03-16]
 

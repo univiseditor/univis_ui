@@ -19,6 +19,7 @@ use univis_ui_engine::layout::UnivisLayoutPlugin;
 use univis_ui_engine::layout::geometry::ComputedSize;
 use univis_ui_engine::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
 use univis_ui_engine::prelude::*;
+use univis_ui_engine::schedule::UiWorkState;
 use univis_ui_interaction::interaction::picking::univis_picking_backend;
 use univis_ui_interaction::prelude::UInteraction;
 use univis_ui_widgets::prelude::UButton;
@@ -72,6 +73,26 @@ struct BenchPanelIndex(usize);
 #[derive(Component)]
 struct BenchPointerMarker;
 
+#[derive(Resource)]
+struct BenchIdleScenario {
+    settled_generation: u64,
+}
+
+#[derive(Resource)]
+struct BenchScopedLeafScenario {
+    target_leaves: Vec<Entity>,
+    control_leaves: Vec<Entity>,
+    last_target_index: usize,
+    expected_target_width: f32,
+}
+
+#[derive(Resource)]
+struct BenchRenderOnlyScenario {
+    nodes: Vec<Entity>,
+    baseline_sizes: Vec<ComputedSize>,
+    last_target_index: usize,
+}
+
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     let selected_scenarios = parse_multi_value_flag(&args, "--scenario");
@@ -88,6 +109,27 @@ fn main() {
             budget_ms: 6.000,
             stress_only: false,
             build: build_root_capsules_scenario,
+        },
+        RuntimeWorkload {
+            name: "idle_after_settle_96",
+            item_count: 96,
+            budget_ms: 2.000,
+            stress_only: false,
+            build: build_idle_after_settle_scenario,
+        },
+        RuntimeWorkload {
+            name: "single_root_local_change_96",
+            item_count: 96,
+            budget_ms: 1.200,
+            stress_only: false,
+            build: build_single_root_local_change_scenario,
+        },
+        RuntimeWorkload {
+            name: "render_only_change_512",
+            item_count: 512,
+            budget_ms: 1.500,
+            stress_only: false,
+            build: build_render_only_change_scenario,
         },
         RuntimeWorkload {
             name: "text_measure_180",
@@ -280,7 +322,35 @@ fn build_root_capsules_scenario() -> RuntimeScenario {
     app.add_plugins(UnivisLayoutPlugin);
 
     let camera_entity = spawn_orthographic_camera(&mut app, 1200.0);
+    populate_root_capsules_scene(&mut app, camera_entity);
 
+    RuntimeScenario {
+        app,
+        before_update: mutate_root_capsules,
+        after_update: no_op_after_update,
+    }
+}
+
+fn build_idle_after_settle_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app.add_plugins(UnivisLayoutPlugin);
+
+    let camera_entity = spawn_orthographic_camera(&mut app, 1200.0);
+    populate_root_capsules_scene(&mut app, camera_entity);
+    settle_runtime_scenario(&mut app);
+    let settled_generation = app.world().resource::<UiWorkState>().current_generation();
+    app.world_mut()
+        .insert_resource(BenchIdleScenario { settled_generation });
+
+    RuntimeScenario {
+        app,
+        before_update: no_op_before_update,
+        after_update: assert_idle_after_update,
+    }
+}
+
+fn populate_root_capsules_scene(app: &mut App, camera_entity: Entity) {
     for index in 0..96usize {
         let root = match index % 4 {
             0 => URootUi {
@@ -357,12 +427,6 @@ fn build_root_capsules_scenario() -> RuntimeScenario {
                 ));
             }
         }
-    }
-
-    RuntimeScenario {
-        app,
-        before_update: mutate_root_capsules,
-        after_update: no_op_after_update,
     }
 }
 
@@ -537,6 +601,171 @@ fn build_picking_scenario() -> RuntimeScenario {
         app,
         before_update: mutate_pointer_location,
         after_update: drain_pointer_hits,
+    }
+}
+
+fn build_single_root_local_change_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app.add_plugins(UnivisLayoutPlugin);
+
+    let mut target_leaves = Vec::with_capacity(96);
+    let mut control_leaves = Vec::with_capacity(96);
+    for index in 0..96usize {
+        let root = app
+            .world_mut()
+            .spawn((
+                BenchRootIndex(index),
+                URootUi::world_2d(Vec2::new(400.0, 200.0)),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let branch_a = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Content,
+                    height: UVal::Content,
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let leaf = app
+            .world_mut()
+            .spawn((
+                ChildOf(branch_a),
+                UNode {
+                    width: scoped_leaf_base_width(index),
+                    height: UVal::Px(40.0 + (index % 3) as f32 * 6.0),
+                    ..default()
+                },
+            ))
+            .id();
+        target_leaves.push(leaf);
+
+        let branch_b = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Content,
+                    height: UVal::Content,
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+
+        let control_leaf = app
+            .world_mut()
+            .spawn((
+                ChildOf(branch_b),
+                UNode {
+                    width: UVal::Px(56.0 + (index % 4) as f32 * 8.0),
+                    height: UVal::Px(24.0 + (index % 2) as f32 * 4.0),
+                    ..default()
+                },
+            ))
+            .id();
+        control_leaves.push(control_leaf);
+    }
+
+    settle_runtime_scenario(&mut app);
+    app.world_mut().insert_resource(BenchScopedLeafScenario {
+        target_leaves,
+        control_leaves,
+        last_target_index: 0,
+        expected_target_width: scoped_leaf_base_width_px(0),
+    });
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_single_root_local_change,
+        after_update: assert_localized_solve_after_update,
+    }
+}
+
+fn build_render_only_change_scenario() -> RuntimeScenario {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app.add_plugins(UnivisLayoutPlugin);
+
+    let root = app
+        .world_mut()
+        .spawn((
+            URootUi::world_2d(Vec2::new(1600.0, 900.0)),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                padding: USides::all(18.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Grid,
+                grid_columns: 16,
+                gap: 8.0,
+                container_ext: ULayoutContainerExt {
+                    grid: ULayoutGridContainer {
+                        template_columns: vec![UTrackSize::Fr(1.0); 16],
+                        auto_rows: UTrackSize::Px(32.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+                ..default()
+            },
+        ))
+        .id();
+
+    let mut node_entities = Vec::with_capacity(512);
+    for index in 0..512usize {
+        let node = app
+            .world_mut()
+            .spawn((
+                ChildOf(root),
+                UNode {
+                    width: UVal::Auto,
+                    height: UVal::Px(28.0 + (index % 3) as f32 * 2.0),
+                    margin: USides::all(1.0),
+                    background_color: render_only_color(index, 0),
+                    border_radius: UCornerRadius::all(6.0),
+                    ..default()
+                },
+            ))
+            .id();
+        node_entities.push(node);
+    }
+
+    settle_runtime_scenario(&mut app);
+    let baseline_sizes = node_entities
+        .iter()
+        .map(|entity| {
+            app.world()
+                .entity(*entity)
+                .get::<ComputedSize>()
+                .copied()
+                .expect("render-only node should have a computed size after settling")
+        })
+        .collect();
+    app.world_mut().insert_resource(BenchRenderOnlyScenario {
+        nodes: node_entities,
+        baseline_sizes,
+        last_target_index: 0,
+    });
+
+    RuntimeScenario {
+        app,
+        before_update: mutate_render_only_change,
+        after_update: assert_idle_after_update,
     }
 }
 
@@ -869,6 +1098,28 @@ fn mutate_root_capsules(app: &mut App, iteration: usize) {
     }
 }
 
+fn mutate_single_root_local_change(app: &mut App, iteration: usize) {
+    let target_index = iteration % 96;
+    let widen = (iteration / 96).is_multiple_of(2);
+    let expected_width = if widen {
+        124.0 + (target_index % 3) as f32 * 12.0
+    } else {
+        scoped_leaf_base_width_px(target_index)
+    };
+    let entity = app
+        .world()
+        .resource::<BenchScopedLeafScenario>()
+        .target_leaves[target_index];
+    let mut entity_mut = app.world_mut().entity_mut(entity);
+    let mut node = entity_mut
+        .get_mut::<UNode>()
+        .expect("scoped leaf should keep its UNode");
+    node.width = UVal::Px(expected_width);
+    let mut scenario = app.world_mut().resource_mut::<BenchScopedLeafScenario>();
+    scenario.last_target_index = target_index;
+    scenario.expected_target_width = expected_width;
+}
+
 fn mutate_text_labels(app: &mut App, iteration: usize) {
     let mut query = app
         .world_mut()
@@ -885,6 +1136,19 @@ fn mutate_text_labels(app: &mut App, iteration: usize) {
             }
         }
     }
+}
+
+fn mutate_render_only_change(app: &mut App, iteration: usize) {
+    let target_index = iteration % 512;
+    let entity = app.world().resource::<BenchRenderOnlyScenario>().nodes[target_index];
+    let mut entity_mut = app.world_mut().entity_mut(entity);
+    let mut node = entity_mut
+        .get_mut::<UNode>()
+        .expect("render-only node should keep its UNode");
+    node.background_color = render_only_color(target_index, iteration + 1);
+    app.world_mut()
+        .resource_mut::<BenchRenderOnlyScenario>()
+        .last_target_index = target_index;
 }
 
 fn mutate_pointer_location(app: &mut App, iteration: usize) {
@@ -961,7 +1225,120 @@ fn mutate_roots_10k_nodes_1m(app: &mut App, iteration: usize) {
     }
 }
 
+fn no_op_before_update(_app: &mut App, _iteration: usize) {}
+
 fn no_op_after_update(_app: &mut App) {}
+
+fn assert_idle_after_update(app: &mut App) {
+    assert_ui_settled(app);
+    let work_state = app.world().resource::<UiWorkState>();
+
+    if let Some(idle) = app.world().get_resource::<BenchIdleScenario>() {
+        assert_eq!(
+            work_state.current_generation(),
+            idle.settled_generation,
+            "idle scenario should not start a new generation"
+        );
+    }
+
+    if let Some(render_only) = app.world().get_resource::<BenchRenderOnlyScenario>() {
+        let index = render_only.last_target_index;
+        let entity = render_only.nodes[index];
+        let baseline = render_only.baseline_sizes[index];
+        let computed = app
+            .world()
+            .entity(entity)
+            .get::<ComputedSize>()
+            .copied()
+            .expect("render-only node should keep its computed size");
+        assert!(
+            approx_eq(computed.width, baseline.width)
+                && approx_eq(computed.height, baseline.height),
+            "render-only mutation should keep geometry stable, baseline=({}, {}), actual=({}, {})",
+            baseline.width,
+            baseline.height,
+            computed.width,
+            computed.height
+        );
+    }
+}
+
+fn assert_localized_solve_after_update(app: &mut App) {
+    assert_ui_settled(app);
+    let scenario = app.world().resource::<BenchScopedLeafScenario>();
+    let target_index = scenario.last_target_index;
+    let target_entity = scenario.target_leaves[target_index];
+    let control_entity = scenario.control_leaves[target_index];
+    let target_size = app
+        .world()
+        .entity(target_entity)
+        .get::<ComputedSize>()
+        .copied()
+        .expect("target leaf should keep its computed size");
+    let control_size = app
+        .world()
+        .entity(control_entity)
+        .get::<ComputedSize>()
+        .copied()
+        .expect("control leaf should keep its computed size");
+    let expected_control_width = 56.0 + (target_index % 4) as f32 * 8.0;
+
+    assert!(
+        approx_eq(target_size.width, scenario.expected_target_width),
+        "single-root local change should update the targeted leaf width, expected={}, actual={}",
+        scenario.expected_target_width,
+        target_size.width
+    );
+    assert!(
+        approx_eq(control_size.width, expected_control_width),
+        "single-root local change should leave sibling geometry unchanged, expected={}, actual={}",
+        expected_control_width,
+        control_size.width
+    );
+}
+
+fn assert_ui_settled(app: &mut App) {
+    let work_state = app.world().resource::<UiWorkState>();
+    assert!(
+        work_state.is_settled(),
+        "ui pipeline should be settled after benchmark frame, work_state={work_state:?}"
+    );
+}
+
+fn settle_runtime_scenario(app: &mut App) {
+    for _ in 0..8 {
+        app.update();
+        if app.world().resource::<UiWorkState>().is_settled() {
+            return;
+        }
+    }
+
+    panic!(
+        "benchmark scenario failed to settle before measurement, work_state={:?}",
+        app.world().resource::<UiWorkState>()
+    );
+}
+
+fn scoped_leaf_base_width(index: usize) -> UVal {
+    UVal::Px(scoped_leaf_base_width_px(index))
+}
+
+fn scoped_leaf_base_width_px(index: usize) -> f32 {
+    80.0 + (index % 3) as f32 * 8.0
+}
+
+fn render_only_color(index: usize, iteration: usize) -> Color {
+    let phase = ((index + iteration) % 11) as f32;
+    Color::srgb(
+        0.12 + phase * 0.018,
+        0.18 + phase * 0.012,
+        0.24 + phase * 0.010,
+    )
+}
+
+fn approx_eq(left: f32, right: f32) -> bool {
+    (left - right).abs() <= 0.01
+}
 
 fn drain_pointer_hits(app: &mut App) {
     let mut hits = app.world_mut().resource_mut::<Messages<PointerHits>>();

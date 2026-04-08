@@ -8,6 +8,32 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 
 BEVY_DEP='bevy = { version = "0.18.1", default-features = false, features = ["default_app", "default_platform", "common_api", "bevy_render", "bevy_core_pipeline", "bevy_sprite", "bevy_sprite_render", "bevy_gizmos_render", "bevy_pbr", "bevy_picking", "keyboard", "mouse"] }'
 
+have_rg() {
+  command -v rg >/dev/null 2>&1
+}
+
+match_quiet() {
+  local pattern="$1"
+  local file="$2"
+
+  if have_rg; then
+    rg -q -- "$pattern" "$file"
+  else
+    grep -Eq -- "$pattern" "$file"
+  fi
+}
+
+find_example_matches() {
+  local pattern="$1"
+
+  if have_rg; then
+    rg -n --glob '**/examples/*.rs' -- "$pattern" crates
+  else
+    find crates -type f -path '*/examples/*.rs' -print0 \
+      | xargs -0 grep -nE -- "$pattern"
+  fi
+}
+
 write_case() {
   local case_dir="$1"
   local body="$2"
@@ -59,7 +85,7 @@ run_failure_case() {
     exit 1
   fi
 
-  if ! rg -q "$expected_pattern" "$log_file"; then
+  if ! match_quiet "$expected_pattern" "$log_file"; then
     cat "$log_file"
     echo "Public API case '$name' failed, but not for the expected reason." >&2
     exit 1
@@ -138,7 +164,7 @@ fn main() {
 ' 'UScreenRoot|UWorldRoot'
 
 echo "== Public API example guard: canonical roots only =="
-if rg -n 'UScreenRoot|UWorldRoot' crates --glob '**/examples/*.rs'; then
+if find_example_matches 'UScreenRoot|UWorldRoot'; then
   echo "Examples should use canonical `URootUi` roots instead of deprecated wrappers." >&2
   exit 1
 fi

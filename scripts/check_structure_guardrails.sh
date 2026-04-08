@@ -10,6 +10,32 @@ ALLOWLIST_FILE="$(mktemp)"
 ACTUAL_FILE="$(mktemp)"
 trap 'rm -f "$ALLOWLIST_FILE" "$ACTUAL_FILE"' EXIT
 
+have_rg() {
+  command -v rg >/dev/null 2>&1
+}
+
+list_matching_files() {
+  local pattern="$1"
+  shift
+
+  if have_rg; then
+    rg -l -- "$pattern" "$@"
+  else
+    grep -RIlE --include='*.rs' -- "$pattern" "$@"
+  fi
+}
+
+print_matches() {
+  local pattern="$1"
+  shift
+
+  if have_rg; then
+    rg -n -- "$pattern" "$@"
+  else
+    grep -RInE --include='*.rs' -- "$pattern" "$@"
+  fi
+}
+
 source_line_counts() {
   find crates src -type f -name '*.rs' ! -path '*/examples/*' -print0 \
     | xargs -0 wc -l \
@@ -68,7 +94,7 @@ fi
 
 echo
 echo "== internal_prelude wildcard usage =="
-rg -l '^use crate::internal_prelude::\*;$' crates src | sort >"$ACTUAL_FILE" || true
+list_matching_files '^use crate::internal_prelude::\*;$' crates src | sort >"$ACTUAL_FILE" || true
 cat "$ACTUAL_FILE"
 
 unexpected_usage="$(comm -23 "$ACTUAL_FILE" "$ALLOWLIST_FILE")"
@@ -81,7 +107,7 @@ fi
 
 echo
 echo "== Result<_, ()> guardrail =="
-if rg -n 'Result<[^>]*,\s*\(\s*\)>' crates src; then
+if print_matches 'Result<[^>]*,\s*\(\s*\)>' crates src; then
   echo "Found forbidden Result<_, ()> usage." >&2
   exit 1
 fi

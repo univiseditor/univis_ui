@@ -19,14 +19,18 @@
 سيناريوهات التشغيل:
 
 - `root_capsules_96`
+- `idle_after_settle_96`
+- `single_root_local_change_96`
+- `render_only_change_512`
 - `text_measure_180`
 - `picking_grid_512`
 - `widget_panels_240`
 - `world3d_panels_48`
 
 تغطي حزمة المحلل صف `flex` كثيفاً، وتخطيط بطاقات ملتفاً، ولوحة `grid` ثقيلة.
-وتضيف الحزمة التشغيلية قياس حل الجذور وترتيبها، وقياس النصوص، ومسار الالتقاط،
-ومشاهد اللوحات الثقيلة، ومشاهد `World3d`.
+وتضيف الحزمة التشغيلية لقطات الاستقرار بعد التسوية، وتغييرات محلية على جذر واحد،
+وتغييرات بصرية دون تبديل الهندسة، إلى جانب حل الجذور وترتيبها، وقياس النصوص،
+ومسار الالتقاط، ومشاهد اللوحات الثقيلة، ومشاهد `World3d`.
 
 ## طريقة التشغيل
 
@@ -78,6 +82,9 @@ UNIVIS_PERF_WARMUP=12 UNIVIS_PERF_ITERATIONS=40 ./scripts/run_perf_baselines.sh
 ميزانيات التشغيل:
 
 - `root_capsules_96`: `6.000ms` عند `p95`
+- `idle_after_settle_96`: `2.000ms` عند `p95`
+- `single_root_local_change_96`: `1.200ms` عند `p95`
+- `render_only_change_512`: `1.500ms` عند `p95`
 - `text_measure_180`: `4.750ms` عند `p95`
 - `picking_grid_512`: `4.000ms` عند `p95`
 - `widget_panels_240`: `8.000ms` عند `p95`

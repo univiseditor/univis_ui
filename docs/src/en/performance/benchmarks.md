@@ -19,13 +19,17 @@ Solver scenarios:
 Runtime scenarios:
 
 - `root_capsules_96`
+- `idle_after_settle_96`
+- `single_root_local_change_96`
+- `render_only_change_512`
 - `text_measure_180`
 - `picking_grid_512`
 - `widget_panels_240`
 - `world3d_panels_48`
 
 The solver harness gives one dense flex row, one wrapped card layout, and one grid-heavy dashboard.
-The runtime harness adds root resolution / stacking, text measurement churn, picking traversal,
+The runtime harness adds steady-state frames after settlement, localized single-root mutations,
+render-only visual churn, root resolution / stacking, text measurement churn, picking traversal,
 widget-heavy panels, and world-3d panel scenes.
 
 ## How To Run
@@ -78,6 +82,9 @@ Solver budgets:
 Runtime budgets:
 
 - `root_capsules_96`: `6.000ms` p95
+- `idle_after_settle_96`: `2.000ms` p95
+- `single_root_local_change_96`: `1.200ms` p95
+- `render_only_change_512`: `1.500ms` p95
 - `text_measure_180`: `4.750ms` p95
 - `picking_grid_512`: `4.000ms` p95
 - `widget_panels_240`: `8.000ms` p95

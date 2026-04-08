@@ -4,41 +4,46 @@
 //! final result through Univis SDF materials so the same widget can stay sharp
 //! in screen and world roots.
 
-use crate::internal_prelude::*;
 use bevy::prelude::*;
 use bevy::sprite_render::Material2dPlugin;
+use univis_ui_engine::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 
 mod measure;
 mod model;
 mod render;
 
-use self::measure::mark_text_label_layout_dirty;
+use self::measure::invalidation::mark_text_label_layout_dirty;
 pub use self::measure::{
     fit_node_to_text_size, measure_text_label_layout, sync_text_label_intrinsic_size,
 };
 pub use self::model::{
     TextChildMarker, UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide,
 };
-use self::render::{
-    UTextLabelAtlasCache, UTextLabelSdfMaterial, sync_text_clipper_materials,
-    sync_text_label_meshes,
-};
+use self::render::atlas::UTextLabelAtlasCache;
+use self::render::clip_sync::sync_text_clipper_materials;
+use self::render::{UTextLabelSdfMaterial, sync_text_label_meshes};
 
 #[cfg(test)]
-use self::measure::{
+use self::measure::bidi::{
     ISOLATE_END, LTR_ISOLATE_START, TextBaseDirection, base_direction_for_text,
-    build_truncate_candidate, desired_text_label_intrinsic_size, label_measure_bounds,
-    measured_text_outer_size, resolve_truncate_side, text_char_boundaries,
+    build_truncate_candidate, resolve_truncate_side, text_char_boundaries,
 };
 #[cfg(test)]
-use self::render::{
-    LocalClipRect, TextGlyphQuad, clip_quad_to_rect, label_content_clip_rect,
-    text_horizontal_offset,
+use self::measure::bounds::{
+    desired_text_label_intrinsic_size, label_measure_bounds, measured_text_outer_size,
 };
+#[cfg(test)]
+use self::render::clip_sync::{LocalClipRect, clip_quad_to_rect, label_content_clip_rect};
+#[cfg(test)]
+use self::render::mesh::{TextGlyphQuad, text_horizontal_offset};
 #[cfg(test)]
 use bevy::text::TextBounds;
 #[cfg(test)]
-use univis_ui_engine::internal::IntrinsicSize;
+use univis_ui_engine::internal::{ComputedSize, IntrinsicSize};
+#[cfg(test)]
+use univis_ui_engine::layout::geometry::{USides, UVal};
+#[cfg(test)]
+use univis_ui_engine::layout::univis_node::UNode;
 
 /// Registers the `UTextLabel` measurement and SDF rendering pipeline.
 pub struct UnivisTextPlugin;

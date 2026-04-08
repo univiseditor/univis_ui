@@ -118,6 +118,10 @@ That keeps viewport resolution, interaction, and screen-root anchoring determini
 
 `UScreenRoot` and `UWorldRoot` are deprecated compatibility wrappers.
 
+They are explicit-only migration paths, and the current removal target is the
+first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration
+support.
+
 Migration rules:
 
 - `UScreenRoot` -> `URootUi::screen()`
@@ -154,6 +158,7 @@ URootUi {
 ## Related Migration Notes
 
 - [Root API Migration to `URootUi`](../migration/root-api.md)
+- [Legacy Compatibility Status](../migration/legacy-compatibility.md)
 
 ## API Entry Points
 

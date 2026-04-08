@@ -18,19 +18,18 @@ fn resolve_image_dimension(value: UVal, native_axis: f32) -> UVal {
 
 pub fn sync_image_geometry(
     mut query: Query<(&UImage, &mut UNode)>,
-    // نحتاج الوصول للأصول لمعرفة حجم الصورة الحقيقي
+    // Read image assets to resolve native texture dimensions when needed.
     images: Res<Assets<Image>>,
 ) {
     for (ui_image, mut node) in query.iter_mut() {
-        // 1. مزامنة نصف القطر (إذا وجد)
+        // 1. Sync the optional corner radius.
         if let Some(r) = ui_image.radius {
             if node.border_radius != r {
                 node.border_radius = r;
             }
         }
 
-        // 2. منطق حساب الحجم
-        // هل نحتاج للبحث عن الحجم الأصلي للصورة؟
+        // 2. Resolve intrinsic-size modes from the native texture size.
         let needs_native_size = image_uses_native_intrinsic_size(ui_image.width)
             || image_uses_native_intrinsic_size(ui_image.height);
 
@@ -38,19 +37,19 @@ pub fn sync_image_geometry(
         if needs_native_size {
             if let Some(img) = images.get(&ui_image.texture) {
                 // Native texture size is treated as logical UI units when projected into layout.
-                let size = img.size_f32(); // دالة في Bevy ترجع UVec2 كـ Vec2
+                let size = img.size_f32(); // Bevy exposes the image size as `Vec2`.
                 native_size = size;
             }
         }
 
-        // 3. تطبيق العرض (Width)
+        // 3. Apply width.
         let target_width = resolve_image_dimension(ui_image.width, native_size.x);
 
         if node.width != target_width {
             node.width = target_width;
         }
 
-        // 4. تطبيق الارتفاع (Height)
+        // 4. Apply height.
         let target_height = resolve_image_dimension(ui_image.height, native_size.y);
 
         if node.height != target_height {

@@ -36,4 +36,4 @@ When a new public API surface is added:
 
 - update `README.md` and `README_AR.md` when the landing story changes
 - update `changelog.md` for notable docs/example/API surface changes
-- keep the `Phase 0` through `Phase 10` baseline note when touching the current follow-up series
+- use [Naming Conventions](naming-conventions.md) when adding or renaming maintainer-facing modules

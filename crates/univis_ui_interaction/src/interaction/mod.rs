@@ -4,8 +4,9 @@
 //! high-level state such as [`feedback::UInteraction`].
 
 use bevy::prelude::*;
-
-use crate::internal_prelude::*;
+use univis_ui_engine::schedule::{
+    UiRolloutConfig, UiSettlementSchedule, UiValidationState, UnivisPostUpdateSet,
+};
 
 /// Interaction state components and default pointer observers.
 pub mod feedback;
@@ -13,6 +14,8 @@ pub mod feedback;
 pub mod math;
 /// Picking backend and hit-resolution helpers for Univis roots.
 pub mod picking;
+
+use crate::interaction::picking::univis_picking_backend;
 
 /// Common imports for interaction-related integrations.
 pub mod prelude {

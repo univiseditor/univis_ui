@@ -7,7 +7,7 @@
 
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
-use univis_ui_engine::layout::profiling::LayoutProfilingPlugin;
+use univis_ui_engine::layout::profiling::UnivisLayoutProfilingPlugin;
 use univis_ui_engine::prelude::*;
 use univis_ui_interaction::interaction::UnivisInteractionPlugin;
 #[allow(unused_imports)]
@@ -25,7 +25,7 @@ fn main() {
             UnivisEnginePlugin,
             UnivisInteractionPlugin,
             UnivisWidgetPlugin,
-            LayoutProfilingPlugin,
+            UnivisLayoutProfilingPlugin,
         ))
         .add_systems(Startup, setup)
         .add_systems(Update, add_node)

@@ -1,7 +1,26 @@
 #![allow(clippy::type_complexity)]
 
-use crate::internal_prelude::*;
+mod invalidation;
+#[cfg(test)]
+mod tests;
+
 use bevy::{ecs::relationship::Relationship, platform::collections::*, prelude::*};
+
+use crate::internal::MaterialPool;
+use crate::layout::components::*;
+use crate::layout::geometry::ComputedSize;
+use crate::layout::image::UImage;
+use crate::layout::layout_system::*;
+use crate::layout::pbr::UPbr;
+use crate::layout::univis_node::*;
+use crate::schedule::*;
+
+use self::invalidation::{
+    LayoutInvalidation, apply_layout_invalidation, classify_children_mutation,
+    classify_layout_mutation, classify_node_mutation, classify_uself_mutation,
+    mark_render_dirty_recursive, root_canvas_changed, root_projection_context_changed,
+    root_render_context_changed,
+};
 
 /// Cache resource used to avoid repeated layout work across frames.
 #[derive(Resource, Default)]
@@ -63,12 +82,12 @@ impl LayoutCache {
 
     /// Rebuilds the entity-to-depth index.
     pub fn rebuild_depth_map(&mut self, query: &Query<(Entity, &LayoutDepth)>, max_depth: usize) {
-        // مسح الخريطة القديمة
+        // Clear the old index before rebuilding from the current depth query.
         self.entities_by_depth.clear();
         self.entity_depths.clear();
         let mut alive_entities: HashSet<Entity> = HashSet::default();
 
-        // إعادة بناء
+        // Rebuild the depth buckets and remember which entities are still alive.
         for (entity, depth) in query.iter() {
             alive_entities.insert(entity);
             self.entity_depths.insert(entity, depth.0);
@@ -144,15 +163,15 @@ impl LayoutCache {
 
     /// Marks one entity as dirty.
     pub fn mark_dirty(&mut self, entity: Entity) {
-        // استخدام HashSet يمنع التكرار تلقائياً
+        // The `HashSet` deduplicates repeated dirty marks automatically.
         self.dirty_nodes.insert(entity);
     }
 
     /// Marks an entity and all descendants as dirty.
     pub fn mark_dirty_recursive(&mut self, entity: Entity, children_query: &Query<&Children>) {
-        // فقط إذا لم تكن متسخة مسبقاً (تجنب infinite recursion)
+        // Stop early when the node was already marked to avoid redundant recursion.
         if !self.dirty_nodes.insert(entity) {
-            return; // العقدة كانت متسخة مسبقاً، توقف
+            return;
         }
 
         if let Ok(children) = children_query.get(entity) {
@@ -745,238 +764,23 @@ pub fn track_render_stage_changes(
     }
 }
 
-#[derive(Clone, Copy, Debug, Default)]
-struct LayoutInvalidation {
-    dirty_self: bool,
-    dirty_ancestors: bool,
-    measure_self: bool,
-    measure_ancestors: bool,
-    solve_self: bool,
-    solve_ancestors: bool,
-    render_self: bool,
-}
-
-impl LayoutInvalidation {
-    fn merge(&mut self, other: Self) {
-        self.dirty_self |= other.dirty_self;
-        self.dirty_ancestors |= other.dirty_ancestors;
-        self.measure_self |= other.measure_self;
-        self.measure_ancestors |= other.measure_ancestors;
-        self.solve_self |= other.solve_self;
-        self.solve_ancestors |= other.solve_ancestors;
-        self.render_self |= other.render_self;
-    }
-}
-
-fn apply_layout_invalidation(
-    cache: &mut LayoutCache,
-    entity: Entity,
-    current_generation: u64,
-    invalidation: LayoutInvalidation,
-    parents_query: &Query<&ChildOf>,
-) {
-    if invalidation.dirty_self {
-        cache.mark_dirty(entity);
-    }
-
-    if invalidation.dirty_ancestors {
-        cache.mark_dirty_ancestors(entity, parents_query);
-    }
-
-    if invalidation.measure_self {
-        cache.mark_measure_dirty(entity, current_generation);
-    }
-
-    if invalidation.measure_ancestors {
-        cache.mark_measure_dirty_ancestors(entity, current_generation, parents_query);
-    }
-
-    if invalidation.solve_self {
-        cache.mark_solve_dirty_generation(entity, current_generation);
-    }
-
-    if invalidation.solve_ancestors {
-        cache.mark_solve_dirty_ancestors_generation(entity, current_generation, parents_query);
-    }
-
-    if invalidation.render_self {
-        cache.mark_render_dirty(entity, current_generation);
-    }
-}
-
-fn classify_node_mutation(
-    previous: Option<&UNode>,
-    current: &UNode,
-    has_children: bool,
-    has_parent: bool,
-) -> LayoutInvalidation {
-    let Some(previous) = previous else {
-        return LayoutInvalidation {
-            dirty_self: true,
-            dirty_ancestors: has_parent,
-            measure_self: true,
-            measure_ancestors: has_parent,
-            solve_self: has_children || !has_parent,
-            solve_ancestors: has_parent,
-            render_self: true,
-        };
-    };
-
-    let render_changed = previous.background_color != current.background_color
-        || previous.border_radius != current.border_radius
-        || previous.shape_mode != current.shape_mode;
-    let intrinsic_inputs_changed = previous.width != current.width
-        || previous.height != current.height
-        || previous.min_width != current.min_width
-        || previous.max_width != current.max_width
-        || previous.min_height != current.min_height
-        || previous.max_height != current.max_height
-        || previous.padding != current.padding;
-    let margin_changed = previous.margin != current.margin;
-
-    LayoutInvalidation {
-        dirty_self: intrinsic_inputs_changed,
-        dirty_ancestors: intrinsic_inputs_changed || margin_changed,
-        measure_self: intrinsic_inputs_changed,
-        measure_ancestors: intrinsic_inputs_changed || margin_changed,
-        solve_self: intrinsic_inputs_changed && (has_children || !has_parent),
-        solve_ancestors: intrinsic_inputs_changed || margin_changed,
-        render_self: render_changed,
-    }
-}
-
-fn classify_layout_mutation(
-    previous: Option<&ULayout>,
-    current: &ULayout,
-    has_children: bool,
-    has_parent: bool,
-) -> LayoutInvalidation {
-    let changed = previous.is_none_or(|previous| previous != current);
-    if !changed || !has_children {
-        return LayoutInvalidation::default();
-    }
-
-    LayoutInvalidation {
-        dirty_self: true,
-        dirty_ancestors: has_parent,
-        measure_self: true,
-        measure_ancestors: has_parent,
-        solve_self: true,
-        solve_ancestors: has_parent,
-        render_self: false,
-    }
-}
-
-fn classify_uself_mutation(
-    previous: Option<&USelf>,
-    current: &USelf,
-    has_children: bool,
-    has_parent: bool,
-) -> LayoutInvalidation {
-    let changed = previous.is_none_or(|previous| previous != current);
-    if !changed {
-        return LayoutInvalidation::default();
-    }
-
-    let position_type_changed =
-        previous.is_none_or(|previous| previous.position_type != current.position_type);
-
-    LayoutInvalidation {
-        dirty_self: false,
-        dirty_ancestors: position_type_changed && has_parent,
-        measure_self: false,
-        measure_ancestors: position_type_changed && has_parent,
-        solve_self: !has_parent || (position_type_changed && has_children),
-        solve_ancestors: has_parent,
-        render_self: false,
-    }
-}
-
-fn classify_children_mutation(has_parent: bool) -> LayoutInvalidation {
-    LayoutInvalidation {
-        dirty_self: true,
-        dirty_ancestors: has_parent,
-        measure_self: true,
-        measure_ancestors: has_parent,
-        solve_self: true,
-        solve_ancestors: has_parent,
-        render_self: false,
-    }
-}
-
-fn root_canvas_changed(previous: ResolvedRootUi, current: ResolvedRootUi) -> bool {
-    previous.canvas_size != current.canvas_size
-}
-
-fn root_projection_context_changed(previous: ResolvedRootUi, current: ResolvedRootUi) -> bool {
-    previous.space != current.space
-        || previous.ui_units_to_world_scale() != current.ui_units_to_world_scale()
-}
-
-fn root_render_context_changed(previous: ResolvedRootUi, current: ResolvedRootUi) -> bool {
-    previous.resolution_scale != current.resolution_scale
-}
-
-fn mark_render_dirty_recursive(
-    cache: &mut LayoutCache,
-    entity: Entity,
-    generation: u64,
-    children_query: &Query<&Children>,
-) {
-    cache.mark_render_dirty(entity, generation);
-
-    if let Ok(children) = children_query.get(entity) {
-        for child in children.iter() {
-            mark_render_dirty_recursive(cache, child, generation, children_query);
-        }
-    }
-}
-
-#[cfg(test)]
-#[derive(Clone, Copy)]
-struct LayoutChangeFlags {
-    intrinsic_changed: bool,
-    node_changed: bool,
-    layout_changed: bool,
-    uself_changed: bool,
-}
-
-#[cfg(test)]
-fn should_skip_intrinsic_only_container_change(
-    flags: LayoutChangeFlags,
-    has_children: bool,
-) -> bool {
-    flags.intrinsic_changed
-        && !flags.node_changed
-        && !flags.layout_changed
-        && !flags.uself_changed
-        && has_children
-}
-
 /// Internal system that rebuilds the depth cache when the tree changes.
 #[doc(hidden)]
 pub fn update_depth_cache(
     mut cache: ResMut<LayoutCache>,
     tree_depth: Res<LayoutTreeDepth>,
 
-    // الاستعلام الكامل لإعادة البناء
+    // Full depth query used when the cache must be rebuilt.
     depth_query: Query<(Entity, &LayoutDepth)>,
 
-    // === [الإضافة الهامة] ===
-    // مراقبة هل تم إضافة مكون LayoutDepth جديد؟
-    // هذا يعني أن هناك عقدة جديدة دخلت النظام
+    // Track newly inserted depth components; they imply new nodes entered the tree.
     added_nodes: Query<Entity, Added<LayoutDepth>>,
 
-    // مراقبة هل تم حذف عقد؟ (لتنظيف الكاش)
+    // Track removed depth components so deleted nodes are evicted from the cache.
     mut removed_nodes: RemovedComponents<LayoutDepth>,
 ) {
-    // هل تغير الهيكل؟ (إضافة أو حذف عقد)
+    // Rebuild when the structure changed, the max depth changed, or the cache is empty.
     let structure_changed = !added_nodes.is_empty() || removed_nodes.read().count() > 0;
-
-    // شروط إعادة البناء:
-    // 1. تغير الهيكل (عقد جديدة/محذوفة)
-    // 2. تغير العمق الأقصى
-    // 3. الكاش فارغ (أول إطار)
     if structure_changed
         || tree_depth.max_depth != cache.last_max_depth
         || cache.entities_by_depth.is_empty()
@@ -986,276 +790,13 @@ pub fn update_depth_cache(
 }
 /// Internal plugin that installs the layout cache systems.
 #[doc(hidden)]
-pub struct LayoutCachePlugin;
+pub struct UnivisLayoutCachePlugin;
 
-impl Plugin for LayoutCachePlugin {
+impl Plugin for UnivisLayoutCachePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<LayoutCache>();
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bevy::ecs::system::SystemState;
-
-    fn rebuild_cache_depths(world: &mut World, cache: &mut LayoutCache, max_depth: usize) {
-        let mut system_state: SystemState<Query<(Entity, &LayoutDepth)>> = SystemState::new(world);
-        let query = system_state.get(world);
-        cache.rebuild_depth_map(&query, max_depth);
-    }
-
-    fn intrinsic_only_flags() -> LayoutChangeFlags {
-        LayoutChangeFlags {
-            intrinsic_changed: true,
-            node_changed: false,
-            layout_changed: false,
-            uself_changed: false,
-        }
-    }
-
-    fn set_generation(work_state: &mut UiWorkState) {
-        assert!(work_state.begin_generation(UiPendingStages {
-            hierarchy: true,
-            solve: true,
-            render: true,
-            ..default()
-        }));
-    }
-
-    fn sample_root(root_entity: Entity) -> (ResolvedRootUi, ResolvedRootStack) {
-        let resolved = ResolvedRootUi {
-            root_entity,
-            space: UiSpace::Screen,
-            canvas: UiCanvasSize::Viewport,
-            canvas_size: Vec2::new(800.0, 600.0),
-            camera_entity: None,
-            meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
-            resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
-        };
-        let band_width = 0.04;
-        let stack = ResolvedRootStack {
-            authored_root_z: 0.0,
-            spawn_rank: 0,
-            capsule_sort_key: 0.0,
-            capsule_band_base: 0.0,
-            capsule_band_width: band_width,
-            capsule_band_step: band_width / 2048.0,
-            applied_root_z: 0.0,
-            initialized: true,
-        };
-        (resolved, stack)
-    }
-
-    #[test]
-    fn intrinsic_only_change_on_container_is_skipped() {
-        assert!(should_skip_intrinsic_only_container_change(
-            intrinsic_only_flags(),
-            true,
-        ));
-    }
-
-    #[test]
-    fn intrinsic_only_change_on_leaf_is_not_skipped() {
-        assert!(!should_skip_intrinsic_only_container_change(
-            intrinsic_only_flags(),
-            false,
-        ));
-    }
-
-    #[test]
-    fn non_intrinsic_change_is_not_skipped() {
-        let mut flags = intrinsic_only_flags();
-        flags.node_changed = true;
-
-        assert!(!should_skip_intrinsic_only_container_change(flags, true));
-    }
-
-    #[test]
-    fn layout_change_is_not_skipped() {
-        let mut flags = intrinsic_only_flags();
-        flags.layout_changed = true;
-
-        assert!(!should_skip_intrinsic_only_container_change(flags, true));
-    }
-
-    #[test]
-    fn uself_change_is_not_skipped() {
-        let mut flags = intrinsic_only_flags();
-        flags.uself_changed = true;
-
-        assert!(!should_skip_intrinsic_only_container_change(flags, true));
-    }
-
-    #[test]
-    fn stage_versions_mark_and_complete_work() {
-        let mut cache = LayoutCache::default();
-        let entity = Entity::from_raw_u32(7).expect("test entity should be constructible");
-
-        cache.mark_measure_dirty(entity, 3);
-        cache.mark_solve_dirty_generation(entity, 3);
-        cache.mark_render_dirty(entity, 4);
-
-        let versions = cache.stage_versions(entity);
-        assert_eq!(versions.measure_input_generation, 3);
-        assert_eq!(versions.measure_done_generation, 0);
-        assert_eq!(versions.solve_input_generation, 3);
-        assert_eq!(versions.solve_done_generation, 0);
-        assert_eq!(versions.render_input_generation, 4);
-        assert_eq!(versions.render_done_generation, 0);
-
-        cache.complete_measure(entity);
-        cache.complete_solve(entity);
-        cache.complete_render(entity);
-
-        let versions = cache.stage_versions(entity);
-        assert_eq!(versions.measure_done_generation, 3);
-        assert_eq!(versions.solve_done_generation, 3);
-        assert_eq!(versions.render_done_generation, 4);
-    }
-
-    #[test]
-    fn frontier_queues_dedupe_same_entity_and_keep_latest_generation() {
-        let mut world = World::new();
-        let entity = world.spawn(LayoutDepth(0)).id();
-        let mut cache = LayoutCache::default();
-        rebuild_cache_depths(&mut world, &mut cache, 0);
-
-        cache.mark_measure_dirty(entity, 1);
-        cache.mark_measure_dirty(entity, 1);
-        cache.mark_measure_dirty(entity, 3);
-        cache.mark_measure_dirty(entity, 2);
-
-        let frontier = cache.take_measure_frontier();
-        assert_eq!(frontier, vec![entity]);
-        assert_eq!(cache.stage_versions(entity).measure_input_generation, 3);
-    }
-
-    #[test]
-    fn frontier_queues_keep_measure_bottom_up_and_solve_top_down_order() {
-        let mut world = World::new();
-        let root = world.spawn(LayoutDepth(0)).id();
-        let child = world.spawn(LayoutDepth(1)).id();
-        let leaf = world.spawn(LayoutDepth(2)).id();
-        let mut cache = LayoutCache::default();
-        rebuild_cache_depths(&mut world, &mut cache, 2);
-
-        cache.mark_measure_dirty(root, 1);
-        cache.mark_measure_dirty(child, 1);
-        cache.mark_measure_dirty(leaf, 1);
-        assert_eq!(cache.take_measure_frontier(), vec![leaf, child, root]);
-
-        cache.mark_solve_dirty_generation(root, 1);
-        cache.mark_solve_dirty_generation(child, 1);
-        cache.mark_solve_dirty_generation(leaf, 1);
-        assert_eq!(cache.take_solve_frontier(), vec![root, child, leaf]);
-    }
-
-    #[test]
-    fn root_stack_position_noise_does_not_dirty_any_subtree() {
-        let mut app = App::new();
-        app.init_resource::<LayoutCache>();
-
-        let mut work_state = UiWorkState::default();
-        set_generation(&mut work_state);
-        app.insert_resource(work_state);
-        app.add_systems(Update, track_root_layout_changes);
-
-        let root = app.world_mut().spawn((UNode::default(),)).id();
-        let child = app
-            .world_mut()
-            .spawn((UNode::default(), ChildOf(root)))
-            .id();
-        let (resolved, stack) = sample_root(root);
-        app.world_mut().entity_mut(root).insert((resolved, stack));
-
-        {
-            let mut cache = app.world_mut().resource_mut::<LayoutCache>();
-            cache.update_root_snapshot(root, resolved);
-            cache.update_root_stack_snapshot(root, Some(stack.descendant_context_snapshot()));
-        }
-
-        {
-            let world = app.world_mut();
-            let mut entity = world.entity_mut(root);
-            let mut stack = entity
-                .get_mut::<ResolvedRootStack>()
-                .expect("root should have stack");
-            stack.authored_root_z = 24.0;
-            stack.capsule_sort_key = 24.0;
-            stack.capsule_band_base = 24.0;
-            stack.applied_root_z = 96.0;
-        }
-
-        app.update();
-
-        let cache = app.world().resource::<LayoutCache>();
-        assert!(!cache.is_solve_dirty(root));
-        assert!(!cache.is_solve_dirty(child));
-    }
-
-    #[test]
-    fn root_stack_band_change_dirties_only_the_affected_subtree() {
-        let mut app = App::new();
-        app.init_resource::<LayoutCache>();
-
-        let mut work_state = UiWorkState::default();
-        set_generation(&mut work_state);
-        app.insert_resource(work_state);
-        app.add_systems(Update, track_root_layout_changes);
-
-        let root_a = app.world_mut().spawn((UNode::default(),)).id();
-        let child_a = app
-            .world_mut()
-            .spawn((UNode::default(), ChildOf(root_a)))
-            .id();
-        let root_b = app.world_mut().spawn((UNode::default(),)).id();
-        let child_b = app
-            .world_mut()
-            .spawn((UNode::default(), ChildOf(root_b)))
-            .id();
-
-        let (mut resolved_a, stack_a) = sample_root(root_a);
-        let (mut resolved_b, stack_b) = sample_root(root_b);
-        resolved_a.space = UiSpace::World2d;
-        resolved_a.canvas = UiCanvasSize::Fixed(Vec2::new(800.0, 600.0));
-        resolved_b.space = UiSpace::World2d;
-        resolved_b.canvas = UiCanvasSize::Fixed(Vec2::new(800.0, 600.0));
-        app.world_mut()
-            .entity_mut(root_a)
-            .insert((resolved_a, stack_a));
-        app.world_mut()
-            .entity_mut(root_b)
-            .insert((resolved_b, stack_b));
-
-        {
-            let mut cache = app.world_mut().resource_mut::<LayoutCache>();
-            cache.update_root_snapshot(root_a, resolved_a);
-            cache.update_root_stack_snapshot(root_a, Some(stack_a.descendant_context_snapshot()));
-            cache.update_root_snapshot(root_b, resolved_b);
-            cache.update_root_stack_snapshot(root_b, Some(stack_b.descendant_context_snapshot()));
-        }
-
-        {
-            let world = app.world_mut();
-            let mut entity = world.entity_mut(root_a);
-            let mut stack = entity
-                .get_mut::<ResolvedRootStack>()
-                .expect("root_a should have stack");
-            stack.capsule_band_width *= 2.0;
-            stack.capsule_band_step *= 2.0;
-        }
-
-        app.update();
-
-        let cache = app.world().resource::<LayoutCache>();
-        assert!(cache.is_solve_dirty(root_a));
-        assert!(cache.is_solve_dirty(child_a));
-        assert!(!cache.is_solve_dirty(root_b));
-        assert!(!cache.is_solve_dirty(child_b));
-    }
-}
-
-// =========================================================
-// استخدام الـ Cache في الأنظمة الموجودة
-// =========================================================
+#[deprecated(note = "Use `UnivisLayoutCachePlugin` instead.")]
+pub type LayoutCachePlugin = UnivisLayoutCachePlugin;

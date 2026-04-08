@@ -4,7 +4,7 @@
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.2"
+univis_ui = "0.2.0-alpha.3"
 ```
 
 ## 2) Minimal App
@@ -71,7 +71,7 @@ fn setup(mut commands: Commands) {
 - `UnivisScrollViewPlugin` is included by default in `UnivisWidgetPlugin`.
 - Interaction resolves the camera from each `URootUi`.
 - In multi-camera scenes, prefer binding the root explicitly with `UiCameraRef::Entity`.
-- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers.
+- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`.
 - If you need the historical world-space physical size from older examples, set `meters_per_unit: 1.0` explicitly.
 - For a task-oriented setup checklist and recommended first runs, continue with [Plugin Setup and First Examples](first-steps.md).
 
@@ -113,6 +113,7 @@ fn main() {
 
 - `univis_ui::UnivisUiPlugin`
 - `univis_ui::prelude`
+- `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}` for explicit legacy compatibility only
 - `univis_ui_engine::layout::layout_system::URootUi`
 - `univis_ui_engine::layout::univis_node::{UNode, ULayout}`
 

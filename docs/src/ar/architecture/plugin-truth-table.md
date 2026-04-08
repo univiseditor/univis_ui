@@ -10,7 +10,7 @@
 | `UnivisEnginePlugin` | نعم | يضيف `UnivisNodePlugin` و`UnivisLayoutPlugin` و`UnivisRenderPlugin`. |
 | `UnivisInteractionPlugin` | نعم | يضيف خلفية الالتقاط ومراقبي المؤشر. |
 | `UnivisWidgetPlugin` | نعم | يسجّل مجموعة الإضافات الأساسية للوحدات الجاهزة. |
-| `LayoutProfilingPlugin` | لا | إضافة اختيارية للتشخيص وتُضاف يدويًا. |
+| `UnivisLayoutProfilingPlugin` | لا | إضافة اختيارية للتشخيص وتُضاف يدويًا. |
 
 ## تركيب الوحدات الجاهزة (`UnivisWidgetPlugin`)
 

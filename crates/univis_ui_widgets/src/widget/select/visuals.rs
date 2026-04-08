@@ -1,10 +1,14 @@
-use crate::internal_prelude::*;
 use bevy::prelude::*;
+use univis_ui_engine::layout::geometry::{UCornerRadius, UVal};
+use univis_ui_engine::layout::univis_node::{UBorder, UClip, UNode};
+use univis_ui_interaction::interaction::feedback::{UInteraction, UInteractionColors};
+use univis_ui_style::style::icons::Icon;
 
 use super::{
     SelectChevronLabel, SelectDropdown, SelectOptionLabel, SelectOptionRow, SelectRuntime,
     SelectTrigger, SelectValueLabel, USelect, selected_option,
 };
+use crate::widget::text_label::UTextLabel;
 
 pub(super) fn update_select_visuals(
     mut root_query: Query<

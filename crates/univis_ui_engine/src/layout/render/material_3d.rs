@@ -8,7 +8,7 @@ use bevy::shader::ShaderRef;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct UNodeMaterial3d {
-    // --- المجموعة 1: Vec4 (16 bytes align) ---
+    // --- group 1: Vec4 values (16-byte aligned) ---
     #[uniform(0)]
     pub color: Vec4,
     #[uniform(0)]
@@ -18,11 +18,11 @@ pub struct UNodeMaterial3d {
     #[uniform(0)]
     pub emissive: Vec4,
 
-    // --- المجموعة 2: Vec2 ---
+    // --- group 2: Vec2 values ---
     #[uniform(0)]
     pub size: Vec2,
 
-    // --- المجموعة 3: Scalars ---
+    // --- group 3: scalar values ---
     #[uniform(0)]
     pub border_width: f32,
     #[uniform(0)]
@@ -34,12 +34,12 @@ pub struct UNodeMaterial3d {
     #[uniform(0)]
     pub use_texture: u32,
 
-    // --- الحقل الجديد ---
+    // --- shape selector ---
     // 0 = Round, 1 = Cut
     #[uniform(0)]
     pub shape_mode: u32,
 
-    // --- الملمس ---
+    // --- texture bindings ---
     #[texture(1)]
     #[sampler(2)]
     pub texture: Option<Handle<Image>>,

@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
-use super::types::LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT;
-use super::{URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiSpace};
+use super::{URootUi, UiCameraRef, UiCanvasSize, UiSpace};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum RootResolutionIssue {
@@ -14,13 +13,44 @@ pub(super) enum RootResolutionIssue {
     ViewportSizeUnavailable,
 }
 
-#[derive(Clone, Copy)]
-pub(super) struct EffectiveRootUi {
-    pub space: UiSpace,
-    pub canvas: UiCanvasSize,
-    pub camera: UiCameraRef,
-    pub meters_per_unit: f32,
-    pub resolution_scale: f32,
+impl RootResolutionIssue {
+    fn reason(self) -> Option<&'static str> {
+        match self {
+            Self::None => None,
+            Self::AutoMissingCamera => {
+                Some("no active compatible camera matched `UiCameraRef::Auto`")
+            }
+            Self::AutoAmbiguousCamera => {
+                Some("multiple active compatible cameras matched `UiCameraRef::Auto`")
+            }
+            Self::ExplicitCameraMissing => {
+                Some("the configured camera entity is missing or does not contain `Camera`")
+            }
+            Self::ExplicitCameraInactive => Some("the configured camera entity is inactive"),
+            Self::ViewportSizeUnavailable => {
+                Some("logical viewport size was not available from the resolved camera")
+            }
+        }
+    }
+
+    fn action(self) -> Option<&'static str> {
+        match self {
+            Self::None => None,
+            Self::AutoMissingCamera => {
+                Some("spawn one active compatible camera or bind `UiCameraRef::Entity` explicitly")
+            }
+            Self::AutoAmbiguousCamera => {
+                Some("bind `UiCameraRef::Entity` explicitly for this root")
+            }
+            Self::ExplicitCameraMissing => Some("update the root to point at a live camera entity"),
+            Self::ExplicitCameraInactive => {
+                Some("activate the target camera or bind a different active camera")
+            }
+            Self::ViewportSizeUnavailable => {
+                Some("wait for the camera viewport to initialize or provide a fixed canvas size")
+            }
+        }
+    }
 }
 
 pub(super) fn normalize_meters_per_unit(value: f32) -> f32 {
@@ -29,45 +59,6 @@ pub(super) fn normalize_meters_per_unit(value: f32) -> f32 {
     } else {
         URootUi::DEFAULT_METERS_PER_UNIT
     }
-}
-
-pub(super) fn effective_root_ui(
-    root_ui: Option<&URootUi>,
-    screen_root: Option<&UScreenRoot>,
-    world_root: Option<&UWorldRoot>,
-) -> Option<EffectiveRootUi> {
-    if let Some(root) = root_ui {
-        return Some(EffectiveRootUi {
-            space: root.space,
-            canvas: root.canvas,
-            camera: root.camera,
-            meters_per_unit: root.meters_per_unit,
-            resolution_scale: root.resolution_scale,
-        });
-    }
-
-    if let Some(root) = world_root {
-        return Some(EffectiveRootUi {
-            space: if root.is_3d {
-                UiSpace::World3d
-            } else {
-                UiSpace::World2d
-            },
-            canvas: UiCanvasSize::Fixed(root.size),
-            camera: UiCameraRef::Auto,
-            // `UWorldRoot` keeps the old 1 UI unit = 1 world unit behavior as a legacy compatibility path.
-            meters_per_unit: LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT,
-            resolution_scale: root.resolution_scale,
-        });
-    }
-
-    screen_root.map(|_| EffectiveRootUi {
-        space: UiSpace::Screen,
-        canvas: UiCanvasSize::Viewport,
-        camera: UiCameraRef::Auto,
-        meters_per_unit: URootUi::DEFAULT_METERS_PER_UNIT,
-        resolution_scale: URootUi::DEFAULT_RESOLUTION_SCALE,
-    })
 }
 
 pub(super) fn resolve_root_camera(
@@ -145,32 +136,16 @@ pub(super) fn emit_root_resolution_warning(
     space: UiSpace,
     issue: RootResolutionIssue,
 ) {
-    match issue {
-        RootResolutionIssue::None => {}
-        RootResolutionIssue::AutoMissingCamera => bevy::log::warn!(
-            "URootUi on entity {:?} ({:?}) could not resolve `UiCameraRef::Auto`: no active compatible camera found.",
-            entity,
-            space
-        ),
-        RootResolutionIssue::AutoAmbiguousCamera => bevy::log::warn!(
-            "URootUi on entity {:?} ({:?}) could not resolve `UiCameraRef::Auto`: multiple active compatible cameras were found. Bind `UiCameraRef::Entity` explicitly.",
-            entity,
-            space
-        ),
-        RootResolutionIssue::ExplicitCameraMissing => bevy::log::warn!(
-            "URootUi on entity {:?} ({:?}) references a camera entity that does not exist or does not have a `Camera` component.",
-            entity,
-            space
-        ),
-        RootResolutionIssue::ExplicitCameraInactive => bevy::log::warn!(
-            "URootUi on entity {:?} ({:?}) references an inactive camera.",
-            entity,
-            space
-        ),
-        RootResolutionIssue::ViewportSizeUnavailable => bevy::log::warn!(
-            "URootUi on entity {:?} ({:?}) could not read a logical viewport size from the resolved camera yet.",
-            entity,
-            space
-        ),
-    }
+    let Some(reason) = issue.reason() else {
+        return;
+    };
+    let action = issue.action().unwrap_or("inspect the root configuration");
+
+    bevy::log::warn!(
+        "[layout/root_resolution] root={:?} space={:?} reason={} action={}",
+        entity,
+        space,
+        reason,
+        action
+    );
 }

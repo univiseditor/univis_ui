@@ -4,7 +4,7 @@
 
 ## الإضافة
 
-- `LayoutProfilingPlugin`
+- `UnivisLayoutProfilingPlugin`
 
 ## بيانات يعرضها
 

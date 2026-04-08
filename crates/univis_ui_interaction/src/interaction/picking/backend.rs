@@ -1,0 +1,49 @@
+use super::*;
+
+pub fn univis_picking_backend(
+    rollout: Option<Res<UiRolloutConfig>>,
+    pointers: Query<(&PointerId, &PointerLocation)>,
+    cameras: Query<(Entity, &Camera, &GlobalTransform)>,
+    root_query: Query<(&ResolvedRootUi, &ResolvedRootStack)>,
+    nodes_query: Query<
+        (
+            Entity,
+            &UNode,
+            &GlobalTransform,
+            &ComputedSize,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+            Option<&CachedUiContext>,
+        ),
+        With<UInteraction>,
+    >,
+    parents_query: Query<&ChildOf>,
+    clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    mut profiler: Option<ResMut<LayoutProfiler>>,
+    mut output: MessageWriter<PointerHits>,
+) {
+    let prefer_cached_context = rollout
+        .as_ref()
+        .map_or(true, |config| config.use_cached_ui_context);
+    emit_pointer_hits(
+        &pointers,
+        &cameras,
+        &root_query,
+        &nodes_query,
+        &parents_query,
+        &clipper_query,
+        prefer_cached_context,
+        profiler.as_deref_mut(),
+        &mut output,
+    );
+}
+
+pub fn track_pointer_generation(
+    changed_pointers: Query<(), Or<(Added<PointerLocation>, Changed<PointerLocation>)>>,
+    mut removed_pointers: RemovedComponents<PointerLocation>,
+    mut sync_state: ResMut<PickingSyncState>,
+) {
+    if !changed_pointers.is_empty() || removed_pointers.read().next().is_some() {
+        sync_state.pointer_generation += 1;
+    }
+}

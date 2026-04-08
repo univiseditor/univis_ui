@@ -43,12 +43,15 @@ pub(crate) mod internal_prelude {
 }
 
 /// The recommended import surface when depending on `univis_ui_engine` directly.
+///
+/// Deprecated compatibility wrappers stay on explicit paths such as
+/// [`crate::layout::layout_system::UScreenRoot`] and
+/// [`crate::layout::layout_system::UWorldRoot`] instead of this default import.
 pub mod prelude {
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
     pub use crate::layout::image::UImage;
-    #[allow(deprecated)]
     pub use crate::layout::layout_system::{
-        URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
+        URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;

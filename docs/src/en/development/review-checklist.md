@@ -16,3 +16,10 @@ Use this checklist for docs-heavy pull requests.
 - [ ] visual validation notes were updated when representative examples or rendering behavior changed
 - [ ] `README` / `README_AR` were updated if the landing story changed
 - [ ] `changelog.md` was updated if the change is notable
+
+## Engineering Quality
+
+- [ ] `./scripts/check_public_api_surface.sh` completed when facade imports, plugin wiring, or deprecated path exposure changed
+- [ ] the change did not introduce a new large source hotspot without a clear reason
+- [ ] the change did not widen public API or coupling without a user-facing need
+- [ ] naming stayed consistent with the maintainer naming and architecture pages

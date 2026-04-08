@@ -1,9 +1,16 @@
-use crate::internal_prelude::*;
 use bevy::{asset::embedded_asset, prelude::*, sprite_render::Material2dPlugin};
 
 pub mod material;
 pub mod material_3d;
 pub mod system;
+
+use crate::layout::components::UI3d;
+use crate::layout::layout_system::sync_cached_ui3d;
+use crate::layout::pbr::UPbr;
+use crate::layout::render::material::UNodeMaterial;
+use crate::layout::render::material_3d::UNodeMaterial3d;
+use crate::layout::render::system::{MaterialPool, MeshPool, update_materials_optimized};
+use crate::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 
 pub mod prelude {
     pub use crate::layout::render::{UnivisRenderPlugin, material::*, material_3d::*, system::*};

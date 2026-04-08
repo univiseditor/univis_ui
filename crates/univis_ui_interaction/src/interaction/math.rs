@@ -9,15 +9,15 @@ pub fn sd_rounded_box(p: Vec2, b: Vec2, r: Vec4) -> f32 {
     // r.z = Top-Left
     // r.w = Bottom-Left
 
-    // 1. تحديد هل نحن في اليمين أم اليسار؟
-    // إذا x > 0 نختار (Top-Right, Bottom-Right) وإلا (Top-Left, Bottom-Left)
+    // 1. Pick the correct left/right pair.
+    // If `x > 0`, use (Top-Right, Bottom-Right); otherwise use (Top-Left, Bottom-Left).
     let (r_top, r_bottom) = if p.x > 0.0 { (r.x, r.y) } else { (r.z, r.w) };
 
-    // 2. تحديد هل نحن في الأعلى أم الأسفل؟
-    // إذا y > 0 نختار r_top وإلا r_bottom
+    // 2. Pick the top or bottom corner radius.
+    // If `y > 0`, use the top radius; otherwise use the bottom radius.
     let radius = if p.y > 0.0 { r_top } else { r_bottom };
 
-    // 3. حساب المسافة (نفس معادلة الشيدر)
+    // 3. Evaluate the same distance equation used by the shader.
     let q = p.abs() - b + Vec2::splat(radius);
 
     q.max(Vec2::ZERO).length() + q.x.max(q.y).min(0.0) - radius

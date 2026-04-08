@@ -45,7 +45,7 @@ impl Default for UIconButton {
     }
 }
 
-// علامة داخلية لضمان عدم تكرار المراقب
+// Internal marker that prevents duplicate observer setup.
 #[derive(Component)]
 struct ButtonObserved;
 

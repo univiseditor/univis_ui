@@ -10,7 +10,7 @@ This page is the canonical plugin registration truth for the current repository 
 | `UnivisEnginePlugin` | Yes | Adds `UnivisNodePlugin`, `UnivisLayoutPlugin`, and `UnivisRenderPlugin`. |
 | `UnivisInteractionPlugin` | Yes | Registers picking backend and pointer observers. |
 | `UnivisWidgetPlugin` | Yes | Registers built-in widget plugin set. |
-| `LayoutProfilingPlugin` | No | Optional diagnostics plugin; add manually when needed. |
+| `UnivisLayoutProfilingPlugin` | No | Optional diagnostics plugin; add manually when needed. |
 
 ## Widget Composition (`UnivisWidgetPlugin`)
 

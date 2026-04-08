@@ -145,7 +145,7 @@ impl UToggle {
     }
 }
 
-/// علامات داخلية للأجزاء
+/// Internal markers for the visual parts.
 #[derive(Component)]
 struct ToggleTrack;
 
@@ -156,7 +156,7 @@ struct ToggleKnob;
 // Systems
 // =========================================================
 
-/// إنشاء الهيكل البصري للـ Toggle
+/// Builds the toggle's visual hierarchy.
 fn init_toggle_visuals(mut commands: Commands, query: Query<(Entity, &UToggle), Added<UToggle>>) {
     for (entity, toggle) in query.iter() {
         let track_color = if toggle.checked {
@@ -183,7 +183,7 @@ fn init_toggle_visuals(mut commands: Commands, query: Query<(Entity, &UToggle), 
                 UInteraction::default(),
             ))
             .with_children(|parent| {
-                // Track (المسار/الخلفية)
+                // Track background
                 parent
                     .spawn((
                         UNode {
@@ -203,7 +203,7 @@ fn init_toggle_visuals(mut commands: Commands, query: Query<(Entity, &UToggle), 
                         ToggleTrack,
                     ))
                     .with_children(|track_parent| {
-                        // Knob (الزر المتحرك)
+                        // Sliding knob
                         let knob_size = toggle.height - 4.0;
                         let initial_x = if toggle.checked {
                             toggle.width - knob_size - 4.0
@@ -232,7 +232,7 @@ fn init_toggle_visuals(mut commands: Commands, query: Query<(Entity, &UToggle), 
     }
 }
 
-/// تحديث حالة Toggle عند النقر
+/// Flips the toggle state on click.
 fn update_toggle_state(
     events: On<Pointer<Click>>,
     mut toggle_query: Query<(&mut UToggle, &UInteraction)>,
@@ -241,13 +241,13 @@ fn update_toggle_state(
         if toggle.disabled {
             return;
         }
-        // عند النقر
+        // Toggle immediately on click.
         toggle.previous_checked = toggle.checked;
         toggle.checked = !toggle.checked;
     }
 }
 
-/// تحريك الزر (Animation)
+/// Animates the knob toward the target state.
 fn animate_toggle_knob(
     time: Res<Time>,
     mut toggle_query: Query<(&mut UToggle, &Children)>,
@@ -255,23 +255,23 @@ fn animate_toggle_knob(
     mut knob_query: Query<&mut USelf, With<ToggleKnob>>,
 ) {
     for (mut toggle, children) in toggle_query.iter_mut() {
-        // الهدف النهائي
+        // Final target position
         let target_offset = if toggle.checked { 1.0 } else { 0.0 };
 
-        // الفرق
+        // Remaining distance
         let diff = target_offset - toggle.current_offset;
 
-        // إذا كان الفرق صغير جداً، اعتبره وصل
+        // Snap once the remaining distance is tiny.
         if diff.abs() < 0.01 {
             toggle.current_offset = target_offset;
             continue;
         }
 
-        // الحركة السلسة (Lerp)
+        // Smooth interpolation
         let delta = time.delta_secs() * toggle.animation_speed;
         toggle.current_offset += diff * delta;
 
-        // تطبيق على الـ Knob
+        // Apply the resolved offset to the knob.
         let track_entity = children
             .iter()
             .find(|&child| track_query.get(child).is_ok());
@@ -292,7 +292,7 @@ fn animate_toggle_knob(
     }
 }
 
-/// مزامنة لون Track مع الحالة
+/// Syncs the track color with the current state.
 fn sync_toggle_colors(
     toggle_query: Query<(&UToggle, &Children), Changed<UToggle>>,
     mut track_query: Query<&mut UNode, With<ToggleTrack>>,
@@ -304,10 +304,10 @@ fn sync_toggle_colors(
             toggle.track_color_off
         };
 
-        // تحديث لون Track
+        // Update the track color directly for now.
         for child in children.iter() {
             if let Ok(mut node) = track_query.get_mut(child) {
-                // تحريك اللون تدريجياً (يمكن استخدام Lerp هنا أيضاً)
+                // A lerped color transition could be added later if needed.
                 node.background_color = target_color;
             }
         }
@@ -315,7 +315,7 @@ fn sync_toggle_colors(
 }
 
 // =========================================================
-// Event (اختياري للتفاعل الخارجي)
+// Event emitted for external observers
 // =========================================================
 
 /// Message emitted when a toggle changes state.

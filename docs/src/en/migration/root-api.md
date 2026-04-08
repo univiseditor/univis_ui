@@ -18,10 +18,13 @@
 ## Legacy Compatibility Notes
 
 - `UScreenRoot` and `UWorldRoot` remain deprecated compatibility wrappers.
+- They are explicit-only migration paths and are no longer part of the recommended example or prelude story.
+- The current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support.
 - If you need the historical world-root size from older examples, set `meters_per_unit: 1.0` explicitly.
 
 ## Related Guides
 
+- [Legacy Compatibility Status](legacy-compatibility.md)
 - [Roots and Spaces](../layout/roots.md)
 - [Quick Start](../quick-start.md)
 - [Examples](../examples/index.md#featured-learning-path)

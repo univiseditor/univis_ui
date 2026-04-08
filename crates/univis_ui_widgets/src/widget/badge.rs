@@ -22,7 +22,7 @@ impl Plugin for UnivisBadgePlugin {
     }
 }
 
-// --- المكونات (Components) ---
+// --- Components ---
 
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
@@ -58,7 +58,7 @@ impl Default for UBadge {
     }
 }
 
-// --- الأنظمة (Systems) ---
+// --- Systems ---
 
 fn update_badge_visuals(mut commands: Commands, query: Query<(Entity, &UBadge), Changed<UBadge>>) {
     for (entity, badge) in query.iter() {
@@ -177,7 +177,7 @@ impl UBadge {
 }
 
 // =========================================================
-// UTag - وسم قابل للإزالة
+// UTag - removable tag variant
 // =========================================================
 
 #[derive(Component, Clone, Reflect)]

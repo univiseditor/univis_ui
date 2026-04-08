@@ -37,3 +37,4 @@ Check:
 ## Related References
 
 - [Current Limitations](current-limitations.md)
+- [Error Model And Diagnostics](error-model.md)

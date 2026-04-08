@@ -103,12 +103,12 @@ pub fn update_materials_optimized(
         Option<&CachedUiContext>,
         Option<&mut MaterialHandles>,
     )>,
-    // استعلامات القص
+    // Clipping queries
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     root_query: Query<&ResolvedRootUi>,
 
-    // الموارد
+    // Render resources
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials_2d: ResMut<Assets<UNodeMaterial>>,
     mut materials_3d: ResMut<Assets<UNodeMaterial3d>>,
@@ -209,7 +209,7 @@ fn sync_entity_material(
     let size_vec = logical_size * world_scale;
     let softness = minimum_local_softness(world_scale);
 
-    // --- البيانات المشتركة ---
+    // --- shared material inputs ---
     let (tex_handle, use_tex, base_color) = if let Some(img) = image {
         (Some(img.texture.clone()), 1, LinearRgba::from(img.color))
     } else {
@@ -493,7 +493,7 @@ fn resolve_root_for_entity(
 }
 
 // ===== Helper Functions =====
-// 1. دالة البحث عن القص (مشتركة)
+// 1. Shared clip resolution helper
 fn resolve_clipper(
     cached_context: Option<&CachedUiContext>,
     start_entity: Entity,
@@ -539,7 +539,7 @@ fn minimum_local_softness(ui_to_world_scale: f32) -> f32 {
     (0.5 * ui_to_world_scale).max(1.0e-4)
 }
 
-// 2. دالة إنشاء مادة 2D (محدثة مع بيانات القص)
+// 2. 2D material builder with clip data
 fn create_2d_material(
     base_color: LinearRgba,
     radius: Vec4,
@@ -551,7 +551,7 @@ fn create_2d_material(
     use_tex: u32,
     shape_mode: u32,
     tex: Option<Handle<Image>>,
-    // بيانات القص
+    // Clip payload
     clip_center: Vec2,
     clip_size: Vec2,
     clip_radius: Vec4,
@@ -569,7 +569,7 @@ fn create_2d_material(
         shape_mode,
         texture: tex,
         _pad: 0.0,
-        // الحقول الجديدة
+        // Clip fields
         clip_center,
         clip_size,
         clip_radius,
@@ -577,7 +577,7 @@ fn create_2d_material(
     }
 }
 
-// 3. دالة إنشاء مادة 3D (الأصلية - بدون تغييرات القص حالياً)
+// 3. 3D material builder
 fn create_3d_material(
     base_color: LinearRgba,
     size_vec: Vec2,

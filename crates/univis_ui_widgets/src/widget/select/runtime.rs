@@ -1,7 +1,13 @@
-use crate::internal_prelude::*;
 use bevy::prelude::*;
+use univis_ui_engine::layout::geometry::{UCornerRadius, UVal};
+use univis_ui_engine::layout::univis_node::{
+    UAlignItems, UBorder, UClip, UDisplay, UFlexDirection, UJustifyContent, ULayout, UNode,
+};
+use univis_ui_interaction::interaction::feedback::{UInteraction, UInteractionColors};
+use univis_ui_style::style::{Theme, icons::Icon};
 
 use super::{USelect, selected_option};
+use crate::widget::text_label::UTextLabel;
 
 #[derive(Component)]
 pub(super) struct SelectRuntime {
@@ -39,6 +45,45 @@ pub(super) struct SelectOptionLabel;
 #[derive(Resource, Default)]
 pub(super) struct ActiveSelect {
     pub(super) entity: Option<Entity>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum SelectRuntimeError {
+    MissingTrigger,
+    MissingValueLabel,
+    MissingChevron,
+    DropdownSpawnFailed,
+}
+
+impl SelectRuntimeError {
+    fn reason(self) -> &'static str {
+        match self {
+            Self::MissingTrigger => "select trigger child was not spawned",
+            Self::MissingValueLabel => "select value-label child was not spawned",
+            Self::MissingChevron => "select chevron child was not spawned",
+            Self::DropdownSpawnFailed => "select dropdown child was not spawned",
+        }
+    }
+
+    fn action(self) -> &'static str {
+        match self {
+            Self::MissingTrigger | Self::MissingValueLabel | Self::MissingChevron => {
+                "verify the select build system still spawns the required child tree"
+            }
+            Self::DropdownSpawnFailed => {
+                "verify the select dropdown builder still spawns the dropdown container"
+            }
+        }
+    }
+}
+
+pub(super) fn log_select_runtime_error(entity: Entity, error: SelectRuntimeError) {
+    bevy::log::warn!(
+        "[widget/select_runtime] entity={:?} reason={} action={}",
+        entity,
+        error.reason(),
+        error.action(),
+    );
 }
 
 pub(super) fn init_select_visuals(
@@ -149,12 +194,16 @@ pub(super) fn init_select_visuals(
                 trigger_entity = Some(trigger);
             });
 
-        commands.entity(entity).insert(SelectRuntime {
-            trigger_entity: trigger_entity.expect("select trigger must exist"),
-            value_label_entity: value_label_entity.expect("select value label must exist"),
-            chevron_entity: chevron_entity.expect("select chevron must exist"),
-            dropdown_entity: None,
-        });
+        match build_select_runtime(trigger_entity, value_label_entity, chevron_entity) {
+            Ok(runtime) => {
+                commands.entity(entity).insert(runtime);
+            }
+            Err(error) => {
+                log_select_runtime_error(entity, error);
+                select.is_open = false;
+                select.previous_open = false;
+            }
+        }
     }
 }
 
@@ -162,7 +211,7 @@ pub(super) fn spawn_dropdown(
     commands: &mut Commands,
     select_entity: Entity,
     select: &USelect,
-) -> Entity {
+) -> Result<Entity, SelectRuntimeError> {
     let mut dropdown_entity = None;
     let max_visible = select.max_visible_options.max(1);
     let should_clip = select.options.len() > max_visible;
@@ -274,5 +323,18 @@ pub(super) fn spawn_dropdown(
         dropdown_entity = Some(dropdown);
     });
 
-    dropdown_entity.expect("dropdown should be spawned")
+    dropdown_entity.ok_or(SelectRuntimeError::DropdownSpawnFailed)
+}
+
+fn build_select_runtime(
+    trigger_entity: Option<Entity>,
+    value_label_entity: Option<Entity>,
+    chevron_entity: Option<Entity>,
+) -> Result<SelectRuntime, SelectRuntimeError> {
+    Ok(SelectRuntime {
+        trigger_entity: trigger_entity.ok_or(SelectRuntimeError::MissingTrigger)?,
+        value_label_entity: value_label_entity.ok_or(SelectRuntimeError::MissingValueLabel)?,
+        chevron_entity: chevron_entity.ok_or(SelectRuntimeError::MissingChevron)?,
+        dropdown_entity: None,
+    })
 }

@@ -40,34 +40,34 @@ pub struct USeekBar {
 
     /// Previous value used internally for change detection.
     previous_value: f32,
-    old_value: f32,        // سنستخدم هذا لتخزين موقع الماوس عند الضغط
-    drag_start_value: f32, // متغير جديد: قيمة المقبض عند بدء السحب
+    old_value: f32,        // Cursor X position captured when dragging starts.
+    drag_start_value: f32, // Normalized value captured when dragging starts.
 
-    // --- الأبعاد ---
+    // --- dimensions ---
     pub width: f32,
     pub track_height: f32,
     pub thumb_size: f32,
 
-    // --- الألوان ---
+    // --- colors ---
     pub track_color: Color,
     pub fill_color: Color,
     pub thumb_color: Color,
     pub thumb_hover_color: Color,
 
-    // --- الحالة ---
+    // --- state ---
     pub disabled: bool,
     pub is_dragging: bool,
     pub show_value: bool,
 
-    // --- الحركة ---
+    // --- animation ---
     // pub smooth_animation: bool,
     // pub animation_speed: f32,
     // pub target_value: f32,
 
-    // --- النطاق (اختياري للقيم الفعلية) ---
+    // --- mapped value range ---
     pub min_value: f32,
     pub max_value: f32,
-    pub step: Option<f32>, // للقفز بين قيم محددة
+    pub step: Option<f32>, // Optional snapping step in real-value space.
 }
 
 impl Default for USeekBar {
@@ -224,7 +224,7 @@ impl USeekBar {
     }
 }
 
-/// علامات داخلية
+/// Internal markers
 #[derive(Component)]
 struct SeekBarTrack;
 
@@ -241,7 +241,7 @@ struct SeekBarValueLabel;
 // Systems
 // =========================================================
 
-/// إنشاء الهيكل البصري
+/// Builds the seek bar visual hierarchy.
 fn init_seekbar_visuals(
     mut commands: Commands,
     query: Query<(Entity, &USeekBar), Added<USeekBar>>,
@@ -266,7 +266,7 @@ fn init_seekbar_visuals(
                 },
             ))
             .with_children(|parent| {
-                // Container للـ Track و Thumb
+                // Container that owns the track and thumb.
                 parent
                     .spawn((
                         UNode {
@@ -282,7 +282,7 @@ fn init_seekbar_visuals(
                         },
                     ))
                     .with_children(|track_container| {
-                        // Track (الخلفية)
+                        // Track background
                         track_container
                             .spawn((
                                 UNode {
@@ -299,7 +299,7 @@ fn init_seekbar_visuals(
                                 SeekBarTrack,
                             ))
                             .with_children(|track_parent| {
-                                // Fill (الجزء المملوء)
+                                // Filled portion
                                 let fill_width = seekbar.width * seekbar.value;
                                 track_parent.spawn((
                                     UNode {
@@ -314,7 +314,7 @@ fn init_seekbar_visuals(
                                     SeekBarFill,
                                 ));
 
-                                // Thumb (الزر المتحرك)
+                                // Draggable thumb
                                 let thumb_x = (seekbar.width - seekbar.thumb_size) * seekbar.value;
                                 track_parent.spawn((
                                     UNode {
@@ -338,7 +338,7 @@ fn init_seekbar_visuals(
                             });
                     });
 
-                // Value Label (اختياري)
+                // Optional value label
                 if seekbar.show_value {
                     parent.spawn((
                         UTextLabel {
@@ -355,11 +355,10 @@ fn init_seekbar_visuals(
 }
 
 fn handle_seekbar_interaction(
-    // 1. نبدأ من الـ Thumb
+    // 1. Start from the thumb.
     thumb_query: Query<(&SeekBarThumb, &UInteraction), With<SeekBarThumb>>,
 
-    // 2. للصعود في الهرم
-    // 3. للتعديل على البيانات
+    // 2. Then mutate the owning seek bar.
     mut seekbar_query: Query<&mut USeekBar>,
 
     mouse_button: Res<ButtonInput<MouseButton>>,
@@ -382,7 +381,7 @@ fn handle_seekbar_interaction(
                 continue;
             }
 
-            // === بدء السحب ===
+            // Begin dragging.
             if *interaction == UInteraction::Pressed && mouse_button.just_pressed(MouseButton::Left)
             {
                 seekbar.old_value = cursor_pos.x;
@@ -390,7 +389,7 @@ fn handle_seekbar_interaction(
                 seekbar.is_dragging = true;
             }
 
-            // === أثناء السحب ===
+            // Continue dragging while the button stays pressed.
             if seekbar.is_dragging {
                 if mouse_button.pressed(MouseButton::Left) {
                     let delta_px = cursor_pos.x - seekbar.old_value;
@@ -405,47 +404,46 @@ fn handle_seekbar_interaction(
     }
 }
 
-/// تحديث المظهر
+/// Updates the seek bar visuals after state changes.
 fn update_seekbar_visuals(
-    // نبحث عن الـ Seekbar الذي تغيرت قيمته
+    // Find changed seek bars.
     seekbar_query: Query<(&USeekBar, &Children), Changed<USeekBar>>,
 
-    // Query عام للوصول إلى أبناء أي كيان (للتنقل بين المستويات)
+    // Traverse nested children.
     children_query: Query<&Children>,
 
-    // Query لتمييز الـ Track (لنتأكد أننا في المكان الصحيح)
+    // Identify the track node.
     track_marker: Query<(), With<SeekBarTrack>>,
 
-    // Queries لتحديث المكونات المرئية
+    // Update the visual parts.
     mut fill_query: Query<&mut UNode, With<SeekBarFill>>,
     mut thumb_query: Query<&mut USelf, With<SeekBarThumb>>,
     mut label_query: Query<&mut UTextLabel, With<SeekBarValueLabel>>,
 ) {
     for (seekbar, children) in seekbar_query.iter() {
-        // المرور على الأبناء المباشرين للـ Seekbar (Container و Label)
+        // Walk direct children: the container and optional label.
         for child in children.iter() {
-            // 1. محاولة تحديث الـ Label (هو ابن مباشر للـ Seekbar)
+            // 1. Update the direct label child when present.
             if let Ok(mut label) = label_query.get_mut(child) {
                 label.text = format!("{:.0}", seekbar.real_value());
-                continue; // ننتقل للابن التالي
+                continue; // Move on to the next child.
             }
 
-            // 2. إذا لم يكن Label، إذن هو Container
-            // نأخذ أبناء الـ Container
+            // 2. Otherwise this child is the container. Walk into it.
             if let Ok(container_children) = children_query.get(child) {
                 for item in container_children.iter() {
-                    // 3. التأكد مما إذا كان هذا العنصر هو الـ Track
+                    // 3. Find the track node.
                     if track_marker.get(item).is_ok() {
-                        // هذا هو الـ Track، الآن ننزل لمستواه (لنحصل على Fill و Thumb)
+                        // Once we have the track, refresh its fill and thumb children.
                         if let Ok(track_children) = children_query.get(item) {
                             for track_item in track_children.iter() {
-                                // تحديث الـ Fill
+                                // Update the fill width.
                                 if let Ok(mut fill_node) = fill_query.get_mut(track_item) {
                                     let fill_width = seekbar.width * seekbar.value;
                                     fill_node.width = UVal::Px(fill_width);
                                 }
 
-                                // تحديث الـ Thumb
+                                // Update the thumb position.
                                 if let Ok(mut thumb_uself) = thumb_query.get_mut(track_item) {
                                     let thumb_x =
                                         (seekbar.width - seekbar.thumb_size) * seekbar.value;
@@ -460,7 +458,7 @@ fn update_seekbar_visuals(
     }
 }
 
-/// حركة سلسة
+/// Smooth thumb animation placeholder.
 // fn animate_seekbar_thumb(
 //     time: Res<Time>,
 //     mut query: Query<&mut USeekBar>,
@@ -482,7 +480,7 @@ fn update_seekbar_visuals(
 //     }
 // }
 
-/// إطلاق الأحداث
+/// Emits seek-bar change events.
 fn emit_seekbar_events(
     mut events: MessageWriter<SeekBarChangedEvent>,
     mut query: Query<(Entity, &mut USeekBar)>,
@@ -508,5 +506,5 @@ fn emit_seekbar_events(
 pub struct SeekBarChangedEvent {
     pub entity: Entity,
     pub value: f32,      // 0.0 - 1.0
-    pub real_value: f32, // القيمة الفعلية ضمن النطاق
+    pub real_value: f32, // Value mapped into the configured real range.
 }

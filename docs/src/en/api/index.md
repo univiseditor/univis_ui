@@ -19,6 +19,7 @@ target/doc/univis_ui/index.html
 ## How To Use This Section
 
 - start with [Events and Messages](events.md) if you connect UI to gameplay or app logic
+- use [Crate Map](crate-map.md) when deciding between the facade crate and the lower-level crates
 - use [Public Types Table](public-types.md) for a fast map of the main structs, enums, and plugins
 
 ## High-Value Entry Points

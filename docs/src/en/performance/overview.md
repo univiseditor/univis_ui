@@ -3,7 +3,7 @@
 The project currently centers around three main performance tools:
 
 1. `LayoutCache` to reduce unnecessary recalculation
-2. `LayoutProfilingPlugin` to measure runtime cost and display the overlay
+2. `UnivisLayoutProfilingPlugin` to measure runtime cost and display the overlay
 3. `./scripts/run_perf_baselines.sh` for repeatable CLI baseline runs
 
 ## What To Watch

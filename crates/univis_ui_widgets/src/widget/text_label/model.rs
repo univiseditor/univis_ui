@@ -1,6 +1,6 @@
-use crate::internal_prelude::*;
 use bevy::prelude::*;
 use bevy::text::{ComputedTextBlock, LineBreak};
+use univis_ui_engine::layout::univis_node::{ULayout, UNode};
 
 const DEFAULT_TEXT_RENDER_SCALE: f32 = 8.0;
 

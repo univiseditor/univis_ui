@@ -1,12 +1,12 @@
 use crate::internal_prelude::*;
 use bevy::prelude::*;
 
-// 1. المكون
+// 1. Component
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ULayout)]
 pub struct UProgressBar {
-    pub value: f32, // من 0.0 إلى 1.0
+    pub value: f32, // Normalized value in the `0.0..=1.0` range.
     pub bar_color: Color,
 }
 
@@ -27,39 +27,39 @@ impl Plugin for UnivisProgressPlugin {
     }
 }
 
-// علامة للطفل الداخلي (الشريط الملون)
+// Marker for the internal fill bar child.
 #[derive(Component)]
 struct ProgressBarFill;
 
-// 2. النظام لتحديث الشكل
+// 2. Visual update system
 fn update_progress_bars(
     mut commands: Commands,
     query: Query<(Entity, &UProgressBar, Option<&Children>), Changed<UProgressBar>>,
     mut fill_query: Query<(&mut UNode, &mut Visibility), With<ProgressBarFill>>,
 ) {
     for (entity, bar, children_opt) in query.iter() {
-        // تأكد من تهيئة الحاوية (الأب)
+        // Ensure the outer container is initialized.
         commands.entity(entity).insert(UNode {
-            height: UVal::Px(10.0),    // ارتفاع افتراضي
-            width: UVal::Percent(1.0), // عرض كامل
+            height: UVal::Px(10.0),    // Default height
+            width: UVal::Percent(1.0), // Full width
             background_color: Color::BLACK.with_alpha(0.3),
             border_radius: UCornerRadius::all(5.0),
-            padding: USides::all(0.0), // لا هوامش
+            padding: USides::all(0.0), // No inner padding
             ..default()
         });
 
         let mut fill_found = false;
 
-        // ابحث عن الطفل المسؤول عن الامتلاء
+        // Find the child that owns the fill visual.
         if let Some(children) = children_opt {
             for &child in children {
                 if let Ok((mut node, mut vis)) = fill_query.get_mut(child) {
-                    // تحديث العرض بناءً على القيمة
+                    // Update width from the current normalized value.
                     let clamped = bar.value.clamp(0.0, 1.0);
                     node.width = UVal::Percent(clamped);
                     node.background_color = bar.bar_color;
 
-                    // إخفاء الشريط إذا كانت القيمة 0
+                    // Hide the fill when the value is effectively zero.
                     *vis = if clamped > 0.001 {
                         Visibility::Inherited
                     } else {
@@ -72,23 +72,23 @@ fn update_progress_bars(
             }
         }
 
-        // إذا لم يكن موجوداً، قم بإنشائه (Lazy Initialization)
+        // Lazily create the fill child if it does not exist yet.
         if !fill_found {
             commands
                 .entity(entity)
                 .insert(UNode {
-                    height: UVal::Px(10.0),    // ارتفاع افتراضي
-                    width: UVal::Percent(1.0), // عرض كامل
+                    height: UVal::Px(10.0),    // Default height
+                    width: UVal::Percent(1.0), // Full width
                     background_color: Color::BLACK.with_alpha(0.3),
                     border_radius: UCornerRadius::all(5.0),
-                    padding: USides::all(0.0), // لا هوامش
+                    padding: USides::all(0.0), // No inner padding
                     ..default()
                 })
                 .with_children(|parent| {
                     parent.spawn((
                         UNode {
                             width: UVal::Percent(bar.value.clamp(0.0, 1.0)),
-                            height: UVal::Percent(1.0), // ارتفاع كامل للأب
+                            height: UVal::Percent(1.0), // Fill the parent height
                             background_color: bar.bar_color,
                             border_radius: UCornerRadius::all(5.0),
                             ..default()

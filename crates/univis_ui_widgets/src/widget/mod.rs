@@ -4,9 +4,31 @@
 //! the engine crate. Add [`UnivisWidgetPlugin`] for the common widget set, or
 //! compose dedicated widget plugins manually when you want a narrower surface.
 
-use crate::internal_prelude::*;
 use bevy::asset::embedded_asset;
 use bevy::prelude::*;
+use univis_ui_engine::layout::image::UImage;
+use univis_ui_engine::schedule::{
+    UiSettlementSchedule, UnivisPostUpdateSet, UnivisWidgetUpdateSet,
+};
+
+use crate::widget::{
+    badge::{UTag, UnivisBadgePlugin},
+    button::UnivisButtonPlugin,
+    checkbox::UnivisCheckboxPlugin,
+    divider::UnivisDividerPlugin,
+    drag_value::UnivisDragValuePlugin,
+    icon_btn::UnivisIconButtonPlugin,
+    image::sync_image_geometry,
+    panel::UnivisPanelPlugin,
+    progress::UnivisProgressPlugin,
+    radio::UnivisRadioPlugin,
+    scroll_view::UnivisScrollViewPlugin,
+    seekbar::UnivisSeekBarPlugin,
+    select::UnivisSelectPlugin,
+    text_field::UnivisTextFieldPlugin,
+    text_label::UnivisTextPlugin,
+    toggle::UnivisTogglePlugin,
+};
 
 /// Badge and tag widgets.
 pub mod badge;

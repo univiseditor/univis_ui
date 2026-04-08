@@ -10,11 +10,47 @@ Use this file for the dated chronological record.
 Use `RELEASE_NOTES.md` for the current alpha release summary.
 Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
+## [2026-04-08]
+
+### Added
+
+- Added public-surface and structure guardrail scripts, `scripts/check_public_api_surface.sh` and `scripts/check_structure_guardrails.sh`, so release validation now checks recommended imports, deprecated-wrapper exposure, file-size ceilings, wildcard-internal usage, and forbidden `Result<_, ()>` regressions.
+- Added maintainer-oriented docs pages in both English and Arabic covering crate selection, architecture rules, error modeling, naming conventions, widget structure, layout-engine boundaries, maintainer ownership, and legacy-compatibility policy.
+- Added focused engine submodules for layout plugin wiring, registration, settlement orchestration, profiling state/overlay/timers, root-model splitting, layout-cache invalidation/tests, and placement tests instead of keeping those concerns in a handful of oversized files.
+- Added focused interaction/widget submodules for picking backend internals, panel runtime/visual/math paths, radio internals, text-field internals, and `text_label` measurement/render responsibilities.
+- Added `ALPHA3_REPORT.md` as the root-level `alpha3` comparison report against the released `alpha2` baseline.
+
+### Changed
+
+- Changed the facade and engine import story so the recommended preludes stay centered on canonical APIs, while deprecated root wrappers remain available only on explicit paths.
+- Changed the largest implementation hotspots across engine, interaction, and widgets from monolithic source files into responsibility-led module trees with tests kept close to the logic they verify.
+- Changed text measurement and select runtime setup to use typed internal errors plus structured warnings instead of opaque `Result<_, ()>`-style failure paths.
+- Changed the docs, migration notes, root landing pages, and compatibility wording so `alpha3` consistently describes the canonical API story, the explicit-only wrapper policy, and the next removal window for deprecated roots.
+- Changed CI and review expectations so quality gates, public API checks, structure guardrails, docs updates, and package-aware example validation are all part of the standard release path.
+- Changed the root crate and workspace crate versions from `0.2.0-alpha.2` to `0.2.0-alpha.3`.
+
+### Removed
+
+- Removed the old monolithic `crates/univis_ui_engine/src/layout/algorithms/places/display.rs` in favor of `placement.rs` plus focused helpers/tests.
+- Removed the old monolithic `crates/univis_ui_engine/src/layout/layout_system/types.rs` in favor of the focused `roots.rs` and `legacy_compat.rs` split.
+
+## [0.2.0-alpha.3] - 2026-04-08
+
+### Changed
+
+- Bumped the facade crate and all public workspace crates from `0.2.0-alpha.2` to `0.2.0-alpha.3`.
+- Promoted the post-`alpha2` engineering-quality wave into the current alpha release, focusing on API curation, maintainability, diagnostics, and release-discipline rather than on introducing a new feature family.
+- Finalized the current explicit-only compatibility story for `UScreenRoot` and `UWorldRoot` during `alpha3`, while deferring the actual removal decision to the first alpha after `0.2.0-alpha.3` if migration feedback stays clean.
+
+### Notes
+
+- `alpha3` keeps the `URootUi`-centered public model from `alpha2` intact while making the implementation and the release process substantially cleaner.
+- The detailed diff between the released `alpha2` baseline and the current `alpha3` prep tree is summarized in `ALPHA3_REPORT.md`.
+
 ## [2026-04-06]
 
 ### Added
 
-- Added `ROADMAP_INCREMENTAL_SETTLEMENT.md` as the maintainer roadmap for incremental settlement, per-root completion tracking, frontier queues, and follow-up optimization work.
 - Added `examples/visual_regression_lab.rs` as a focused visual regression scene that stresses nested cards, dynamic text, select/toggle controls, meters, and width changes in one place.
 - Added per-node stage generations and per-root settlement state so measure, solve, and render completion can be tracked explicitly instead of inferred from broad dirty scans.
 - Added reusable layout scratch instrumentation and picking candidate counters to the profiler overlay so scratch growth, peak queue sizes, and prepared picking buckets are visible during debugging.
@@ -28,7 +64,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Changed text measurement to cache parent bounds alongside label metrics so constrained labels can detect width and height changes coming from their container, not only from direct label mutations.
 - Changed cached root-context refresh to stay scoped to real descendant-facing root, clip, and hierarchy deltas, so root-stack write noise and child/clip removals no longer force unnecessary broad refreshes.
 - Changed `UiRolloutConfig` to gate incremental measure and render frontiers alongside solve, keeping the full-scan fallback paths available while rollout parity is still being verified.
-- Changed the maintainer docs, release-readiness notes, migration docs, and root notes to point at the current incremental-settlement rollout, verification gate, and roadmap files.
+- Changed the maintainer docs, release-readiness notes, migration docs, and root notes to point at the current incremental-settlement rollout and verification gate.
 
 ### Fixed
 
@@ -41,15 +77,10 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Fixed startup ordering in several widgets so child entities are spawned through the same chained parent command path, preventing hierarchy warnings caused by partially initialized parent entities.
 - Fixed the benchmark/example compatibility fallout from the solver scratch refactor by updating the solver benchmark harness, the complex dashboard example, and the representative rollout checks to the current pipeline.
 
-### Removed
-
-- Removed `ROADMAP_FRAME_ZERO.md` and `ROADMAP_POST_REVIEW.md` after consolidating the active maintainer work under `ROADMAP_INCREMENTAL_SETTLEMENT.md`.
-
 ## [2026-04-05]
 
 ### Added
 
-- Added `ROADMAP_FRAME_ZERO.md` as the maintainer roadmap for frame-zero settlement, architecture cleanup, rollout safety, and follow-up optimization work.
 - Added a frozen performance baseline capture under `perf_baselines/current_max/2026-04-05/` with human-readable notes, a machine-readable manifest, and raw solver/runtime benchmark outputs for the pre-optimization maximum built-in load.
 - Added explicit rollout controls and shadow-validation state through `UiRolloutConfig`, `UiValidationMode`, and `UiValidationState`, so cached ancestry, incremental solve, mesh reuse, and post-settle picking can be validated before defaults are tightened.
 - Added `scripts/verify_frame_zero_rollout.sh` to run the frame-zero rollout gate in one command across library tests, representative release-mode examples, and benchmark budget checks.
@@ -83,7 +114,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 ### Changed
 
 - Rewrote the root docs and release notes around the current alpha surface, explicitly separating stable public APIs, deprecated compatibility wrappers, and still-settling areas.
-- Updated the root discovery path so `README.md`, `README_AR.md`, `MIGRATION.md`, `MIGRATION_AR.md`, `RELEASE_NOTES.md`, and `ROADMAP_POST_REVIEW.md` now point at the current planning and migration story without the removed alpha2-specific root notes.
+- Updated the root discovery path so `README.md`, `README_AR.md`, `MIGRATION.md`, `MIGRATION_AR.md`, and `RELEASE_NOTES.md` now point at the current migration story without the removed alpha2-specific root notes.
 - Tightened pre-merge validation expectations in `.github/PULL_REQUEST_TEMPLATE.md` and the bilingual docs review checklists so `check_quality`, representative examples, and docs build requirements are visible at review time.
 - Replaced the four large target files with dedicated folder-based module trees while preserving behavior:
   - `crates/univis_ui_engine/src/layout/layout_system/`
@@ -94,12 +125,12 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Split the layout solver into focused helper, type, translation, and absolute-positioning modules without changing the existing solve entry points.
 - Split the `select` widget into model, runtime, interaction, visuals, and event modules so widget state, entity-tree wiring, and visual updates are no longer concentrated in one file.
 - Split the `text_label` widget into model, measurement, and render modules so text sizing, bidi/truncation logic, and SDF rendering no longer live in one monolithic implementation file.
-- Recorded the current structure in `ROADMAP_POST_REVIEW.md` and `TECH_DEBT_INVENTORY.md`, then revalidated the refactor with `cargo check --workspace`, `./scripts/check_quality.sh`, and `./scripts/check_representative_examples.sh`.
+- Recorded the current structure in `TECH_DEBT_INVENTORY.md`, then revalidated the refactor with `cargo check --workspace`, `./scripts/check_quality.sh`, and `./scripts/check_representative_examples.sh`.
 - Updated the performance overview, testing docs, and benchmark docs in both languages so the repository baseline flow now includes solver and runtime harnesses plus the shared `--check` gate.
 
 ### Removed
 
-- Removed the alpha2-specific root planning/status files and their paired docs pages after the project moved on to the current post-review roadmap and generic release-readiness flow.
+- Removed the alpha2-specific root planning/status files and their paired docs pages after the project moved on to the current generic release-readiness flow.
 
 ## [2026-04-03]
 
@@ -160,7 +191,6 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 ### Added
 
 - Added `root_fit_content` to demonstrate `URootUi::world_2d_fit_content()` and `UiCanvasSize::FitContent { min, max }` for `World3d` roots in one visual example.
-- Added `ROADMAP_ALPHA2_STABILIZATION.md` and `ROADMAP_ALPHA2_STABILIZATION_AR.md` to define the next post-migration wave around `alpha2` stabilization, docs publishing, example-gallery refinement, release communication cleanup, and final release readiness.
 - Added `ALPHA2_STATUS.md` and `ALPHA2_STATUS_AR.md` as short root-level stability notes that freeze what is stable, transitional, and still experimental in the current `alpha2` line.
 - Added dedicated docs pages for `alpha2` stability, docs publishing, and a curated example gallery in both English and Arabic.
 - Added a GitHub Pages publishing workflow for the unified `docs/` book and bundled the example gallery with static visual references under `docs/src/assets/`.
@@ -172,7 +202,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Normalized language separation inside the unified docs so English chapters no longer contain Arabic prose, Arabic chapters no longer contain stray English descriptive terms, and only code identifiers remain shared across both trees.
 - Rewrote `README.md` to focus on the library's practical value, strengths, use cases, quick start, and example entry points instead of spreading low-level reference detail across the landing page.
 - Added `README_AR.md` as a dedicated Arabic landing page and linked it from the main `README.md`.
-- Added repository-level migration summaries in `MIGRATION.md` and `MIGRATION_AR.md`, then removed the temporary docs/examples/API roadmap files from the root.
+- Added repository-level migration summaries in `MIGRATION.md` and `MIGRATION_AR.md`, then removed the temporary docs/examples/API tracking files from the root.
 - Replaced the version-specific `RELEASE_NOTES_0.2.0-alpha.1.md` root note with a stable root-level `RELEASE_NOTES.md`.
 - Expanded the generated Rust API docs across the facade crate and core workspace crates by adding crate-level and module-level `rustdoc`, documenting `URootUi`, layout primitives, common widgets, interaction state, and theme resources, and hiding several internal scheduling helpers from the public documentation surface.
 - Redistributed examples so each one now lives under the crate it primarily represents (`univis_ui`, `univis_ui_engine`, `univis_ui_interaction`, or `univis_ui_widgets`), then updated example manifests, package-specific example commands, example indexes, smoke-test docs, and release-validation scripts to follow the new package-aware layout.

@@ -61,7 +61,7 @@ pub enum UShapeMode {
 ///     });
 /// }
 /// ```
-#[derive(Component, Clone, Reflect)]
+#[derive(Component, Clone, PartialEq, Reflect)]
 #[require(Transform, Visibility, ComputedSize, ULayout, IntrinsicSize)]
 pub struct UNode {
     /// Preferred width of the node.
@@ -169,7 +169,7 @@ impl Default for UBorder {
 ///
 /// This controls the container algorithm and the most common alignment rules
 /// used to place direct children.
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, PartialEq, Reflect)]
 #[reflect(Component)] // Important for Inspector
 pub struct ULayout {
     /// The layout algorithm to use (Flex, Grid, Masonry...).
@@ -368,7 +368,7 @@ pub enum UGridAutoFlow {
 }
 
 /// Advanced container-only controls nested under [`ULayout`].
-#[derive(Debug, Clone, Reflect, Default)]
+#[derive(Debug, Clone, PartialEq, Reflect, Default)]
 pub struct ULayoutContainerExt {
     pub box_align: ULayoutBoxAlignContainer,
     pub flex: ULayoutFlexContainer,
@@ -376,7 +376,7 @@ pub struct ULayoutContainerExt {
 }
 
 /// Extended container-level alignment options.
-#[derive(Debug, Clone, Copy, Reflect, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
 pub struct ULayoutBoxAlignContainer {
     pub justify_items: Option<UAlignItemsExt>,
     pub align_content: Option<UContentAlignExt>,
@@ -385,7 +385,7 @@ pub struct ULayoutBoxAlignContainer {
 }
 
 /// Extended flex container options.
-#[derive(Debug, Clone, Copy, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub struct ULayoutFlexContainer {
     pub wrap: UFlexWrap,
     pub align_content: Option<UContentAlignExt>,
@@ -401,7 +401,7 @@ impl Default for ULayoutFlexContainer {
 }
 
 /// Extended grid container options.
-#[derive(Debug, Clone, Reflect)]
+#[derive(Debug, Clone, PartialEq, Reflect)]
 pub struct ULayoutGridContainer {
     pub template_columns: Vec<UTrackSize>,
     pub template_rows: Vec<UTrackSize>,
@@ -423,7 +423,7 @@ impl Default for ULayoutGridContainer {
 }
 
 /// Advanced item-only controls nested under [`USelf`].
-#[derive(Debug, Clone, Copy, Reflect, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
 pub struct ULayoutItemExt {
     pub box_align: ULayoutBoxAlignSelf,
     pub flex: ULayoutFlexItem,
@@ -431,7 +431,7 @@ pub struct ULayoutItemExt {
 }
 
 /// Extended child-level alignment options.
-#[derive(Debug, Clone, Copy, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub struct ULayoutBoxAlignSelf {
     pub justify_self: Option<UAlignSelfExt>,
     pub align_self: Option<UAlignSelfExt>,
@@ -451,7 +451,7 @@ impl Default for ULayoutBoxAlignSelf {
 }
 
 /// Extended flex item options.
-#[derive(Debug, Clone, Copy, Reflect, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
 pub struct ULayoutFlexItem {
     pub flex_grow: Option<f32>,
     pub flex_shrink: Option<f32>,
@@ -459,7 +459,7 @@ pub struct ULayoutFlexItem {
 }
 
 /// Extended grid item placement options.
-#[derive(Debug, Clone, Copy, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub struct ULayoutGridItem {
     pub column_start: Option<u32>,
     pub column_span: u32,
@@ -482,7 +482,7 @@ impl Default for ULayoutGridItem {
 ///
 /// `USelf` only affects layout and local stacking inside the same root capsule.
 /// Its [`USelf::order`] field is not a global `z-index`.
-#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[derive(Component, Debug, Clone, Copy, PartialEq, Reflect)]
 #[reflect(Component)]
 pub struct USelf {
     /// Self alignment overriding parent's `align_items`.
@@ -549,7 +549,7 @@ pub enum UPositionType {
 }
 
 /// Clips all descendants to the node's resolved bounds and corner radius.
-#[derive(Component, Default, Reflect)]
+#[derive(Component, Default, Clone, PartialEq, Reflect)]
 #[reflect(Component)]
 #[require(UNode, ComputedSize, GlobalTransform)]
 pub struct UClip {

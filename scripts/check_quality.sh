@@ -34,6 +34,14 @@ echo "== Cargo check =="
 cargo check --workspace --all-targets
 
 echo
+echo "== Public API surface =="
+./scripts/check_public_api_surface.sh
+
+echo
+echo "== Structure guardrails =="
+./scripts/check_structure_guardrails.sh
+
+echo
 echo "== Library tests =="
 cargo test --workspace --lib
 

@@ -1,0 +1,11 @@
+   Compiling univis_ui_engine v0.2.0-alpha.2 (/home/abdellah/Univis-project/univis_ui/crates/univis_ui_engine)
+    Finished `release` profile [optimized] target(s) in 6.23s
+     Running `target/release/examples/runtime_benchmarks`
+Univis runtime benchmark
+warmup=48 iterations=240 enforce_budgets=false
+scenario                    items     avg_ms     p95_ms     max_ms     budget   status
+root_capsules_96               96      2.133      2.844      3.437      6.000       ok
+text_measure_180              180      2.090      3.036      3.818      4.750       ok
+picking_grid_512              512      0.496      0.599      1.065      4.000       ok
+widget_panels_240             240      2.415      3.344      3.812      8.000       ok
+world3d_panels_48              48      1.039      1.375      1.760      6.000       ok

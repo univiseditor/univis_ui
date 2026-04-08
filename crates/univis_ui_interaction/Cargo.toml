@@ -1,6 +1,6 @@
 [package]
 name = "univis_ui_interaction"
-version = "0.2.0-alpha.2"
+version = "0.2.0-alpha.3"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Interaction and picking backend for Univis UI."
@@ -9,8 +9,8 @@ homepage = "https://github.com/univiseditor/univis_ui"
 
 [dependencies]
 bevy = { workspace = true }
-univis_ui_engine = { path = "../univis_ui_engine", version = "0.2.0-alpha.2" }
+univis_ui_engine = { path = "../univis_ui_engine", version = "0.2.0-alpha.3" }
 
 [dev-dependencies]
-univis_ui_style = { path = "../univis_ui_style", version = "0.2.0-alpha.2" }
-univis_ui_widgets = { path = "../univis_ui_widgets", version = "0.2.0-alpha.2" }
+univis_ui_style = { path = "../univis_ui_style", version = "0.2.0-alpha.3" }
+univis_ui_widgets = { path = "../univis_ui_widgets", version = "0.2.0-alpha.3" }

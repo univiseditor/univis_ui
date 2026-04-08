@@ -1,3 +1,4 @@
+use crate::layout::layout_system::{ResolvedRootStack, UiSpace};
 use bevy::prelude::*;
 
 /// Indicates the depth level of a node in the UI tree.
@@ -62,3 +63,76 @@ pub struct LayoutTreeDepth {
 #[derive(Component, Reflect, Default, Clone, Copy, Debug)]
 #[reflect(Component)]
 pub struct UI3d;
+
+/// Per-node settlement generations for the main layout/render stages.
+///
+/// Each `*_input_generation` is bumped when a node receives new work for that
+/// stage. The matching `*_done_generation` catches up only after the stage has
+/// actually processed the latest inputs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct UiNodeStageVersions {
+    pub measure_input_generation: u64,
+    pub measure_done_generation: u64,
+    pub solve_input_generation: u64,
+    pub solve_done_generation: u64,
+    pub render_input_generation: u64,
+    pub render_done_generation: u64,
+}
+
+impl UiNodeStageVersions {
+    pub fn mark_measure_dirty(&mut self, generation: u64) {
+        self.measure_input_generation = self.measure_input_generation.max(generation);
+    }
+
+    pub fn complete_measure(&mut self) {
+        self.measure_done_generation = self
+            .measure_done_generation
+            .max(self.measure_input_generation);
+    }
+
+    pub fn mark_solve_dirty(&mut self, generation: u64) {
+        self.solve_input_generation = self.solve_input_generation.max(generation);
+    }
+
+    pub fn complete_solve(&mut self) {
+        self.solve_done_generation = self.solve_done_generation.max(self.solve_input_generation);
+    }
+
+    pub fn mark_render_dirty(&mut self, generation: u64) {
+        self.render_input_generation = self.render_input_generation.max(generation);
+    }
+
+    pub fn complete_render(&mut self) {
+        self.render_done_generation = self
+            .render_done_generation
+            .max(self.render_input_generation);
+    }
+}
+
+/// Cached root and clip ancestry derived during the hierarchy phase.
+///
+/// This avoids repeated parent-chain walks in solve, render, and picking hot
+/// paths. The nearest enabled clip ancestor is stored separately so render and
+/// hit tests can fetch the current clip geometry directly from that entity.
+#[derive(Component, Clone, Copy, Debug, PartialEq)]
+pub struct CachedUiContext {
+    pub root_entity: Option<Entity>,
+    pub camera_entity: Option<Entity>,
+    pub space: UiSpace,
+    pub ui_to_world_scale: f32,
+    pub root_stack: ResolvedRootStack,
+    pub clip_ancestor: Option<Entity>,
+}
+
+impl Default for CachedUiContext {
+    fn default() -> Self {
+        Self {
+            root_entity: None,
+            camera_entity: None,
+            space: UiSpace::Screen,
+            ui_to_world_scale: 1.0,
+            root_stack: ResolvedRootStack::default(),
+            clip_ancestor: None,
+        }
+    }
+}

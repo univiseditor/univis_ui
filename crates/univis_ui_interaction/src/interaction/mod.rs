@@ -4,8 +4,9 @@
 //! high-level state such as [`feedback::UInteraction`].
 
 use bevy::prelude::*;
-
-use crate::internal_prelude::*;
+use univis_ui_engine::schedule::{
+    UiRolloutConfig, UiSettlementSchedule, UiValidationState, UnivisPostUpdateSet,
+};
 
 /// Interaction state components and default pointer observers.
 pub mod feedback;
@@ -13,6 +14,8 @@ pub mod feedback;
 pub mod math;
 /// Picking backend and hit-resolution helpers for Univis roots.
 pub mod picking;
+
+use crate::interaction::picking::univis_picking_backend;
 
 /// Common imports for interaction-related integrations.
 pub mod prelude {
@@ -28,7 +31,17 @@ pub struct UnivisInteractionPlugin;
 impl Plugin for UnivisInteractionPlugin {
     fn build(&self, app: &mut App) {
         // 1. Install the picking backend that computes pointer hits.
-        app.add_systems(PreUpdate, univis_picking_backend);
+        app.init_resource::<UiRolloutConfig>()
+            .init_resource::<UiValidationState>()
+            .init_resource::<picking::PickingSyncState>()
+            .add_systems(
+                PreUpdate,
+                (picking::track_pointer_generation, univis_picking_backend).chain(),
+            )
+            .add_systems(
+                UiSettlementSchedule,
+                picking::post_settle_picking_backend.in_set(UnivisPostUpdateSet::PickSync),
+            );
 
         // 2. Register the default pointer observers.
         app.add_observer(feedback::on_pointer_over);

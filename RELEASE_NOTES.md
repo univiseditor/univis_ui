@@ -22,13 +22,11 @@ Use them like this:
 - `RELEASE_NOTES.md`: current alpha release-scale summary
 - `changelog.md`: dated historical record
 
-Active planning now lives in `ROADMAP_POST_REVIEW.md` and stays intentionally separate from the root release file set.
-
 ## Current Release Story
 
-Latest published release tracked here: `0.2.0-alpha.2`
+Latest published release tracked here: `0.2.0-alpha.3`
 
-That release should be understood as a structural continuation of the `0.2.0-alpha.1` transition, not as a small patch over the old `0.1.x` line. The project is now using it as the baseline while moving into the next alpha planning phase.
+This release should be understood as an engineering-quality and maintainability follow-up to `0.2.0-alpha.2`, not as a reset of the `alpha2` public API baseline. The root model, workspace shape, and crate-owned example layout from `alpha2` remain in place, while `alpha3` focuses on making that baseline cleaner, easier to maintain, and harder to regress.
 
 Public docs URL:
 
@@ -38,19 +36,18 @@ https://univiseditor.github.io/univis_ui/
 
 The project has changed substantially in these areas:
 
-- packaging moved from a monolithic crate to a layered workspace
-- the public root model now centers on `URootUi`
-- examples are distributed by owning crate
-- documentation now lives in one bilingual `mdBook` under `docs/`
-- generated `API Docs` are part of the intended learning path
-- release validation now includes explicit sequential checks for docs, examples, and public crates
+- the public import story is now more curated, with deprecated root wrappers kept off recommended preludes
+- the largest engine, interaction, and widget hotspots were split into focused module trees
+- release validation now covers public API exposure and structural guardrails in addition to docs/examples/test passes
+- maintainers now have explicit docs for crate boundaries, naming rules, widget structure, error modeling, and legacy compatibility policy
+- several opaque runtime failure paths were replaced with typed diagnostics and consistent warning messages
 
-For `0.2.0-alpha.2`, the intended message was:
+For `0.2.0-alpha.3`, the intended message is:
 
-- the `URootUi` migration baseline is in place
-- the docs surface, migration surface, and release surface now have clearer roles
-- the example catalog has matured into a gallery plus a package-aware reference index
-- that release closed the previous docs/examples/release cleanup wave as one coherent milestone
+- the `alpha2` runtime and migration baseline is still the public foundation
+- the default user-facing import path is clearer and exposes less accidental surface area
+- the internal implementation is substantially easier to review, extend, and test
+- the release process now protects structure and public-surface quality, not only functional behavior
 
 ## Main Upgrade Themes
 
@@ -59,13 +56,21 @@ For `0.2.0-alpha.2`, the intended message was:
 - `univis_ui` remains the facade crate
 - `univis_ui_engine`, `univis_ui_style`, `univis_ui_interaction`, and `univis_ui_widgets` now represent clearer public subsystem boundaries
 - low-level users should depend on the crate that owns the capability they need
+- major engine, interaction, and widget hotspots were split into responsibility-led module trees instead of staying concentrated in a few very large files
 
-### Roots And Layout
+### Public Surface And Compatibility
 
 - `URootUi` is the public root model
-- `screen`, `world_2d`, and `world_3d` are the canonical root spaces
-- content-sized world roots are supported through `UiCanvasSize::FitContent { min, max }`
-- root capsules prevent cross-root stacking leaks between separate UI trees
+- `screen`, `world_2d`, and `world_3d` remain the canonical root spaces
+- deprecated wrappers such as `UScreenRoot` and `UWorldRoot` are now an explicit-only migration path instead of part of the recommended prelude story
+- content-sized world roots remain supported through `UiCanvasSize::FitContent { min, max }`
+- root capsules continue to prevent cross-root stacking leaks between separate UI trees
+
+### Quality And Validation
+
+- `check_quality.sh` now includes public API surface and structure guardrails
+- dedicated scripts now check that deprecated wrappers stay out of the default import story and that source hotspots do not silently grow back
+- typed diagnostics now cover high-value runtime paths such as text measurement and select runtime tree setup
 
 ## Current Public Surface
 
@@ -75,11 +80,12 @@ For `0.2.0-alpha.2`, the intended message was:
 - `URootUi::screen()`, `URootUi::world_2d(...)`, and `URootUi::world_3d(...)`
 - `UiSpace`, `UiCameraRef`, and `UiCanvasSize`, including fit-content world roots
 - crate-owned example locations plus package-aware example commands
+- curated facade and engine preludes that keep migration wrappers off the default import surface
 
 ### Deprecated But Still Supported
 
-- `UScreenRoot`
-- `UWorldRoot`
+- `UScreenRoot` on explicit paths only
+- `UWorldRoot` on explicit paths only
 - explicit `meters_per_unit: 1.0` when preserving the exact historical physical size of older world-root examples
 
 ### Still Settling
@@ -87,6 +93,7 @@ For `0.2.0-alpha.2`, the intended message was:
 - fit-content world roots under heavy `%` sizing or strongly root-relative flex layouts
 - some `World3d` showcase polish defaults
 - manual visual validation remains part of release prep for rendering-heavy changes
+- the final removal timing for deprecated root wrappers still depends on migration feedback after `alpha3`
 
 ### Docs And Examples
 
@@ -95,6 +102,8 @@ For `0.2.0-alpha.2`, the intended message was:
 - `https://univiseditor.github.io/univis_ui/` is the intended hosted docs URL
 - examples now live next to the crate they primarily represent
 - package-aware example commands are now the default
+- `docs/src/en/api/crate-map.md` and `docs/src/ar/api/crate-map.md` explain which crate surface to depend on
+- maintainer docs now include architecture rules, widget structure, naming conventions, error-model guidance, and legacy compatibility status
 
 ### Migration
 
@@ -126,6 +135,13 @@ Build the docs site:
 mdbook build docs
 ```
 
+Run the structure/public-surface guards:
+
+```bash
+./scripts/check_public_api_surface.sh
+./scripts/check_structure_guardrails.sh
+```
+
 Run representative examples:
 
 ```bash
@@ -138,15 +154,16 @@ cargo run -p univis_ui_interaction --example interaction
 ## Where To Look Next
 
 - release history and implementation highlights: `changelog.md`
+- alpha3 diff report: `ALPHA3_REPORT.md`
 - migration summary: `MIGRATION.md`
 - Arabic migration summary: `MIGRATION_AR.md`
-- current planning: `ROADMAP_POST_REVIEW.md`
 - current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`
 - docs home: `docs/src/index.md`
 
 ## Notes
 
-- the completed `URootUi` migration baseline from `Phase 0` through `Phase 10` remains the foundation for the current alpha line
+- the completed `URootUi` migration baseline remains the foundation for the current alpha line
+- `0.2.0-alpha.3` is the release that turns the post-`alpha2` cleanup wave into a documented public-surface and maintainability milestone
 - the old version-specific release note file was removed to keep one stable root-level release note entry point
 - this file should stay focused on release-scale summary rather than acting as a duplicate of `README` or `MIGRATION`
-- `0.2.0-alpha.2` is the release that closed the previous docs/examples/release cleanup wave; use `ROADMAP_POST_REVIEW.md` for the current planning phase
+- `0.2.0-alpha.2` remains the release that closed the previous docs/examples/release cleanup wave

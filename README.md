@@ -5,7 +5,6 @@
 
 Arabic version: [README_AR.md](README_AR.md)
 Migration summary: [MIGRATION.md](MIGRATION.md)
-Current roadmap: [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md)
 Hosted docs target: `https://univiseditor.github.io/univis_ui/`
 
 Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit interfaces with one ECS-native stack.
@@ -41,18 +40,29 @@ Univis UI is built for teams that want more than a basic HUD layer.
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.2"
+univis_ui = "0.2.0-alpha.3"
 ```
 
 If you want direct control over the internal layers:
 
 ```toml
 [dependencies]
-univis_ui_engine = "0.2.0-alpha.2"
-univis_ui_style = "0.2.0-alpha.2"
-univis_ui_interaction = "0.2.0-alpha.2"
-univis_ui_widgets = "0.2.0-alpha.2"
+univis_ui_engine = "0.2.0-alpha.3"
+univis_ui_style = "0.2.0-alpha.3"
+univis_ui_interaction = "0.2.0-alpha.3"
+univis_ui_widgets = "0.2.0-alpha.3"
 ```
+
+## Crate Map
+
+- `univis_ui`: start here for most applications; use `univis_ui::prelude` for the canonical root, layout, interaction, style, and widget surface.
+- `univis_ui_engine`: depend on this when you need roots, layout, rendering sync, or custom widget/runtime work without the full facade.
+- `univis_ui_interaction`: depend on this when you only need picking and `UInteraction`-driven feedback on top of engine roots.
+- `univis_ui_widgets`: depend on this when you want the built-in controls but still compose plugins and dependencies yourself.
+- `univis_ui_style`: depend on this when you only need shared theme resources, fonts, icons, or text styles.
+
+Prelude policy:
+each crate's `prelude` is the recommended day-to-day surface. Advanced integrations should use explicit named modules, and deprecated compatibility wrappers stay on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}` or `univis_ui_engine::layout::layout_system::{UScreenRoot, UWorldRoot}`. New examples and recommended docs use canonical `URootUi` roots only.
 
 ## Quick Start
 
@@ -111,14 +121,20 @@ Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default wi
 
 ### Deprecated But Still Supported
 
-- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers
-- `meters_per_unit: 1.0` remains the legacy escape hatch when you need the exact historical world-root physical size from older examples
+- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`; they are already de-emphasized in examples and the current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support
+- `meters_per_unit: 1.0` remains the explicit compatibility knob when you need the exact historical world-root physical size from older examples, and it stays on the canonical `URootUi` surface
 
 ### Still Settling
 
 - fit-content world roots under heavy `%` sizing or strongly root-relative flex layouts
 - some of the more polished `World3d` showcase defaults
 - visual validation for rendering-heavy changes still relies partly on manual review
+
+### Frame-Zero Rollout Gate
+
+- `UiRolloutConfig` exposes internal switches for cached ancestry, incremental measure/solve/render frontiers, mesh reuse, and post-settle picking during rollout
+- `UiValidationState` records shadow-check mismatches so validation runs can detect parity regressions without changing public behavior
+- run `./scripts/verify_frame_zero_rollout.sh` before changing rollout defaults or relaxing validation
 
 ## Core Strengths
 
@@ -174,7 +190,6 @@ Good starting points:
 
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
-- [Current Roadmap](ROADMAP_POST_REVIEW.md)
 - [Technical Debt Inventory](TECH_DEBT_INVENTORY.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
@@ -184,6 +199,8 @@ Good starting points:
 - [Example Gallery (AR)](docs/src/ar/examples/gallery.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
 - [Roots and Spaces (AR)](docs/src/ar/layout/roots.md)
+- [Crate Map (EN)](docs/src/en/api/crate-map.md)
+- [خريطة الحزم (AR)](docs/src/ar/api/crate-map.md)
 - [Examples Index (EN)](docs/src/en/examples/index.md)
 - [Examples Index (AR)](docs/src/ar/examples/index.md)
 - [Migration and Limitations (EN)](docs/src/en/migration/index.md)
@@ -192,7 +209,7 @@ Good starting points:
 ## GitHub Discovery Path
 
 1. Read this `README.md` for the project story and crate map.
-2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story and [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md) for active priorities.
+2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story and [changelog.md](changelog.md) for dated implementation history.
 3. Open [Docs Home](docs/src/index.md) or the hosted docs URL and jump into the relevant guide.
 4. Use the language-specific [Example Gallery (EN)](docs/src/en/examples/gallery.md) or [Example Gallery (AR)](docs/src/ar/examples/gallery.md) before dropping to the full index.
 5. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
@@ -204,7 +221,6 @@ Good starting points:
 - `MIGRATION.md`: migration path from older docs, example paths, and root assumptions.
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
-- `ROADMAP_POST_REVIEW.md`: active planning and post-review priorities.
 - `TECH_DEBT_INVENTORY.md`: maintainer-facing backlog for the current large-file refactor wave.
 - `changelog.md`: dated chronological record of notable changes.
 
@@ -246,7 +262,7 @@ cargo run -p univis_ui_engine --example root_fit_content
 
 ## Crates
 
-- `univis_ui`: facade entry point
+- `univis_ui`: facade entry point and recommended default dependency
 - `univis_ui_engine`: roots, layout, rendering, and core node model
 - `univis_ui_interaction`: picking and interaction feedback
 - `univis_ui_style`: fonts, icons, and shared styling resources
@@ -254,6 +270,6 @@ cargo run -p univis_ui_engine --example root_fit_content
 
 ## Current Status
 
-The current alpha phase is focused on `URootUi`, world scaling, root capsules, unified docs, API cleanup, and the active post-review roadmap.
+The current alpha line is focused on `URootUi`, world scaling, root capsules, unified docs, and API cleanup.
 
 If you want a single Bevy UI stack that can handle HUDs, world-space panels, and 3D-lit interfaces without splitting your mental model across multiple systems, this is what Univis UI is trying to deliver.

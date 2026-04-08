@@ -68,6 +68,11 @@ pub(super) fn flex_grow_factor(spec: &SolverSpec, legacy_main_flex_factor: f32) 
     }
 }
 
+pub(super) fn resolved_flex_grow_factor(spec: &SolverSpec, axis: &AxisHelper) -> f32 {
+    let (_, _, legacy_main_flex_factor) = axis.get_main_spec(spec);
+    flex_grow_factor(spec, legacy_main_flex_factor)
+}
+
 pub(super) fn flex_shrink_factor(spec: &SolverSpec) -> f32 {
     spec.flex_shrink.unwrap_or(1.0).max(0.0)
 }

@@ -23,6 +23,11 @@ This page groups the highest-value public types by crate and by job.
 - `univis_ui_engine::layout::geometry::USides`
 - `univis_ui_engine::layout::geometry::UCornerRadius`
 
+`UScreenRoot` and `UWorldRoot` are intentionally omitted from the recommended surface.
+Use their explicit compatibility path only when migrating older code:
+`univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}` or
+`univis_ui_engine::layout::layout_system::{UScreenRoot, UWorldRoot}`.
+
 ## Interaction Types
 
 - `univis_ui_interaction::interaction::feedback::UInteraction`
@@ -56,7 +61,7 @@ This page groups the highest-value public types by crate and by job.
 ## Diagnostics And Rendering Types
 
 - `univis_ui_engine::layout::render::UnivisRenderPlugin`
-- `univis_ui_engine::layout::profiling::{LayoutProfiler, LayoutProfilingPlugin}`
-- `univis_ui_engine::layout::core::layout_cache::{LayoutCache, LayoutCachePlugin}`
+- `univis_ui_engine::layout::profiling::{LayoutProfiler, UnivisLayoutProfilingPlugin}`
+- `univis_ui_engine::layout::core::layout_cache::{LayoutCache, UnivisLayoutCachePlugin}`
 
 For exact signatures and field-level detail, use `cargo doc --no-deps`.

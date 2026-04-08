@@ -315,8 +315,8 @@ impl AxisHelper {
         }
     }
 
-    // نحتاج أيضاً لقلب الهوامش إذا كان الاتجاه معكوساً، لكن في Flexbox
-    // الهوامش تتبع العنصر، لذا الترتيب المنطقي يكفي.
+    // Margins follow the item even when the axis flips, so logical ordering
+    // is still enough here.
     pub fn extract_margin_sides(&self, margin: USides) -> (f32, f32, f32, f32) {
         if self.is_row() {
             (margin.left, margin.right, margin.top, margin.bottom)
@@ -325,7 +325,8 @@ impl AxisHelper {
         }
     }
 
-    // ... باقي الدوال (get_main_spec, get_cross_spec) تستخدم نفس منطق is_row()
+    // The remaining helpers (`get_main_spec`, `get_cross_spec`) follow the same
+    // row-vs-column branching pattern.
     pub fn get_main_spec(&self, spec: &SolverSpec) -> (SolverSizeMode, f32, f32) {
         if self.is_row() {
             (spec.width_mode, spec.width_val, spec.width_flex)

@@ -134,17 +134,13 @@ fn benchmark_workload(
 
 fn run_solver_workload(workload: &SolverWorkload) -> Vec2 {
     let mut results = vec![SolverResult::default(); workload.specs.len()];
-    let mut items: Vec<SolverItem<'_>> = workload
+    let mut items: Vec<SolverItem> = workload
         .specs
         .iter()
         .copied()
         .zip(results.iter_mut())
         .zip(workload.margins.iter().copied())
-        .map(|((spec, result), margin)| SolverItem {
-            spec,
-            result,
-            margin,
-        })
+        .map(|((spec, result), margin)| SolverItem::new(spec, result, margin))
         .collect();
 
     solve_flex_layout(&workload.config, workload.constraints, &mut items)

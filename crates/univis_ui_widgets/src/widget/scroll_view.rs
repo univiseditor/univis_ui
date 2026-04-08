@@ -22,7 +22,7 @@ pub struct UScrollContainer {
     pub scroll_speed: f32,
     pub vertical: bool,
     pub horizontal: bool,
-    // الحالة الحالية (للاستخدام الداخلي)
+    // Current internal offset applied to the scroll content.
     pub offset: Vec2,
 }
 
@@ -41,41 +41,40 @@ impl UScrollContainer {
 /// Internal system that applies wheel input to hovered scroll containers.
 #[doc(hidden)]
 pub fn scroll_interaction_system(
-    // 1. قراءة عجلة الماوس
+    // 1. Read wheel input.
     mut mouse_wheel: MessageReader<MouseWheel>,
 
-    // 2. الاستعلام عن الحاويات
-    // الشرط: يجب أن يكون لديها UScrollContainer و UInteraction
+    // 2. Query scroll containers.
+    // Requirement: the entity must own both `UScrollContainer` and `UInteraction`.
     mut containers: Query<(
-        &UInteraction, // نستخدم هذا بدلاً من حسابات الماوس اليدوية
+        &UInteraction, // Use interaction state instead of manual cursor math.
         &mut UScrollContainer,
         &ComputedSize,
         &Children,
     )>,
 
-    // 3. الاستعلام عن المحتوى (لتحديث موقعه)
+    // 3. Query the content child so its local offset can be updated.
     mut content_query: Query<(&mut USelf, &ComputedSize)>,
 ) {
-    // جمع حركة العجلة
+    // Accumulate wheel motion across the frame.
     let mut scroll_delta = Vec2::ZERO;
     for ev in mouse_wheel.read() {
         scroll_delta.y += ev.y;
         scroll_delta.x += ev.x;
     }
 
-    // إذا لم يحرك المستخدم العجلة، لا نفعل شيئاً
+    // Exit early when there was no wheel movement.
     if scroll_delta == Vec2::ZERO {
         return;
     }
 
     for (interaction, mut container, size, children) in containers.iter_mut() {
-        // === هنا السحر: استخدام UInteraction ===
-        // بدلاً من الحسابات المعقدة، نسأل فقط: هل الماوس فوق الحاوية؟
+        // Use the resolved interaction state instead of recomputing hover tests here.
         if *interaction != UInteraction::Hovered {
             continue;
         }
 
-        // العثور على المحتوى (أول ابن)
+        // The first child is treated as the scrollable content root.
         let Some(&content_entity) = children.first() else {
             continue;
         };

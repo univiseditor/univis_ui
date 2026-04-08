@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::render_resource::AsBindGroup;
 use bevy::shader::ShaderRef;
-use bevy::sprite_render::*; // تأكد من استخدام sprite بدلاً من sprite_render
+use bevy::sprite_render::*;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct UNodeMaterial {
@@ -31,7 +31,7 @@ pub struct UNodeMaterial {
     #[uniform(0)]
     pub use_texture: u32, // 4 bytes (Offset 72)
 
-    // الحشو النهائي لإغلاق الكتلة عند 80 بايت
+    // Final padding to close the uniform block at 80 bytes.
     #[uniform(0)]
     pub _pad: f32, // 4 bytes (Offset 76)
 
@@ -41,13 +41,13 @@ pub struct UNodeMaterial {
     pub texture: Option<Handle<Image>>,
 
     #[uniform(0)]
-    pub clip_center: Vec2, // موقع مركز القص في العالم
+    pub clip_center: Vec2, // World-space clip center
     #[uniform(0)]
-    pub clip_size: Vec2, // حجم منطقة القص
+    pub clip_size: Vec2, // Clip region size
     #[uniform(0)]
-    pub clip_radius: Vec4, // زوايا منطقة القص (SDF يدعم قص دائري!)
+    pub clip_radius: Vec4, // Clip corner radii for rounded SDF clipping
     #[uniform(0)]
-    pub use_clip: u32, // 0 = لا قص، 1 = يوجد قص
+    pub use_clip: u32, // 0 = disabled, 1 = enabled
 }
 
 impl Default for UNodeMaterial {
@@ -78,7 +78,7 @@ impl Material2d for UNodeMaterial {
     }
 
     fn alpha_mode(&self) -> AlphaMode2d {
-        // نستخدم Blend للسماح بالشفافية والظلال والزوايا الناعمة
+        // Blend keeps transparency, soft edges, and shadow falloff intact.
         AlphaMode2d::Blend
     }
 }

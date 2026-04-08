@@ -12,6 +12,30 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect Docs Changes
+    runs-on: ubuntu-latest
+    outputs:
+      public_docs: ${{ steps.filter.outputs.public_docs }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Detect public docs changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            public_docs:
+              - 'docs/src/**'
+              - 'README.md'
+              - 'README_AR.md'
+              - 'MIGRATION.md'
+              - 'MIGRATION_AR.md'
+              - 'RELEASE_NOTES.md'
+              - 'changelog.md'
+
   quality:
     name: Quality Gates
     runs-on: ubuntu-latest
@@ -78,6 +102,8 @@ jobs:
     name: Docs Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.public_docs == 'true'
 
     steps:
       - name: Check out repository

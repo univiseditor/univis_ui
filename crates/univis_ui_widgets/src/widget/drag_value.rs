@@ -135,39 +135,40 @@ fn init_drag_value_visuals(
             existing_node.border_radius
         };
 
-        commands.entity(entity).insert((
-            UNode {
-                padding: drag.padding,
-                background_color: drag.background,
-                border_radius: radius,
-                ..existing_node.clone()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                justify_content: UJustifyContent::Center,
-                align_items: UAlignItems::Center,
-                ..default()
-            },
-            UInteractionColors {
-                normal: drag.background,
-                hovered: drag.hover_color,
-                pressed: drag.pressed_color,
-            },
-        ));
-
-        commands.entity(entity).with_children(|parent| {
-            parent.spawn((
-                UTextLabel {
-                    text: format_drag_value(drag.value, drag.decimals),
-                    font_size: 16.0,
-                    color: drag.text_color,
-                    autosize: true,
+        commands
+            .entity(entity)
+            .insert((
+                UNode {
+                    padding: drag.padding,
+                    background_color: drag.background,
+                    border_radius: radius,
+                    ..existing_node.clone()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    justify_content: UJustifyContent::Center,
+                    align_items: UAlignItems::Center,
                     ..default()
                 },
-                DragValueLabel,
-                Pickable::IGNORE,
-            ));
-        });
+                UInteractionColors {
+                    normal: drag.background,
+                    hovered: drag.hover_color,
+                    pressed: drag.pressed_color,
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    UTextLabel {
+                        text: format_drag_value(drag.value, drag.decimals),
+                        font_size: 16.0,
+                        color: drag.text_color,
+                        autosize: true,
+                        ..default()
+                    },
+                    DragValueLabel,
+                    Pickable::IGNORE,
+                ));
+            });
     }
 }
 

@@ -2,13 +2,13 @@ use bevy::prelude::*;
 use std::collections::HashMap;
 
 use super::root_resolution::clamp_canvas_size;
-use super::screen_transform::compute_screen_root_transform;
-use super::types::{
+use super::roots::{
     ROOT_CAPSULE_GAP_FACTOR, ROOT_CAPSULE_LOCAL_LAYER_DIVISOR, ROOT_CAPSULE_MIN_BAND_WIDTH,
     ROOT_CAPSULE_MIN_GAP, ROOT_STACK_EDIT_EPSILON, ResolvedRootStack, ResolvedRootUi,
     RootSpawnRank, SCREEN_ROOT_CAPSULE_BAND_WIDTH, UiCanvasSize, UiSpace,
     WORLD_ROOT_CAPSULE_BAND_UI_UNITS,
 };
+use super::screen_transform::compute_screen_root_transform;
 use super::{URootUi, UScreenRoot, UWorldRoot};
 use crate::internal_prelude::*;
 
@@ -182,8 +182,12 @@ pub(crate) fn sync_root_capsule_transforms(
             }
         }
 
-        stack.applied_root_z = transform.translation.z;
-        stack.initialized = true;
+        if (stack.applied_root_z - transform.translation.z).abs() > f32::EPSILON {
+            stack.applied_root_z = transform.translation.z;
+        }
+        if !stack.initialized {
+            stack.initialized = true;
+        }
     }
 }
 

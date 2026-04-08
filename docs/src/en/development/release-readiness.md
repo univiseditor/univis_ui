@@ -24,7 +24,6 @@ Confirm that these files describe the same current reality:
 - `MIGRATION.md`
 - `MIGRATION_AR.md`
 - `RELEASE_NOTES.md`
-- `ROADMAP_POST_REVIEW.md`
 - `changelog.md`
 
 ## Final Checklist
@@ -40,7 +39,7 @@ Confirm that these files describe the same current reality:
 - [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
 - [ ] `./scripts/check_examples_serial_release.sh -p univis_ui`
 - [ ] one manual visual pass over the representative examples from [Visual Validation](visual-validation.md)
-- [ ] release notes, roadmap, and migration pages mention the same current public root story
+- [ ] release notes and migration pages mention the same current public root story
 
 ## Wrapper Removal Decision
 
@@ -57,7 +56,6 @@ For the next alpha cut, the decision is:
 - `MIGRATION.md`: upgrade path from older docs, examples, and assumptions
 - `MIGRATION_AR.md`: Arabic migration path
 - `RELEASE_NOTES.md`: current alpha release-scale summary
-- `ROADMAP_POST_REVIEW.md`: active planning and post-review priorities
 - `changelog.md`: chronological dated history
 
 ## Related Pages

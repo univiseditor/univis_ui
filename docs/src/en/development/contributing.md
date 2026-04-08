@@ -18,6 +18,9 @@
 - Put a new example inside the crate that owns the feature.
 - Keep root `examples/` only for facade-level integrated demos.
 - Follow the conventions in [Editorial Rules](editorial-rules.md).
+- Follow [Naming Conventions](naming-conventions.md) when splitting or renaming internal modules.
+- Use [Maintainer Map](maintainer-map.md) and [Architecture Rules](architecture-rules.md) before moving ownership boundaries.
+- Use [Widget Structure Conventions](widget-structure.md) and [Layout Engine Boundaries](layout-engine-boundaries.md) before splitting large subsystems.
 - Use [Docs Authoring Workflow](authoring.md) for the exact bilingual and `rustdoc` steps.
 - Use [Docs Review Checklist](review-checklist.md) before merging docs-heavy work.
 

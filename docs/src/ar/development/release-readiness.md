@@ -24,7 +24,6 @@ cargo check -p univis_ui_engine --example root_capsule_overlap
 - `MIGRATION.md`
 - `MIGRATION_AR.md`
 - `RELEASE_NOTES.md`
-- `ROADMAP_POST_REVIEW.md`
 - `changelog.md`
 
 ## القائمة النهائية
@@ -40,7 +39,7 @@ cargo check -p univis_ui_engine --example root_capsule_overlap
 - [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
 - [ ] `./scripts/check_examples_serial_release.sh -p univis_ui`
 - [ ] جولة تحقق بصري واحدة على الأقل على الأمثلة المرجعية المذكورة في [التحقق البصري](visual-validation.md)
-- [ ] أن تذكر ملاحظات الإصدار وخارطة الطريق وصفحات الترحيل القصة العامة نفسها للجذور العامة
+- [ ] أن تذكر ملاحظات الإصدار وصفحات الترحيل القصة العامة نفسها للجذور العامة
 
 ## قرار حذف طبقات التوافق
 
@@ -57,7 +56,6 @@ cargo check -p univis_ui_engine --example root_capsule_overlap
 - `MIGRATION.md`: مسار الترقية من الوثائق والأمثلة والافتراضات الأقدم
 - `MIGRATION_AR.md`: مسار الترحيل العربي
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha
-- `ROADMAP_POST_REVIEW.md`: خارطة الطريق النشطة وأولويات ما بعد المراجعة
 - `changelog.md`: التاريخ الزمني المرتب حسب التواريخ
 
 ## صفحات مرتبطة

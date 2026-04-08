@@ -4,8 +4,31 @@
 //! the engine crate. Add [`UnivisWidgetPlugin`] for the common widget set, or
 //! compose dedicated widget plugins manually when you want a narrower surface.
 
-use crate::internal_prelude::*;
+use bevy::asset::embedded_asset;
 use bevy::prelude::*;
+use univis_ui_engine::layout::image::UImage;
+use univis_ui_engine::schedule::{
+    UiSettlementSchedule, UnivisPostUpdateSet, UnivisWidgetUpdateSet,
+};
+
+use crate::widget::{
+    badge::{UTag, UnivisBadgePlugin},
+    button::UnivisButtonPlugin,
+    checkbox::UnivisCheckboxPlugin,
+    divider::UnivisDividerPlugin,
+    drag_value::UnivisDragValuePlugin,
+    icon_btn::UnivisIconButtonPlugin,
+    image::sync_image_geometry,
+    panel::UnivisPanelPlugin,
+    progress::UnivisProgressPlugin,
+    radio::UnivisRadioPlugin,
+    scroll_view::UnivisScrollViewPlugin,
+    seekbar::UnivisSeekBarPlugin,
+    select::UnivisSelectPlugin,
+    text_field::UnivisTextFieldPlugin,
+    text_label::UnivisTextPlugin,
+    toggle::UnivisTogglePlugin,
+};
 
 /// Badge and tag widgets.
 pub mod badge;
@@ -63,9 +86,19 @@ struct WidgetRuntimeWarnings {
 impl Plugin for UnivisWidgetPlugin {
     fn build(&self, app: &mut bevy::app::App) {
         app.register_type::<UImage>()
+            .configure_sets(
+                Update,
+                (
+                    UnivisWidgetUpdateSet::Build,
+                    UnivisWidgetUpdateSet::Logic,
+                    UnivisWidgetUpdateSet::Visual,
+                    UnivisWidgetUpdateSet::Events,
+                )
+                    .chain(),
+            )
             .add_systems(Update, warn_on_widget_runtime_limitations)
             .add_systems(
-                PostUpdate,
+                UiSettlementSchedule,
                 sync_image_geometry
                     .in_set(UnivisPostUpdateSet::WidgetSync)
                     .before(UnivisPostUpdateSet::LayoutMeasure),
@@ -88,6 +121,10 @@ fn add_core_widget_plugins(app: &mut App) {
         .add_plugins(UnivisScrollViewPlugin)
         .add_plugins(UnivisDividerPlugin)
         .add_plugins(UnivisPanelPlugin);
+}
+
+pub(super) fn register_widget_embedded_assets(app: &mut App) {
+    embedded_asset!(app, "shaders/text_label_sdf.wgsl");
 }
 
 fn add_default_widget_runtime_plugins(app: &mut App) {

@@ -1,0 +1,105 @@
+{
+  "kind": "univis_ui_current_max_baseline",
+  "captured_at_utc": "2026-04-05T16:49:37Z",
+  "git_commit": "b9008b419694acb1a35cf0795593e989a80b4593",
+  "bench_env": {
+    "warmup": 48,
+    "iterations": 240
+  },
+  "environment": {
+    "os": "Linux archlinux 6.19.10-arch1-1 #1 SMP PREEMPT_DYNAMIC Thu, 26 Mar 2026 19:20:28 +0000 x86_64 GNU/Linux",
+    "cpu": {
+      "architecture": "x86_64",
+      "logical_cpus": 4,
+      "model": "Intel(R) Core(TM) i5-7300U CPU @ 2.60GHz",
+      "cores_per_socket": 2,
+      "threads_per_core": 2,
+      "max_mhz": 3500.0,
+      "min_mhz": 400.0
+    },
+    "toolchain": {
+      "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)",
+      "cargo": "cargo 1.94.1 (29ea6fb6a 2026-03-24)"
+    }
+  },
+  "solver": [
+    {
+      "scenario": "dense_row_512",
+      "items": 512,
+      "avg_ms": 0.042,
+      "p95_ms": 0.058,
+      "max_ms": 0.315,
+      "budget_ms": 1.0,
+      "status": "ok"
+    },
+    {
+      "scenario": "wrap_cards_400",
+      "items": 400,
+      "avg_ms": 0.037,
+      "p95_ms": 0.044,
+      "max_ms": 0.389,
+      "budget_ms": 1.4,
+      "status": "ok"
+    },
+    {
+      "scenario": "grid_dashboard_196",
+      "items": 196,
+      "avg_ms": 0.022,
+      "p95_ms": 0.022,
+      "max_ms": 0.025,
+      "budget_ms": 1.8,
+      "status": "ok"
+    }
+  ],
+  "runtime": [
+    {
+      "scenario": "root_capsules_96",
+      "items": 96,
+      "avg_ms": 2.133,
+      "p95_ms": 2.844,
+      "max_ms": 3.437,
+      "budget_ms": 6.0,
+      "status": "ok"
+    },
+    {
+      "scenario": "text_measure_180",
+      "items": 180,
+      "avg_ms": 2.09,
+      "p95_ms": 3.036,
+      "max_ms": 3.818,
+      "budget_ms": 4.75,
+      "status": "ok"
+    },
+    {
+      "scenario": "picking_grid_512",
+      "items": 512,
+      "avg_ms": 0.496,
+      "p95_ms": 0.599,
+      "max_ms": 1.065,
+      "budget_ms": 4.0,
+      "status": "ok"
+    },
+    {
+      "scenario": "widget_panels_240",
+      "items": 240,
+      "avg_ms": 2.415,
+      "p95_ms": 3.344,
+      "max_ms": 3.812,
+      "budget_ms": 8.0,
+      "status": "ok"
+    },
+    {
+      "scenario": "world3d_panels_48",
+      "items": 48,
+      "avg_ms": 1.039,
+      "p95_ms": 1.375,
+      "max_ms": 1.76,
+      "budget_ms": 6.0,
+      "status": "ok"
+    }
+  ],
+  "raw_files": {
+    "solver": "solver_benchmarks.txt",
+    "runtime": "runtime_benchmarks.txt"
+  }
+}

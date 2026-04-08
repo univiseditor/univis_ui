@@ -4,7 +4,7 @@
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.2"
+univis_ui = "0.2.0-alpha.3"
 ```
 
 ## 2) تطبيق بسيط
@@ -71,7 +71,7 @@ fn setup(mut commands: Commands) {
 - `UnivisScrollViewPlugin` مضاف تلقائيًا داخل `UnivisWidgetPlugin`.
 - التفاعل يحسم الكاميرا من كل `URootUi`.
 - في المشاهد متعددة الكاميرات يُفضّل ربط الجذر صراحة عبر `UiCameraRef::Entity`.
-- `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة.
+- `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة على مسارات صريحة مثل `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`.
 - إذا احتجت نفس الحجم الفيزيائي التاريخي لأمثلة فضاء العالم القديمة، فاضبط `meters_per_unit: 1.0` صراحة.
 - إذا أردت قائمة إعداد موجزة ومسار أمثلة بحسب المهمة، فانتقل إلى [إعداد الإضافات وأولى الأمثلة](first-steps.md).
 
@@ -113,6 +113,7 @@ fn main() {
 
 - `univis_ui::UnivisUiPlugin`
 - `univis_ui::prelude`
+- `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}` لمسار التوافق القديم فقط
 - `univis_ui_engine::layout::layout_system::URootUi`
 - `univis_ui_engine::layout::univis_node::{UNode, ULayout}`
 

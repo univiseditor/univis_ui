@@ -23,6 +23,11 @@
 - `univis_ui_engine::layout::geometry::USides`
 - `univis_ui_engine::layout::geometry::UCornerRadius`
 
+تم حذف `UScreenRoot` و`UWorldRoot` عمدًا من السطح الموصى به.
+استعمل مسارهما الصريح فقط عند ترحيل الشيفرات الأقدم:
+`univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}` أو
+`univis_ui_engine::layout::layout_system::{UScreenRoot, UWorldRoot}`.
+
 ## أنواع التفاعل
 
 - `univis_ui_interaction::interaction::feedback::UInteraction`
@@ -56,7 +61,7 @@
 ## أنواع التشخيص والرندر
 
 - `univis_ui_engine::layout::render::UnivisRenderPlugin`
-- `univis_ui_engine::layout::profiling::{LayoutProfiler, LayoutProfilingPlugin}`
-- `univis_ui_engine::layout::core::layout_cache::{LayoutCache, LayoutCachePlugin}`
+- `univis_ui_engine::layout::profiling::{LayoutProfiler, UnivisLayoutProfilingPlugin}`
+- `univis_ui_engine::layout::core::layout_cache::{LayoutCache, UnivisLayoutCachePlugin}`
 
 > للحصول على التواقيع والتفاصيل الدقيقة لكل نوع أو حقل، استخدم `cargo doc --no-deps`.

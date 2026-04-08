@@ -1,7 +1,7 @@
-use crate::internal_prelude::*;
 use bevy::prelude::*;
+use univis_ui_interaction::interaction::feedback::UInteraction;
 
-use super::runtime::spawn_dropdown;
+use super::runtime::{log_select_runtime_error, spawn_dropdown};
 use super::{
     ActiveSelect, SelectOptionRow, SelectRuntime, SelectTrigger, USelect, first_enabled_index,
     is_enabled_index, next_enabled_index, sanitize_select,
@@ -232,11 +232,11 @@ pub(super) fn close_select_on_outside_click(
 
 pub(super) fn sync_select_dropdown_tree(
     mut commands: Commands,
-    mut query: Query<(Entity, &USelect, &mut SelectRuntime)>,
+    mut query: Query<(Entity, &mut USelect, &mut SelectRuntime)>,
     children_query: Query<(&Children, &super::SelectDropdown)>,
     option_row_query: Query<&SelectOptionRow>,
 ) {
-    for (entity, select, mut runtime) in query.iter_mut() {
+    for (entity, mut select, mut runtime) in query.iter_mut() {
         if !select.is_open {
             if let Some(dropdown_entity) = runtime.dropdown_entity.take() {
                 commands.entity(dropdown_entity).despawn();
@@ -266,7 +266,16 @@ pub(super) fn sync_select_dropdown_tree(
             if let Some(dropdown_entity) = runtime.dropdown_entity.take() {
                 commands.entity(dropdown_entity).despawn();
             }
-            runtime.dropdown_entity = Some(spawn_dropdown(&mut commands, entity, select));
+            match spawn_dropdown(&mut commands, entity, &select) {
+                Ok(dropdown_entity) => {
+                    runtime.dropdown_entity = Some(dropdown_entity);
+                }
+                Err(error) => {
+                    log_select_runtime_error(entity, error);
+                    select.is_open = false;
+                    runtime.dropdown_entity = None;
+                }
+            }
         }
     }
 }

@@ -12,6 +12,7 @@
 
 - [ترحيل سطح التوثيق والأمثلة](docs-and-examples.md)
 - [ترحيل الجذور إلى `URootUi`](root-api.md)
+- [حالة التوافق القديم](legacy-compatibility.md)
 - [ترحيل مسارات الأمثلة](example-paths.md)
 - [القيود الحالية](../development/current-limitations.md)
 

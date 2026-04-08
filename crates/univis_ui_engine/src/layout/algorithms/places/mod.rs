@@ -1,9 +1,9 @@
-mod display;
+mod placement;
 // mod justify_content;
 
 pub mod prelude {
     pub use crate::layout::algorithms::places::{
-        display::*,
+        placement::*,
         // justify_content::*,
     };
 }

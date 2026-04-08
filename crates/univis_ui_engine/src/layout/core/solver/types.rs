@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 use bevy::prelude::*;
+use std::ops::{Deref, DerefMut};
 
 /// The output result of the solver for a single item.
 #[derive(Debug, Clone, Copy, Default)]
@@ -8,11 +9,55 @@ pub struct SolverResult {
     pub pos: Vec2,
 }
 
+#[derive(Clone, Copy)]
+pub struct SolverResultHandle(*mut SolverResult);
+
+// SAFETY: `SolverResultHandle` only appears inside short-lived solver data that
+// stays scoped to one system run. The raw pointer always targets a result slot
+// owned by that same run, and we never share it across concurrent threads.
+unsafe impl Send for SolverResultHandle {}
+unsafe impl Sync for SolverResultHandle {}
+
+impl SolverResultHandle {
+    pub fn new(result: &mut SolverResult) -> Self {
+        Self(result as *mut SolverResult)
+    }
+}
+
+impl Deref for SolverResultHandle {
+    type Target = SolverResult;
+
+    fn deref(&self) -> &Self::Target {
+        // SAFETY: `SolverResultHandle` is only created from a live mutable
+        // reference, and callers keep ownership of the backing `SolverResult`
+        // for the full solver pass where this handle is used.
+        unsafe { &*self.0 }
+    }
+}
+
+impl DerefMut for SolverResultHandle {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // SAFETY: same reasoning as `Deref`; solver passes treat each handle
+        // as the unique mutable access path to its backing result slot.
+        unsafe { &mut *self.0 }
+    }
+}
+
 /// Combines spec, result, and margin for processing.
-pub struct SolverItem<'a> {
+pub struct SolverItem {
     pub spec: SolverSpec,
-    pub result: &'a mut SolverResult,
+    pub result: SolverResultHandle,
     pub margin: USides,
+}
+
+impl SolverItem {
+    pub fn new(spec: SolverSpec, result: &mut SolverResult, margin: USides) -> Self {
+        Self {
+            spec,
+            result: SolverResultHandle::new(result),
+            margin,
+        }
+    }
 }
 
 /// Configuration for the solver run (Container properties).

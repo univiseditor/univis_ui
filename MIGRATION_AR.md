@@ -1,6 +1,6 @@
 # ملخص الترحيل
 
-يستبدل هذا الملف ملفات خارطة الطريق المؤقتة الخاصة بالتوثيق والأمثلة والوثائق البرمجية المولدة بعد أن تم تطبيق الترحيل فعليًا داخل المستودع.
+يستبدل هذا الملف ملفات التخطيط المؤقتة الأقدم الخاصة بالتوثيق والأمثلة والوثائق البرمجية المولدة بعد أن تم تطبيق الترحيل فعليًا داخل المستودع.
 
 ## متى تقرأ هذا الملف
 
@@ -31,8 +31,8 @@
 - الجذور العامة الرسمية: `URootUi` و`URootUi::screen()` و`URootUi::world_2d(...)` و`URootUi::world_3d(...)`
 - الأنواع الداعمة الرسمية للجذور: `UiSpace` و`UiCameraRef` و`UiCanvasSize`
 - المسار الرسمي للأمثلة: أمثلة تابعة للـ crate المالكة مع أوامر `cargo run -p ... --example ...`
-- الطبقات المهجورة لكنها ما تزال مدعومة: `UScreenRoot` و`UWorldRoot`
-- مسار التوافق مع الحجم الفيزيائي القديم: `meters_per_unit: 1.0` على `URootUi`
+- الطبقات المهجورة لكنها ما تزال مدعومة: `UScreenRoot` و`UWorldRoot` على مسارات صريحة فقط؛ وقد خُفِّض التركيز عليهما في الأمثلة، وهدف الإزالة الحالي هو أول alpha بعد `0.2.0-alpha.3` لا يعود يحتاج دعم الترحيل المبني عليهما
+- مسار التوافق مع الحجم الفيزيائي القديم: `meters_per_unit: 1.0` على `URootUi`؛ وهذا يبقى مفتاح التوافق الصريح طويل المدى عندما يظل الحجم التاريخي مهمًا
 
 وما يزال من المفيد إعادة التحقق منه أثناء الترحيل:
 
@@ -87,19 +87,20 @@ cargo run -p univis_ui_interaction --example interaction
 
 - `docs/src/ar/migration/docs-and-examples.md`
 - `docs/src/ar/migration/root-api.md`
+- `docs/src/ar/migration/legacy-compatibility.md`
 - `docs/src/ar/migration/example-paths.md`
 
 ونظيراتها الإنجليزية:
 
 - `docs/src/en/migration/docs-and-examples.md`
 - `docs/src/en/migration/root-api.md`
+- `docs/src/en/migration/legacy-compatibility.md`
 - `docs/src/en/migration/example-paths.md`
 
 ## ما هو المصدر المرجعي الآن
 
 - قصة المشروع وخريطة الحزم: `README.md`
 - صفحة الدخول العربية: `README_AR.md`
-- خارطة الطريق الحالية وأولويات التنظيف: `ROADMAP_POST_REVIEW.md`
 - قائمة الملفات الكبيرة وأولويات إعادة تقسيمها: `TECH_DEBT_INVENTORY.md`
 - صفحات الشرح: `docs/src/en/*` و`docs/src/ar/*`
 - فهرس الأمثلة: `docs/src/en/examples/index.md` و`docs/src/ar/examples/index.md`
@@ -107,4 +108,4 @@ cargo run -p univis_ui_interaction --example interaction
 
 ## لماذا أزيلت ملفات خارطة الطريق الأقدم
 
-كانت قوائم خارطة الطريق الأقدم مفيدة أثناء التنفيذ، لكنها أصبحت بعد اكتمالها مجرد ملاحظات تاريخية داخلية. أما التخطيط النشط الآن فيوجد داخل `ROADMAP_POST_REVIEW.md`، بينما يبقى هذا الملف مخصصًا للترحيل نفسه.
+كانت قوائم خارطة الطريق الأقدم مفيدة أثناء التنفيذ، لكنها أصبحت بعد اكتمالها مجرد ملاحظات تاريخية داخلية. ويبقى هذا الملف مخصصًا للترحيل نفسه، بينما توجد قصة الإصدار والسجل الزمني في `RELEASE_NOTES.md` و`changelog.md`.

@@ -1,6 +1,6 @@
 # Migration Summary
 
-This file replaces the temporary docs/examples/API roadmap files now that the migration work has been applied to the repository.
+This file replaces the older temporary planning files now that the migration work has been applied to the repository.
 
 ## When To Read This File
 
@@ -31,8 +31,8 @@ Use these as the current public assumptions:
 - canonical public roots: `URootUi`, `URootUi::screen()`, `URootUi::world_2d(...)`, `URootUi::world_3d(...)`
 - canonical root support types: `UiSpace`, `UiCameraRef`, `UiCanvasSize`
 - canonical example flow: crate-owned example paths plus package-aware `cargo run -p ... --example ...`
-- deprecated but still supported wrappers: `UScreenRoot`, `UWorldRoot`
-- legacy physical-size compatibility path: `meters_per_unit: 1.0` on `URootUi`
+- deprecated but still supported wrappers: `UScreenRoot`, `UWorldRoot` on explicit paths only; they are already de-emphasized in examples and the current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support
+- legacy physical-size compatibility path: `meters_per_unit: 1.0` on `URootUi`; this remains the explicit long-term compatibility knob when historical world-root scale still matters
 
 Still worth rechecking during migration:
 
@@ -87,24 +87,21 @@ If you learned the project through older docs or older root wrappers, start here
 
 - `docs/src/en/migration/docs-and-examples.md`
 - `docs/src/en/migration/root-api.md`
+- `docs/src/en/migration/legacy-compatibility.md`
 - `docs/src/en/migration/example-paths.md`
 
 Arabic mirrors:
 
 - `docs/src/ar/migration/docs-and-examples.md`
 - `docs/src/ar/migration/root-api.md`
+- `docs/src/ar/migration/legacy-compatibility.md`
 - `docs/src/ar/migration/example-paths.md`
 
 ## Source Of Truth
 
 - project story and crate map: `README.md`
 - Arabic landing page: `README_AR.md`
-- current roadmap and active cleanup priorities: `ROADMAP_POST_REVIEW.md`
 - current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`
 - guides: `docs/src/en/*` and `docs/src/ar/*`
 - example catalog: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
 - API reference: generated `cargo doc --no-deps -p univis_ui`
-
-## Why The Older Roadmap Files Were Removed
-
-The older completed roadmap checklists were useful while that work was in progress, but they are now historical implementation notes. Active planning now lives in `ROADMAP_POST_REVIEW.md`, while this file stays focused on migration guidance.

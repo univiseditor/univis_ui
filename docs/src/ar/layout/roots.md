@@ -118,6 +118,9 @@ UiCameraRef::Entity(camera_entity)
 
 `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة.
 
+وهما الآن مساران صريحان للترحيل فقط، وهدف الإزالة الحالي هو أول alpha بعد
+`0.2.0-alpha.3` لا يعود يحتاج دعم الترحيل المبني على هذه الطبقات.
+
 قواعد الترحيل:
 
 - `UScreenRoot` -> `URootUi::screen()`
@@ -154,6 +157,7 @@ URootUi {
 ## صفحات ترحيل مرتبطة
 
 - [ترحيل الجذور إلى `URootUi`](../migration/root-api.md)
+- [حالة التوافق القديم](../migration/legacy-compatibility.md)
 
 ## نقاط الدخول الرسمية في `API`
 

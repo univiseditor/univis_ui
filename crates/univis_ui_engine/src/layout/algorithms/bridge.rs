@@ -47,11 +47,7 @@ pub fn final_size_with_indices(
     let mut temp_items: Vec<SolverItem> = temp_data
         .iter()
         .zip(temp_results.iter_mut())
-        .map(|((_, spec, _, margin), result)| SolverItem {
-            spec: *spec,
-            result,
-            margin: *margin,
-        })
+        .map(|((_, spec, _, margin), result)| SolverItem::new(*spec, result, *margin))
         .collect();
 
     // 2. Select the Placer Strategy

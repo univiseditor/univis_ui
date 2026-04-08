@@ -1,8 +1,8 @@
 # Technical Debt Inventory
 
-This file started as the Phase 1 maintainer-facing backlog for the large-file refactor wave.
+This file started as the maintainer-facing backlog for the large-file refactor wave.
 
-Phase 2 status:
+Current status:
 
 - completed on `2026-04-04`
 - the four target areas were moved into dedicated folders with `mod.rs` entry points
@@ -182,7 +182,7 @@ Why it is high priority:
 
 - it concentrates sizing helpers, flex/grid decisions, explicit-vs-implicit stretch behavior, absolute positioning, and translation from `UNode` to solver specs
 - it is one of the most sensitive files for layout correctness and future performance work
-- performance tuning will be harder while core phases remain in one file
+- performance tuning will be harder while the core layout flow remains in one file
 
 Current responsibility clusters already visible in the file:
 
@@ -266,7 +266,7 @@ Primary risk if left untouched:
 
 - future behavior fixes in forms/widgets will keep touching one file that mixes state invariants with rendering tree concerns
 
-## Suggested Phase 2 Execution
+## Suggested Execution Order
 
 Recommended order:
 
@@ -284,9 +284,9 @@ Recommended PR shape:
 
 ## Exit Criteria For This Inventory
 
-This inventory can be considered complete for Phase 1 when:
+This inventory can be considered complete when:
 
 - every target file has a documented reason to change
 - every target file has a proposed module split
 - the refactor order is explicit
-- validation expectations are named before Phase 2 begins
+- validation expectations are named before follow-up execution begins

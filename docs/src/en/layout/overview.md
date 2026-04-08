@@ -1,6 +1,6 @@
 # Layout System
 
-The layout system in `univis_ui` is built around two phases:
+The layout system in `univis_ui` is built around two passes:
 
 - an upward pass for intrinsic measurement
 - a downward pass for constraint solving and placement

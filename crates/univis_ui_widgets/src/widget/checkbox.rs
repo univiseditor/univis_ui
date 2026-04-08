@@ -10,8 +10,8 @@ impl Plugin for UnivisCheckboxPlugin {
             .add_systems(
                 Update,
                 (
-                    init_checkbox, // بناء الشكل عند الإنشاء
-                                   // update_checkbox_visuals // تحديث الألوان والظهور
+                    init_checkbox, // Build visuals on first insertion.
+                                   // update_checkbox_visuals // Refresh colors and visibility.
                 ),
             )
             .add_observer(toggle_checkbox_handler);
@@ -19,7 +19,7 @@ impl Plugin for UnivisCheckboxPlugin {
 }
 
 // =========================================================
-// 1. المكونات (Components)
+// 1. Components
 // =========================================================
 
 /// A simple checkbox with an optional text label.
@@ -45,88 +45,89 @@ impl Default for UCheckbox {
             checked: false,
             label: None,
             size: 24.0,
-            checked_color: Color::srgb(0.2, 0.5, 0.9), // أزرق
-            unchecked_color: Color::srgb(0.2, 0.2, 0.2), // رمادي غامق
+            checked_color: Color::srgb(0.2, 0.5, 0.9), // Blue
+            unchecked_color: Color::srgb(0.2, 0.2, 0.2), // Dark gray
             border_color: Color::srgb(0.5, 0.5, 0.5),
         }
     }
 }
 
 // =========================================================
-// 2. الأنظمة (Systems)
+// 2. Systems
 // =========================================================
 
-/// 1. بناء هيكل الـ Checkbox عند إضافته لأول مرة
+/// Builds the checkbox visuals the first time the component is added.
 fn init_checkbox(
     mut commands: Commands,
     query: Query<(Entity, &UCheckbox), Added<UCheckbox>>,
-    _asset_server: Res<AssetServer>, // لتحميل خط افتراضي
+    _asset_server: Res<AssetServer>, // Reserved for default-font access if needed later.
 ) {
     for (entity, checkbox) in query.iter() {
-        // إعداد الحاوية الرئيسية (Row Layout)
-        commands.entity(entity).insert((
-            UNode {
-                // الحجم يتحدد بالمحتوى (المربع + النص)
-                width: UVal::Content,
-                height: UVal::Content,
-                padding: USides::all(4.0),     // مساحة للنقر
-                background_color: Color::NONE, // خلفية شفافة للحاوية الكلية
-                ..default()
-            },
-            ULayout {
-                align_items: UAlignItems::Center, // محاذاة النص مع المربع
-                justify_content: UJustifyContent::Center,
-                gap: 8.0, // مسافة بين المربع والنص
-                ..default()
-            },
-        ));
-
-        commands.entity(entity).with_children(|parent| {
-            let color;
-            let border_color;
-            if checkbox.checked {
-                color = checkbox.checked_color;
-                border_color = checkbox.border_color;
-            } else {
-                border_color = checkbox.border_color;
-                color = checkbox.unchecked_color;
-            }
-
-            // أ) المربع نفسه (The Box)
-            parent.spawn((
+        // Configure the main row container.
+        commands
+            .entity(entity)
+            .insert((
                 UNode {
-                    width: UVal::Px(checkbox.size),
-                    height: UVal::Px(checkbox.size),
-                    border_radius: UCornerRadius::all(checkbox.size * 0.25), // زوايا دائرية قليلاً
-                    background_color: color,
+                    // Let size follow the box plus optional label.
+                    width: UVal::Content,
+                    height: UVal::Content,
+                    padding: USides::all(4.0), // Expand the hit area slightly.
+                    background_color: Color::NONE, // Keep the wrapper visually transparent.
                     ..default()
                 },
-                UBorder {
-                    width: 2.0,
-                    color: border_color,
-                    offset: 4.0,
-                    radius: UCornerRadius::all(checkbox.size * 0.25),
+                ULayout {
+                    align_items: UAlignItems::Center, // Align the text baseline with the box.
+                    justify_content: UJustifyContent::Center,
+                    gap: 8.0, // Space between the box and label.
+                    ..default()
                 },
-                // نحتاج لمعرفة هذا المربع لتغيير لونه لاحقاً
-            ));
+            ))
+            .with_children(|parent| {
+                let color;
+                let border_color;
+                if checkbox.checked {
+                    color = checkbox.checked_color;
+                    border_color = checkbox.border_color;
+                } else {
+                    border_color = checkbox.border_color;
+                    color = checkbox.unchecked_color;
+                }
 
-            // ج) النص (Label) - إذا وجد
-            if let Some(text) = &checkbox.label {
+                // Spawn the square box visual.
                 parent.spawn((
-                    UTextLabel {
-                        text: text.clone(),
-                        font_size: checkbox.size * 0.75,
-                        color: Color::WHITE,
+                    UNode {
+                        width: UVal::Px(checkbox.size),
+                        height: UVal::Px(checkbox.size),
+                        border_radius: UCornerRadius::all(checkbox.size * 0.25), // Slightly rounded corners.
+                        background_color: color,
                         ..default()
                     },
-                    Pickable::IGNORE,
+                    UBorder {
+                        width: 2.0,
+                        color: border_color,
+                        offset: 4.0,
+                        radius: UCornerRadius::all(checkbox.size * 0.25),
+                    },
+                    // This child is discovered later to refresh its visual state.
                 ));
-            }
-        });
+
+                // Spawn the optional label.
+                if let Some(text) = &checkbox.label {
+                    parent.spawn((
+                        UTextLabel {
+                            text: text.clone(),
+                            font_size: checkbox.size * 0.75,
+                            color: Color::WHITE,
+                            ..default()
+                        },
+                        Pickable::IGNORE,
+                    ));
+                }
+            });
     }
 }
 
-/// 2. منطق التغيير (Logic Handler)
+/// Toggles the checkbox state and refreshes the box visuals.
 fn toggle_checkbox_handler(
     trigger: On<Pointer<Click>>,
     mut box_query: Query<(&mut UNode, &mut UBorder)>,
@@ -140,7 +141,7 @@ fn toggle_checkbox_handler(
             if let Ok((mut node, mut border)) = box_query.get_mut(child) {
                 if checkbox.checked {
                     node.background_color = checkbox.checked_color;
-                    border.color = checkbox.checked_color; // إخفاء الحدود عند التحديد (ستايل حديث)
+                    border.color = checkbox.checked_color; // Hide the border when checked for a cleaner look.
                 } else {
                     node.background_color = checkbox.unchecked_color;
                     border.color = checkbox.border_color;

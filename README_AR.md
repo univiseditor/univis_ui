@@ -6,7 +6,6 @@
 ابنِ واجهات حادة وقابلة للتوسع في Bevy للشاشة، ولوحات العالم، والواجهات ثلاثية الأبعاد المضاءة، عبر طبقة ECS واحدة.
 
 ملخص الترحيل: [MIGRATION_AR.md](MIGRATION_AR.md)
-خارطة الطريق الحالية: [ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md)
 رابط الوثائق العامة: `https://univiseditor.github.io/univis_ui/`
 
 > مهم:
@@ -40,18 +39,29 @@
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.2"
+univis_ui = "0.2.0-alpha.3"
 ```
 
 إذا أردت تحكمًا مباشرًا في الطبقات الداخلية:
 
 ```toml
 [dependencies]
-univis_ui_engine = "0.2.0-alpha.2"
-univis_ui_style = "0.2.0-alpha.2"
-univis_ui_interaction = "0.2.0-alpha.2"
-univis_ui_widgets = "0.2.0-alpha.2"
+univis_ui_engine = "0.2.0-alpha.3"
+univis_ui_style = "0.2.0-alpha.3"
+univis_ui_interaction = "0.2.0-alpha.3"
+univis_ui_widgets = "0.2.0-alpha.3"
 ```
+
+## خريطة الحزم
+
+- `univis_ui`: ابدأ بها في أغلب التطبيقات، واستعمل `univis_ui::prelude` كسطح يومي رسمي للجذور والتخطيط والتفاعل والنمط والوحدات الجاهزة.
+- `univis_ui_engine`: اعتمد عليها عندما تحتاج الجذور أو التخطيط أو مزامنة الرندر أو بناء widgets/runtime مخصص من دون الواجهة المجمعة الكاملة.
+- `univis_ui_interaction`: اعتمد عليها عندما تحتاج الالتقاط وحالة `UInteraction` فوق جذور المحرك من دون بقية السطح.
+- `univis_ui_widgets`: اعتمد عليها عندما تريد الوحدات الجاهزة المدمجة لكنك تفضّل تركيب الإضافات والاعتماديات بنفسك.
+- `univis_ui_style`: اعتمد عليها عندما تحتاج فقط موارد النمط المشتركة أو الخطوط أو الأيقونات أو أنماط النص.
+
+سياسة `prelude`:
+يمثل `prelude` في كل crate السطح اليومي الموصى به. أما التكاملات المتقدمة فتستخدم الوحدات المسماة صراحة، وتبقى طبقات التوافق المهجورة على مسارات صريحة مثل `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}` أو `univis_ui_engine::layout::layout_system::{UScreenRoot, UWorldRoot}`. أما الأمثلة الجديدة والوثائق الموصى بها فتستخدم جذور `URootUi` الرسمية فقط.
 
 ## بداية سريعة
 
@@ -108,8 +118,8 @@ fn setup(mut commands: Commands) {
 
 ### ما هو مهجور لكنه ما يزال مدعومًا
 
-- `UScreenRoot` و`UWorldRoot` متاحان فقط كطبقات توافق مهجورة
-- تبقى قيمة `meters_per_unit: 1.0` مخرج توافق قديم عندما تحتاج الحجم الفيزيائي التاريخي نفسه لبعض أمثلة العالم الأقدم
+- `UScreenRoot` و`UWorldRoot` متاحان فقط كطبقات توافق مهجورة على مسارات صريحة مثل `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`؛ وقد خُفِّض التركيز عليهما في الأمثلة، وهدف الإزالة الحالي هو أول alpha بعد `0.2.0-alpha.3` لا يعود يحتاج دعم الترحيل المبني عليهما
+- تبقى قيمة `meters_per_unit: 1.0` مفتاح توافق صريح عندما تحتاج الحجم الفيزيائي التاريخي نفسه لبعض أمثلة العالم الأقدم، وتبقى ضمن السطح الرسمي `URootUi`
 
 ### ما يزال في طور الاستقرار
 
@@ -171,7 +181,6 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 - [صفحة الوثائق الرئيسية](docs/src/index.md)
 - [ملخص الترحيل](MIGRATION_AR.md)
-- [خارطة الطريق الحالية](ROADMAP_POST_REVIEW.md)
 - [جرد الدين التقني الحالي](TECH_DEBT_INVENTORY.md)
 - [البدء السريع (AR)](docs/src/ar/quick-start.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
@@ -179,6 +188,8 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 - [Example Gallery (EN)](docs/src/en/examples/gallery.md)
 - [الجذور والمساحات (AR)](docs/src/ar/layout/roots.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
+- [خريطة الحزم (AR)](docs/src/ar/api/crate-map.md)
+- [Crate Map (EN)](docs/src/en/api/crate-map.md)
 - [فهرس الأمثلة (AR)](docs/src/ar/examples/index.md)
 - [Examples Index (EN)](docs/src/en/examples/index.md)
 - [الترحيل والقيود (AR)](docs/src/ar/migration/index.md)
@@ -187,7 +198,7 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 ## مسار الاكتشاف من GitHub
 
 1. اقرأ `README.md` أو `README_AR.md` لفهم قصة المشروع وخريطة الحزم.
-2. راجع [RELEASE_NOTES.md](RELEASE_NOTES.md) لفهم قصة الإصدار الحالية و[ROADMAP_POST_REVIEW.md](ROADMAP_POST_REVIEW.md) لمعرفة الأولويات النشطة.
+2. راجع [RELEASE_NOTES.md](RELEASE_NOTES.md) لفهم قصة الإصدار الحالية و[changelog.md](changelog.md) لمراجعة السجل الزمني للتنفيذ.
 3. افتح [صفحة الوثائق الرئيسية](docs/src/index.md) أو رابط الوثائق العامة ثم انتقل إلى فصل الشرح المناسب.
 4. استخدم [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md) أو [Example Gallery (EN)](docs/src/en/examples/gallery.md) قبل الرجوع إلى الفهرس الكامل.
 5. ولّد `cargo doc --no-deps -p univis_ui` عندما تحتاج المسارات الدقيقة والتواقيع.
@@ -199,7 +210,6 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 - `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم ومسارات الأمثلة القديمة وافتراضات الجذور القديمة.
 - `MIGRATION_AR.md`: مسار الترحيل العربي.
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha.
-- `ROADMAP_POST_REVIEW.md`: خارطة الطريق النشطة وأولويات ما بعد المراجعة.
 - `TECH_DEBT_INVENTORY.md`: قائمة الصيانة الحالية الخاصة بالملفات الكبيرة وإعادة تقسيمها.
 - `changelog.md`: السجل الزمني المرتب حسب التواريخ للتغييرات الملحوظة.
 
@@ -241,7 +251,7 @@ cargo run -p univis_ui_engine --example root_fit_content
 
 ## الحزم
 
-- `univis_ui`: نقطة الدخول المجمعة
+- `univis_ui`: نقطة الدخول المجمعة والاعتمادية الافتراضية الموصى بها
 - `univis_ui_engine`: الجذور، التخطيط، الرندر، ونموذج العقدة الأساسي
 - `univis_ui_interaction`: الالتقاط والتفاعل
 - `univis_ui_style`: الخطوط، الأيقونات، والموارد البصرية المشتركة
@@ -249,6 +259,6 @@ cargo run -p univis_ui_engine --example root_fit_content
 
 ## الحالة الحالية
 
-تتركز المرحلة alpha الحالية حول `URootUi`، والقياس داخل العالم، وroot capsules، والوثائق الموحدة، وتنظيف الـ API، وخارطة الطريق النشطة بعد المراجعة.
+تتركز المرحلة alpha الحالية حول `URootUi`، والقياس داخل العالم، وroot capsules، والوثائق الموحدة، وتنظيف الـ API.
 
 إذا كنت تريد طبقة UI واحدة في Bevy تستطيع التعامل مع HUD، ولوحات العالم، والواجهات ثلاثية الأبعاد المضاءة من دون تقسيم النموذج الذهني بين أنظمة متفرقة، فهذا هو الاتجاه الذي تحاول Univis UI أن تقدمه.

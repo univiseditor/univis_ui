@@ -10,32 +10,34 @@
 
 use bevy::prelude::*;
 
+mod legacy_compat;
 mod root_resolution;
 mod root_stacking;
+mod roots;
 mod screen_transform;
-mod types;
 mod ui3d_sync;
 
+use self::legacy_compat::effective_root_ui;
 use self::root_resolution::{
-    effective_root_ui, emit_root_resolution_warning, resolve_root_camera, resolve_root_canvas_size,
+    emit_root_resolution_warning, resolve_root_camera, resolve_root_canvas_size,
 };
 pub(crate) use self::root_stacking::{
     resolve_root_stacking, sync_fit_content_root_canvas_sizes, sync_root_capsule_transforms,
 };
-pub(crate) use self::types::RootSpawnRankCounter;
-pub use self::types::{
+pub(crate) use self::roots::RootSpawnRankCounter;
+pub use self::roots::{
     ResolvedRootStack, ResolvedRootUi, URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize,
-    UiSpace,
+    UiRootSettlementState, UiSpace,
 };
-use self::types::{RootResolutionState, RootSpawnRank};
+use self::roots::{RootResolutionState, RootSpawnRank};
 pub use self::ui3d_sync::sync_cached_ui3d;
 
 #[cfg(test)]
 use self::root_stacking::root_capsule_band_width;
 #[cfg(test)]
-use self::screen_transform::compute_screen_root_transform;
+use self::roots::{LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT, ROOT_CAPSULE_LOCAL_LAYER_DIVISOR};
 #[cfg(test)]
-use self::types::ROOT_CAPSULE_LOCAL_LAYER_DIVISOR;
+use self::screen_transform::compute_screen_root_transform;
 
 pub(crate) fn resolve_root_ui(
     mut roots: Query<
@@ -550,6 +552,59 @@ mod tests {
         let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Entity(inactive), &cameras);
         assert_eq!(camera_entity, None);
         assert_eq!(issue, RootResolutionIssue::ExplicitCameraInactive);
+    }
+
+    #[test]
+    fn effective_root_ui_prefers_canonical_root_when_multiple_root_components_exist() {
+        let canonical = URootUi {
+            space: UiSpace::World3d,
+            canvas: UiCanvasSize::Fixed(Vec2::new(320.0, 180.0)),
+            camera: UiCameraRef::Entity(Entity::from_bits(42)),
+            meters_per_unit: 2.5,
+            resolution_scale: 1.25,
+        };
+        let legacy_world = UWorldRoot {
+            size: Vec2::new(800.0, 600.0),
+            is_3d: false,
+            resolution_scale: 0.5,
+        };
+
+        let effective =
+            effective_root_ui(Some(&canonical), Some(&UScreenRoot), Some(&legacy_world))
+                .expect("canonical roots should resolve");
+
+        assert_eq!(effective.space, UiSpace::World3d);
+        assert_eq!(
+            effective.canvas,
+            UiCanvasSize::Fixed(Vec2::new(320.0, 180.0))
+        );
+        assert_eq!(effective.camera, UiCameraRef::Entity(Entity::from_bits(42)));
+        assert_eq!(effective.meters_per_unit, 2.5);
+        assert_eq!(effective.resolution_scale, 1.25);
+    }
+
+    #[test]
+    fn effective_root_ui_maps_legacy_world_root_into_canonical_resolution_inputs() {
+        let legacy_world = UWorldRoot {
+            size: Vec2::new(512.0, 256.0),
+            is_3d: true,
+            resolution_scale: 1.5,
+        };
+
+        let effective = effective_root_ui(None, None, Some(&legacy_world))
+            .expect("legacy world roots should resolve");
+
+        assert_eq!(effective.space, UiSpace::World3d);
+        assert_eq!(
+            effective.canvas,
+            UiCanvasSize::Fixed(Vec2::new(512.0, 256.0))
+        );
+        assert_eq!(effective.camera, UiCameraRef::Auto);
+        assert_eq!(
+            effective.meters_per_unit,
+            LEGACY_WORLD_ROOT_UNITS_PER_UI_UNIT
+        );
+        assert_eq!(effective.resolution_scale, 1.5);
     }
 
     #[test]

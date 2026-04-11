@@ -40,6 +40,9 @@ pub struct LayoutCache {
     /// Last observed `USelf` inputs for each entity.
     self_snapshots: HashMap<Entity, USelf>,
 
+    /// Last observed layout-participating child list for each entity.
+    layout_child_snapshots: HashMap<Entity, Vec<Entity>>,
+
     /// Last observed resolved root state for each root entity.
     root_snapshots: HashMap<Entity, ResolvedRootUi>,
 
@@ -106,6 +109,8 @@ impl LayoutCache {
         self.layout_snapshots
             .retain(|entity, _| alive_entities.contains(entity));
         self.self_snapshots
+            .retain(|entity, _| alive_entities.contains(entity));
+        self.layout_child_snapshots
             .retain(|entity, _| alive_entities.contains(entity));
         self.root_snapshots
             .retain(|entity, _| alive_entities.contains(entity));
@@ -278,6 +283,26 @@ impl LayoutCache {
             Some(uself) => self.self_snapshots.insert(entity, uself),
             None => self.self_snapshots.remove(&entity),
         }
+    }
+
+    pub fn layout_children_snapshot(&self, entity: Entity) -> Option<&[Entity]> {
+        self.layout_child_snapshots.get(&entity).map(Vec::as_slice)
+    }
+
+    pub fn update_layout_children_snapshot(
+        &mut self,
+        entity: Entity,
+        layout_children: Vec<Entity>,
+    ) -> Option<Vec<Entity>> {
+        if layout_children.is_empty() {
+            self.layout_child_snapshots.remove(&entity)
+        } else {
+            self.layout_child_snapshots.insert(entity, layout_children)
+        }
+    }
+
+    pub fn has_node_snapshot(&self, entity: Entity) -> bool {
+        self.node_snapshots.contains_key(&entity)
     }
 
     pub fn update_root_snapshot(
@@ -530,6 +555,7 @@ pub fn track_layout_changes(
     material_pool: Option<Res<MaterialPool>>,
     work_state: Option<Res<UiWorkState>>,
     mut cache: ResMut<LayoutCache>,
+    layout_nodes: Query<(), With<UNode>>,
     nodes: Query<
         (
             Entity,
@@ -548,6 +574,7 @@ pub fn track_layout_changes(
 
     added_nodes: Query<(Entity, &UNode, Option<&ULayout>, Option<&USelf>), Added<UNode>>,
     parents_query: Query<&ChildOf>,
+    children_query: Query<&Children>,
 ) {
     let current_generation = work_state
         .as_ref()
@@ -600,7 +627,17 @@ pub fn track_layout_changes(
         }
 
         if children.as_ref().is_some_and(|kids| kids.is_changed()) {
-            invalidation.merge(classify_children_mutation(has_parent));
+            let current_layout_children =
+                collect_layout_children(children.as_deref(), &layout_nodes);
+            let previous_layout_children =
+                cache.update_layout_children_snapshot(entity, current_layout_children.clone());
+
+            if layout_children_changed(
+                previous_layout_children.as_deref(),
+                &current_layout_children,
+            ) {
+                invalidation.merge(classify_children_mutation(has_parent));
+            }
         }
 
         if material_pool.is_none() {
@@ -620,6 +657,10 @@ pub fn track_layout_changes(
         cache.update_node_snapshot(entity, node.clone());
         cache.update_layout_snapshot(entity, layout.cloned());
         cache.update_self_snapshot(entity, uself.copied());
+        cache.update_layout_children_snapshot(
+            entity,
+            collect_layout_children(children_query.get(entity).ok(), &layout_nodes),
+        );
         cache.mark_dirty(entity);
         cache.mark_dirty_ancestors(entity, &parents_query);
         cache.mark_measure_dirty(entity, current_generation);
@@ -762,6 +803,22 @@ pub fn track_render_stage_changes(
     for entity in changed_nodes.iter() {
         cache.mark_render_dirty(entity, current_generation);
     }
+}
+
+pub(crate) fn collect_layout_children(
+    children: Option<&Children>,
+    layout_nodes: &Query<(), With<UNode>>,
+) -> Vec<Entity> {
+    children.map_or_else(Vec::new, |children| {
+        children
+            .iter()
+            .filter(|child| layout_nodes.get(*child).is_ok())
+            .collect()
+    })
+}
+
+pub(crate) fn layout_children_changed(previous: Option<&[Entity]>, current: &[Entity]) -> bool {
+    previous.unwrap_or(&[]) != current
 }
 
 /// Internal system that rebuilds the depth cache when the tree changes.

@@ -2,7 +2,9 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
 use crate::layout::components::CachedUiContext;
-use crate::layout::core::layout_cache::LayoutCache;
+use crate::layout::core::layout_cache::{
+    LayoutCache, collect_layout_children, layout_children_changed,
+};
 use crate::layout::image::UImage;
 #[allow(deprecated)]
 use crate::layout::layout_system::{
@@ -61,6 +63,7 @@ pub(super) fn run_ui_settlement_loop(world: &mut World) {
 #[allow(deprecated)]
 pub(super) fn begin_ui_settlement_work(
     mut work_state: ResMut<UiWorkState>,
+    cache: Res<LayoutCache>,
     root_mutations: Query<
         (),
         Or<(
@@ -72,6 +75,8 @@ pub(super) fn begin_ui_settlement_work(
             Changed<UWorldRoot>,
         )>,
     >,
+    layout_nodes: Query<(), With<UNode>>,
+    layout_child_mutations: Query<(Entity, Ref<Children>), (With<UNode>, Changed<Children>)>,
     layout_mutations: Query<
         (),
         Or<(
@@ -79,7 +84,6 @@ pub(super) fn begin_ui_settlement_work(
             Changed<UNode>,
             Changed<ULayout>,
             Changed<USelf>,
-            Changed<Children>,
         )>,
     >,
     render_mutations: Query<
@@ -99,8 +103,18 @@ pub(super) fn begin_ui_settlement_work(
     mut removed_children: RemovedComponents<ChildOf>,
 ) {
     let roots_changed = !root_mutations.is_empty();
+    let layout_children_changed = layout_child_mutations.iter().any(|(entity, children)| {
+        let current_layout_children = collect_layout_children(Some(&children), &layout_nodes);
+        layout_children_changed(
+            cache.layout_children_snapshot(entity),
+            &current_layout_children,
+        )
+    });
+    let removed_layout_children = removed_children
+        .read()
+        .any(|entity| layout_nodes.get(entity).is_ok() || cache.has_node_snapshot(entity));
     let structure_changed =
-        removed_nodes.read().next().is_some() || removed_children.read().next().is_some();
+        removed_nodes.read().next().is_some() || removed_layout_children || layout_children_changed;
     let layout_changed = !layout_mutations.is_empty() || structure_changed;
     let render_changed = !render_mutations.is_empty();
 

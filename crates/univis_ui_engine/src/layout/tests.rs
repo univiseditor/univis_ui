@@ -9,6 +9,9 @@ struct DeferredResizeTarget;
 #[derive(Resource, Default)]
 struct DeferredResizeOnce(bool);
 
+#[derive(Component)]
+struct RenderOnlyChild;
+
 fn resize_target_in_render_sync(
     mut resize_once: ResMut<DeferredResizeOnce>,
     mut query: Query<&mut UNode, With<DeferredResizeTarget>>,
@@ -217,6 +220,56 @@ fn settlement_budget_exhaustion_prevents_the_frame_from_reporting_idle() {
     assert_eq!(work_state.last_frame_iterations(), 1);
     assert!(work_state.budget_exhausted());
     assert!(!work_state.is_settled());
+}
+
+#[test]
+fn render_only_children_do_not_start_new_layout_generations() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+    let root = app
+        .world_mut()
+        .spawn((
+            URootUi::world_2d(Vec2::new(400.0, 200.0)),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout::default(),
+        ))
+        .id();
+
+    let parent = app
+        .world_mut()
+        .spawn((
+            ChildOf(root),
+            UNode {
+                width: UVal::Px(100.0),
+                height: UVal::Px(50.0),
+                ..default()
+            },
+        ))
+        .id();
+
+    app.update();
+
+    let initial_generation = app.world().resource::<UiWorkState>().current_generation();
+    assert_eq!(initial_generation, 1);
+
+    app.update();
+    let idle_work_state = app.world().resource::<UiWorkState>();
+    assert_eq!(idle_work_state.current_generation(), initial_generation);
+    assert_eq!(idle_work_state.last_frame_iterations(), 1);
+
+    app.world_mut().spawn((ChildOf(parent), RenderOnlyChild));
+    app.update();
+
+    let work_state = app.world().resource::<UiWorkState>();
+    assert_eq!(work_state.current_generation(), initial_generation);
+    assert_eq!(work_state.last_frame_iterations(), 1);
+    assert!(work_state.is_settled());
+    assert!(!work_state.budget_exhausted());
 }
 
 #[test]

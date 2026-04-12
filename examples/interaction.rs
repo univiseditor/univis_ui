@@ -6,34 +6,20 @@
 //! - `docs/src/en/examples/index.md#interaction`
 
 use bevy::prelude::*;
-use univis_ui_engine::UnivisEnginePlugin;
-use univis_ui_engine::prelude::*;
-use univis_ui_interaction::interaction::UnivisInteractionPlugin;
-#[allow(unused_imports)]
-use univis_ui_interaction::prelude::*;
-#[allow(unused_imports)]
-use univis_ui_style::prelude::*;
-use univis_ui_style::style::UnivisUiStylePlugin;
-use univis_ui_widgets::prelude::*;
-use univis_ui_widgets::widget::UnivisWidgetPlugin;
+use univis_ui::UnivisUiPlugin;
+use univis_ui::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins((
-            UnivisUiStylePlugin,
-            UnivisEnginePlugin,
-            UnivisInteractionPlugin,
-            UnivisWidgetPlugin,
-        ))
+        .add_plugins(UnivisUiPlugin)
         .add_systems(Startup, setup_interaction_test)
         .run();
 }
 
 fn setup_interaction_test(mut commands: Commands) {
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
 
-    // 1. حاوية رئيسية (World Root)
     commands
         .spawn((
             URootUi {
@@ -43,12 +29,11 @@ fn setup_interaction_test(mut commands: Commands) {
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
-                background_color: Color::srgb(0.05, 0.05, 0.05), // خلفية داكنة
+                background_color: Color::srgb(0.05, 0.05, 0.05),
                 padding: USides::all(50.0),
                 ..default()
             },
             ULayout {
-                // توزيع البطاقات بجانب بعضها
                 flex_direction: UFlexDirection::Row,
                 justify_content: UJustifyContent::SpaceEvenly,
                 align_items: UAlignItems::Center,
@@ -57,21 +42,16 @@ fn setup_interaction_test(mut commands: Commands) {
             },
         ))
         .with_children(|root| {
-            // =========================================================
-            // الحالة 1: التجاهل (Standard Button)
-            // الأب يتفاعل، والابن (النص) يتم تجاهله تماماً
-            // =========================================================
             spawn_test_card(
                 root,
                 "1. Standard Button\n(Child Ignores)",
                 "The Text is 'Pickable::IGNORE'.\nClicking text clicks the Button.",
                 |card| {
-                    // الأب (الزر)
                     card.spawn((
                         UNode {
                             width: UVal::Px(200.0),
                             height: UVal::Px(60.0),
-                            background_color: Color::srgb(0.2, 0.6, 1.0), // أزرق
+                            background_color: Color::srgb(0.2, 0.6, 1.0),
                             border_radius: UCornerRadius::all(10.0),
                             ..default()
                         },
@@ -87,50 +67,41 @@ fn setup_interaction_test(mut commands: Commands) {
                         },
                     ))
                     .with_children(|btn| {
-                        // الابن (النص)
                         btn.spawn((
                             UTextLabel::new("Click Me"),
                             TextColor(Color::BLACK),
-                            // --- السر هنا ---
-                            // هذا يجعل الماوس يمر عبر النص وكأنه غير موجود
                             Pickable::IGNORE,
                         ));
                     });
                 },
             );
 
-            // =========================================================
-            // الحالة 2: الحجب (Nested Blocking)
-            // الابن يسرق التفاعل من الأب
-            // =========================================================
             spawn_test_card(
                 root,
                 "2. Nested Blocking\n(Child Blocks)",
                 "Parent is Red. Child is Green.\nClicking Green DOES NOT trigger Red.",
                 |card| {
-                    // الأب (اللوحة الحمراء)
                     card.spawn((
                         UNode {
                             width: UVal::Px(200.0),
                             height: UVal::Px(200.0),
-                            background_color: Color::srgb(0.8, 0.2, 0.2), // أحمر
+                            background_color: Color::srgb(0.8, 0.2, 0.2),
                             border_radius: UCornerRadius::all(10.0),
                             padding: USides::all(20.0),
                             ..default()
                         },
                         UInteractionColors {
                             normal: Color::srgb(0.8, 0.2, 0.2),
-                            hovered: Color::srgb(0.9, 0.3, 0.3), // يضيء عند المرور
+                            hovered: Color::srgb(0.9, 0.3, 0.3),
                             pressed: Color::srgb(0.6, 0.1, 0.1),
                         },
                     ))
                     .with_children(|parent| {
-                        // الابن (الزر الأخضر)
                         parent.spawn((
                             UNode {
                                 width: UVal::Percent(1.0),
                                 height: UVal::Px(50.0),
-                                background_color: Color::srgb(0.2, 0.8, 0.2), // أخضر
+                                background_color: Color::srgb(0.2, 0.8, 0.2),
                                 border_radius: UCornerRadius::all(8.0),
                                 ..default()
                             },
@@ -146,57 +117,45 @@ fn setup_interaction_test(mut commands: Commands) {
                 },
             );
 
-            // =========================================================
-            // الحالة 3: التمرير (Passthrough / Bubbling)
-            // كلاهما يتفاعل في نفس الوقت
-            // =========================================================
             spawn_test_card(
                 root,
                 "3. Passthrough\n(Both React)",
                 "Child has 'should_block_lower: false'.\nHovering Child lights up BOTH.",
                 |card| {
-                    // الأب (اللوحة الصفراء)
                     card.spawn((
                         UNode {
                             width: UVal::Px(200.0),
                             height: UVal::Px(200.0),
-                            background_color: Color::srgb(0.8, 0.8, 0.1), // أصفر
+                            background_color: Color::srgb(0.8, 0.8, 0.1),
                             border_radius: UCornerRadius::all(10.0),
                             padding: USides::all(20.0),
                             ..default()
                         },
                         UInteractionColors {
                             normal: Color::srgb(0.8, 0.8, 0.1),
-                            hovered: Color::srgb(1.0, 1.0, 0.5), // يضيء بقوة
+                            hovered: Color::srgb(1.0, 1.0, 0.5),
                             pressed: Color::srgb(0.6, 0.6, 0.0),
                         },
                     ))
                     .with_children(|parent| {
-                        // الابن (تراكب شفاف)
                         parent
                             .spawn((
                                 UNode {
                                     width: UVal::Percent(1.0),
                                     height: UVal::Percent(1.0),
-                                    background_color: Color::srgb(1.0, 1.0, 1.0).with_alpha(0.1), // شفاف
+                                    background_color: Color::srgb(1.0, 1.0, 1.0).with_alpha(0.1),
                                     border_radius: UCornerRadius::all(8.0),
                                     ..default()
                                 },
-                                // --- السر هنا ---
-                                // اسمح للماوس بالمرور للأب، لكن تفاعل معي أيضاً
-
-                                // تغيير لون الابن أيضاً لإثبات أنه تفاعل
                                 UInteractionColors {
                                     normal: Color::srgb(1.0, 1.0, 1.0).with_alpha(0.1),
-                                    hovered: Color::srgb(1.0, 1.0, 1.0).with_alpha(0.4), // يصبح أكثر بياضاً
+                                    hovered: Color::srgb(1.0, 1.0, 1.0).with_alpha(0.4),
                                     pressed: Color::srgb(1.0, 1.0, 1.0).with_alpha(0.6),
                                 },
                             ))
                             .with_children(|overlay| {
                                 overlay.spawn((
                                     UTextLabel::new("Hover Me!\n(I trigger Parent too)"),
-                                    // TextFont { font_size: 14.0, ..default() },
-                                    // TextColor(Color::BLACK),
                                     USelf {
                                         align_self: UAlignSelf::Center,
                                         ..default()
@@ -209,7 +168,6 @@ fn setup_interaction_test(mut commands: Commands) {
         });
 }
 
-// دالة مساعدة لرسم بطاقة الاختبار
 fn spawn_test_card(
     parent: &mut ChildSpawnerCommands,
     title: &str,
@@ -235,7 +193,6 @@ fn spawn_test_card(
             },
         ))
         .with_children(|card| {
-            // العنوان
             card.spawn((
                 UTextLabel {
                     text: title.to_string(),
@@ -243,19 +200,14 @@ fn spawn_test_card(
                     color: Color::WHITE,
                     ..default()
                 },
-                // TextFont { font_size: 20.0, ..default() },
-                // TextColor(Color::WHITE),
-                // USelf { margin: USides::bottom(10.0), ..default() }
                 UNode {
                     margin: USides::bottom(10.0),
                     ..default()
                 },
             ));
 
-            // منطقة الاختبار (نستدعي الدالة الممررة)
             content_fn(card);
 
-            // الوصف
             card.spawn((
                 UTextLabel {
                     text: desc.to_string(),
@@ -263,9 +215,6 @@ fn spawn_test_card(
                     color: Color::WHITE,
                     ..default()
                 },
-                // TextFont { font_size: 20.0, ..default() },
-                // TextColor(Color::WHITE),
-                // USelf { margin: USides::bottom(10.0), ..default() }
                 UNode {
                     margin: USides::bottom(10.0),
                     ..default()

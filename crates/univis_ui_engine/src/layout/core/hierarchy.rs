@@ -5,7 +5,8 @@ use bevy::{ecs::relationship::Relationship, platform::collections::HashSet, prel
 
 use crate::layout::components::{CachedUiContext, LayoutDepth, LayoutTreeDepth};
 use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
-use crate::layout::univis_node::{UClip, UNode};
+use crate::layout::query::UiPickingContext;
+use crate::layout::univis_node::{UClip, UNode, USelf};
 use crate::schedule::{UiRolloutConfig, UiValidationMode, UiValidationState, UiWorkState};
 
 /// System to update the `LayoutDepth` component for all UI nodes.
@@ -151,6 +152,83 @@ pub fn update_cached_ui_contexts(
     }
 }
 
+/// Refreshes read-only picking snapshots for UI nodes.
+///
+/// This keeps interaction crates off the engine's hierarchy/cache internals by
+/// projecting the minimum picking data they need onto each resolved node.
+pub fn update_picking_contexts(
+    mut commands: Commands,
+    node_contexts: Query<
+        (
+            Option<&UiPickingContext>,
+            Option<&CachedUiContext>,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+        ),
+        With<UNode>,
+    >,
+    incremental_nodes: Query<
+        (
+            Entity,
+            Option<&UiPickingContext>,
+            Option<&CachedUiContext>,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+        ),
+        Or<(
+            Added<UNode>,
+            Changed<ChildOf>,
+            Changed<CachedUiContext>,
+            Changed<LayoutDepth>,
+            Changed<USelf>,
+        )>,
+    >,
+    changed_roots: Query<Entity, Or<(Changed<ResolvedRootUi>, Changed<ResolvedRootStack>)>>,
+    mut removed_children: RemovedComponents<ChildOf>,
+    children_query: Query<&Children>,
+    root_query: Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
+) {
+    let mut visited = HashSet::default();
+
+    for entity in removed_children.read() {
+        sync_picking_context_subtree(
+            entity,
+            &node_contexts,
+            &children_query,
+            &root_query,
+            &mut commands,
+            &mut visited,
+        );
+    }
+
+    for (entity, cached, spatial, depth, uself) in incremental_nodes.iter() {
+        if !visited.insert(entity) {
+            continue;
+        }
+
+        sync_picking_context_for_entity(
+            entity,
+            cached.copied(),
+            spatial.copied(),
+            depth.copied(),
+            uself.copied(),
+            &root_query,
+            &mut commands,
+        );
+    }
+
+    for entity in changed_roots.iter() {
+        sync_picking_context_subtree(
+            entity,
+            &node_contexts,
+            &children_query,
+            &root_query,
+            &mut commands,
+            &mut visited,
+        );
+    }
+}
+
 /// Shadow-validates the cached UI ancestry against the legacy parent walk.
 ///
 /// This stays behind `UiValidationMode` so rollout harnesses can compare the
@@ -230,6 +308,28 @@ fn sync_cached_context_for_entity(
     }
 }
 
+fn sync_picking_context_for_entity(
+    entity: Entity,
+    cached: Option<UiPickingContext>,
+    spatial: Option<CachedUiContext>,
+    depth: Option<LayoutDepth>,
+    uself: Option<USelf>,
+    root_query: &Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
+    commands: &mut Commands,
+) {
+    let updated = resolve_picking_context(spatial, depth, uself, root_query);
+
+    match updated {
+        Some(updated) if cached != Some(updated) => {
+            commands.entity(entity).insert(updated);
+        }
+        None if cached.is_some() => {
+            commands.entity(entity).remove::<UiPickingContext>();
+        }
+        _ => {}
+    }
+}
+
 fn sync_cached_context_subtree(
     entity: Entity,
     node_contexts: &Query<Option<&CachedUiContext>, With<UNode>>,
@@ -264,6 +364,52 @@ fn sync_cached_context_subtree(
                 parents_query,
                 root_query,
                 clipper_query,
+                commands,
+                visited,
+            );
+        }
+    }
+}
+
+fn sync_picking_context_subtree(
+    entity: Entity,
+    node_contexts: &Query<
+        (
+            Option<&UiPickingContext>,
+            Option<&CachedUiContext>,
+            Option<&LayoutDepth>,
+            Option<&USelf>,
+        ),
+        With<UNode>,
+    >,
+    children_query: &Query<&Children>,
+    root_query: &Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
+    commands: &mut Commands,
+    visited: &mut HashSet<Entity>,
+) {
+    if !visited.insert(entity) {
+        return;
+    }
+
+    if let Ok((cached, spatial, depth, uself)) = node_contexts.get(entity) {
+        sync_picking_context_for_entity(
+            entity,
+            cached.copied(),
+            spatial.copied(),
+            depth.copied(),
+            uself.copied(),
+            root_query,
+            commands,
+        );
+    }
+
+    if let Ok(children) = children_query.get(entity) {
+        for child in children.iter() {
+            sync_picking_context_subtree(
+                child,
+                node_contexts,
+                children_query,
+                root_query,
                 commands,
                 visited,
             );
@@ -335,4 +481,41 @@ fn resolve_cached_ui_context(
     }
 
     None
+}
+
+fn resolve_picking_context(
+    spatial: Option<CachedUiContext>,
+    depth: Option<LayoutDepth>,
+    uself: Option<USelf>,
+    root_query: &Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
+) -> Option<UiPickingContext> {
+    let spatial = spatial?;
+    let layout_depth = depth.map_or(0, |value| value.0);
+    let order = uself.map_or(0, |value| value.order);
+
+    let mut camera_entity = spatial.camera_entity;
+    let mut space = spatial.space;
+    let mut root_sort_key = 0.0;
+    let mut local_depth_key = spatial.root_stack.local_depth_key(layout_depth, order);
+
+    if let Some(root_entity) = spatial.root_entity
+        && let Ok((root, stack)) = root_query.get(root_entity)
+    {
+        camera_entity = root.camera_entity;
+        space = root.space;
+
+        if let Some(stack) = stack.copied() {
+            root_sort_key = stack.capsule_sort_key;
+            local_depth_key = stack.local_depth_key(layout_depth, order);
+        }
+    }
+
+    Some(UiPickingContext {
+        root_entity: spatial.root_entity,
+        camera_entity,
+        space,
+        clip_ancestor: spatial.clip_ancestor,
+        root_sort_key,
+        local_depth_key,
+    })
 }

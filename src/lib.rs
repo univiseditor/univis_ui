@@ -49,7 +49,8 @@ pub mod render {
 /// Advanced layout access for roots, node primitives, and layout-specific systems.
 pub mod layout {
     pub use univis_ui_engine::layout::{
-        UnivisLayoutPlugin, geometry, image, layout_system, pbr, profiling, render, univis_node,
+        UnivisLayoutPlugin, geometry, image, invalidation, layout_system, pbr, profiling, query,
+        render, univis_node,
     };
 
     /// Common layout-facing imports such as roots, nodes, and geometry helpers.
@@ -60,7 +61,7 @@ pub mod layout {
 
 /// Re-exports the built-in widget modules.
 pub mod widget {
-    pub use univis_ui_widgets::widget::*;
+    pub use univis_ui_widgets::{schedule, widget::*};
 }
 
 /// The recommended import surface for most applications.

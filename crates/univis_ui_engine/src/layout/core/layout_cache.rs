@@ -10,16 +10,18 @@ use crate::internal::MaterialPool;
 use crate::layout::components::*;
 use crate::layout::geometry::ComputedSize;
 use crate::layout::image::UImage;
+use crate::layout::invalidation::{
+    UiInvalidateRequestQueue, UiLayoutInvalidation as LayoutInvalidation,
+};
 use crate::layout::layout_system::*;
 use crate::layout::pbr::UPbr;
 use crate::layout::univis_node::*;
 use crate::schedule::*;
 
 use self::invalidation::{
-    LayoutInvalidation, apply_layout_invalidation, classify_children_mutation,
-    classify_layout_mutation, classify_node_mutation, classify_uself_mutation,
-    mark_render_dirty_recursive, root_canvas_changed, root_projection_context_changed,
-    root_render_context_changed,
+    apply_layout_invalidation, classify_children_mutation, classify_layout_mutation,
+    classify_node_mutation, classify_uself_mutation, mark_render_dirty_recursive,
+    root_canvas_changed, root_projection_context_changed, root_render_context_changed,
 };
 
 /// Cache resource used to avoid repeated layout work across frames.
@@ -372,6 +374,11 @@ impl LayoutCache {
         drop_completed_frontier_entry(&mut self.measure_frontier, entity, done_generation);
     }
 
+    /// Returns how many nodes are still queued for upward measure work.
+    pub fn measure_dirty_count(&self) -> usize {
+        self.measure_frontier.len()
+    }
+
     pub fn mark_solve_dirty_generation(&mut self, entity: Entity, generation: u64) {
         self.stage_versions_mut(entity).mark_solve_dirty(generation);
         queue_frontier_entry(&mut self.solve_frontier, entity, generation);
@@ -445,6 +452,11 @@ impl LayoutCache {
         self.stage_versions_mut(entity).complete_render();
         let done_generation = self.stage_versions(entity).render_done_generation;
         drop_completed_frontier_entry(&mut self.render_frontier, entity, done_generation);
+    }
+
+    /// Returns how many nodes are still queued for render synchronization.
+    pub fn render_dirty_count(&self) -> usize {
+        self.render_frontier.len()
     }
 
     pub fn take_measure_frontier(&mut self) -> Vec<Entity> {
@@ -667,6 +679,37 @@ pub fn track_layout_changes(
         cache.mark_measure_dirty_ancestors(entity, current_generation, &parents_query);
         cache.mark_solve_dirty_generation(entity, current_generation);
         cache.mark_solve_dirty_ancestors_generation(entity, current_generation, &parents_query);
+    }
+}
+
+/// Applies external invalidation requests emitted by crates outside the engine.
+#[doc(hidden)]
+pub fn apply_external_invalidation_requests(
+    work_state: Option<Res<UiWorkState>>,
+    mut cache: ResMut<LayoutCache>,
+    mut requests: ResMut<UiInvalidateRequestQueue>,
+    parents_query: Query<&ChildOf>,
+) {
+    if requests.is_empty() {
+        return;
+    }
+
+    let current_generation = work_state.as_ref().map_or(0, |state| {
+        if state.pending().any() {
+            state.current_generation()
+        } else {
+            state.current_generation().saturating_add(1)
+        }
+    });
+
+    for (entity, invalidation) in requests.drain() {
+        apply_layout_invalidation(
+            &mut cache,
+            entity,
+            current_generation,
+            invalidation,
+            &parents_query,
+        );
     }
 }
 

@@ -31,7 +31,7 @@ Interaction depends on `UInteraction` being present on the target entity.
 ## Related Examples
 
 - [`interaction`](../examples/index.md#interaction) in `univis_ui_interaction`
-- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) in `univis_ui_engine`
+- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) in `univis_ui`
 
 ## API Entry Points
 

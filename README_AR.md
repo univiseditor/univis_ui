@@ -246,7 +246,7 @@ cargo doc --no-deps -p univis_ui
 شغّل مثالًا:
 
 ```bash
-cargo run -p univis_ui_engine --example root_fit_content
+cargo run -p univis_ui --example root_fit_content
 ```
 
 ## الحزم

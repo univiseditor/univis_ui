@@ -19,13 +19,13 @@
 شغّل هذه الأمثلة عندما يكون التعديل بصريًا أو غنيًا بالتفاعل:
 
 ```bash
-cargo run -p univis_ui_engine --example root_screen_hud
-cargo run -p univis_ui_engine --example root_world_scale
-cargo run -p univis_ui_engine --example root_fit_content
-cargo run -p univis_ui_engine --example root_capsule_overlap
+cargo run -p univis_ui --example root_screen_hud
+cargo run -p univis_ui --example root_world_scale
+cargo run -p univis_ui --example root_fit_content
+cargo run -p univis_ui --example root_capsule_overlap
 cargo run -p univis_ui_widgets --example text_label
 cargo run -p univis_ui_widgets --example panel_window
-cargo run -p univis_ui_interaction --example interaction
+cargo run -p univis_ui --example interaction
 ```
 
 ## ما الذي يجب ملاحظته

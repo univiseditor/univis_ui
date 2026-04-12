@@ -15,17 +15,17 @@
 | المثال | الحزمة | لماذا قد تشغّله | الأمر | المرجع البصري |
 | --- | --- | --- | --- | --- |
 | `hello_world` | `univis_ui` | ابدأ به إذا أردت أصغر مسار تشغيل على مستوى الواجهة المجمعة. | `cargo run -p univis_ui --example hello_world` | شغّل المثال |
-| `root_screen_hud` | `univis_ui_engine` | شغّله إذا أردت التأكد من سلوك الواجهة الثابتة على الشاشة مع حركة الكاميرا. | `cargo run -p univis_ui_engine --example root_screen_hud` | شغّل المثال |
-| `layout_cache` | `univis_ui_engine` | شغّله إذا أردت فحص الذاكرة المؤقتة للتخطيط وسلوك الإبطال وإعادة الحل. | `cargo run -p univis_ui_engine --example layout_cache` | شغّل المثال |
-| `layout_sizing_semantics` | `univis_ui_engine` | شغّله إذا أردت مشهدًا واحدًا يشرح `Auto` والأنماط الجوهرية وسلوك `min/max` داخل flex. | `cargo run -p univis_ui_engine --example layout_sizing_semantics` | شغّل المثال |
+| `root_screen_hud` | `univis_ui` | شغّله إذا أردت التأكد من سلوك الواجهة الثابتة على الشاشة مع حركة الكاميرا. | `cargo run -p univis_ui --example root_screen_hud` | شغّل المثال |
+| `layout_cache` | `univis_ui` | شغّله إذا أردت فحص الذاكرة المؤقتة للتخطيط وسلوك الإبطال وإعادة الحل. | `cargo run -p univis_ui --example layout_cache` | شغّل المثال |
+| `layout_sizing_semantics` | `univis_ui` | شغّله إذا أردت مشهدًا واحدًا يشرح `Auto` والأنماط الجوهرية وسلوك `min/max` داخل flex. | `cargo run -p univis_ui --example layout_sizing_semantics` | شغّل المثال |
 
 ## الواجهات داخل العالم
 
 | المثال | الحزمة | لماذا قد تشغّله | الأمر | المرجع البصري |
 | --- | --- | --- | --- | --- |
-| `root_world_scale` | `univis_ui_engine` | شغّله إذا أردت معايرة حجم مساحة الرسم المنطقية مقابل الحجم الفيزيائي في العالم. | `cargo run -p univis_ui_engine --example root_world_scale` | شغّل المثال |
-| `root_fit_content` | `univis_ui_engine` | شغّله إذا أردت لوحات عالمية يتحدد حجمها من المحتوى. | `cargo run -p univis_ui_engine --example root_fit_content` | شغّل المثال |
-| `root_capsule_overlap` | `univis_ui_engine` | شغّله إذا أردت التحقق من قواعد كبسولات الجذور المغلقة عند التداخل. | `cargo run -p univis_ui_engine --example root_capsule_overlap` | شغّل المثال |
+| `root_world_scale` | `univis_ui` | شغّله إذا أردت معايرة حجم مساحة الرسم المنطقية مقابل الحجم الفيزيائي في العالم. | `cargo run -p univis_ui --example root_world_scale` | شغّل المثال |
+| `root_fit_content` | `univis_ui` | شغّله إذا أردت لوحات عالمية يتحدد حجمها من المحتوى. | `cargo run -p univis_ui --example root_fit_content` | شغّل المثال |
+| `root_capsule_overlap` | `univis_ui` | شغّله إذا أردت التحقق من قواعد كبسولات الجذور المغلقة عند التداخل. | `cargo run -p univis_ui --example root_capsule_overlap` | شغّل المثال |
 | `border_light_3d` | `univis_ui_engine` | شغّله إذا أردت فحص مسار `World3d` المضيء و`UPbr`. | `cargo run -p univis_ui_engine --features example_bloom --example border_light_3d` | شغّل المثال |
 
 ## الوحدات الجاهزة والنماذج
@@ -45,7 +45,7 @@
 
 | المثال | الحزمة | لماذا قد تشغّله | الأمر | المرجع البصري |
 | --- | --- | --- | --- | --- |
-| `interaction` | `univis_ui_interaction` | شغّله إذا أردت فهم الحجب والتجاهل والتمرير في الضربات. | `cargo run -p univis_ui_interaction --example interaction` | شغّل المثال |
+| `interaction` | `univis_ui` | شغّله إذا أردت فهم الحجب والتجاهل والتمرير في الضربات. | `cargo run -p univis_ui --example interaction` | شغّل المثال |
 
 ## أمثلة العرض الكبيرة
 

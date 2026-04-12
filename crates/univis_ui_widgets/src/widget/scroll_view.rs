@@ -1,6 +1,9 @@
-use crate::internal_prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
+use univis_ui_engine::layout::geometry::UVal;
+use univis_ui_engine::layout::query::ComputedSize;
+use univis_ui_engine::layout::univis_node::{UPositionType, USelf};
+use univis_ui_interaction::interaction::feedback::UInteraction;
 
 /// Registers the scroll container widget.
 pub struct UnivisScrollViewPlugin;

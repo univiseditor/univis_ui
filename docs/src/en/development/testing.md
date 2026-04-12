@@ -21,6 +21,9 @@ cargo test --release <test_name> --lib
 - `cargo fmt --all --check`
 - `cargo clippy --workspace --all-targets` with the current CI allowlist for known Bevy-heavy lint debt
 - `cargo check --workspace --all-targets`
+- `./scripts/check_public_api_surface.sh`
+- `./scripts/check_structure_guardrails.sh`
+- `./scripts/check_engine_boundary_guardrails.sh`
 - `cargo test --workspace --lib`
 
 `./scripts/check_representative_examples.sh` checks a curated release-mode set that covers the

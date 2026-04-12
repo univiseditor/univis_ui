@@ -2,8 +2,7 @@ use bevy::ecs::relationship::Relationship;
 use bevy::prelude::{ChildOf, Entity, GlobalTransform, Query, Vec2, Vec3, Vec4};
 
 use crate::interaction::math::sd_rounded_box;
-use univis_ui_engine::layout::components::CachedUiContext;
-use univis_ui_engine::layout::geometry::ComputedSize;
+use univis_ui_engine::layout::query::{ComputedSize, UiPickingContext};
 use univis_ui_engine::layout::univis_node::{UClip, UNode};
 
 pub(super) fn is_clipped_by_ancestors(
@@ -42,14 +41,14 @@ pub(super) fn is_clipped_by_ancestors(
     false
 }
 
-pub(super) fn is_clipped_by_cached_context(
-    cached_context: Option<&CachedUiContext>,
+pub(super) fn is_clipped_by_picking_context(
+    picking_context: Option<&UiPickingContext>,
     start_entity: Entity,
     cursor_world_pos: Vec3,
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
 ) -> bool {
-    if let Some(clip_entity) = cached_context.and_then(|value| value.clip_ancestor)
+    if let Some(clip_entity) = picking_context.and_then(|value| value.clip_ancestor)
         && let Ok((transform, size, node, clip)) = clipper_query.get(clip_entity)
         && clip.enabled
     {

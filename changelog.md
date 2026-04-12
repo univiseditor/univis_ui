@@ -82,7 +82,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 ### Added
 
 - Added a frozen performance baseline capture under `perf_baselines/current_max/2026-04-05/` with human-readable notes, a machine-readable manifest, and raw solver/runtime benchmark outputs for the pre-optimization maximum built-in load.
-- Added explicit rollout controls and shadow-validation state through `UiRolloutConfig`, `UiValidationMode`, and `UiValidationState`, so cached ancestry, incremental solve, mesh reuse, and post-settle picking can be validated before defaults are tightened.
+- Added explicit rollout controls and validation state through `UiRolloutConfig`, `UiValidationMode`, `UiValidationState`, and the interaction-owned `PickingValidationState`, so cached ancestry, incremental solve, mesh reuse, and post-settle picking can be validated before defaults are tightened.
 - Added `scripts/verify_frame_zero_rollout.sh` to run the frame-zero rollout gate in one command across library tests, representative release-mode examples, and benchmark budget checks.
 - Added a stress-only runtime benchmark workload, `roots_10k_nodes_1m`, covering `10,000` roots and `1,000,000` nodes without folding that load into the default baseline pass.
 

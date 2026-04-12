@@ -16,15 +16,13 @@ use bevy::text::{
 use std::collections::HashSet;
 use unicode_bidi::BidiInfo;
 use unicode_segmentation::UnicodeSegmentation;
-use univis_ui_engine::internal::{ComputedSize, IntrinsicSize};
-use univis_ui_engine::layout::core::layout_cache::LayoutCache;
 use univis_ui_engine::layout::geometry::{USides, UVal};
 #[cfg(test)]
 use univis_ui_engine::layout::layout_system::URootUi;
+use univis_ui_engine::layout::query::{ComputedSize, IntrinsicSize};
 #[cfg(test)]
 use univis_ui_engine::layout::univis_node::ULayout;
 use univis_ui_engine::layout::univis_node::UNode;
-use univis_ui_engine::schedule::UiWorkState;
 #[cfg(test)]
 use univis_ui_engine::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 

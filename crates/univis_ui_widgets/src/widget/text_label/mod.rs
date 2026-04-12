@@ -39,9 +39,9 @@ use self::render::mesh::{TextGlyphQuad, text_horizontal_offset};
 #[cfg(test)]
 use bevy::text::TextBounds;
 #[cfg(test)]
-use univis_ui_engine::internal::{ComputedSize, IntrinsicSize};
-#[cfg(test)]
 use univis_ui_engine::layout::geometry::{USides, UVal};
+#[cfg(test)]
+use univis_ui_engine::layout::query::{ComputedSize, IntrinsicSize};
 #[cfg(test)]
 use univis_ui_engine::layout::univis_node::UNode;
 
@@ -61,31 +61,31 @@ impl Plugin for UnivisTextPlugin {
             .add_systems(
                 UiSettlementSchedule,
                 measure_text_label_layout
-                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .in_set(UnivisPostUpdateSet::ExternalPrepare)
                     .before(sync_text_label_intrinsic_size),
             )
             .add_systems(
                 UiSettlementSchedule,
                 sync_text_label_intrinsic_size
-                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .in_set(UnivisPostUpdateSet::ExternalPrepare)
                     .before(fit_node_to_text_size),
             )
             .add_systems(
                 UiSettlementSchedule,
                 fit_node_to_text_size
-                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .in_set(UnivisPostUpdateSet::ExternalPrepare)
                     .before(mark_text_label_layout_dirty),
             )
             .add_systems(
                 UiSettlementSchedule,
                 mark_text_label_layout_dirty
-                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .in_set(UnivisPostUpdateSet::ExternalPrepare)
                     .before(sync_text_label_meshes),
             )
             .add_systems(
                 UiSettlementSchedule,
                 sync_text_label_meshes
-                    .in_set(UnivisPostUpdateSet::WidgetSync)
+                    .in_set(UnivisPostUpdateSet::ExternalPrepare)
                     .before(UnivisPostUpdateSet::LayoutMeasure),
             )
             .add_systems(

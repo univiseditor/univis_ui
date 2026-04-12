@@ -1,5 +1,5 @@
+use crate::schedule::UnivisWidgetUpdateSet;
 use bevy::prelude::*;
-use univis_ui_engine::schedule::UnivisWidgetUpdateSet;
 
 mod events;
 mod interaction;

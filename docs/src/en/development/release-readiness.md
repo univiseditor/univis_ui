@@ -7,10 +7,10 @@ This page is the final pre-release checklist for the next alpha cut.
 Compile-check these sequentially:
 
 ```bash
-cargo check -p univis_ui_engine --example root_screen_hud
-cargo check -p univis_ui_engine --example root_world_scale
-cargo check -p univis_ui_engine --example root_fit_content
-cargo check -p univis_ui_engine --example root_capsule_overlap
+cargo check -p univis_ui --example root_screen_hud
+cargo check -p univis_ui --example root_world_scale
+cargo check -p univis_ui --example root_fit_content
+cargo check -p univis_ui --example root_capsule_overlap
 ```
 
 Manual runtime validation is still recommended for at least one pass from the same set.

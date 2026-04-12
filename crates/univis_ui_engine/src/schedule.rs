@@ -1,6 +1,6 @@
 use bevy::{
     ecs::schedule::{ScheduleLabel, SystemSet},
-    prelude::Resource,
+    prelude::{Res, ResMut, Resource},
 };
 
 /// Internal settlement schedule executed from `PostUpdate`.
@@ -16,8 +16,8 @@ pub struct UiSettlementSchedule;
 /// render synchronization explicit and reusable.
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum UnivisPostUpdateSet {
-    /// Widget-specific systems that prepare layout-affecting state.
-    WidgetSync,
+    /// External systems that prepare layout-affecting state before root resolution.
+    ExternalPrepare,
     /// Root resolution, camera binding, and root stacking capsule updates.
     RootResolve,
     /// Hierarchy analysis and cached parent/child relationships.
@@ -28,26 +28,10 @@ pub enum UnivisPostUpdateSet {
     LayoutSolve,
     /// Render-side synchronization after layout is final.
     RenderSync,
-    /// Post-settle picking refresh against current-frame geometry.
-    PickSync,
+    /// External synchronization that runs after solve against settled geometry.
+    ExternalPostSolve,
     /// Final bookkeeping after the UI pipeline has finished for the frame.
     UiSettled,
-}
-
-/// Shared `Update` schedule sets used by stateful widget runtimes.
-///
-/// These sets make it explicit which widget systems are responsible for
-/// structural setup, state transitions, visual refreshes, and event emission.
-#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
-pub enum UnivisWidgetUpdateSet {
-    /// Widget systems that create or remove runtime entities/components.
-    Build,
-    /// Widget systems that mutate runtime state in response to input or messages.
-    Logic,
-    /// Widget systems that synchronize visuals from the latest widget state.
-    Visual,
-    /// Widget systems that emit change messages after state and visuals settle.
-    Events,
 }
 
 /// High-level settlement stages tracked for the current UI mutation generation.
@@ -134,33 +118,159 @@ impl Default for UiRolloutConfig {
     }
 }
 
+impl UiRolloutConfig {
+    /// Returns whether post-settle picking should emit hits from settled UI geometry.
+    pub fn post_settle_picking_enabled(&self) -> bool {
+        self.use_post_settle_picking
+    }
+
+    /// Returns whether picking-side validation should run for the current rollout.
+    pub fn picking_validation_enabled(&self) -> bool {
+        self.validation != UiValidationMode::Disabled
+    }
+}
+
+/// Narrow settlement-facing runtime snapshot derived from the engine work state.
+///
+/// Examples and diagnostics can depend on this resource without reading the
+/// full internal settlement tracker directly.
+#[derive(Resource, Debug, Clone)]
+pub struct UiSettlementRuntimeState {
+    current_generation: u64,
+    settled: bool,
+    last_frame_iterations: u32,
+    budget_exhausted: bool,
+}
+
+impl Default for UiSettlementRuntimeState {
+    fn default() -> Self {
+        Self {
+            current_generation: 0,
+            settled: true,
+            last_frame_iterations: 0,
+            budget_exhausted: false,
+        }
+    }
+}
+
+impl UiSettlementRuntimeState {
+    /// Returns the latest mutation generation observed by the UI pipeline.
+    pub fn current_generation(&self) -> u64 {
+        self.current_generation
+    }
+
+    /// Returns whether the tracked UI stages are fully settled for the frame.
+    pub fn is_settled(&self) -> bool {
+        self.settled
+    }
+
+    /// Returns the number of settlement iterations executed during the latest
+    /// frame.
+    pub fn last_frame_iterations(&self) -> u32 {
+        self.last_frame_iterations
+    }
+
+    /// Returns whether the latest frame exhausted its settlement budget.
+    pub fn budget_exhausted(&self) -> bool {
+        self.budget_exhausted
+    }
+}
+
+/// Refreshes the public settlement runtime snapshot from engine-owned work state.
+pub fn sync_settlement_runtime_state(
+    work_state: Option<Res<UiWorkState>>,
+    mut settlement_runtime: ResMut<UiSettlementRuntimeState>,
+) {
+    let current_generation = work_state
+        .as_ref()
+        .map_or(0, |value| value.current_generation());
+    let settled = work_state.as_ref().map_or(true, |value| value.is_settled());
+    let last_frame_iterations = work_state
+        .as_ref()
+        .map_or(0, |value| value.last_frame_iterations());
+    let budget_exhausted = work_state
+        .as_ref()
+        .is_some_and(|value| value.budget_exhausted());
+
+    *settlement_runtime = UiSettlementRuntimeState {
+        current_generation,
+        settled,
+        last_frame_iterations,
+        budget_exhausted,
+    };
+}
+
+/// Narrow picking-facing runtime snapshot derived from settlement state.
+///
+/// Interaction systems can depend on this resource without reading the full
+/// rollout or work-state resources directly.
+#[derive(Resource, Debug, Clone, Default)]
+pub struct UiPickingRuntimeState {
+    current_ui_generation: u64,
+    geometry_pending: bool,
+    post_settle_picking_enabled: bool,
+    validation_enabled: bool,
+}
+
+impl UiPickingRuntimeState {
+    /// Returns the latest UI mutation generation observed by the engine.
+    pub fn current_ui_generation(&self) -> u64 {
+        self.current_ui_generation
+    }
+
+    /// Returns whether layout geometry is still settling for the current generation.
+    pub fn geometry_pending(&self) -> bool {
+        self.geometry_pending
+    }
+
+    /// Returns whether settled geometry should emit post-settle pointer hits.
+    pub fn post_settle_picking_enabled(&self) -> bool {
+        self.post_settle_picking_enabled
+    }
+
+    /// Returns whether picking validation is enabled for the current rollout.
+    pub fn validation_enabled(&self) -> bool {
+        self.validation_enabled
+    }
+}
+
+/// Refreshes the public picking runtime snapshot from engine-owned rollout and work state.
+pub fn sync_picking_runtime_state(
+    rollout: Option<Res<UiRolloutConfig>>,
+    work_state: Option<Res<UiWorkState>>,
+    mut picking_runtime: ResMut<UiPickingRuntimeState>,
+) {
+    let rollout = rollout
+        .as_deref()
+        .cloned()
+        .unwrap_or_else(UiRolloutConfig::default);
+    let current_ui_generation = work_state
+        .as_ref()
+        .map_or(0, |value| value.current_generation());
+    let geometry_pending = work_state
+        .as_ref()
+        .is_some_and(|value| value.geometry_pending_for_picking());
+
+    *picking_runtime = UiPickingRuntimeState {
+        current_ui_generation,
+        geometry_pending,
+        post_settle_picking_enabled: rollout.post_settle_picking_enabled(),
+        validation_enabled: rollout.picking_validation_enabled(),
+    };
+}
+
 /// Validation diagnostics produced by rollout shadow checks.
 #[derive(Resource, Debug, Clone, Default)]
 pub struct UiValidationState {
     pub cached_context_generation: u64,
     pub cached_context_mismatches: usize,
     pub cached_context_warning_generation: Option<u64>,
-    pub picking_shadow_ui_generation: u64,
-    pub picking_shadow_pointer_generation: u64,
-    pub picking_shadow_mismatches: usize,
-    pub picking_shadow_warning: Option<(u64, u64)>,
 }
 
 impl UiValidationState {
     pub fn record_cached_context_check(&mut self, generation: u64, mismatches: usize) {
         self.cached_context_generation = generation;
         self.cached_context_mismatches = mismatches;
-    }
-
-    pub fn record_picking_shadow_check(
-        &mut self,
-        ui_generation: u64,
-        pointer_generation: u64,
-        mismatches: usize,
-    ) {
-        self.picking_shadow_ui_generation = ui_generation;
-        self.picking_shadow_pointer_generation = pointer_generation;
-        self.picking_shadow_mismatches = mismatches;
     }
 }
 
@@ -224,6 +334,17 @@ impl UiWorkState {
     /// Returns the currently pending settlement stages.
     pub fn pending(&self) -> UiPendingStages {
         self.pending
+    }
+
+    /// Returns `true` when pre-render geometry stages are still catching up.
+    ///
+    /// Post-settle picking can run once root resolution, hierarchy, measure,
+    /// and solve are complete, even if render synchronization is still pending.
+    pub fn geometry_pending_for_picking(&self) -> bool {
+        self.pending.root_resolve
+            || self.pending.hierarchy
+            || self.pending.measure
+            || self.pending.solve
     }
 
     /// Returns the number of settlement iterations executed during the latest
@@ -305,6 +426,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn ui_settlement_runtime_state_defaults_to_idle() {
+        let state = UiSettlementRuntimeState::default();
+
+        assert_eq!(state.current_generation(), 0);
+        assert!(state.is_settled());
+        assert_eq!(state.last_frame_iterations(), 0);
+        assert!(!state.budget_exhausted());
+    }
+
+    #[test]
     fn ui_work_state_tracks_stage_completion_per_generation() {
         let mut state = UiWorkState::default();
         let pending = UiPendingStages {
@@ -382,6 +513,8 @@ mod tests {
         assert!(config.use_mesh_cache);
         assert!(config.use_post_settle_picking);
         assert_eq!(config.validation, UiValidationMode::Disabled);
+        assert!(config.post_settle_picking_enabled());
+        assert!(!config.picking_validation_enabled());
     }
 
     #[test]
@@ -394,16 +527,27 @@ mod tests {
     }
 
     #[test]
-    fn ui_validation_state_tracks_shadow_check_results() {
+    fn ui_validation_state_tracks_cached_context_check_results() {
         let mut state = UiValidationState::default();
 
         state.record_cached_context_check(3, 2);
-        state.record_picking_shadow_check(4, 7, 1);
 
         assert_eq!(state.cached_context_generation, 3);
         assert_eq!(state.cached_context_mismatches, 2);
-        assert_eq!(state.picking_shadow_ui_generation, 4);
-        assert_eq!(state.picking_shadow_pointer_generation, 7);
-        assert_eq!(state.picking_shadow_mismatches, 1);
+    }
+
+    #[test]
+    fn ui_work_state_reports_geometry_pending_for_post_settle_picking() {
+        let mut state = UiWorkState::default();
+        state.begin_generation(UiPendingStages {
+            solve: true,
+            render: true,
+            ..Default::default()
+        });
+
+        assert!(state.geometry_pending_for_picking());
+
+        state.complete_stage(UiWorkStage::Solve);
+        assert!(!state.geometry_pending_for_picking());
     }
 }

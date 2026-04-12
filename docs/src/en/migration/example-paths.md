@@ -13,20 +13,21 @@ cargo run --example root_fit_content
 Use package-aware commands now:
 
 ```bash
-cargo run -p univis_ui_engine --example root_fit_content
+cargo run -p univis_ui --example root_fit_content
 ```
 
 ## Package Ownership Rules
 
-- `examples/` at the workspace root is reserved for facade-level integrated demos
-- `crates/univis_ui_engine/examples/` holds engine, root, layout, and rendering-focused examples
+- `examples/` at the workspace root holds facade demos plus cross-crate layout/root examples that need widgets or interaction
+- `crates/univis_ui_engine/examples/` holds engine, layout, and rendering-focused examples that stay pure to the engine boundary
 - `crates/univis_ui_widgets/examples/` holds widget-focused examples
-- `crates/univis_ui_interaction/examples/` holds interaction-focused examples
+- `examples/interaction.rs` in the root package holds the interaction-focused example
 
 ## Common Migrations
 
-- `root_*` examples -> `univis_ui_engine`
-- `layout_case_*` examples -> `univis_ui_engine`
+- `root_*` examples -> `univis_ui`
+- `layout_case_*` examples -> `univis_ui`
+- `alignment`, `ex_node`, `layout_cache`, `layout_sizing_semantics`, `runtime_benchmarks` -> `univis_ui`
 - `text_*`, `panel_*`, `scroll_view`, `select`, `toggle` -> `univis_ui_widgets`
 - `interaction` -> `univis_ui_interaction`
 - `hello_world`, `card_profile`, `sci_fi`, `complex_dashboard` -> `univis_ui`

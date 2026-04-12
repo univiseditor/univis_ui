@@ -15,10 +15,6 @@ example_bloom = ["bevy/bevy_post_process"]
 bevy = { workspace = true }
 univis_ui_style = { path = "../univis_ui_style", version = "0.2.0-alpha.3" }
 
-[dev-dependencies]
-univis_ui_interaction = { path = "../univis_ui_interaction", version = "0.2.0-alpha.3" }
-univis_ui_widgets = { path = "../univis_ui_widgets", version = "0.2.0-alpha.3" }
-
 [[example]]
 name = "border_light_3d"
 required-features = ["example_bloom"]

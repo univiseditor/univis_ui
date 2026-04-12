@@ -19,7 +19,7 @@ use univis_ui_engine::layout::UnivisLayoutPlugin;
 use univis_ui_engine::layout::geometry::ComputedSize;
 use univis_ui_engine::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
 use univis_ui_engine::prelude::*;
-use univis_ui_engine::schedule::UiWorkState;
+use univis_ui_engine::schedule::UiSettlementRuntimeState;
 use univis_ui_interaction::interaction::picking::univis_picking_backend;
 use univis_ui_interaction::prelude::UInteraction;
 use univis_ui_widgets::prelude::UButton;
@@ -38,7 +38,7 @@ const STRESS_NODES_PER_ROOT: usize = STRESS_NODE_COUNT / STRESS_ROOT_COUNT;
 const STRESS_PANELS_PER_ROOT: usize = 1;
 const STRESS_LEAVES_PER_ROOT: usize = STRESS_NODES_PER_ROOT - STRESS_PANELS_PER_ROOT;
 const TEXT_FONT_BYTES: &[u8] =
-    include_bytes!("../../univis_ui_style/src/style/assets/fonts/Inter-Regular.ttf");
+    include_bytes!("../crates/univis_ui_style/src/style/assets/fonts/Inter-Regular.ttf");
 
 #[derive(Clone, Copy)]
 struct BenchmarkSummary {
@@ -339,7 +339,10 @@ fn build_idle_after_settle_scenario() -> RuntimeScenario {
     let camera_entity = spawn_orthographic_camera(&mut app, 1200.0);
     populate_root_capsules_scene(&mut app, camera_entity);
     settle_runtime_scenario(&mut app);
-    let settled_generation = app.world().resource::<UiWorkState>().current_generation();
+    let settled_generation = app
+        .world()
+        .resource::<UiSettlementRuntimeState>()
+        .current_generation();
     app.world_mut()
         .insert_resource(BenchIdleScenario { settled_generation });
 
@@ -1231,11 +1234,11 @@ fn no_op_after_update(_app: &mut App) {}
 
 fn assert_idle_after_update(app: &mut App) {
     assert_ui_settled(app);
-    let work_state = app.world().resource::<UiWorkState>();
+    let settlement_runtime = app.world().resource::<UiSettlementRuntimeState>();
 
     if let Some(idle) = app.world().get_resource::<BenchIdleScenario>() {
         assert_eq!(
-            work_state.current_generation(),
+            settlement_runtime.current_generation(),
             idle.settled_generation,
             "idle scenario should not start a new generation"
         );
@@ -1298,24 +1301,28 @@ fn assert_localized_solve_after_update(app: &mut App) {
 }
 
 fn assert_ui_settled(app: &mut App) {
-    let work_state = app.world().resource::<UiWorkState>();
+    let settlement_runtime = app.world().resource::<UiSettlementRuntimeState>();
     assert!(
-        work_state.is_settled(),
-        "ui pipeline should be settled after benchmark frame, work_state={work_state:?}"
+        settlement_runtime.is_settled(),
+        "ui pipeline should be settled after benchmark frame, runtime_state={settlement_runtime:?}"
     );
 }
 
 fn settle_runtime_scenario(app: &mut App) {
     for _ in 0..8 {
         app.update();
-        if app.world().resource::<UiWorkState>().is_settled() {
+        if app
+            .world()
+            .resource::<UiSettlementRuntimeState>()
+            .is_settled()
+        {
             return;
         }
     }
 
     panic!(
-        "benchmark scenario failed to settle before measurement, work_state={:?}",
-        app.world().resource::<UiWorkState>()
+        "benchmark scenario failed to settle before measurement, runtime_state={:?}",
+        app.world().resource::<UiSettlementRuntimeState>()
     );
 }
 

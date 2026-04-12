@@ -60,7 +60,7 @@ Use the dedicated widget plugins directly only when you intentionally want a nar
 Run these in order:
 
 1. `cargo run -p univis_ui --example hello_world`
-2. `cargo run -p univis_ui_engine --example root_screen_hud`
+2. `cargo run -p univis_ui --example root_screen_hud`
 
 Focus on:
 
@@ -71,8 +71,8 @@ Focus on:
 
 Run these in order:
 
-1. `cargo run -p univis_ui_engine --example root_world_scale`
-2. `cargo run -p univis_ui_engine --example root_fit_content`
+1. `cargo run -p univis_ui --example root_world_scale`
+2. `cargo run -p univis_ui --example root_fit_content`
 
 Focus on:
 

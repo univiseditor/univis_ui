@@ -1,5 +1,12 @@
-use crate::internal_prelude::*;
+use crate::widget::text_label::UTextLabel;
+use bevy::input::{ButtonInput, mouse::MouseButton};
+use bevy::picking::Pickable;
 use bevy::prelude::*;
+use univis_ui_engine::layout::geometry::{UCornerRadius, UVal};
+use univis_ui_engine::layout::univis_node::{
+    UAlignItems, UDisplay, UFlexDirection, UJustifyContent, ULayout, UNode, UPositionType, USelf,
+};
+use univis_ui_interaction::interaction::feedback::UInteraction;
 
 // =========================================================
 // Plugin

@@ -20,6 +20,8 @@ Use this checklist for docs-heavy pull requests.
 ## Engineering Quality
 
 - [ ] `./scripts/check_public_api_surface.sh` completed when facade imports, plugin wiring, or deprecated path exposure changed
+- [ ] `./scripts/check_engine_boundary_guardrails.sh` completed when moving logic across `engine`, `interaction`, or `widgets`
 - [ ] the change did not introduce a new large source hotspot without a clear reason
 - [ ] the change did not widen public API or coupling without a user-facing need
+- [ ] the change did not add a new dependency on `univis_ui_engine::internal` or hidden engine modules outside the engine crate
 - [ ] naming stayed consistent with the maintainer naming and architecture pages

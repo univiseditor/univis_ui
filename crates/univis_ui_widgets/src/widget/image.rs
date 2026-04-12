@@ -1,5 +1,7 @@
-use crate::internal_prelude::*;
 use bevy::prelude::*;
+use univis_ui_engine::layout::geometry::UVal;
+use univis_ui_engine::layout::image::UImage;
+use univis_ui_engine::layout::univis_node::UNode;
 
 fn image_uses_native_intrinsic_size(value: UVal) -> bool {
     matches!(

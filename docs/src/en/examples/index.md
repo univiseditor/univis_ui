@@ -27,28 +27,28 @@ cargo run -p <package> --example <name>
 
 ### `root_screen_hud`
 
-- Package: `univis_ui_engine`
+- Package: `univis_ui`
 - Purpose: proves that `URootUi::screen()` stays viewport-fixed while a world root still moves with the camera.
 - Best for: HUD semantics and root-space mental model.
 - Kind: `Learning`, `Smoke`
 
 ### `root_world_scale`
 
-- Package: `univis_ui_engine`
+- Package: `univis_ui`
 - Purpose: shows that the same logical canvas can map to different world sizes through `meters_per_unit`.
 - Best for: world-root sizing and scale calibration.
 - Kind: `Learning`, `Smoke`
 
 ### `root_fit_content`
 
-- Package: `univis_ui_engine`
+- Package: `univis_ui`
 - Purpose: demonstrates content-sized world roots through `UiCanvasSize::FitContent`.
 - Best for: inspectors, floating cards, and node-like panels.
 - Kind: `Learning`, `Smoke`
 
 ### `root_capsule_overlap`
 
-- Package: `univis_ui_engine`
+- Package: `univis_ui`
 - Purpose: demonstrates root-capsule stacking where protruding children stay below another root when their own root is below it.
 - Best for: node-graph style UI and cross-root overlap rules.
 - Kind: `Learning`, `Smoke`
@@ -120,20 +120,13 @@ cargo run -p <package> --example <name>
 
 ### `univis_ui`
 
+This package also owns the integrated root/layout demos that compose `univis_ui_engine`
+with widgets or interaction helpers.
+
 | Example | Purpose | Best for | Kind |
 | --- | --- | --- | --- |
 | `hello_world` | Minimal facade-level app with one root and one label. | first run | `Learning`, `Smoke` |
-| `complex_dashboard` | Integrated dashboard with multiple widgets and denser composition. | facade-level composition | `Showcase` |
-| `card_profile` | Profile card demo with polished presentation and optional bloom. | polished facade card | `Showcase`, `Smoke` |
-| `sci_fi` | Larger full-stack sci-fi HUD scene. | final-look showcase | `Showcase`, `Smoke` |
-| `transit_control` | Dense transit operations board with animated platform cards and dispatch panels. | non-sci-fi showcase composition | `Showcase` |
-
-### `univis_ui_engine`
-
-| Example | Purpose | Best for | Kind |
-| --- | --- | --- | --- |
 | `alignment` | Small alignment reference scene. | alignment rules | `Learning` |
-| `border_light_3d` | Lit `World3d` panel with bloom-friendly rendering. | 3D render path | `Learning`, `Smoke` |
 | `ex_node` | Low-level node authoring demo. | engine primitives | `Learning` |
 | `layout_cache` | Visualizes or stresses layout cache behavior. | cache diagnostics | `Learning` |
 | `layout_case_alignment_overflow` | Focused alignment and overflow case. | solver edge cases | `Learning` |
@@ -144,13 +137,23 @@ cargo run -p <package> --example <name>
 | `layout_case_radial` | Demonstrates radial placement. | radial layout | `Learning` |
 | `layout_sizing_semantics` | Demonstrates `Auto`, `MinContent`, `MaxContent`, and explicit `min/max` bounds in one screen. | sizing model | `Learning` |
 | `layout_case_stack` | Demonstrates stack layout semantics. | stack layout | `Learning` |
-| `layout_solver_no_widgets` | Solver-heavy scene without widget dependencies. | pure layout debugging | `Learning` |
-| `layout_solver_ultra_complex` | Larger solver stress scene. | solver stress | `Learning`, `Smoke` |
-| `masonry` | Higher-level masonry layout showcase. | masonry reference | `Learning` |
 | `root_screen_hud` | Confirms real HUD behavior for `URootUi::screen()`. | screen roots | `Learning`, `Smoke` |
 | `root_world_scale` | Compares logical canvas size and physical world scaling. | `meters_per_unit` | `Learning`, `Smoke` |
 | `root_capsule_overlap` | Demonstrates sealed root capsules under overlap. | root stacking | `Learning`, `Smoke` |
 | `root_fit_content` | Demonstrates content-sized `World2d` and `World3d` roots. | fit-content roots | `Learning`, `Smoke` |
+| `complex_dashboard` | Integrated dashboard with multiple widgets and denser composition. | facade-level composition | `Showcase` |
+| `card_profile` | Profile card demo with polished presentation and optional bloom. | polished facade card | `Showcase`, `Smoke` |
+| `sci_fi` | Larger full-stack sci-fi HUD scene. | final-look showcase | `Showcase`, `Smoke` |
+| `transit_control` | Dense transit operations board with animated platform cards and dispatch panels. | non-sci-fi showcase composition | `Showcase` |
+
+### `univis_ui_engine`
+
+| Example | Purpose | Best for | Kind |
+| --- | --- | --- | --- |
+| `border_light_3d` | Lit `World3d` panel with bloom-friendly rendering. | 3D render path | `Learning`, `Smoke` |
+| `layout_solver_no_widgets` | Solver-heavy scene without widget dependencies. | pure layout debugging | `Learning` |
+| `layout_solver_ultra_complex` | Larger solver stress scene. | solver stress | `Learning`, `Smoke` |
+| `masonry` | Higher-level masonry layout showcase. | masonry reference | `Learning` |
 | `texture` | Texture/image path reference scene. | image geometry | `Learning` |
 
 ### `univis_ui_widgets`
@@ -183,9 +186,9 @@ cargo run -p <package> --example <name>
 
 ```bash
 cargo run -p univis_ui --example hello_world
-cargo run -p univis_ui_engine --example root_fit_content
+cargo run -p univis_ui --example root_fit_content
 cargo run -p univis_ui_widgets --example text_field
-cargo run -p univis_ui_interaction --example interaction
+cargo run -p univis_ui --example interaction
 ```
 
 ## Related Reports

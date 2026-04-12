@@ -10,7 +10,7 @@ use bevy::prelude::*;
 use self::events::emit_textfield_events;
 use self::runtime::{handle_global_unfocus, handle_textfield_input};
 use self::visuals::{animate_textfield_cursor, init_textfield_visuals, update_textfield_visuals};
-use univis_ui_engine::schedule::UnivisWidgetUpdateSet;
+use crate::schedule::UnivisWidgetUpdateSet;
 
 pub use self::events::{TextFieldChangedEvent, TextFieldSubmitEvent};
 pub(crate) use self::model::TextFieldPluginInstalled;

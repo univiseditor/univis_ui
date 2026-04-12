@@ -21,6 +21,8 @@ pub mod core;
 pub mod geometry;
 /// Image-backed node helpers.
 pub mod image;
+/// Public requests for external layout invalidation.
+pub mod invalidation;
 /// The public root model and root-resolution systems.
 pub mod layout_system;
 /// Physically based material overrides for `World3d` content.
@@ -30,6 +32,8 @@ pub mod pipeline;
 mod plugin;
 /// Optional profiling and layout diagnostics helpers.
 pub mod profiling;
+/// Read-only query-facing types for resolved layout and root state.
+pub mod query;
 mod registration;
 /// Mesh/material synchronization and render-facing types.
 pub mod render;
@@ -48,6 +52,7 @@ pub mod prelude {
     pub use crate::layout::UnivisLayoutPlugin;
     pub use crate::layout::geometry::{UCornerRadius, USides, UVal};
     pub use crate::layout::image::UImage;
+    pub use crate::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
     pub use crate::layout::layout_system::{
         URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };

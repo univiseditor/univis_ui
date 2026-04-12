@@ -76,7 +76,7 @@ Use package-aware commands now:
 
 ```bash
 cargo run -p univis_ui --example hello_world
-cargo run -p univis_ui_engine --example root_fit_content
+cargo run -p univis_ui --example root_fit_content
 cargo run -p univis_ui_widgets --example text_field
 cargo run -p univis_ui_interaction --example interaction
 ```

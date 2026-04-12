@@ -5,8 +5,8 @@ use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, Window};
 
 use super::{UPanelWindow, model::PanelResizeEdge};
-use univis_ui_engine::layout::geometry::{ComputedSize, UVal};
-use univis_ui_engine::layout::layout_system::ResolvedRootUi;
+use univis_ui_engine::layout::geometry::UVal;
+use univis_ui_engine::layout::query::{ComputedSize, ResolvedRootUi};
 use univis_ui_engine::layout::univis_node::{UNode, UPositionType, USelf};
 
 #[derive(Clone, Copy, Debug)]

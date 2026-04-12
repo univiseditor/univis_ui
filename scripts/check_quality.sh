@@ -42,6 +42,10 @@ echo "== Structure guardrails =="
 ./scripts/check_structure_guardrails.sh
 
 echo
+echo "== Engine boundary guardrails =="
+./scripts/check_engine_boundary_guardrails.sh
+
+echo
 echo "== Library tests =="
 cargo test --workspace --lib
 

@@ -14,6 +14,8 @@ These rules define which APIs are considered stable, which ones are internal, an
 - `internal` and `internal_prelude` are workspace implementation tools, not application-facing contracts
 - `layout::core`, `layout::algorithms`, `layout::components`, `layout::pipeline`, and similar hidden modules may change to support engine refactors
 - runtime marker components, caches, and generated child-tree bookkeeping should stay crate-private or `pub(super)` unless another crate truly needs them
+- the immediate workspace boundary policy is tracked in the root file `ENGINE_BOUNDARY_RULES.md`
+- `./scripts/check_engine_boundary_guardrails.sh` prevents new external imports from engine internals while current legacy exceptions are being removed
 
 ## When To Add A Crate
 

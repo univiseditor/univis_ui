@@ -4,7 +4,7 @@
 
 - السكربت: `./scripts/run_perf_baselines.sh`
 - مثال المحلل: `cargo run -p univis_ui_engine --release --example solver_benchmarks`
-- مثال المشاهد التشغيلية: `cargo run -p univis_ui_engine --release --example runtime_benchmarks`
+- مثال المشاهد التشغيلية: `cargo run -p univis_ui --release --example runtime_benchmarks`
 
 ## التغطية الحالية
 
@@ -32,6 +32,10 @@
 وتغييرات بصرية دون تبديل الهندسة، إلى جانب حل الجذور وترتيبها، وقياس النصوص،
 ومسار الالتقاط، ومشاهد اللوحات الثقيلة، ومشاهد `World3d`.
 
+تعتمد الحزمة التشغيلية الآن على العقدة العامة
+`univis_ui_engine::schedule::UiSettlementRuntimeState`
+لقراءة حالة التسوية بدل الاعتماد المباشر على `UiWorkState`.
+
 ## طريقة التشغيل
 
 ```bash
@@ -42,7 +46,7 @@
 
 ```bash
 cargo run -p univis_ui_engine --release --example solver_benchmarks
-cargo run -p univis_ui_engine --release --example runtime_benchmarks
+cargo run -p univis_ui --release --example runtime_benchmarks
 ```
 
 لتقصير مدة التشغيل أثناء العمل المحلي:

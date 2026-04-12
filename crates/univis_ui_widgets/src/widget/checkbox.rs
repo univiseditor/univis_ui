@@ -1,5 +1,10 @@
-use crate::internal_prelude::*;
+use crate::widget::text_label::UTextLabel;
+use bevy::picking::Pickable;
 use bevy::prelude::*;
+use univis_ui_engine::layout::geometry::{UCornerRadius, USides, UVal};
+use univis_ui_engine::layout::univis_node::{
+    UAlignItems, UBorder, UJustifyContent, ULayout, UNode,
+};
 
 /// Registers the checkbox widget.
 pub struct UnivisCheckboxPlugin;

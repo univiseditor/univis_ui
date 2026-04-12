@@ -21,4 +21,4 @@ File: `src/layout/core/layout_cache.rs`
 
 ## Related Example
 
-- `layout_cache` in `univis_ui_engine`
+- `layout_cache` in `univis_ui`

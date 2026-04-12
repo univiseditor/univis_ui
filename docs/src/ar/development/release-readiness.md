@@ -7,10 +7,10 @@
 تحقق من البناء لهذه الأمثلة بالتسلسل:
 
 ```bash
-cargo check -p univis_ui_engine --example root_screen_hud
-cargo check -p univis_ui_engine --example root_world_scale
-cargo check -p univis_ui_engine --example root_fit_content
-cargo check -p univis_ui_engine --example root_capsule_overlap
+cargo check -p univis_ui --example root_screen_hud
+cargo check -p univis_ui --example root_world_scale
+cargo check -p univis_ui --example root_fit_content
+cargo check -p univis_ui --example root_capsule_overlap
 ```
 
 يبقى التحقق اليدوي أثناء التشغيل مستحسنًا لجولة واحدة على الأقل من المجموعة نفسها.

@@ -1,8 +1,8 @@
 use super::*;
 use bevy::prelude::{App, MinimalPlugins, Update};
 use univis_ui_engine::layout::UnivisLayoutPlugin;
-use univis_ui_engine::layout::core::layout_cache::LayoutCache;
-use univis_ui_engine::schedule::{UiPendingStages, UiWorkState};
+use univis_ui_engine::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
+use univis_ui_engine::schedule::UiWorkState;
 
 fn fixed_text_cache(size: Vec2, text: &str) -> UTextLabelLayoutCache {
     UTextLabelLayoutCache {
@@ -14,25 +14,6 @@ fn fixed_text_cache(size: Vec2, text: &str) -> UTextLabelLayoutCache {
         dirty: false,
         ..default()
     }
-}
-
-fn begin_generation(app: &mut App) {
-    let mut work_state = UiWorkState::default();
-    assert!(work_state.begin_generation(UiPendingStages {
-        hierarchy: true,
-        measure: true,
-        solve: true,
-        render: true,
-        ..default()
-    }));
-    app.insert_resource(work_state);
-}
-
-fn drain_layout_cache(cache: &mut LayoutCache) {
-    cache.take_measure_frontier();
-    cache.take_solve_frontier();
-    cache.take_render_frontier();
-    cache.clear_all_dirty();
 }
 
 #[test]
@@ -86,7 +67,7 @@ fn parent_bounds_change_is_detected_when_bounds_appear_or_disappear() {
 #[test]
 fn text_change_without_intrinsic_delta_does_not_dirty_parent_solve() {
     let mut app = App::new();
-    app.init_resource::<LayoutCache>();
+    app.init_resource::<UiInvalidateRequestQueue>();
     app.add_systems(
         Update,
         (sync_text_label_intrinsic_size, mark_text_label_layout_dirty).chain(),
@@ -124,9 +105,7 @@ fn text_change_without_intrinsic_delta_does_not_dirty_parent_solve() {
         .id();
 
     app.update();
-
-    drain_layout_cache(&mut app.world_mut().resource_mut::<LayoutCache>());
-    begin_generation(&mut app);
+    app.insert_resource(UiInvalidateRequestQueue::default());
 
     app.world_mut()
         .entity_mut(label)
@@ -136,16 +115,16 @@ fn text_change_without_intrinsic_delta_does_not_dirty_parent_solve() {
 
     app.update();
 
-    let cache = app.world().resource::<LayoutCache>();
-    assert_eq!(cache.solve_dirty_count(), 0);
-    assert_eq!(cache.stage_versions(parent).solve_input_generation, 0);
-    assert_eq!(cache.stage_versions(label).solve_input_generation, 0);
+    let requests = app.world().resource::<UiInvalidateRequestQueue>();
+    assert!(requests.is_empty());
+    assert!(app.world().get_entity(parent).is_ok());
+    assert!(app.world().get_entity(label).is_ok());
 }
 
 #[test]
 fn text_change_with_intrinsic_delta_dirties_parent_once() {
     let mut app = App::new();
-    app.init_resource::<LayoutCache>();
+    app.init_resource::<UiInvalidateRequestQueue>();
     app.add_systems(
         Update,
         (sync_text_label_intrinsic_size, mark_text_label_layout_dirty).chain(),
@@ -183,9 +162,7 @@ fn text_change_with_intrinsic_delta_dirties_parent_once() {
         .id();
 
     app.update();
-
-    drain_layout_cache(&mut app.world_mut().resource_mut::<LayoutCache>());
-    begin_generation(&mut app);
+    app.insert_resource(UiInvalidateRequestQueue::default());
 
     app.world_mut().entity_mut(label).insert((
         UTextLabel {
@@ -199,19 +176,25 @@ fn text_change_with_intrinsic_delta_dirties_parent_once() {
 
     app.update();
 
-    let cache = app.world().resource::<LayoutCache>();
     let intrinsic = app
         .world()
         .entity(label)
         .get::<IntrinsicSize>()
         .copied()
         .expect("label should keep intrinsic size");
+    let requests = app.world().resource::<UiInvalidateRequestQueue>();
 
     assert_eq!(intrinsic.width, 128.0);
     assert_eq!(intrinsic.max_width, 128.0);
-    assert_eq!(cache.solve_dirty_count(), 2);
-    assert_eq!(cache.stage_versions(parent).solve_input_generation, 1);
-    assert_eq!(cache.stage_versions(label).solve_input_generation, 1);
+    assert_eq!(requests.len(), 1);
+    assert_eq!(
+        requests.request_for(label),
+        Some(UiLayoutInvalidation::intrinsic_change())
+    );
+    assert_eq!(
+        requests.pending_stages(),
+        UiLayoutInvalidation::intrinsic_change().pending_stages()
+    );
 }
 
 #[test]
@@ -222,12 +205,12 @@ fn autosize_text_stabilizes_without_requeue_loops() {
         UiSettlementSchedule,
         (
             sync_text_label_intrinsic_size
-                .in_set(UnivisPostUpdateSet::WidgetSync)
+                .in_set(UnivisPostUpdateSet::ExternalPrepare)
                 .before(fit_node_to_text_size),
             fit_node_to_text_size
-                .in_set(UnivisPostUpdateSet::WidgetSync)
+                .in_set(UnivisPostUpdateSet::ExternalPrepare)
                 .before(mark_text_label_layout_dirty),
-            mark_text_label_layout_dirty.in_set(UnivisPostUpdateSet::WidgetSync),
+            mark_text_label_layout_dirty.in_set(UnivisPostUpdateSet::ExternalPrepare),
         )
             .chain(),
     );

@@ -1,4 +1,6 @@
 use super::*;
+use std::collections::HashMap;
+use univis_ui_engine::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
 
 use super::measurement::MeasuredTextInfo;
 
@@ -44,31 +46,75 @@ pub(super) fn parent_bounds_changed(
         || optional_bound_changed(cache.parent_bound_height, parent_bounds.height)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct TextLabelIntrinsicSignature {
+    width: f32,
+    height: f32,
+    min_width: f32,
+    max_width: f32,
+    min_height: f32,
+    max_height: f32,
+}
+
+impl From<IntrinsicSize> for TextLabelIntrinsicSignature {
+    fn from(intrinsic: IntrinsicSize) -> Self {
+        Self {
+            width: intrinsic.width,
+            height: intrinsic.height,
+            min_width: intrinsic.min_width,
+            max_width: intrinsic.max_width,
+            min_height: intrinsic.min_height,
+            max_height: intrinsic.max_height,
+        }
+    }
+}
+
+fn intrinsic_signature_changed(
+    previous: Option<TextLabelIntrinsicSignature>,
+    current: TextLabelIntrinsicSignature,
+) -> bool {
+    let Some(previous) = previous else {
+        return true;
+    };
+
+    (previous.width - current.width).abs() > 0.001
+        || (previous.height - current.height).abs() > 0.001
+        || (previous.min_width - current.min_width).abs() > 0.001
+        || (previous.max_width - current.max_width).abs() > 0.001
+        || (previous.min_height - current.min_height).abs() > 0.001
+        || (previous.max_height - current.max_height).abs() > 0.001
+}
+
 pub(crate) fn mark_text_label_layout_dirty(
-    work_state: Option<Res<UiWorkState>>,
-    mut layout_cache: ResMut<LayoutCache>,
+    mut invalidation_requests: ResMut<UiInvalidateRequestQueue>,
+    mut last_invalidated_intrinsics: Local<HashMap<Entity, TextLabelIntrinsicSignature>>,
     changed_labels: Query<
-        Entity,
+        (Entity, &UTextLabel, &IntrinsicSize),
         (
             With<UTextLabel>,
-            Or<(Added<UTextLabel>, Changed<IntrinsicSize>, Changed<UNode>)>,
+            Or<(Added<UTextLabel>, Changed<IntrinsicSize>)>,
         ),
     >,
-    parents_query: Query<&ChildOf>,
+    mut removed_labels: RemovedComponents<UTextLabel>,
 ) {
-    let current_generation = work_state
-        .as_ref()
-        .map_or(0, |state| state.current_generation());
-    for entity in changed_labels.iter() {
-        layout_cache.mark_dirty(entity);
-        layout_cache.mark_dirty_ancestors(entity, &parents_query);
-        layout_cache.mark_measure_dirty(entity, current_generation);
-        layout_cache.mark_measure_dirty_ancestors(entity, current_generation, &parents_query);
-        layout_cache.mark_solve_dirty_generation(entity, current_generation);
-        layout_cache.mark_solve_dirty_ancestors_generation(
-            entity,
-            current_generation,
-            &parents_query,
-        );
+    for entity in removed_labels.read() {
+        last_invalidated_intrinsics.remove(&entity);
+    }
+
+    for (entity, label, intrinsic) in changed_labels.iter() {
+        if label.autosize {
+            continue;
+        }
+
+        let signature = TextLabelIntrinsicSignature::from(*intrinsic);
+        if !intrinsic_signature_changed(
+            last_invalidated_intrinsics.get(&entity).copied(),
+            signature,
+        ) {
+            continue;
+        }
+
+        invalidation_requests.request(entity, UiLayoutInvalidation::intrinsic_change());
+        last_invalidated_intrinsics.insert(entity, signature);
     }
 }

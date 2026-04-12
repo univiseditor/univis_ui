@@ -3,11 +3,12 @@ use bevy::prelude::*;
 use bevy::sprite::update_text2d_layout;
 
 use crate::schedule::{
-    UiRolloutConfig, UiSettlementConfig, UiSettlementSchedule, UiValidationState, UiWorkState,
-    UnivisPostUpdateSet,
+    UiPickingRuntimeState, UiRolloutConfig, UiSettlementConfig, UiSettlementRuntimeState,
+    UiSettlementSchedule, UiValidationState, UiWorkState, UnivisPostUpdateSet,
+    sync_settlement_runtime_state,
 };
 
-use super::{components, core, layout_system, settlement_loop, univis_node};
+use super::{components, core, invalidation, layout_system, query, settlement_loop, univis_node};
 
 pub(super) fn register_layout_types(app: &mut App) {
     app.register_type::<univis_node::USelf>()
@@ -16,6 +17,7 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<layout_system::UiSpace>()
         .register_type::<layout_system::UiCanvasSize>()
         .register_type::<layout_system::UiCameraRef>()
+        .register_type::<query::UiPickingContext>()
         .register_type::<univis_node::UAlignSelf>()
         .register_type::<univis_node::UPosition>()
         .register_type::<univis_node::ULayoutContainerExt>()
@@ -38,22 +40,25 @@ pub(super) fn register_layout_types(app: &mut App) {
 pub(super) fn install_layout_pipeline(app: &mut App) {
     app.init_resource::<components::LayoutTreeDepth>()
         .init_resource::<UiRolloutConfig>()
+        .init_resource::<UiPickingRuntimeState>()
+        .init_resource::<UiSettlementRuntimeState>()
         .init_resource::<UiValidationState>()
         .init_resource::<UiSettlementConfig>()
         .init_resource::<UiWorkState>()
+        .init_resource::<invalidation::UiInvalidateRequestQueue>()
         .init_resource::<layout_system::RootSpawnRankCounter>()
         .init_schedule(UiSettlementSchedule)
         .add_plugins(core::layout_cache::UnivisLayoutCachePlugin)
         .configure_sets(
             UiSettlementSchedule,
             (
-                UnivisPostUpdateSet::WidgetSync,
+                UnivisPostUpdateSet::ExternalPrepare,
                 UnivisPostUpdateSet::RootResolve,
                 UnivisPostUpdateSet::LayoutHierarchy,
                 UnivisPostUpdateSet::LayoutMeasure,
                 UnivisPostUpdateSet::LayoutSolve,
                 UnivisPostUpdateSet::RenderSync,
-                UnivisPostUpdateSet::PickSync,
+                UnivisPostUpdateSet::ExternalPostSolve,
                 UnivisPostUpdateSet::UiSettled,
             )
                 .chain(),
@@ -61,6 +66,7 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
         .add_systems(
             UiSettlementSchedule,
             (
+                core::layout_cache::apply_external_invalidation_requests,
                 settlement_loop::begin_ui_settlement_work,
                 layout_system::resolve_root_ui,
                 layout_system::assign_root_spawn_ranks,
@@ -76,6 +82,7 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
             (
                 core::hierarchy::update_layout_hierarchy,
                 core::hierarchy::update_cached_ui_contexts,
+                core::hierarchy::update_picking_contexts,
                 core::layout_cache::update_depth_cache,
                 core::layout_cache::track_root_layout_changes,
                 core::layout_cache::track_layout_changes,
@@ -120,6 +127,7 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
                 settlement_loop::mark_solve_complete,
                 settlement_loop::mark_render_complete,
                 core::hierarchy::validate_cached_ui_contexts,
+                sync_settlement_runtime_state,
             )
                 .chain()
                 .in_set(UnivisPostUpdateSet::UiSettled),

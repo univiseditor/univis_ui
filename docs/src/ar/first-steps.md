@@ -60,7 +60,7 @@ fn main() {
 شغّل هذه الأمثلة بالترتيب:
 
 1. `cargo run -p univis_ui --example hello_world`
-2. `cargo run -p univis_ui_engine --example root_screen_hud`
+2. `cargo run -p univis_ui --example root_screen_hud`
 
 ما الذي يجب التركيز عليه:
 
@@ -71,8 +71,8 @@ fn main() {
 
 شغّل هذه الأمثلة بالترتيب:
 
-1. `cargo run -p univis_ui_engine --example root_world_scale`
-2. `cargo run -p univis_ui_engine --example root_fit_content`
+1. `cargo run -p univis_ui --example root_world_scale`
+2. `cargo run -p univis_ui --example root_fit_content`
 
 ما الذي يجب التركيز عليه:
 

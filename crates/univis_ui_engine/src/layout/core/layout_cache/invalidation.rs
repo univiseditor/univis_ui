@@ -1,27 +1,5 @@
 use super::*;
-
-#[derive(Clone, Copy, Debug, Default)]
-pub(super) struct LayoutInvalidation {
-    pub(super) dirty_self: bool,
-    pub(super) dirty_ancestors: bool,
-    pub(super) measure_self: bool,
-    pub(super) measure_ancestors: bool,
-    pub(super) solve_self: bool,
-    pub(super) solve_ancestors: bool,
-    pub(super) render_self: bool,
-}
-
-impl LayoutInvalidation {
-    pub(super) fn merge(&mut self, other: Self) {
-        self.dirty_self |= other.dirty_self;
-        self.dirty_ancestors |= other.dirty_ancestors;
-        self.measure_self |= other.measure_self;
-        self.measure_ancestors |= other.measure_ancestors;
-        self.solve_self |= other.solve_self;
-        self.solve_ancestors |= other.solve_ancestors;
-        self.render_self |= other.render_self;
-    }
-}
+use crate::layout::invalidation::UiLayoutInvalidation as LayoutInvalidation;
 
 pub(super) fn apply_layout_invalidation(
     cache: &mut LayoutCache,

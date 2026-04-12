@@ -4,7 +4,7 @@ The repository now includes a CLI baseline suite with two harnesses:
 
 - script: `./scripts/run_perf_baselines.sh`
 - solver example: `cargo run -p univis_ui_engine --release --example solver_benchmarks`
-- runtime example: `cargo run -p univis_ui_engine --release --example runtime_benchmarks`
+- runtime example: `cargo run -p univis_ui --release --example runtime_benchmarks`
 
 ## Current Coverage
 
@@ -32,6 +32,10 @@ The runtime harness adds steady-state frames after settlement, localized single-
 render-only visual churn, root resolution / stacking, text measurement churn, picking traversal,
 widget-heavy panels, and world-3d panel scenes.
 
+The runtime harness reads settlement status through the public
+`univis_ui_engine::schedule::UiSettlementRuntimeState` contract instead of
+depending directly on `UiWorkState`.
+
 ## How To Run
 
 ```bash
@@ -42,7 +46,7 @@ To run only one harness directly:
 
 ```bash
 cargo run -p univis_ui_engine --release --example solver_benchmarks
-cargo run -p univis_ui_engine --release --example runtime_benchmarks
+cargo run -p univis_ui --release --example runtime_benchmarks
 ```
 
 To shorten the run while iterating locally:

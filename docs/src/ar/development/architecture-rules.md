@@ -14,6 +14,8 @@
 - `internal` و`internal_prelude` أدوات تنفيذ داخلية لمساحة العمل وليستا عقدًا عامًا مع التطبيقات
 - الوحدات المخفية مثل `layout::core` و`layout::algorithms` و`layout::components` و`layout::pipeline` يمكن أن تتغير لدعم إعادة هيكلة المحرك
 - علامات runtime والكاشات وتتبع الأبناء المولدين يجب أن تبقى خاصة بالحزمة أو `pub(super)` ما لم تحتجها حزمة أخرى فعلًا
+- سياسة الحدود الفورية داخل مساحة العمل موثقة في الملف الجذري `ENGINE_BOUNDARY_RULES.md`
+- يمنع `./scripts/check_engine_boundary_guardrails.sh` ظهور imports جديدة من engine internals خارج المحرك أثناء تنظيف الاستثناءات الحالية
 
 ## متى تضيف حزمة جديدة
 

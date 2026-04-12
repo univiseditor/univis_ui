@@ -15,8 +15,7 @@ use bevy::shader::ShaderRef;
 use bevy::sprite_render::{AlphaMode2d, Material2d, MeshMaterial2d};
 use bevy::text::{ComputedTextBlock, CosmicFontSystem};
 use std::collections::HashMap;
-use univis_ui_engine::internal::ComputedSize;
-use univis_ui_engine::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
+use univis_ui_engine::layout::query::{ComputedSize, ResolvedRootStack, ResolvedRootUi};
 use univis_ui_engine::layout::univis_node::{UClip, UNode};
 
 use self::atlas::{

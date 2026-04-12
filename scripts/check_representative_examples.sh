@@ -6,9 +6,9 @@ cd "$ROOT_DIR"
 
 REPRESENTATIVE_EXAMPLES=(
   "univis_ui hello_world"
-  "univis_ui_engine root_screen_hud"
-  "univis_ui_engine root_world_scale"
-  "univis_ui_engine root_fit_content"
+  "univis_ui root_screen_hud"
+  "univis_ui root_world_scale"
+  "univis_ui root_fit_content"
   "univis_ui_engine border_light_3d"
   "univis_ui_interaction interaction"
   "univis_ui_widgets text_field"

@@ -30,12 +30,12 @@ use self::visuals::{
     cleanup_orphan_panel_resize_handles, init_panel_window_handles, sync_panel_resize_handles,
     sync_panel_visuals, update_panel_resize_cursor,
 };
-use univis_ui_engine::layout::geometry::{ComputedSize, UCornerRadius, USides, UVal};
-use univis_ui_engine::layout::layout_system::ResolvedRootUi;
+use crate::schedule::UnivisWidgetUpdateSet;
+use univis_ui_engine::layout::geometry::{UCornerRadius, USides, UVal};
+use univis_ui_engine::layout::query::{ComputedSize, ResolvedRootUi};
 use univis_ui_engine::layout::univis_node::{
     UBorder, UDisplay, UFlexDirection, ULayout, UNode, UPositionType, USelf,
 };
-use univis_ui_engine::schedule::UnivisWidgetUpdateSet;
 use univis_ui_interaction::interaction::feedback::UInteraction;
 
 pub use self::model::{UPanel, UPanelWindow};

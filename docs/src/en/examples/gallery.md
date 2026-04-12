@@ -15,17 +15,17 @@ This page is the curated view of the example surface. Use [Examples](index.md) f
 | Example | Package | Why run it | Command | Visual |
 | --- | --- | --- | --- | --- |
 | `hello_world` | `univis_ui` | Start here when you want the smallest facade-level boot path. | `cargo run -p univis_ui --example hello_world` | run the example |
-| `root_screen_hud` | `univis_ui_engine` | Run this when you want to confirm true HUD behavior against camera motion. | `cargo run -p univis_ui_engine --example root_screen_hud` | run the example |
-| `layout_cache` | `univis_ui_engine` | Run this when you want to inspect cache invalidation and repeated solve behavior. | `cargo run -p univis_ui_engine --example layout_cache` | run the example |
-| `layout_sizing_semantics` | `univis_ui_engine` | Run this when you want one compact scene for `Auto`, intrinsic modes, and `min/max` flex behavior. | `cargo run -p univis_ui_engine --example layout_sizing_semantics` | run the example |
+| `root_screen_hud` | `univis_ui` | Run this when you want to confirm true HUD behavior against camera motion. | `cargo run -p univis_ui --example root_screen_hud` | run the example |
+| `layout_cache` | `univis_ui` | Run this when you want to inspect cache invalidation and repeated solve behavior. | `cargo run -p univis_ui --example layout_cache` | run the example |
+| `layout_sizing_semantics` | `univis_ui` | Run this when you want one compact scene for `Auto`, intrinsic modes, and `min/max` flex behavior. | `cargo run -p univis_ui --example layout_sizing_semantics` | run the example |
 
 ## World-Space UI
 
 | Example | Package | Why run it | Command | Visual |
 | --- | --- | --- | --- | --- |
-| `root_world_scale` | `univis_ui_engine` | Run this when you need to calibrate logical canvas size against physical world size. | `cargo run -p univis_ui_engine --example root_world_scale` | run the example |
-| `root_fit_content` | `univis_ui_engine` | Run this when you want content-sized world panels and inspectors. | `cargo run -p univis_ui_engine --example root_fit_content` | run the example |
-| `root_capsule_overlap` | `univis_ui_engine` | Run this when you want to verify sealed root-capsule overlap rules. | `cargo run -p univis_ui_engine --example root_capsule_overlap` | run the example |
+| `root_world_scale` | `univis_ui` | Run this when you need to calibrate logical canvas size against physical world size. | `cargo run -p univis_ui --example root_world_scale` | run the example |
+| `root_fit_content` | `univis_ui` | Run this when you want content-sized world panels and inspectors. | `cargo run -p univis_ui --example root_fit_content` | run the example |
+| `root_capsule_overlap` | `univis_ui` | Run this when you want to verify sealed root-capsule overlap rules. | `cargo run -p univis_ui --example root_capsule_overlap` | run the example |
 | `border_light_3d` | `univis_ui_engine` | Run this when you want to inspect the lit `World3d` path and `UPbr`. | `cargo run -p univis_ui_engine --features example_bloom --example border_light_3d` | run the example |
 
 ## Widgets And Forms
@@ -45,7 +45,7 @@ This page is the curated view of the example surface. Use [Examples](index.md) f
 
 | Example | Package | Why run it | Command | Visual |
 | --- | --- | --- | --- | --- |
-| `interaction` | `univis_ui_interaction` | Run this when you want to understand hit blocking, ignore, and passthrough rules. | `cargo run -p univis_ui_interaction --example interaction` | run the example |
+| `interaction` | `univis_ui` | Run this when you want to understand hit blocking, ignore, and passthrough rules. | `cargo run -p univis_ui --example interaction` | run the example |
 
 ## Showcase Demos
 

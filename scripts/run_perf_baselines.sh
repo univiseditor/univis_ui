@@ -12,4 +12,4 @@ cargo run -p univis_ui_engine --release --example solver_benchmarks -- "$@"
 
 echo
 echo "== Runtime Benchmarks =="
-cargo run -p univis_ui_engine --release --example runtime_benchmarks -- "$@"
+cargo run -p univis_ui --release --example runtime_benchmarks -- "$@"

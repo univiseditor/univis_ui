@@ -1,5 +1,12 @@
-use crate::internal_prelude::*;
+use crate::widget::text_label::UTextLabel;
+use bevy::input::{ButtonInput, keyboard::KeyCode, mouse::MouseButton};
+use bevy::picking::Pickable;
 use bevy::prelude::*;
+use univis_ui_engine::layout::geometry::{UCornerRadius, USides};
+use univis_ui_engine::layout::univis_node::{
+    UAlignItems, UDisplay, UJustifyContent, ULayout, UNode,
+};
+use univis_ui_interaction::interaction::feedback::{UInteraction, UInteractionColors};
 
 const MIN_PIXELS_PER_RESOLUTION_UNIT: f32 = 2.0;
 const MAX_AUTO_SENSITIVITY_SCALE: f32 = 10.0;

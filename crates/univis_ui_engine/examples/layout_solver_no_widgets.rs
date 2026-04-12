@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
-use univis_ui_engine::internal::ComputedSize;
+use univis_ui_engine::layout::query::ComputedSize;
 use univis_ui_engine::prelude::*;
 
 #[derive(Component)]

@@ -19,13 +19,13 @@ This page defines the lightweight manual visual checks that still matter even af
 Run these examples when the affected area is visual or interaction-heavy:
 
 ```bash
-cargo run -p univis_ui_engine --example root_screen_hud
-cargo run -p univis_ui_engine --example root_world_scale
-cargo run -p univis_ui_engine --example root_fit_content
-cargo run -p univis_ui_engine --example root_capsule_overlap
+cargo run -p univis_ui --example root_screen_hud
+cargo run -p univis_ui --example root_world_scale
+cargo run -p univis_ui --example root_fit_content
+cargo run -p univis_ui --example root_capsule_overlap
 cargo run -p univis_ui_widgets --example text_label
 cargo run -p univis_ui_widgets --example panel_window
-cargo run -p univis_ui_interaction --example interaction
+cargo run -p univis_ui --example interaction
 ```
 
 ## What To Look For

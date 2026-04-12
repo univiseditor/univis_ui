@@ -26,11 +26,11 @@
 ## الأوامر
 
 ```bash
-cargo run --release -p univis_ui_engine --example root_screen_hud
-cargo run --release -p univis_ui_engine --example root_world_scale
-cargo run --release -p univis_ui_engine --example root_fit_content
-cargo run --release -p univis_ui_engine --example root_capsule_overlap
-cargo run --release -p univis_ui_interaction --example interaction
+cargo run --release -p univis_ui --example root_screen_hud
+cargo run --release -p univis_ui --example root_world_scale
+cargo run --release -p univis_ui --example root_fit_content
+cargo run --release -p univis_ui --example root_capsule_overlap
+cargo run --release -p univis_ui --example interaction
 cargo run --release -p univis_ui_widgets --example text_field
 cargo run --release -p univis_ui_widgets --example text_label
 cargo run --release -p univis_ui_widgets --example panel_window

@@ -148,10 +148,10 @@ URootUi {
 
 ## أمثلة مرتبطة
 
-- [`root_screen_hud`](../examples/index.md#root_screen_hud) داخل `univis_ui_engine`
-- [`root_world_scale`](../examples/index.md#root_world_scale) داخل `univis_ui_engine`
-- [`root_fit_content`](../examples/index.md#root_fit_content) داخل `univis_ui_engine`
-- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui_engine`
+- [`root_screen_hud`](../examples/index.md#root_screen_hud) داخل `univis_ui`
+- [`root_world_scale`](../examples/index.md#root_world_scale) داخل `univis_ui`
+- [`root_fit_content`](../examples/index.md#root_fit_content) داخل `univis_ui`
+- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui`
 - [`border_light_3d`](../examples/index.md#border_light_3d) داخل `univis_ui_engine`
 
 ## صفحات ترحيل مرتبطة

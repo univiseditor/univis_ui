@@ -118,13 +118,15 @@ pub(super) fn begin_ui_settlement_work(
     let layout_changed = !layout_mutations.is_empty() || structure_changed;
     let render_changed = !render_mutations.is_empty();
 
-    work_state.begin_generation(UiPendingStages {
+    let pending = UiPendingStages {
         root_resolve: roots_changed,
-        hierarchy: roots_changed || layout_changed,
-        measure: roots_changed || layout_changed,
-        solve: roots_changed || layout_changed,
-        render: roots_changed || layout_changed || render_changed,
-    });
+        hierarchy: roots_changed || layout_changed || cache.dirty_count() > 0,
+        measure: roots_changed || layout_changed || cache.measure_dirty_count() > 0,
+        solve: roots_changed || layout_changed || cache.solve_dirty_count() > 0,
+        render: roots_changed || layout_changed || render_changed || cache.render_dirty_count() > 0,
+    };
+
+    work_state.begin_generation(pending);
 }
 
 pub(super) fn mark_root_resolve_complete(mut work_state: ResMut<UiWorkState>) {

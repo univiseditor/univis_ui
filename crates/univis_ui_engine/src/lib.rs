@@ -13,8 +13,9 @@ pub mod layout;
 /// Shared schedule sets used by engine, widgets, and interaction systems.
 pub mod schedule;
 
+#[allow(unused_imports)]
 #[doc(hidden)]
-pub mod internal {
+pub(crate) mod internal {
     pub use crate::layout::components::{
         CachedUiContext, IntrinsicSize, LayoutDepth, LayoutTreeDepth, UI3d, UiNodeStageVersions,
     };
@@ -56,7 +57,8 @@ pub mod prelude {
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::univis_node::*;
     pub use crate::schedule::{
-        UiRolloutConfig, UiSettlementConfig, UiValidationMode, UiValidationState,
+        UiPickingRuntimeState, UiRolloutConfig, UiSettlementConfig, UiSettlementRuntimeState,
+        UiValidationMode, UiValidationState,
     };
     pub use crate::{UnivisEnginePlugin, layout::prelude::*};
 }

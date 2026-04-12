@@ -133,7 +133,8 @@ Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default wi
 ### Frame-Zero Rollout Gate
 
 - `UiRolloutConfig` exposes internal switches for cached ancestry, incremental measure/solve/render frontiers, mesh reuse, and post-settle picking during rollout
-- `UiValidationState` records shadow-check mismatches so validation runs can detect parity regressions without changing public behavior
+- `UiValidationState` tracks engine-side rollout validation such as cached ancestry checks
+- `PickingValidationState` tracks interaction-side picking validation without pushing picking internals back into `engine`
 - run `./scripts/verify_frame_zero_rollout.sh` before changing rollout defaults or relaxing validation
 
 ## Core Strengths
@@ -257,7 +258,7 @@ Useful examples:
 Run one:
 
 ```bash
-cargo run -p univis_ui_engine --example root_fit_content
+cargo run -p univis_ui --example root_fit_content
 ```
 
 ## Crates

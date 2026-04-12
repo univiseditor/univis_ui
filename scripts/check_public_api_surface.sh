@@ -143,6 +143,37 @@ fn main() {
 }
 '
 
+run_success_case "widget_schedule_surface" '
+use univis_ui::widget::schedule::UnivisWidgetUpdateSet as FacadeWidgetSet;
+use univis_ui_widgets::schedule::UnivisWidgetUpdateSet as WidgetSet;
+
+fn main() {
+    let _facade = FacadeWidgetSet::Build;
+    let _widget = WidgetSet::Events;
+    let _ = (_facade, _widget);
+}
+'
+
+run_success_case "widget_layered_surface" '
+use bevy::prelude::*;
+use univis_ui::widget::interactive::{UButton, UnivisInteractiveWidgetPlugin};
+use univis_ui::widget::visual::{UDivider, UnivisVisualWidgetPlugin};
+use univis_ui_widgets::widget::interactive::UTextField;
+use univis_ui_widgets::widget::visual::UProgressBar;
+
+fn main() {
+    let _button = UButton::primary();
+    let _divider = UDivider::horizontal();
+    let _progress = UProgressBar::default();
+    let _text_field = UTextField::default();
+
+    let mut app = App::new();
+    app.add_plugins((UnivisVisualWidgetPlugin, UnivisInteractiveWidgetPlugin));
+
+    let _ = (_button, _divider, _progress, _text_field, app);
+}
+'
+
 run_success_case "deprecated_explicit_paths" '
 use univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot};
 
@@ -162,6 +193,56 @@ fn main() {
     let _ = (_screen, _world);
 }
 ' 'UScreenRoot|UWorldRoot'
+
+run_failure_case "engine_internal_not_public" '
+use univis_ui_engine::internal::ComputedSize;
+
+fn main() {
+    let _size = ComputedSize::default();
+}
+' 'module `internal` is private|private module'
+
+run_success_case "engine_query_surface" '
+use univis_ui_engine::layout::query::{
+    CachedUiContext, ComputedSize, IntrinsicSize, LayoutDepth, ResolvedRootStack, ResolvedRootUi,
+    UiPickingContext,
+};
+
+fn main() {
+    let _size = ComputedSize::default();
+    let _intrinsic = IntrinsicSize::default();
+    let _depth = LayoutDepth::default();
+    let _context = CachedUiContext::default();
+    let _picking = UiPickingContext::default();
+    let _stack = ResolvedRootStack::default();
+    let _root = ResolvedRootUi::default();
+    let _ = (_size, _intrinsic, _depth, _context, _picking, _stack, _root);
+}
+'
+
+run_success_case "engine_schedule_surface" '
+use univis_ui_engine::schedule::{
+    UiPickingRuntimeState, UiSettlementRuntimeState, UnivisPostUpdateSet,
+};
+
+fn main() {
+    let _prepare = UnivisPostUpdateSet::ExternalPrepare;
+    let _post_solve = UnivisPostUpdateSet::ExternalPostSolve;
+    let _picking_runtime = UiPickingRuntimeState::default();
+    let _settlement_runtime = UiSettlementRuntimeState::default();
+    let _ = (_prepare, _post_solve, _picking_runtime, _settlement_runtime);
+}
+'
+
+run_success_case "interaction_picking_surface" '
+use univis_ui_interaction::interaction::picking::{PickingSyncState, PickingValidationState};
+
+fn main() {
+    let _sync = PickingSyncState::default();
+    let _validation = PickingValidationState::default();
+    let _ = (_sync, _validation);
+}
+'
 
 echo "== Public API example guard: canonical roots only =="
 if find_example_matches 'UScreenRoot|UWorldRoot'; then

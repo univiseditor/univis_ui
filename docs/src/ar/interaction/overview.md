@@ -38,7 +38,7 @@
 ## أمثلة مرتبطة
 
 - [`interaction`](../examples/index.md#interaction) داخل `univis_ui_interaction`
-- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui_engine`
+- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui`
 
 ## نقاط الدخول الرسمية في `API`
 

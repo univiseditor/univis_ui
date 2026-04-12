@@ -5,7 +5,7 @@
 
 use bevy::prelude::*;
 use univis_ui_engine::schedule::{
-    UiRolloutConfig, UiSettlementSchedule, UiValidationState, UnivisPostUpdateSet,
+    UiPickingRuntimeState, UiSettlementSchedule, UnivisPostUpdateSet, sync_picking_runtime_state,
 };
 
 /// Interaction state components and default pointer observers.
@@ -31,16 +31,22 @@ pub struct UnivisInteractionPlugin;
 impl Plugin for UnivisInteractionPlugin {
     fn build(&self, app: &mut App) {
         // 1. Install the picking backend that computes pointer hits.
-        app.init_resource::<UiRolloutConfig>()
-            .init_resource::<UiValidationState>()
-            .init_resource::<picking::PickingSyncState>()
+        app.init_resource::<picking::PickingSyncState>()
+            .init_resource::<picking::PickingValidationState>()
+            .init_resource::<UiPickingRuntimeState>()
             .add_systems(
                 PreUpdate,
                 (picking::track_pointer_generation, univis_picking_backend).chain(),
             )
             .add_systems(
                 UiSettlementSchedule,
-                picking::post_settle_picking_backend.in_set(UnivisPostUpdateSet::PickSync),
+                sync_picking_runtime_state
+                    .in_set(UnivisPostUpdateSet::ExternalPostSolve)
+                    .before(picking::post_settle_picking_backend),
+            )
+            .add_systems(
+                UiSettlementSchedule,
+                picking::post_settle_picking_backend.in_set(UnivisPostUpdateSet::ExternalPostSolve),
             );
 
         // 2. Register the default pointer observers.

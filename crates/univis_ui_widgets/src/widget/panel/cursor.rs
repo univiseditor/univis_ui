@@ -12,15 +12,11 @@ where
 
     for (edge, interaction) in states {
         match interaction {
-            UInteraction::Pressed => {
-                if should_replace_edge(pressed_choice, edge) {
-                    pressed_choice = Some(edge);
-                }
+            UInteraction::Pressed if should_replace_edge(pressed_choice, edge) => {
+                pressed_choice = Some(edge);
             }
-            UInteraction::Hovered => {
-                if should_replace_edge(hovered_choice, edge) {
-                    hovered_choice = Some(edge);
-                }
+            UInteraction::Hovered if should_replace_edge(hovered_choice, edge) => {
+                hovered_choice = Some(edge);
             }
             _ => {}
         }

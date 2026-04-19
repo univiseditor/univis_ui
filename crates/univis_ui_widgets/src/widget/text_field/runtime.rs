@@ -85,15 +85,11 @@ pub(super) fn handle_textfield_input(
                     textfield.text.remove(cursor_position);
                 }
             }
-            Key::ArrowLeft => {
-                if textfield.cursor_position > 0 {
-                    textfield.cursor_position -= 1;
-                }
+            Key::ArrowLeft if textfield.cursor_position > 0 => {
+                textfield.cursor_position -= 1;
             }
-            Key::ArrowRight => {
-                if textfield.cursor_position < textfield.text.len() {
-                    textfield.cursor_position += 1;
-                }
+            Key::ArrowRight if textfield.cursor_position < textfield.text.len() => {
+                textfield.cursor_position += 1;
             }
             Key::Home => {
                 textfield.cursor_position = 0;

@@ -1,21 +1,20 @@
-# الجاهزية للإصدار
+# جاهزية الإصدار
 
-هذه الصفحة هي قائمة التحقق النهائية قبل أي قطع alpha جديد.
+هذه الصفحة هي قائمة التحقق النهائية قبل قطع alpha التالية.
 
-## أمثلة الجذور المرجعية التي يجب إعادة التحقق منها
+## الفحوص التي يجب إعادة تشغيلها
 
-تحقق من البناء لهذه الأمثلة بالتسلسل:
+أعد فحص هذه الخطوات بالتسلسل:
 
 ```bash
-cargo check -p univis_ui --example root_screen_hud
-cargo check -p univis_ui --example root_world_scale
-cargo check -p univis_ui --example root_fit_content
-cargo check -p univis_ui --example root_capsule_overlap
+cargo check --workspace --all-targets
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+./scripts/check_representative_examples.sh
 ```
 
-يبقى التحقق اليدوي أثناء التشغيل مستحسنًا لجولة واحدة على الأقل من المجموعة نفسها.
+ويبقى التحقق اليدوي وقت التشغيل مستحسنًا لمرور واحد على الأقل عبر الحزمة الحية الحالية.
 
-## اتساق الوثائق والترحيل وملاحظات الإصدار
+## اتساق الوثائق والترحيل والإصدار
 
 تأكد من أن هذه الملفات تصف الواقع الحالي نفسه:
 
@@ -34,32 +33,30 @@ cargo check -p univis_ui --example root_capsule_overlap
 - [ ] `cargo doc -p univis_ui_interaction --no-deps`
 - [ ] `cargo doc -p univis_ui_widgets --no-deps`
 - [ ] `cargo doc -p univis_ui --no-deps`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_engine`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui`
-- [ ] جولة تحقق بصري واحدة على الأقل على الأمثلة المرجعية المذكورة في [التحقق البصري](visual-validation.md)
-- [ ] أن تذكر ملاحظات الإصدار وصفحات الترحيل القصة العامة نفسها للجذور العامة
+- [ ] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
+- [ ] `./scripts/check_representative_examples.sh`
+- [ ] مرور بصري يدوي واحد على الحزمة ذات الطابع Android وعلى المراجع الثابتة المؤرشفة من [التحقق البصري](visual-validation.md)
+- [ ] أن تذكر ملاحظات الإصدار وصفحات الترحيل القصة الحالية نفسها لتوفر الأمثلة
 
-## قرار حذف طبقات التوافق
+## قرار إزالة الطبقات المتوافقة
 
-القرار للقطع alpha التالي هو:
+في alpha التالية يكون القرار:
 
-- عدم حذف `UScreenRoot` أو `UWorldRoot` تلقائيًا مع القطع
-- الإبقاء عليهما كطبقتي توافق مهجورتين إلى أن تكتمل مراجعة تثبيت إضافية
-- إعادة النظر في الحذف فقط بعد صدور القطع التالي ووصول تغذية راجعة فعلية
+- لا تزل `UScreenRoot` أو `UWorldRoot` تلقائيًا ضمن القطع الحالي
+- أبقهما كطبقتي توافق مهجورتين حتى تنتهي مراجعة استقرار أخرى
+- أعد النظر في الإزالة فقط بعد شحن alpha التالية ووصول التغذية الراجعة
 
 ## أدوار ملفات الجذر
 
-- `README.md`: قصة الدخول وأسرع نقطة بدء
-- `README_AR.md`: قصة الدخول العربية
+- `README.md`: قصة الدخول وأسرع نقطة بداية
+- `README_AR.md`: صفحة الدخول العربية
 - `MIGRATION.md`: مسار الترقية من الوثائق والأمثلة والافتراضات الأقدم
 - `MIGRATION_AR.md`: مسار الترحيل العربي
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha
-- `changelog.md`: التاريخ الزمني المرتب حسب التواريخ
+- `changelog.md`: السجل الزمني المرتب حسب التواريخ
 
 ## صفحات مرتبطة
 
 - [الاختبارات والتحقق](testing.md)
 - [التحقق البصري](visual-validation.md)
-- [خطة الاختبارات السريعة](smoke-test-plan.md)
+- [خطة اختبارات Smoke](smoke-test-plan.md)

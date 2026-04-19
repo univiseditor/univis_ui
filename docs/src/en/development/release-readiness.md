@@ -2,18 +2,17 @@
 
 This page is the final pre-release checklist for the next alpha cut.
 
-## Canonical Root Examples To Recheck
+## Compile Checks To Re-run
 
 Compile-check these sequentially:
 
 ```bash
-cargo check -p univis_ui --example root_screen_hud
-cargo check -p univis_ui --example root_world_scale
-cargo check -p univis_ui --example root_fit_content
-cargo check -p univis_ui --example root_capsule_overlap
+cargo check --workspace --all-targets
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+./scripts/check_representative_examples.sh
 ```
 
-Manual runtime validation is still recommended for at least one pass from the same set.
+Manual runtime validation is still recommended for at least one pass through the current live package.
 
 ## Docs, Migration, And Release Alignment
 
@@ -34,12 +33,10 @@ Confirm that these files describe the same current reality:
 - [ ] `cargo doc -p univis_ui_interaction --no-deps`
 - [ ] `cargo doc -p univis_ui_widgets --no-deps`
 - [ ] `cargo doc -p univis_ui --no-deps`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_engine`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
-- [ ] `./scripts/check_examples_serial_release.sh -p univis_ui`
-- [ ] one manual visual pass over the representative examples from [Visual Validation](visual-validation.md)
-- [ ] release notes and migration pages mention the same current public root story
+- [ ] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
+- [ ] `./scripts/check_representative_examples.sh`
+- [ ] one manual visual pass over the Android package and the archived static references from [Visual Validation](visual-validation.md)
+- [ ] release notes and migration pages mention the same current example-availability story
 
 ## Wrapper Removal Decision
 

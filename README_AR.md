@@ -11,9 +11,9 @@
 > مهم:
 > ما تزال `univis_ui` في مرحلة **alpha**، لذلك يمكن أن تتغير الـ API والسلوك بين الإصدارات.
 
-من المثال `cargo run --release -p univis_ui --features example_bloom --example card_profile`:
+مرجع بصري مؤرشف من المثال القديم `card_profile`:
 
-![profile](profile.png)
+![profile](docs/src/assets/profile.png)
 
 ## لماذا Univis UI؟
 
@@ -114,7 +114,7 @@ fn setup(mut commands: Commands) {
 - `URootUi` هو واجهة الجذور العامة الرسمية
 - `URootUi::screen()` و`URootUi::world_2d(...)` و`URootUi::world_3d(...)` هي نقاط الدخول المقصودة
 - `UiSpace` و`UiCameraRef` و`UiCanvasSize` بما فيه `UiCanvasSize::FitContent { min, max }` جزء من قصة الجذور العامة الحالية
-- يفترض أن تستخدم الأمثلة مسارات تتبع الـ crate المالكة وأوامر مرتبطة بالحزمة
+- تبقى أسماء الأمثلة التاريخية موثقة داخل الفهرس الثنائي اللغة، بينما يشحن هذا الفرع حزمة `android/android_phone_app` الحية ومراجع بصرية ثابتة داخل `docs/src/assets/visual-references/`
 
 ### ما هو مهجور لكنه ما يزال مدعومًا
 
@@ -181,9 +181,9 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 - [صفحة الوثائق الرئيسية](docs/src/index.md)
 - [ملخص الترحيل](MIGRATION_AR.md)
-- [جرد الدين التقني الحالي](TECH_DEBT_INVENTORY.md)
 - [البدء السريع (AR)](docs/src/ar/quick-start.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
+- [حزمة عرض Android الحالية](android/android_phone_app)
 - [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md)
 - [Example Gallery (EN)](docs/src/en/examples/gallery.md)
 - [الجذور والمساحات (AR)](docs/src/ar/layout/roots.md)
@@ -210,7 +210,6 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 - `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم ومسارات الأمثلة القديمة وافتراضات الجذور القديمة.
 - `MIGRATION_AR.md`: مسار الترحيل العربي.
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha.
-- `TECH_DEBT_INVENTORY.md`: قائمة الصيانة الحالية الخاصة بالملفات الكبيرة وإعادة تقسيمها.
 - `changelog.md`: السجل الزمني المرتب حسب التواريخ للتغييرات الملحوظة.
 
 ## `API Docs`
@@ -232,21 +231,17 @@ cargo doc --no-deps -p univis_ui
 - `univis_ui_widgets::widget::text_label::UTextLabel`
 - `univis_ui_style::style::Theme`
 
-أمثلة جيدة للبداية:
+مراجع مفيدة للبدء:
 
-- `hello_world`
-- `root_screen_hud`
-- `root_world_scale`
-- `root_fit_content`
-- `root_capsule_overlap`
-- `border_light_3d`
+- `android_phone`
+- `responsive_dashboard`
+- `complex_dashboard`
 - `card_profile`
-- `sci_fi`
 
-شغّل مثالًا:
+شغّل العرض الحي الحالي:
 
 ```bash
-cargo run -p univis_ui --example root_fit_content
+cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
 
 ## الحزم

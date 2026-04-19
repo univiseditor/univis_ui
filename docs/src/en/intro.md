@@ -10,12 +10,12 @@ This book is the full operational reference for the project. It covers:
 - picking and interaction (`UInteraction`)
 - built-in widgets, behavior, and emitted events
 - rendering, clipping (`UClip`), performance, and profiling
-- practical examples and usage patterns
+- practical example history, static references, and current runnable paths
 
 ## Scope
 
 - This book documents the **actual repository state**.
-- Chapters reference concrete paths in `crates/*/src/`, `crates/*/examples/`, and the root `examples/` directory.
+- Chapters reference concrete paths in `crates/*/src/`, the current Android demo package, and the bilingual examples catalog.
 - If code and docs diverge, treat the source code as the ground truth.
 
 ## Requirements
@@ -45,7 +45,7 @@ https://univiseditor.github.io/univis_ui/
 
 ## Guides vs API Docs
 
-- Use this book for concepts, migration notes, and example-driven workflows.
+- Use this book for concepts, migration notes, and workflow guidance.
 - Use generated `rustdoc` for exact type paths, fields, and signatures.
 
 Generate the API docs with:
@@ -56,7 +56,7 @@ cargo doc --no-deps -p univis_ui
 
 ## Where To Look Next
 
-- related example: [Examples](examples/index.md)
-- curated gallery: [Example Gallery](examples/gallery.md)
+- example availability map: [Examples](examples/index.md)
+- curated availability view: [Example Gallery](examples/gallery.md)
 - related API index: [API Reference](api/index.md)
 - related migration notes: [Migration and Limitations](migration/index.md)

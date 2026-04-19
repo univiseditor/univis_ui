@@ -8,7 +8,7 @@
 
 This page is a historical validation snapshot from an earlier alpha-prep pass.
 The canonical current example catalog now lives in [Examples](../examples/index.md), and the
-workspace has grown since this report was captured.
+current branch no longer ships most of the example sources listed below.
 
 ## Validation Mode
 
@@ -59,7 +59,7 @@ workspace has grown since this report was captured.
 
 ## Notes
 
-- This report confirms compile viability via `cargo check --release -p <package> --example ...`.
+- This report confirms compile viability for the then-shipped example set via `cargo check --release -p <package> --example ...`.
 - Runtime behavior still requires manual windowed smoke checks for interaction and visual correctness.
 
 ## Runtime Smoke Status

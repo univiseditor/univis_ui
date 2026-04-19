@@ -26,6 +26,9 @@ File: `src/widget/scroll_view.rs`
 - the container needs `UInteraction` to detect hover
 - it is usually paired with `UClip { enabled: true }`
 
-## Example
+## Historical Example
 
-See: `crates/univis_ui_widgets/examples/scroll_view.rs`
+- use `cargo run --example widgets_containers` for a live scroll viewport wired with `UClip`, `UInteraction`, and `UScrollContainer`
+
+The old `scroll_view` example source is archived in this branch. Use the catalog entry in
+[Examples](../examples/index.md#scroll_view) for ownership/history.

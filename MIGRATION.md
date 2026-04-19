@@ -1,89 +1,67 @@
 # Migration Summary
 
-This file replaces the older temporary planning files now that the migration work has been applied to the repository.
+This file explains how to navigate the repository after the docs/examples reshuffle.
 
-## When To Read This File
+## Current Branch Status
 
-Read `MIGRATION.md` when you are coming from older docs, older example paths, or older root assumptions.
-
-Use the other root files for different goals:
-
-- `README.md`: landing story and fastest overview
-- `README_AR.md`: Arabic landing story
-- `RELEASE_NOTES.md`: current alpha release summary
-- `changelog.md`: chronological change history
-
-## What Changed
-
-- documentation now lives under one bilingual `mdBook` in `docs/`
-- English and Arabic chapters are mirrored under one shared `docs/src/SUMMARY.md`
-- examples now live next to the crate that primarily owns them
-- package-aware example commands are now the default
-- generated `API Docs` are now part of the documented learning path
+- documentation lives in one bilingual `mdBook` under `docs/`
 - the public root model centers on `URootUi`
-- layout sizing now has explicit `min_width/max_width/min_height/max_height`, `MinContent`, and `MaxContent`
-- `UVal::Auto` is no longer treated as the same thing as `Content`
+- most of the older workspace example source files are archived and are no longer shipped under
+  root `examples/` or `crates/*/examples/`
+- the current live demo package is `android/android_phone_app`
+- the current static visual references live under `docs/src/assets/visual-references/`
 
-## Canonical Surface vs Legacy Compatibility
+## If You Are Coming From Older Docs
 
-Use these as the current public assumptions:
+Treat older example commands as historical only in this branch.
 
-- canonical public roots: `URootUi`, `URootUi::screen()`, `URootUi::world_2d(...)`, `URootUi::world_3d(...)`
-- canonical root support types: `UiSpace`, `UiCameraRef`, `UiCanvasSize`
-- canonical example flow: crate-owned example paths plus package-aware `cargo run -p ... --example ...`
-- deprecated but still supported wrappers: `UScreenRoot`, `UWorldRoot` on explicit paths only; they are already de-emphasized in examples and the current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support
-- legacy physical-size compatibility path: `meters_per_unit: 1.0` on `URootUi`; this remains the explicit long-term compatibility knob when historical world-root scale still matters
+Examples such as:
 
-Still worth rechecking during migration:
+- `cargo run --example hello_world`
+- `cargo run -p univis_ui --example root_fit_content`
+- `cargo run -p univis_ui_widgets --example text_field`
 
-- fit-content world roots under heavy relative sizing
-- visual behavior in `World3d` showcase scenes
-- any rendering-, layout-, or picking-heavy change that still needs manual visual validation
+describe earlier repository layouts, not the current working tree.
 
-## Sizing Migration
-
-If you built layouts against older alpha behavior, recheck these assumptions:
-
-- `UVal::Content` now means explicit max-content sizing.
-- `UVal::Auto` now means contextual sizing instead of silently collapsing into `Content`.
-- `UImage` resolves `Auto`, `Content`, `MinContent`, and `MaxContent` to the native texture size when the asset becomes available.
-
-Start from these pages:
-
-- `docs/src/en/layout/sizing-semantics.md`
-- `docs/src/en/layout/node-model.md`
-- `docs/src/en/examples/index.md`
-
-## New Discovery Path
-
-Use this order when navigating the project:
+Use these entry points instead:
 
 1. `README.md` or `README_AR.md`
 2. `docs/src/index.md`
 3. the relevant guide chapter
-4. `docs/src/en/examples/index.md` or `docs/src/ar/examples/index.md`
-5. generated `cargo doc --no-deps -p univis_ui`
+4. `docs/src/en/examples/index.md` or `docs/src/ar/examples/index.md` for ownership/history
+5. `cargo run --manifest-path android/android_phone_app/Cargo.toml` for the current live mobile-style demo
 
-## Example Command Migration
+## Canonical Public Surface
 
-Older commands often assumed the workspace root package:
+Use these as the current public assumptions:
 
-```bash
-cargo run --example hello_world
-```
+- canonical roots: `URootUi`, `URootUi::screen()`, `URootUi::world_2d(...)`, `URootUi::world_3d(...)`
+- canonical root support types: `UiSpace`, `UiCameraRef`, `UiCanvasSize`
+- deprecated compatibility wrappers: `UScreenRoot`, `UWorldRoot` on explicit paths only
+- long-term physical-size compatibility knob: `meters_per_unit: 1.0` on `URootUi`
 
-Use package-aware commands now:
+Still worth rechecking during migration:
 
-```bash
-cargo run -p univis_ui --example hello_world
-cargo run -p univis_ui --example root_fit_content
-cargo run -p univis_ui_widgets --example text_field
-cargo run -p univis_ui_interaction --example interaction
-```
+- fit-content world roots under heavy relative sizing
+- visual behavior in `World3d`-style scenes
+- any rendering-, layout-, or picking-heavy change that still needs manual validation
 
-## Root And Docs Migration
+## Example Availability
 
-If you learned the project through older docs or older root wrappers, start here:
+The examples catalog now distinguishes three states:
+
+- `Live package`: source still ships in the current branch and can be run directly
+- `Static reference`: an HTML or image reference is kept for visual comparison
+- `Archived source`: the historical example name is still documented, but the source file is not shipped in this branch
+
+See:
+
+- `docs/src/en/examples/index.md`
+- `docs/src/ar/examples/index.md`
+- `docs/src/en/examples/gallery.md`
+- `docs/src/ar/examples/gallery.md`
+
+## Related Migration Pages
 
 - `docs/src/en/migration/docs-and-examples.md`
 - `docs/src/en/migration/root-api.md`
@@ -101,7 +79,6 @@ Arabic mirrors:
 
 - project story and crate map: `README.md`
 - Arabic landing page: `README_AR.md`
-- current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`
 - guides: `docs/src/en/*` and `docs/src/ar/*`
-- example catalog: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
+- example availability map: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
 - API reference: generated `cargo doc --no-deps -p univis_ui`

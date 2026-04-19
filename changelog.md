@@ -10,6 +10,16 @@ Use this file for the dated chronological record.
 Use `RELEASE_NOTES.md` for the current alpha release summary.
 Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
+## [2026-04-19]
+
+### Added
+
+- Added a live widget example set under `examples/widgets/` with explicit Cargo targets for `widgets_controls`, `widgets_inputs`, `widgets_display`, and `widgets_containers`.
+
+### Changed
+
+- Changed the examples catalog and widget docs in both English and Arabic so widget-related pages now point to the current live examples instead of only historical archived sources.
+
 ## [2026-04-08]
 
 ### Added

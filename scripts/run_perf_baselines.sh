@@ -4,12 +4,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-export UNIVIS_PERF_WARMUP="${UNIVIS_PERF_WARMUP:-48}"
-export UNIVIS_PERF_ITERATIONS="${UNIVIS_PERF_ITERATIONS:-240}"
+cat <<'EOF' >&2
+The benchmark harness examples are archived in the current branch and their source
+files are not shipped anymore.
 
-echo "== Solver Benchmarks =="
-cargo run -p univis_ui_engine --release --example solver_benchmarks -- "$@"
+Use the committed reports under `perf_baselines/current_max/2026-04-05/` instead:
+- `solver_benchmarks.txt`
+- `runtime_benchmarks.txt`
+- `manifest.json`
 
-echo
-echo "== Runtime Benchmarks =="
-cargo run -p univis_ui --release --example runtime_benchmarks -- "$@"
+If the harness sources are restored later, this script can be reconnected to the
+example-backed workflow.
+EOF
+
+exit 1

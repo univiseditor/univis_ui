@@ -12,9 +12,9 @@ Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit i
 > Important:
 > `univis_ui` is still in **alpha**. API and behavior can change between versions.
 
-From `cargo run --release -p univis_ui --features example_bloom --example card_profile`:
+Archived visual reference from the former `card_profile` demo:
 
-![profile](profile.png)
+![profile](docs/src/assets/profile.png)
 
 ## Why Univis UI
 
@@ -117,7 +117,7 @@ Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default wi
 - `URootUi` is the canonical public root API
 - `URootUi::screen()`, `URootUi::world_2d(...)`, and `URootUi::world_3d(...)` are the intended entry points
 - `UiSpace`, `UiCameraRef`, and `UiCanvasSize`, including `UiCanvasSize::FitContent { min, max }`, are part of the public root story
-- examples are expected to use crate-owned paths and package-aware commands
+- historical example names remain documented in the bilingual catalog, while the current branch ships the standalone `android/android_phone_app` package plus static visual references under `docs/src/assets/visual-references/`
 
 ### Deprecated But Still Supported
 
@@ -191,11 +191,11 @@ Good starting points:
 
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
-- [Technical Debt Inventory](TECH_DEBT_INVENTORY.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
 - [Plugin Setup and First Examples (EN)](docs/src/en/first-steps.md)
 - [إعداد الإضافات وأولى الأمثلة (AR)](docs/src/ar/first-steps.md)
+- [Android Phone Demo Package](android/android_phone_app)
 - [Example Gallery (EN)](docs/src/en/examples/gallery.md)
 - [Example Gallery (AR)](docs/src/ar/examples/gallery.md)
 - [Roots and Spaces (EN)](docs/src/en/layout/roots.md)
@@ -222,7 +222,6 @@ Good starting points:
 - `MIGRATION.md`: migration path from older docs, example paths, and root assumptions.
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
-- `TECH_DEBT_INVENTORY.md`: maintainer-facing backlog for the current large-file refactor wave.
 - `changelog.md`: dated chronological record of notable changes.
 
 ## API Docs
@@ -244,21 +243,17 @@ Useful entry points:
 - `univis_ui_widgets::widget::text_label::UTextLabel`
 - `univis_ui_style::style::Theme`
 
-Useful examples:
+Useful reference entries:
 
-- `hello_world`
-- `root_screen_hud`
-- `root_world_scale`
-- `root_fit_content`
-- `root_capsule_overlap`
-- `border_light_3d`
+- `android_phone`
+- `responsive_dashboard`
+- `complex_dashboard`
 - `card_profile`
-- `sci_fi`
 
-Run one:
+Run the current live demo:
 
 ```bash
-cargo run -p univis_ui --example root_fit_content
+cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
 
 ## Crates

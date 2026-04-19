@@ -38,6 +38,11 @@ builders:
 - cursor icon يتغير عند hover/press على handles فقط.
 - عند أول resize يتم تثبيت panel إلى `Absolute + Px` لضمان سلوك متوقع.
 
-## مثال
+## مثال حي
 
-راجع: `crates/univis_ui_widgets/examples/panel_window.rs`.
+- استخدم `cargo run --example widgets_containers` لرؤية `UPanelWindow` القابل لتغيير الحجم مع منفذ تمرير مرافق
+
+## المثال التاريخي
+
+أصبح مصدر المثال القديم `panel_window` مؤرشفًا في هذا الفرع. استخدم مدخله داخل
+[فهرس الأمثلة](../examples/index.md#panel_window) لمعرفة الملكية والتاريخ.

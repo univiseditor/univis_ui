@@ -59,6 +59,7 @@ pub fn downward_solve_pass_safe(
         Option<&Children>,
         Option<&USelf>,
         Option<&CachedUiContext>,
+        Option<&UiLocalStacking>,
         &mut ComputedSize,
         &mut Transform,
     )>,
@@ -88,7 +89,7 @@ pub fn downward_solve_pass_safe(
         let Some((container_size, constraints, solver_config, cached_context)) = (|| {
             let (node, layout_opt, children_opt, cached_context, computed) = match nodes.get(entity)
             {
-                Ok((_, node, layout_opt, _, children_opt, _, cached_context, computed, _)) => {
+                Ok((_, node, layout_opt, _, children_opt, _, cached_context, _, computed, _)) => {
                     (node, layout_opt, children_opt, cached_context, computed)
                 }
                 Err(_) => return None,
@@ -143,7 +144,7 @@ pub fn downward_solve_pass_safe(
         };
 
         if depth == 0
-            && let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
+            && let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
         {
             if (computed.width - container_size.x).abs() > LAYOUT_WRITE_EPSILON {
                 computed.width = container_size.x;
@@ -196,7 +197,7 @@ pub fn downward_solve_pass_safe(
             &root_stack_query,
         );
 
-        if let Ok((_, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+        if let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
             if (computed.width - final_size.x).abs() > LAYOUT_WRITE_EPSILON {
                 computed.width = final_size.x;
             }
@@ -332,6 +333,7 @@ fn collect_solver_items_into(
         Option<&Children>,
         Option<&USelf>,
         Option<&CachedUiContext>,
+        Option<&UiLocalStacking>,
         &mut ComputedSize,
         &mut Transform,
     )>,
@@ -341,7 +343,7 @@ fn collect_solver_items_into(
     scratch.reserve(children.len());
 
     for child_entity in children.iter() {
-        let Ok((_, node, _, _, _, uself_opt, _, _, _)) = nodes_query.get(child_entity) else {
+        let Ok((_, node, _, _, _, uself_opt, _, _, _, _)) = nodes_query.get(child_entity) else {
             continue;
         };
         let Ok(intrinsic) = intrinsic_query.get(child_entity) else {
@@ -408,13 +410,24 @@ fn apply_results_to_children(
         Option<&Children>,
         Option<&USelf>,
         Option<&CachedUiContext>,
+        Option<&UiLocalStacking>,
         &mut ComputedSize,
         &mut Transform,
     )>,
 ) {
     for solved in solved_children.iter() {
-        if let Ok((_, _, _, layout_depth, children, uself, _, mut computed, mut transform)) =
-            nodes_query.get_mut(solved.entity)
+        if let Ok((
+            _,
+            _,
+            _,
+            layout_depth,
+            children,
+            uself,
+            _,
+            local_stacking,
+            mut computed,
+            mut transform,
+        )) = nodes_query.get_mut(solved.entity)
         {
             let size_changed = (computed.width - solved.result.size.x).abs() > LAYOUT_WRITE_EPSILON
                 || (computed.height - solved.result.size.y).abs() > LAYOUT_WRITE_EPSILON;
@@ -433,7 +446,10 @@ fn apply_results_to_children(
                 ((parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0)) * world_scale;
 
             let order = uself.map(|value| value.order).unwrap_or(0);
-            let next_z = root_stack.local_depth_offset(layout_depth.0, order);
+            let next_z = local_stacking.map_or_else(
+                || root_stack.local_depth_offset(layout_depth.0, order),
+                |stack| root_stack.local_depth_offset_for_fraction(stack.normalized),
+            );
 
             if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
                 transform.translation.x = next_x;

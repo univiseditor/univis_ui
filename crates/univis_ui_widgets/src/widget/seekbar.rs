@@ -1,6 +1,6 @@
 use crate::widget::text_label::UTextLabel;
-use bevy::input::{ButtonInput, mouse::MouseButton};
 use bevy::picking::Pickable;
+use bevy::picking::pointer::PointerButton;
 use bevy::prelude::*;
 use univis_ui_engine::layout::geometry::{UCornerRadius, UVal};
 use univis_ui_engine::layout::univis_node::{
@@ -23,13 +23,16 @@ impl Plugin for UnivisSeekBarPlugin {
                 Update,
                 (
                     init_seekbar_visuals,
-                    handle_seekbar_interaction,
                     update_seekbar_visuals,
                     // animate_seekbar_thumb,
                     emit_seekbar_events,
                 )
                     .chain(),
-            );
+            )
+            .add_observer(start_seekbar_interaction)
+            .add_observer(drag_seekbar_interaction)
+            .add_observer(release_seekbar_interaction)
+            .add_observer(end_seekbar_drag);
     }
 }
 
@@ -47,7 +50,6 @@ pub struct USeekBar {
 
     /// Previous value used internally for change detection.
     previous_value: f32,
-    old_value: f32,        // Cursor X position captured when dragging starts.
     drag_start_value: f32, // Normalized value captured when dragging starts.
 
     // --- dimensions ---
@@ -81,7 +83,6 @@ impl Default for USeekBar {
     fn default() -> Self {
         Self {
             drag_start_value: 0.0,
-            old_value: 0.0,
             value: 0.0,
             previous_value: 0.0,
             width: 200.0,
@@ -239,7 +240,7 @@ struct SeekBarTrack;
 struct SeekBarFill;
 
 #[derive(Component)]
-struct SeekBarThumb(Entity);
+struct SeekBarThumb;
 
 #[derive(Component)]
 struct SeekBarValueLabel;
@@ -271,6 +272,7 @@ fn init_seekbar_visuals(
                     gap: 5.0,
                     ..default()
                 },
+                UInteraction::default(),
             ))
             .with_children(|parent| {
                 // Container that owns the track and thumb.
@@ -339,7 +341,7 @@ fn init_seekbar_visuals(
                                         ),
                                         ..default()
                                     },
-                                    SeekBarThumb(entity),
+                                    SeekBarThumb,
                                     UInteraction::default(),
                                 ));
                             });
@@ -361,54 +363,78 @@ fn init_seekbar_visuals(
     }
 }
 
-fn handle_seekbar_interaction(
-    // 1. Start from the thumb.
-    thumb_query: Query<(&SeekBarThumb, &UInteraction), With<SeekBarThumb>>,
-
-    // 2. Then mutate the owning seek bar.
-    mut seekbar_query: Query<&mut USeekBar>,
-
-    mouse_button: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
+fn start_seekbar_interaction(
+    mut press: On<Pointer<Press>>,
+    mut seekbar_query: Query<(&mut USeekBar, &GlobalTransform)>,
 ) {
-    let window = if let Ok(w) = windows.single() {
-        w
-    } else {
+    let entity = press.entity.entity();
+    let Ok((mut seekbar, transform)) = seekbar_query.get_mut(entity) else {
         return;
     };
-    let cursor_pos = if let Some(pos) = window.cursor_position() {
-        pos
-    } else {
+    if seekbar.disabled || press.button != PointerButton::Primary {
         return;
-    };
-
-    for (entity, interaction) in thumb_query.iter() {
-        if let Ok(mut seekbar) = seekbar_query.get_mut(entity.0) {
-            if seekbar.disabled {
-                continue;
-            }
-
-            // Begin dragging.
-            if *interaction == UInteraction::Pressed && mouse_button.just_pressed(MouseButton::Left)
-            {
-                seekbar.old_value = cursor_pos.x;
-                seekbar.drag_start_value = seekbar.value;
-                seekbar.is_dragging = true;
-            }
-
-            // Continue dragging while the button stays pressed.
-            if seekbar.is_dragging {
-                if mouse_button.pressed(MouseButton::Left) {
-                    let delta_px = cursor_pos.x - seekbar.old_value;
-                    let delta_ratio = delta_px / seekbar.width;
-                    let new_value = seekbar.drag_start_value + delta_ratio;
-                    seekbar.value = new_value.clamp(0.0, 1.0);
-                } else {
-                    seekbar.is_dragging = false;
-                }
-            }
-        }
     }
+
+    press.propagate(false);
+
+    if let Some(hit_world) = press.hit.position {
+        let local_x = transform
+            .to_matrix()
+            .inverse()
+            .transform_point3(hit_world)
+            .x;
+        seekbar.value = normalized_value_from_local_x(local_x, seekbar.width, seekbar.thumb_size);
+    }
+
+    seekbar.drag_start_value = seekbar.value;
+    seekbar.is_dragging = true;
+}
+
+fn drag_seekbar_interaction(mut drag: On<Pointer<Drag>>, mut seekbar_query: Query<&mut USeekBar>) {
+    let entity = drag.entity.entity();
+    let Ok(mut seekbar) = seekbar_query.get_mut(entity) else {
+        return;
+    };
+    if seekbar.disabled || !seekbar.is_dragging || drag.button != PointerButton::Primary {
+        return;
+    }
+
+    drag.propagate(false);
+
+    let usable_width = (seekbar.width - seekbar.thumb_size).max(1.0);
+    let delta_ratio = drag.distance.x / usable_width;
+    seekbar.value = (seekbar.drag_start_value + delta_ratio).clamp(0.0, 1.0);
+}
+
+fn release_seekbar_interaction(
+    mut release: On<Pointer<Release>>,
+    mut seekbar_query: Query<&mut USeekBar>,
+) {
+    let entity = release.entity.entity();
+    let Ok(mut seekbar) = seekbar_query.get_mut(entity) else {
+        return;
+    };
+    if release.button != PointerButton::Primary {
+        return;
+    }
+
+    release.propagate(false);
+    seekbar.is_dragging = false;
+    seekbar.drag_start_value = seekbar.value;
+}
+
+fn end_seekbar_drag(mut drag_end: On<Pointer<DragEnd>>, mut seekbar_query: Query<&mut USeekBar>) {
+    let entity = drag_end.entity.entity();
+    let Ok(mut seekbar) = seekbar_query.get_mut(entity) else {
+        return;
+    };
+    if drag_end.button != PointerButton::Primary {
+        return;
+    }
+
+    drag_end.propagate(false);
+    seekbar.is_dragging = false;
+    seekbar.drag_start_value = seekbar.value;
 }
 
 /// Updates the seek bar visuals after state changes.
@@ -514,4 +540,28 @@ pub struct SeekBarChangedEvent {
     pub entity: Entity,
     pub value: f32,      // 0.0 - 1.0
     pub real_value: f32, // Value mapped into the configured real range.
+}
+
+fn normalized_value_from_local_x(local_x: f32, width: f32, thumb_size: f32) -> f32 {
+    let usable_width = (width - thumb_size).max(1.0);
+    let x_from_left = local_x + (width * 0.5);
+    let adjusted_x = x_from_left - (thumb_size * 0.5);
+    (adjusted_x / usable_width).clamp(0.0, 1.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalized_value_from_local_x;
+
+    #[test]
+    fn normalized_value_clamps_at_track_edges() {
+        assert_eq!(normalized_value_from_local_x(-100.0, 200.0, 20.0), 0.0);
+        assert_eq!(normalized_value_from_local_x(100.0, 200.0, 20.0), 1.0);
+    }
+
+    #[test]
+    fn normalized_value_maps_track_center_to_midpoint() {
+        let midpoint = normalized_value_from_local_x(0.0, 200.0, 20.0);
+        assert!((midpoint - 0.5).abs() < 0.001);
+    }
 }

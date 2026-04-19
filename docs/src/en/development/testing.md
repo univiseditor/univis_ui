@@ -26,8 +26,9 @@ cargo test --release <test_name> --lib
 - `./scripts/check_engine_boundary_guardrails.sh`
 - `cargo test --workspace --lib`
 
-`./scripts/check_representative_examples.sh` checks a curated release-mode set that covers the
-facade path, root modes, interaction, panel resize, text input, and the `World3d` render path.
+`./scripts/check_representative_examples.sh` now compiles the standalone Android phone package and then scans any currently shipped workspace example directories.
+
+`./scripts/check_examples_serial_release.sh` remains useful when a branch actually ships `examples/*.rs` targets; in the current branch it may simply report that no workspace examples are present.
 
 ## Documentation Validation
 
@@ -38,30 +39,17 @@ mdbook build docs
 
 ## Performance Baselines
 
-```bash
-./scripts/run_perf_baselines.sh
-./scripts/run_perf_baselines.sh --check
-```
+The historical benchmark harnesses were example-backed and are currently archived in this branch.
 
-Use the benchmark harness when changing the solver or other hot layout paths. The current baseline
-run covers solver, root, text, picking, widget-heavy, and world3d-heavy scenarios, and reports
-average / `p95` / max times for each one.
+Use these committed artifacts instead:
+
+- `perf_baselines/current_max/2026-04-05/solver_benchmarks.txt`
+- `perf_baselines/current_max/2026-04-05/runtime_benchmarks.txt`
+- `perf_baselines/current_max/2026-04-05/manifest.json`
 
 ## CI Validation
 
-GitHub Actions now validates quality, docs, examples, and API docs through:
-
-- `.github/workflows/docs_examples_api.yml`
-- `.github/workflows/docs_publish.yml`
-
-It runs:
-
-- `./scripts/check_quality.sh`
-- `./scripts/check_representative_examples.sh`
-- `mdbook build docs`
-- `cargo doc --no-deps` for each public crate
-- package-by-package example checking through `./scripts/check_examples_serial_release.sh -p ...`
-- one dedicated GitHub Pages publishing path for the hosted docs site on `main`
+GitHub Actions still validates quality, docs, and API docs through the existing workflows, and the example scripts remain safe to call even when no workspace example sources are present.
 
 ## Sequential Validation On Low-End Machines
 
@@ -69,13 +57,13 @@ It runs:
 # all lib tests one by one
 ./scripts/test_lib_serial_release.sh
 
-# all examples one by one
+# all currently shipped workspace examples, if any
 ./scripts/check_examples_serial_release.sh
 
-# representative cross-surface smoke compile pass
+# Android package plus workspace example scan
 ./scripts/check_representative_examples.sh
 
-# full validation: lib tests + examples
+# full validation: lib tests + currently shipped examples
 ./scripts/verify_serial_release.sh
 
 # sequential validation for a specific workspace package
@@ -83,19 +71,14 @@ It runs:
 ./scripts/check_examples_serial_release.sh -p univis_ui_engine
 ./scripts/verify_serial_release.sh -p univis_ui_engine
 
-# alpha validation before release: check + lib tests + examples + package
+# Android package directly
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+
+# alpha validation before release
 ./scripts/verify_alpha_release.sh
 
 # package alpha builds only, without validation
 ./scripts/package_alpha_serial.sh --no-verify
-```
-
-To validate only selected examples:
-
-```bash
-./scripts/check_examples_serial_release.sh -p univis_ui hello_world
-./scripts/check_examples_serial_release.sh -p univis_ui_interaction interaction
-./scripts/check_examples_serial_release.sh -p univis_ui_widgets select
 ```
 
 ## Practical Pre-Merge Strategy
@@ -103,8 +86,8 @@ To validate only selected examples:
 1. run the unit tests related to the change
 2. run `./scripts/check_quality.sh`
 3. run `./scripts/check_representative_examples.sh`
-4. run `./scripts/check_examples_serial_release.sh` for the touched package or before release
-5. launch at least one example related to the modified area
+4. run `./scripts/check_examples_serial_release.sh` only if your branch currently ships runnable workspace examples
+5. launch the Android package when the change affects the live demo surface
 6. use [Visual Validation](visual-validation.md) when the change is rendering-, layout-, or interaction-heavy
 
 ## Required Before The Next Alpha Cut
@@ -116,12 +99,9 @@ To validate only selected examples:
 - `cargo doc -p univis_ui_interaction --no-deps`
 - `cargo doc -p univis_ui_widgets --no-deps`
 - `cargo doc -p univis_ui --no-deps`
+- `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
 - `./scripts/check_representative_examples.sh`
-- `./scripts/check_examples_serial_release.sh -p univis_ui_engine`
-- `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
-- `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
-- `./scripts/check_examples_serial_release.sh -p univis_ui`
-- one manual pass through the representative examples in [Visual Validation](visual-validation.md)
+- one manual pass through the Android package and the archived references in [Visual Validation](visual-validation.md)
 - one pass through [Release Readiness](release-readiness.md)
 
 ## Screenshot Policy

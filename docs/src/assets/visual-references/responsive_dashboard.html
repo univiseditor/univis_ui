@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>responsive_dashboard (HTML Reference)</title>
+  <style>
+    :root {
+      --page: #e8e5df;
+      --shell: #fbfdfb;
+      --mint: #e8faec;
+      --mint-soft: #f1fbf4;
+      --mint-strong: #ddf4e2;
+      --work: #e3efe6;
+      --text: #31423d;
+      --muted: #67827b;
+      --accent: #48a373;
+      --line: #b6cac1;
+      --block: #c4d3cb;
+      --border: rgba(76, 112, 96, 0.14);
+      --border-strong: rgba(76, 112, 96, 0.2);
+      --shadow: 0 24px 50px rgba(96, 89, 76, 0.14);
+      --radius-xl: 32px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(280px 280px at 14% 16%, rgba(79, 177, 120, 0.14), transparent 72%),
+        radial-gradient(250px 250px at 84% 18%, rgba(242, 208, 124, 0.18), transparent 68%),
+        radial-gradient(220px 220px at 24% 82%, rgba(81, 161, 137, 0.12), transparent 66%),
+        var(--page);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .shell {
+      width: min(100%, 1330px);
+      background: var(--shell);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: grid;
+      gap: 0;
+    }
+
+    .nav {
+      display: none;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: var(--mint);
+      padding: 16px;
+      gap: 12px;
+      align-content: space-between;
+    }
+
+    .nav-box,
+    .topbar,
+    .stage,
+    .snapshot,
+    .ribbon,
+    .board,
+    .notes,
+    .timeline,
+    .rail {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+
+    .nav-box,
+    .topbar,
+    .snapshot,
+    .ribbon,
+    .notes,
+    .timeline,
+    .rail {
+      background: var(--mint-soft);
+    }
+
+    .nav-box {
+      padding: 12px;
+      border-radius: var(--radius-md);
+    }
+
+    .nav-box strong {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+
+    .line {
+      height: 7px;
+      border-radius: 999px;
+      background: var(--line);
+    }
+
+    .line.soft {
+      background: #c8d8d0;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--line);
+      flex: none;
+    }
+
+    .nav-links {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 14px;
+      color: var(--muted);
+    }
+
+    .nav-item.active {
+      background: rgba(72, 163, 115, 0.12);
+      color: var(--text);
+    }
+
+    .nav-item.active .dot {
+      background: var(--accent);
+    }
+
+    .workspace {
+      display: grid;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: grid;
+      gap: 10px;
+      padding: 16px 18px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: clamp(1.65rem, 2.5vw, 2.55rem);
+      line-height: 1.05;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(72, 163, 115, 0.11);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .body {
+      display: grid;
+      gap: 0;
+    }
+
+    .main {
+      display: grid;
+      gap: 16px;
+    }
+
+    .stage-row {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stage {
+      background: var(--mint);
+      border-radius: 30px;
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .stage-head,
+    .split-head,
+    .ribbon-head,
+    .board-head,
+    .timeline-head,
+    .rail-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .workframe {
+      background: var(--shell);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      min-height: 236px;
+    }
+
+    .work-inner {
+      display: grid;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .canvas-left,
+    .canvas-right {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px;
+    }
+
+    .canvas-left {
+      background: var(--work);
+      display: grid;
+      gap: 10px;
+    }
+
+    .canvas-right {
+      background: var(--shell);
+      display: grid;
+      gap: 8px;
+      min-width: 132px;
+    }
+
+    .placeholder {
+      background: var(--block);
+      border-radius: 16px;
+    }
+
+    .board-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .chip-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .chip-grid span {
+      height: 36px;
+      border-radius: 12px;
+      background: #dbe8e0;
+    }
+
+    .outline-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .outline-box {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.34);
+      display: grid;
+      gap: 6px;
+    }
+
+    .snapshot {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .strip-block {
+      display: grid;
+      gap: 7px;
+    }
+
+    .strip-block strong {
+      font-size: 1.8rem;
+    }
+
+    .track {
+      height: 10px;
+      border-radius: 999px;
+      background: #dce8e1;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border-strong);
+    }
+
+    .ribbon,
+    .board,
+    .timeline,
+    .rail {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .metric-flow {
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric-band {
+      display: grid;
+      gap: 5px;
+      padding: 8px 14px;
+    }
+
+    .metric-band strong {
+      font-size: 1.8rem;
+    }
+
+    .editorial {
+      display: grid;
+      gap: 12px;
+    }
+
+    .board {
+      background: var(--shell);
+    }
+
+    .notes {
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .note-line,
+    .rail-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--shell);
+      color: var(--muted);
+    }
+
+    .schedule {
+      background: var(--work);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .schedule-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .schedule-copy {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .schedule-copy span:last-child {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .timeline-track {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+    }
+
+    .timeline-stop {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px;
+      background: var(--mint-soft);
+      display: grid;
+      gap: 6px;
+    }
+
+    .timeline-stop strong {
+      font-size: 1rem;
+    }
+
+    .rail {
+      display: none;
+    }
+
+    .rail-section {
+      display: grid;
+      gap: 8px;
+    }
+
+    @media (min-width: 520px) {
+      .shell { padding: 18px; }
+      .stage-row {
+        grid-template-columns: minmax(0, 1fr) 186px;
+        gap: 16px;
+      }
+      .workframe { min-height: 264px; }
+      .work-inner {
+        grid-template-columns: minmax(0, 1fr) 132px;
+      }
+      .outline-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 760px) {
+      .shell { padding: 20px; }
+      .topbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 14px;
+      }
+      .body {
+        grid-template-columns: minmax(0, 1fr) 204px;
+        gap: 18px;
+      }
+      .rail { display: grid; }
+      .metric-flow {
+        grid-template-columns: 1fr 1px 1fr 1px 1fr;
+        gap: 0;
+        align-items: stretch;
+      }
+      .editorial {
+        grid-template-columns: minmax(0, 1fr) 240px;
+        gap: 14px;
+      }
+      .workframe { min-height: 300px; }
+    }
+
+    @media (min-width: 980px) {
+      .shell { padding: 22px; }
+      .body { grid-template-columns: minmax(0, 1fr) 224px; }
+      .stage-row { grid-template-columns: minmax(0, 1fr) 220px; }
+      .workframe { min-height: 326px; }
+    }
+
+    @media (min-width: 1220px) {
+      .shell {
+        grid-template-columns: 92px minmax(0, 1fr);
+        gap: 18px;
+        padding: 24px;
+      }
+      .nav { display: grid; }
+      .body { grid-template-columns: minmax(0, 1fr) 244px; }
+      .stage-row { grid-template-columns: minmax(0, 1fr) 236px; }
+      .workframe { min-height: 350px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <aside class="nav">
+      <section class="nav-box">
+        <strong>TC</strong>
+        <div class="line" style="width:72%"></div>
+        <div class="line" style="width:46%"></div>
+      </section>
+
+      <section class="nav-links">
+        <div class="nav-item active"><span class="dot"></span>Overview</div>
+        <div class="nav-item"><span class="dot"></span>Studio</div>
+        <div class="nav-item"><span class="dot"></span>Timeline</div>
+        <div class="nav-item"><span class="dot"></span>Assets</div>
+        <div class="nav-item"><span class="dot"></span>People</div>
+      </section>
+
+      <section class="nav-box">
+        <div class="eyebrow">Broadcast</div>
+        <div class="line" style="width:76%"></div>
+        <div class="line soft" style="width:58%"></div>
+        <div class="line" style="width:42%"></div>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Responsive Studio</div>
+          <h1>A responsive workspace with a real canvas, data strip, and production rails</h1>
+          <p>The composition opens gradually across five breakpoints instead of repeating the same rounded card pattern everywhere.</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill">Resize window</span>
+          <span class="pill">Breakpoint 1 → 5</span>
+          <span class="pill">Canvas-first composition</span>
+        </div>
+      </header>
+
+      <div class="body">
+        <section class="main">
+          <div class="stage-row">
+            <section class="stage">
+              <div class="stage-head">
+                <span class="eyebrow">Studio canvas</span>
+                <div class="pill-row">
+                  <span class="pill">Campaign board</span>
+                  <span class="pill">Production map</span>
+                </div>
+              </div>
+              <h2>The main zone behaves like a working surface, with guides, overlays, and sequences.</h2>
+              <p>A broad canvas stays dominant while surrounding utilities shift from stacked to split layouts.</p>
+
+              <div class="workframe">
+                <div class="split-head">
+                  <div class="line" style="width:28%"></div>
+                  <div class="line soft" style="width:82px"></div>
+                </div>
+
+                <div class="work-inner">
+                  <div class="canvas-left">
+                    <div class="line" style="width:30%"></div>
+                    <div class="placeholder" style="min-height:140px; flex:1"></div>
+                    <div class="chip-grid">
+                      <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                  </div>
+
+                  <div class="canvas-right">
+                    <span class="eyebrow">Guides</span>
+                    <div class="line" style="width:72%"></div>
+                    <div class="line soft" style="width:58%"></div>
+                    <div class="placeholder" style="min-height:90px;"></div>
+                    <div class="line" style="width:46%"></div>
+                  </div>
+                </div>
+
+                <div class="outline-row">
+                  <div class="outline-box">
+                    <strong>Campaign map</strong>
+                    <p>The broad frame acts like a worktable, not a miniature card deck.</p>
+                  </div>
+                  <div class="outline-box">
+                    <strong>Sequencing lane</strong>
+                    <p>The lower strip reads as an attached timeline.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <aside class="snapshot">
+              <span class="eyebrow">Utility strip</span>
+              <p>A narrow rail of state, not three small cards.</p>
+
+              <div class="strip-block">
+                <span>Audience pulse</span>
+                <strong>18.4k</strong>
+                <div class="track"><div class="fill" style="width:74%"></div></div>
+              </div>
+              <div class="divider"></div>
+              <div class="strip-block">
+                <span>Draft velocity</span>
+                <strong>63%</strong>
+                <div class="track"><div class="fill" style="width:58%"></div></div>
+              </div>
+              <div class="divider"></div>
+              <div class="strip-block">
+                <span>Approval line</span>
+                <strong>14</strong>
+                <div class="track"><div class="fill" style="width:38%; background:#d2b164;"></div></div>
+              </div>
+            </aside>
+          </div>
+
+          <section class="ribbon">
+            <div class="ribbon-head">
+              <h2>Data ribbon</h2>
+              <span class="pill">Inline metrics</span>
+            </div>
+            <p>These indicators stay inside one horizontal system instead of becoming isolated KPI cards.</p>
+
+            <div class="metric-flow">
+              <div class="metric-band">
+                <span class="eyebrow">Reach</span>
+                <strong>18.4k</strong>
+                <p>Steady broadcast growth</p>
+              </div>
+              <div class="divider" style="width:1px; height:52px"></div>
+              <div class="metric-band">
+                <span class="eyebrow">Response</span>
+                <strong>63%</strong>
+                <p>Approvals clear on second pass</p>
+              </div>
+              <div class="divider" style="width:1px; height:52px"></div>
+              <div class="metric-band">
+                <span class="eyebrow">Latency</span>
+                <strong>3h</strong>
+                <p>Editorial review remains on track</p>
+              </div>
+            </div>
+          </section>
+
+          <div class="editorial">
+            <section class="board">
+              <div class="board-head">
+                <h2>Production board</h2>
+                <span class="pill">Schedule / slots / owners</span>
+              </div>
+              <p>One broad board handles scheduling, ownership, and timing. The complexity lives inside the board itself.</p>
+
+              <div class="schedule">
+                <div class="schedule-row">
+                  <span class="eyebrow">08:30</span>
+                  <div class="schedule-copy"><span>Homepage edit</span><span>Nadia</span></div>
+                  <span class="pill">Ready</span>
+                </div>
+                <div class="divider"></div>
+                <div class="schedule-row">
+                  <span class="eyebrow">11:00</span>
+                  <div class="schedule-copy"><span>Motion pass</span><span>Youssef</span></div>
+                  <span class="pill">Queued</span>
+                </div>
+                <div class="divider"></div>
+                <div class="schedule-row">
+                  <span class="eyebrow">14:15</span>
+                  <div class="schedule-copy"><span>Copy review</span><span>Salma</span></div>
+                  <span class="pill">Active</span>
+                </div>
+                <div class="divider"></div>
+                <div class="schedule-row">
+                  <span class="eyebrow">16:40</span>
+                  <div class="schedule-copy"><span>Breakpoints QA</span><span>Rim</span></div>
+                  <span class="pill">Blocked</span>
+                </div>
+              </div>
+            </section>
+
+            <aside class="notes">
+              <h2>Notes lane</h2>
+              <p>A companion lane for short directives and next actions.</p>
+              <div class="note-line"><span class="dot" style="background:var(--accent)"></span>Hero canvas should stay broad through breakpoint 4.</div>
+              <div class="note-line"><span class="dot" style="background:var(--accent)"></span>Do not collapse the utility strip into detached cards.</div>
+              <div class="note-line"><span class="dot" style="background:var(--accent)"></span>Keep the timeline visually attached to the main flow.</div>
+              <div class="placeholder" style="height:96px;"></div>
+            </aside>
+          </div>
+
+          <section class="timeline">
+            <div class="timeline-head">
+              <h2>Release spine</h2>
+              <span class="pill">Sequence band</span>
+            </div>
+            <p>Milestones sit on one connected band to preserve flow across the page.</p>
+
+            <div class="timeline-track">
+              <div class="timeline-stop"><span class="dot" style="background:var(--accent)"></span><strong>Sketch</strong><span>Frame</span></div>
+              <div class="timeline-stop"><span class="dot" style="background:var(--accent)"></span><strong>Review</strong><span>Content</span></div>
+              <div class="timeline-stop"><span class="dot" style="background:var(--accent)"></span><strong>Polish</strong><span>Motion</span></div>
+              <div class="timeline-stop"><span class="dot" style="background:var(--accent)"></span><strong>QA</strong><span>Breakpoint</span></div>
+              <div class="timeline-stop"><span class="dot" style="background:var(--accent)"></span><strong>Ship</strong><span>Publish</span></div>
+            </div>
+          </section>
+        </section>
+
+        <aside class="rail">
+          <div class="rail-head">
+            <h2>Studio rail</h2>
+            <span class="pill">Live</span>
+          </div>
+          <p>This rail is a continuous sidebar with sections, not a vertical stack of mini cards.</p>
+
+          <div class="rail-section">
+            <strong>Signals</strong>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Hero split is stable</div>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Utility rail appears at breakpoint 2</div>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Full nav waits for breakpoint 5</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="rail-section">
+            <strong>People</strong>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Nadia · editor</div>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Youssef · motion</div>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Rim · QA</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="rail-section">
+            <strong>Next</strong>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Ship visual baseline</div>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Review mobile spacing</div>
+            <div class="rail-item"><span class="dot" style="background:var(--accent)"></span>Capture final screenshot</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

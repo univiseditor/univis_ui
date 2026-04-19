@@ -1,29 +1,25 @@
 # Example Path Migration
 
-Examples now live next to the crate they primarily represent.
+This page is now mostly historical.
 
-## Command Migration
+Earlier alpha branches moved examples next to the crate that primarily owned them. The current
+branch no longer ships most of those source trees, so use this page as a compatibility glossary
+for older issues, PRs, and docs references.
 
-Older commands often looked like this:
+## Current Branch Reality
 
-```bash
-cargo run --example root_fit_content
-```
+- live demo package: `android/android_phone_app`
+- static references: `docs/src/assets/visual-references/`
+- archived ownership map: [Examples](../examples/index.md)
 
-Use package-aware commands now:
+## Historical Ownership Rules
 
-```bash
-cargo run -p univis_ui --example root_fit_content
-```
+- root `examples/` used to hold facade demos plus cross-crate layout/root scenes
+- `crates/univis_ui_engine/examples/` used to hold engine/layout/render-focused demos
+- `crates/univis_ui_widgets/examples/` used to hold widget-focused demos
+- `examples/interaction.rs` used to hold the interaction-focused scene
 
-## Package Ownership Rules
-
-- `examples/` at the workspace root holds facade demos plus cross-crate layout/root examples that need widgets or interaction
-- `crates/univis_ui_engine/examples/` holds engine, layout, and rendering-focused examples that stay pure to the engine boundary
-- `crates/univis_ui_widgets/examples/` holds widget-focused examples
-- `examples/interaction.rs` in the root package holds the interaction-focused example
-
-## Common Migrations
+## Historical Mappings
 
 - `root_*` examples -> `univis_ui`
 - `layout_case_*` examples -> `univis_ui`
@@ -31,6 +27,8 @@ cargo run -p univis_ui --example root_fit_content
 - `text_*`, `panel_*`, `scroll_view`, `select`, `toggle` -> `univis_ui_widgets`
 - `interaction` -> `univis_ui_interaction`
 - `hello_world`, `card_profile`, `sci_fi`, `complex_dashboard` -> `univis_ui`
+
+Treat the mapping above as historical context, not as a guarantee that the source files are still present.
 
 ## Related Guides
 

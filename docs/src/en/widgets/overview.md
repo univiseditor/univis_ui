@@ -25,11 +25,11 @@ Each Univis widget is an ECS component plus a small plugin that manages:
 
 ## Related Examples
 
-- [`widgets`](../examples/index.md#widgets) in `univis_ui_widgets`
-- [`text_label`](../examples/index.md#text_label) in `univis_ui_widgets`
-- [`text_field`](../examples/index.md#text_field) in `univis_ui_widgets`
-- [`panel_window`](../examples/index.md#panel_window) in `univis_ui_widgets`
-- [`scroll_view`](../examples/index.md#scroll_view) in `univis_ui_widgets`
+- live now: [`widgets_controls`](../examples/index.md#widgets_controls)
+- live now: [`widgets_inputs`](../examples/index.md#widgets_inputs)
+- live now: [`widgets_display`](../examples/index.md#widgets_display)
+- live now: [`widgets_containers`](../examples/index.md#widgets_containers)
+- historical reference: [`widgets`](../examples/index.md#widgets)
 
 ## API Entry Points
 
@@ -41,7 +41,7 @@ Each Univis widget is an ECS component plus a small plugin that manages:
 
 ## Where To Look Next
 
-- related example: [`widgets`](../examples/index.md#widgets)
+- related example: [`widgets_controls`](../examples/index.md#widgets_controls)
 - related setup page: [Plugin Setup and First Examples](../first-steps.md)
 - related API index: [API Reference](../api/index.md)
 - related migration page: [Example Path Migration](../migration/example-paths.md)

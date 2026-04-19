@@ -1,6 +1,6 @@
 # Docs Authoring Workflow
 
-This page defines where new docs and examples should live.
+This page defines where new docs and new runnable examples should live.
 
 ## Where New Docs Go
 
@@ -9,11 +9,11 @@ This page defines where new docs and examples should live.
 - put migration material under `docs/src/*/migration`
 - keep API-signature detail in `rustdoc`, not in long guide prose
 
-## Where New Examples Go
+## Where New Runnable Examples Go
 
-- put a new example in the crate that owns the feature
-- keep root `examples/` for facade-level integrated demos only
-- update the examples index in both languages when a new example is added
+- if you add or restore a runnable example, put it in the crate that owns the feature
+- if a facade-level integrated demo returns, root `examples/` is still the intended home
+- update the examples index in both languages when availability changes
 - add a short source comment back-link to the related guide when the example is canonical
 
 ## Adding Mirrored Pages

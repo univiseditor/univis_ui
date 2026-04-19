@@ -24,3 +24,7 @@
 
 - file: `src/widget/radio.rs`
 - supports single-choice group behavior
+
+## Live Example
+
+- use `cargo run --example widgets_controls` for `UButton`, `UCheckbox`, `UToggle`, `URadioGroup`, and `URadioButton` in one screen

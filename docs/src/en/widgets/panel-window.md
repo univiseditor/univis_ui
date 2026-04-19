@@ -29,6 +29,11 @@ Fields:
 - cursor icons only change on active resize handles
 - the panel is converted to `Absolute + Px` on the first resize for predictable behavior
 
-## Example
+## Live Example
 
-See: `crates/univis_ui_widgets/examples/panel_window.rs`
+- use `cargo run --example widgets_containers` for a resizable `UPanelWindow` and a scrollable companion viewport
+
+## Historical Example
+
+The old `panel_window` example source is archived in this branch. Use the catalog entry in
+[Examples](../examples/index.md#panel_window) for ownership/history.

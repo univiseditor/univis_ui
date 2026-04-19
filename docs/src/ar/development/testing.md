@@ -1,14 +1,14 @@
 # الاختبارات والتحقق
 
-## اختبارات وحدة (فردي)
+## اختبارات الوحدة
 
-لتخفيف الحمل، شغّل الاختبارات كل واحدة على حدة:
+لتخفيف الضغط على الأجهزة الأضعف، شغّل الاختبارات هدفًا واحدًا في كل مرة:
 
 ```bash
 cargo test --release <test_name> --lib
 ```
 
-## تحقق الجودة
+## التحقق من الجودة
 
 ```bash
 ./scripts/check_quality.sh
@@ -19,95 +19,78 @@ cargo test --release <test_name> --lib
 يشغّل `./scripts/check_quality.sh` ما يلي:
 
 - `cargo fmt --all --check`
-- `cargo clippy --workspace --all-targets` مع allowlist الحالية في `CI` للديون المعروفة في lints الخاصة بكود Bevy الثقيل
+- `cargo clippy --workspace --all-targets` مع قائمة السماح الحالية للديون المعروفة المرتبطة بـ Bevy
 - `cargo check --workspace --all-targets`
 - `./scripts/check_public_api_surface.sh`
 - `./scripts/check_structure_guardrails.sh`
 - `./scripts/check_engine_boundary_guardrails.sh`
 - `cargo test --workspace --lib`
 
-ويفحص `./scripts/check_representative_examples.sh` مجموعة `release` مختارة تغطي مسار الواجهة
-المجمعة، وأنماط الجذور، والتفاعل، وتغيير حجم اللوحات، والإدخال النصي، ومسار `World3d`.
+أما `./scripts/check_representative_examples.sh` فأصبح يترجم حزمة Android الحالية ثم يفحص أي أدلة أمثلة ما تزال موجودة في مساحة العمل.
 
-## تحقق التوثيق
+ويظل `./scripts/check_examples_serial_release.sh` مفيدًا عندما يحتوي الفرع فعليًا على أهداف `examples/*.rs`؛ أما في هذا الفرع فقد يكتفي بالإبلاغ عن عدم وجود أمثلة تشغيلية داخل مساحة العمل.
+
+## التحقق من الوثائق
 
 ```bash
 cargo doc --no-deps
 mdbook build docs
 ```
 
-## خطوط أساس الأداء
+## خطوط الأداء الأساسية
+
+كانت حزم القياس التاريخية مبنية على أمثلة تشغيلية وهي مؤرشفة حاليًا في هذا الفرع.
+
+استخدم هذه الملفات الملتزم بها بدلًا منها:
+
+- `perf_baselines/current_max/2026-04-05/solver_benchmarks.txt`
+- `perf_baselines/current_max/2026-04-05/runtime_benchmarks.txt`
+- `perf_baselines/current_max/2026-04-05/manifest.json`
+
+## التحقق داخل CI
+
+ما تزال GitHub Actions تتحقق من الجودة والوثائق و`API Docs` عبر سير العمل الحالية، كما تبقى سكربتات الأمثلة آمنة للاستدعاء حتى عندما لا توجد ملفات أمثلة تشغيلية في مساحة العمل.
+
+## التحقق التسلسلي على الأجهزة الضعيفة
 
 ```bash
-./scripts/run_perf_baselines.sh
-./scripts/run_perf_baselines.sh --check
-```
-
-استخدم حزمة القياس عند تعديل المحلل أو مسارات التخطيط والأداء الساخنة. يشغّل المسار الحالي
-سيناريوهات للمحلل، والجذور، والنصوص، والالتقاط، ومشاهد الوحدات الجاهزة، ومشاهد `World3d`,
-ويعرض المتوسط و`p95` وأعلى زمن لكل سيناريو.
-
-## التحقق داخل `CI`
-
-أصبح GitHub Actions يتحقق من الجودة والتوثيق والأمثلة و`API Docs` عبر:
-
-- `.github/workflows/docs_examples_api.yml`
-- `.github/workflows/docs_publish.yml`
-
-ويشغّل:
-
-- `./scripts/check_quality.sh`
-- `./scripts/check_representative_examples.sh`
-- `mdbook build docs`
-- `cargo doc --no-deps` لكل crate عامة
-- فحص الأمثلة لكل package على حدة عبر `./scripts/check_examples_serial_release.sh -p ...`
-- مسار نشر واحد مستقل لصفحات الوثائق العامة على `main`
-
-## للأجهزة الضعيفة (تشغيل تسلسلي)
-
-```bash
-# كل اختبارات lib واحدة واحدة
+# كل اختبارات lib واحدة تلو الأخرى
 ./scripts/test_lib_serial_release.sh
 
-# كل الأمثلة واحدة واحدة
+# كل أمثلة مساحة العمل الحالية إن وجدت
 ./scripts/check_examples_serial_release.sh
 
-# مرور compile سريع على أمثلة ممثلة لأسطح المشروع
+# حزمة Android الحالية مع فحص أمثلة مساحة العمل
 ./scripts/check_representative_examples.sh
 
-# التحقق الكامل: lib tests + examples
+# التحقق الكامل: اختبارات lib + الأمثلة الحالية إن وجدت
 ./scripts/verify_serial_release.sh
 
-# تحقق تسلسلي لحزمة محددة داخل workspace
+# التحقق التسلسلي لحزمة مساحة عمل محددة
 ./scripts/test_lib_serial_release.sh -p univis_ui_engine
 ./scripts/check_examples_serial_release.sh -p univis_ui_engine
 ./scripts/verify_serial_release.sh -p univis_ui_engine
 
-# تحقق alpha قبل النشر: check + lib tests + examples + package
+# حزمة Android مباشرة
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+
+# تحقق alpha قبل الإصدار
 ./scripts/verify_alpha_release.sh
 
-# إنشاء حزم alpha فقط بدون verify
+# بناءات alpha فقط من دون تحقق
 ./scripts/package_alpha_serial.sh --no-verify
 ```
 
-لتمرير أمثلة محددة فقط:
+## إستراتيجية عملية قبل الدمج
 
-```bash
-./scripts/check_examples_serial_release.sh -p univis_ui hello_world
-./scripts/check_examples_serial_release.sh -p univis_ui_interaction interaction
-./scripts/check_examples_serial_release.sh -p univis_ui_widgets select
-```
+1. شغّل اختبارات الوحدة المرتبطة بالتغيير
+2. شغّل `./scripts/check_quality.sh`
+3. شغّل `./scripts/check_representative_examples.sh`
+4. شغّل `./scripts/check_examples_serial_release.sh` فقط إذا كان فرعك يشحن أمثلة تشغيلية داخل مساحة العمل
+5. شغّل حزمة Android عندما يمس التغيير السطح الحي الحالي
+6. استخدم [التحقق البصري](visual-validation.md) عندما يكون التغيير ثقيلًا في الرندر أو التخطيط أو التفاعل
 
-## استراتيجية عملية قبل الدمج
-
-1. شغل اختبارات الوحدة الخاصة بالتعديل.
-2. شغّل `./scripts/check_quality.sh`.
-3. شغّل `./scripts/check_representative_examples.sh`.
-4. شغّل `./scripts/check_examples_serial_release.sh` للحزمة المتأثرة أو قبل الإصدار.
-5. جرّب مثالًا واحدًا على الأقل مرتبطًا بالتعديل.
-6. استخدم [التحقق البصري](visual-validation.md) عندما يكون التعديل غنيًا بالرندر أو التخطيط أو التفاعل.
-
-## المطلوب قبل إصدار alpha القادم
+## المطلوب قبل قطع alpha التالية
 
 - `./scripts/check_quality.sh`
 - `mdbook build docs`
@@ -116,16 +99,13 @@ mdbook build docs
 - `cargo doc -p univis_ui_interaction --no-deps`
 - `cargo doc -p univis_ui_widgets --no-deps`
 - `cargo doc -p univis_ui --no-deps`
+- `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
 - `./scripts/check_representative_examples.sh`
-- `./scripts/check_examples_serial_release.sh -p univis_ui_engine`
-- `./scripts/check_examples_serial_release.sh -p univis_ui_widgets`
-- `./scripts/check_examples_serial_release.sh -p univis_ui_interaction`
-- `./scripts/check_examples_serial_release.sh -p univis_ui`
-- جولة يدوية واحدة على الأمثلة المرجعية في [التحقق البصري](visual-validation.md)
-- مراجعة صفحة [الجاهزية للإصدار](release-readiness.md)
+- مرور يدوي واحد عبر حزمة Android والمراجع المؤرشفة المذكورة في [التحقق البصري](visual-validation.md)
+- مرور واحد عبر [جاهزية الإصدار](release-readiness.md)
 
 ## سياسة لقطات الشاشة
 
-- تبقى لقطات الشاشة مواد يدوية مرتبطة بتجهيز الإصدار
-- يمكن لمعرض الأمثلة أن يربط بمراجع بصرية ثابتة
-- لا يعد توليد الصور شرط تحقق آلي في خط alpha الحالي
+- تبقى لقطات الشاشة مواد تحضير يدوية قبل الإصدار
+- يمكن لمعرض الأمثلة أن يربط إلى مراجع بصرية ثابتة
+- توليد لقطات الشاشة ليس بوابة CI إلزامية في خط alpha الحالي

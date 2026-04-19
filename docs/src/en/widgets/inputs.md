@@ -21,3 +21,7 @@
 - text input with cursor blink and focus logic
 - runtime coverage: included by default through `UnivisWidgetPlugin`
 - dedicated plugin: `UnivisTextFieldPlugin` when composing a narrower widget surface
+
+## Live Example
+
+- use `cargo run --example widgets_inputs` for `UTextField`, `USelect`, `UDragValue`, and `USeekBar`

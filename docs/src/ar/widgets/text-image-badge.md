@@ -42,3 +42,7 @@
 - `UnivisBadgePlugin` مسؤول عن أنظمة التحديث الديناميكي للأنماط.
 - هذا الـ runtime مضاف افتراضيًا عبر `UnivisWidgetPlugin`.
 - وتبقى الإضافة المخصصة نفسها متاحة عندما تريد سطح widgets أضيق.
+
+## مثال حي
+
+- استخدم `cargo run --example widgets_display` لرؤية `UBadge` و`UDivider` و`UProgressBar` و`UPanel`

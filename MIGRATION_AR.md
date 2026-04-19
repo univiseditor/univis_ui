@@ -1,89 +1,66 @@
 # ملخص الترحيل
 
-يستبدل هذا الملف ملفات التخطيط المؤقتة الأقدم الخاصة بالتوثيق والأمثلة والوثائق البرمجية المولدة بعد أن تم تطبيق الترحيل فعليًا داخل المستودع.
+يشرح هذا الملف كيف تتنقل داخل المستودع بعد إعادة ترتيب الوثائق والأمثلة.
 
-## متى تقرأ هذا الملف
-
-اقرأ `MIGRATION_AR.md` عندما تأتي من وثائق أقدم، أو من مسارات أمثلة أقدم، أو من افتراضات أقدم حول الجذور.
-
-واستخدم بقية ملفات الجذر لأهداف مختلفة:
-
-- `README.md`: قصة الدخول وأسرع نظرة عامة
-- `README_AR.md`: قصة الدخول العربية
-- `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha
-- `changelog.md`: السجل الزمني للتغييرات الملحوظة
-
-## ما الذي تغيّر
+## حالة هذا الفرع حاليًا
 
 - أصبحت الوثائق موجودة في `mdBook` ثنائي اللغة واحد داخل `docs/`
-- أصبحت الفصول العربية والإنجليزية متوازية تحت `docs/src/SUMMARY.md` مشترك
-- أصبحت الأمثلة موجودة بجانب الـ crate التي تملكها أساسًا
-- أصبحت أوامر الأمثلة المرتبطة بالحزمة هي القاعدة
-- أصبحت وثائق `API` المولدة جزءًا من مسار التعلم الموثق
-- أصبح نموذج الجذر العام يدور حول `URootUi`
-- أصبحت دلالات الأحجام أوضح عبر `min_width/max_width/min_height/max_height` و`MinContent` و`MaxContent`
-- لم يعد `UVal::Auto` يعامل كمرادف مباشر لـ `Content`
+- أصبح السطح العام للجذور يتمحور حول `URootUi`
+- أغلب ملفات الأمثلة القديمة في مساحة العمل أصبحت مؤرشفة، ولم تعد موجودة تحت `examples/` في الجذر أو تحت `crates/*/examples/`
+- الحزمة الحية القابلة للتشغيل حاليًا هي `android/android_phone_app`
+- المراجع البصرية الثابتة الحالية موجودة تحت `docs/src/assets/visual-references/`
 
-## السطح الرسمي الآن مقابل التوافق القديم
+## إذا كنت قادمًا من وثائق أقدم
 
-استخدم هذه النقاط باعتبارها الافتراضات العامة الحالية:
+اعتبر أوامر الأمثلة الأقدم مرجعًا تاريخيًا فقط في هذا الفرع.
 
-- الجذور العامة الرسمية: `URootUi` و`URootUi::screen()` و`URootUi::world_2d(...)` و`URootUi::world_3d(...)`
-- الأنواع الداعمة الرسمية للجذور: `UiSpace` و`UiCameraRef` و`UiCanvasSize`
-- المسار الرسمي للأمثلة: أمثلة تابعة للـ crate المالكة مع أوامر `cargo run -p ... --example ...`
-- الطبقات المهجورة لكنها ما تزال مدعومة: `UScreenRoot` و`UWorldRoot` على مسارات صريحة فقط؛ وقد خُفِّض التركيز عليهما في الأمثلة، وهدف الإزالة الحالي هو أول alpha بعد `0.2.0-alpha.3` لا يعود يحتاج دعم الترحيل المبني عليهما
-- مسار التوافق مع الحجم الفيزيائي القديم: `meters_per_unit: 1.0` على `URootUi`؛ وهذا يبقى مفتاح التوافق الصريح طويل المدى عندما يظل الحجم التاريخي مهمًا
+أوامر مثل:
 
-وما يزال من المفيد إعادة التحقق منه أثناء الترحيل:
+- `cargo run --example hello_world`
+- `cargo run -p univis_ui --example root_fit_content`
+- `cargo run -p univis_ui_widgets --example text_field`
 
-- جذور `fit-content` العالمية تحت دلالات قياس نسبية قوية
-- السلوك البصري في أمثلة `World3d` الاستعراضية
-- أي تغيير ثقيل في الرندر أو التخطيط أو الالتقاط ما يزال يحتاج تحققًا بصريًا يدويًا
+تصف تخطيطات أقدم للمستودع، ولا تعكس الشجرة الحالية.
 
-## ترحيل دلالات الأحجام
-
-إذا كنت تعتمد على سلوك alpha أقدم، فأعد التحقق من هذه الافتراضات:
-
-- `UVal::Content` صار يعني حجم `max-content` الصريح.
-- `UVal::Auto` صار يعني حجمًا سياقيًا بدل أن ينهار بصمت إلى `Content`.
-- `UImage` يحول `Auto` و`Content` و`MinContent` و`MaxContent` إلى الحجم الأصلي للصورة عندما تصبح الـ asset متاحة.
-
-ابدأ من هذه الصفحات:
-
-- `docs/src/ar/layout/sizing-semantics.md`
-- `docs/src/ar/layout/node-model.md`
-- `docs/src/ar/examples/index.md`
-
-## مسار الاكتشاف الجديد
-
-استخدم هذا الترتيب عند التنقل داخل المشروع:
+استخدم نقاط الدخول هذه بدلًا منها:
 
 1. `README.md` أو `README_AR.md`
 2. `docs/src/index.md`
 3. فصل الشرح المناسب
-4. `docs/src/en/examples/index.md` أو `docs/src/ar/examples/index.md`
-5. ناتج `cargo doc --no-deps -p univis_ui`
+4. `docs/src/en/examples/index.md` أو `docs/src/ar/examples/index.md` لفهم الملكية والحالة التاريخية
+5. `cargo run --manifest-path android/android_phone_app/Cargo.toml` لتشغيل العرض الحي الحالي بطابع الهاتف
 
-## ترحيل أوامر الأمثلة
+## السطح العام الرسمي
 
-كانت الأوامر القديمة كثيرًا ما تفترض حزمة الجذر:
+استخدم هذه النقاط باعتبارها الافتراضات العامة الحالية:
 
-```bash
-cargo run --example hello_world
-```
+- الجذور الرسمية: `URootUi` و`URootUi::screen()` و`URootUi::world_2d(...)` و`URootUi::world_3d(...)`
+- الأنواع الداعمة الرسمية: `UiSpace` و`UiCameraRef` و`UiCanvasSize`
+- طبقات التوافق المهجورة: `UScreenRoot` و`UWorldRoot` على مسارات صريحة فقط
+- مفتاح التوافق طويل المدى مع الحجم الفيزيائي القديم: `meters_per_unit: 1.0` على `URootUi`
 
-أما الآن فالأوامر الصحيحة مرتبطة بالحزمة المالكة:
+وما يزال من المفيد إعادة التحقق منه أثناء الترحيل:
 
-```bash
-cargo run -p univis_ui --example hello_world
-cargo run -p univis_ui --example root_fit_content
-cargo run -p univis_ui_widgets --example text_field
-cargo run -p univis_ui_interaction --example interaction
-```
+- جذور `fit-content` العالمية تحت أحجام نسبية قوية
+- السلوك البصري في مشاهد شبيهة بـ `World3d`
+- أي تغيير ثقيل في الرندر أو التخطيط أو الالتقاط ما يزال يحتاج تحققًا يدويًا
 
-## ترحيل الجذور والتوثيق
+## حالات توفر الأمثلة
 
-إذا كنت قد تعلّمت المشروع عبر الوثائق الأقدم أو عبر طبقات الجذور القديمة، فابدأ من هذه الصفحات:
+أصبح فهرس الأمثلة يميز بين ثلاث حالات:
+
+- `حزمة حيّة`: المصدر ما يزال موجودًا ويمكن تشغيله مباشرة
+- `مرجع ثابت`: ملف HTML أو صورة محفوظة للمقارنة البصرية
+- `مصدر مؤرشف`: الاسم التاريخي للمثال ما يزال موثقًا، لكن ملف المصدر غير موجود في هذا الفرع
+
+راجع:
+
+- `docs/src/en/examples/index.md`
+- `docs/src/ar/examples/index.md`
+- `docs/src/en/examples/gallery.md`
+- `docs/src/ar/examples/gallery.md`
+
+## صفحات الترحيل المرتبطة
 
 - `docs/src/ar/migration/docs-and-examples.md`
 - `docs/src/ar/migration/root-api.md`
@@ -97,15 +74,10 @@ cargo run -p univis_ui_interaction --example interaction
 - `docs/src/en/migration/legacy-compatibility.md`
 - `docs/src/en/migration/example-paths.md`
 
-## ما هو المصدر المرجعي الآن
+## ما هو المرجع الأساسي الآن
 
 - قصة المشروع وخريطة الحزم: `README.md`
 - صفحة الدخول العربية: `README_AR.md`
-- قائمة الملفات الكبيرة وأولويات إعادة تقسيمها: `TECH_DEBT_INVENTORY.md`
 - صفحات الشرح: `docs/src/en/*` و`docs/src/ar/*`
-- فهرس الأمثلة: `docs/src/en/examples/index.md` و`docs/src/ar/examples/index.md`
+- خريطة توفر الأمثلة: `docs/src/en/examples/index.md` و`docs/src/ar/examples/index.md`
 - مرجع `API`: ناتج `cargo doc --no-deps -p univis_ui`
-
-## لماذا أزيلت ملفات خارطة الطريق الأقدم
-
-كانت قوائم خارطة الطريق الأقدم مفيدة أثناء التنفيذ، لكنها أصبحت بعد اكتمالها مجرد ملاحظات تاريخية داخلية. ويبقى هذا الملف مخصصًا للترحيل نفسه، بينما توجد قصة الإصدار والسجل الزمني في `RELEASE_NOTES.md` و`changelog.md`.

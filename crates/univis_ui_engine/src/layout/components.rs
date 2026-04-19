@@ -12,6 +12,16 @@ use bevy::prelude::*;
 #[derive(Component, Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LayoutDepth(pub usize);
 
+/// Stable local stacking position inside one root capsule.
+///
+/// The value is normalized to `[0.0, 1.0)` and is derived from the node's
+/// preorder paint position after sorting siblings by [`crate::layout::univis_node::USelf::order`]
+/// and then preserving the authored `Children` order for ties.
+#[derive(Component, Default, Debug, Clone, Copy, PartialEq)]
+pub struct UiLocalStacking {
+    pub normalized: f32,
+}
+
 /// Stores the "Intrinsic Size" of a UI element.
 ///
 /// This value is calculated during the **Upward Pass** (`pass_up`).

@@ -4,19 +4,19 @@
 
 1. Understand system order before editing layout, rendering, or interaction.
 2. Do not break reflection on public types without a clear reason.
-3. Validate changes against real examples, not only unit tests.
+3. Validate changes against the current live package or equivalent source-level checks, not only unit tests.
 4. When adding a new widget, ship:
    - a clear component API
    - a dedicated plugin
    - messages when needed
-   - a demo example
+   - a runnable demo when the branch currently carries example sources
    - documentation in the README and this book
 
 ## Docs and Example Placement
 
 - Add new guide pages in both `docs/src/en` and `docs/src/ar`.
-- Put a new example inside the crate that owns the feature.
-- Keep root `examples/` only for facade-level integrated demos.
+- Put a new runnable example inside the crate that owns the feature.
+- Keep root `examples/` only for facade-level integrated demos when such demos are present in the branch.
 - Follow the conventions in [Editorial Rules](editorial-rules.md).
 - Follow [Naming Conventions](naming-conventions.md) when splitting or renaming internal modules.
 - Use [Maintainer Map](maintainer-map.md) and [Architecture Rules](architecture-rules.md) before moving ownership boundaries.

@@ -10,9 +10,9 @@ Legend:
 
 | Capability | Screen UI | World UI (2D) | World UI (3D) | Validation Source |
 |---|---|---|---|---|
-| Manual runtime smoke (`cargo run --release -p <package> --example ...`) | Deferred | Deferred | Deferred | skipped on March 6, 2026 (resource constraints), see [Smoke Test Plan](smoke-test-plan.md) |
-| Release example compilation | Yes | Yes | Yes | package-aware `./scripts/check_examples_serial_release.sh` validation |
-| Base rendering path | Yes | Yes | Yes | examples + render plugin setup |
+| Manual runtime smoke in current branch | Yes | Deferred | Deferred | current live target is `android/android_phone_app`; see [Smoke Test Plan](smoke-test-plan.md) |
+| Compile validation in current branch | Yes | Partial | Partial | `cargo check --workspace --all-targets`, Android package checks, and example scripts only when runnable example sources are present |
+| Base rendering path | Yes | Yes | Yes | source-level validation plus archived static references where runtime examples are absent |
 | Pointer interaction | Yes | Yes | Yes | camera resolves from each root through `ResolvedRootUi`; prefer `UiCameraRef::Entity` in multi-camera scenes |
 | Clipping-aware picking | Yes | Yes | Yes | ancestor clipping checks in the picking backend |
 | `UPanelWindow` resize | Yes | Yes | Yes | resize logic resolves cursor movement through the root camera and panel plane |

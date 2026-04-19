@@ -1,5 +1,6 @@
 use super::*;
 use crate::layout::components::LayoutTreeDepth;
+use crate::layout::core::hierarchy::update_layout_hierarchy;
 use crate::layout::core::layout_cache::LayoutCache;
 use crate::layout::core::layout_cache::{track_layout_changes, update_depth_cache};
 use crate::layout::core::pass_up::upward_measure_pass_cached;
@@ -729,4 +730,113 @@ fn child_depth_updates_for_tiny_root_capsule_steps() {
         expected_z.to_bits()
     );
     assert!(expected_z.abs() < LAYOUT_WRITE_EPSILON);
+}
+
+#[test]
+fn subtree_stacking_keeps_descendants_inside_their_sibling_branch_order() {
+    let mut app = App::new();
+    app.init_resource::<LayoutTreeDepth>();
+    app.init_resource::<LayoutCache>();
+    app.add_systems(
+        Update,
+        (
+            update_layout_hierarchy,
+            track_layout_changes,
+            update_depth_cache,
+            upward_measure_pass_cached,
+            downward_solve_pass_safe,
+        )
+            .chain(),
+    );
+
+    let root = app
+        .world_mut()
+        .spawn((
+            UNode::default(),
+            ULayout::default(),
+            ResolvedRootUi {
+                root_entity: Entity::PLACEHOLDER,
+                space: UiSpace::World2d,
+                canvas: UiCanvasSize::Fixed(Vec2::new(400.0, 200.0)),
+                canvas_size: Vec2::new(400.0, 200.0),
+                camera_entity: None,
+                meters_per_unit: 1.0,
+                resolution_scale: 1.0,
+            },
+            ResolvedRootStack {
+                capsule_sort_key: 0.0,
+                capsule_band_base: 0.0,
+                capsule_band_width: 0.04,
+                capsule_band_step: 0.04 / 2048.0,
+                initialized: true,
+                ..default()
+            },
+        ))
+        .id();
+    app.world_mut()
+        .entity_mut(root)
+        .get_mut::<ResolvedRootUi>()
+        .expect("root should have resolved state")
+        .root_entity = root;
+
+    let earlier_branch = app
+        .world_mut()
+        .spawn((
+            UNode {
+                width: UVal::Px(140.0),
+                height: UVal::Px(90.0),
+                ..default()
+            },
+            ChildOf(root),
+        ))
+        .id();
+    let earlier_child = app
+        .world_mut()
+        .spawn((
+            UNode {
+                width: UVal::Px(60.0),
+                height: UVal::Px(30.0),
+                ..default()
+            },
+            ChildOf(earlier_branch),
+        ))
+        .id();
+    let later_branch = app
+        .world_mut()
+        .spawn((
+            UNode {
+                width: UVal::Px(140.0),
+                height: UVal::Px(90.0),
+                ..default()
+            },
+            ChildOf(root),
+        ))
+        .id();
+
+    app.update();
+
+    let earlier_z = app
+        .world()
+        .entity(earlier_branch)
+        .get::<Transform>()
+        .expect("earlier branch should have a transform")
+        .translation
+        .z;
+    let earlier_child_z = app
+        .world()
+        .entity(earlier_child)
+        .get::<Transform>()
+        .expect("earlier child should have a transform")
+        .translation
+        .z;
+    let later_z = app
+        .world()
+        .entity(later_branch)
+        .get::<Transform>()
+        .expect("later branch should have a transform")
+        .translation
+        .z;
+
+    assert!(earlier_z < earlier_child_z);
+    assert!(earlier_child_z < later_z);
 }

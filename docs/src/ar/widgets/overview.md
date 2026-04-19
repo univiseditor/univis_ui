@@ -25,11 +25,11 @@
 
 ## أمثلة مرتبطة
 
-- [`widgets`](../examples/index.md#widgets) داخل `univis_ui_widgets`
-- [`text_label`](../examples/index.md#text_label) داخل `univis_ui_widgets`
-- [`text_field`](../examples/index.md#text_field) داخل `univis_ui_widgets`
-- [`panel_window`](../examples/index.md#panel_window) داخل `univis_ui_widgets`
-- [`scroll_view`](../examples/index.md#scroll_view) داخل `univis_ui_widgets`
+- حي الآن: [`widgets_controls`](../examples/index.md#widgets_controls)
+- حي الآن: [`widgets_inputs`](../examples/index.md#widgets_inputs)
+- حي الآن: [`widgets_display`](../examples/index.md#widgets_display)
+- حي الآن: [`widgets_containers`](../examples/index.md#widgets_containers)
+- مرجع تاريخي: [`widgets`](../examples/index.md#widgets)
 
 ## نقاط الدخول الرسمية في `API`
 
@@ -41,7 +41,7 @@
 
 ## إلى أين بعد ذلك؟
 
-- المثال المرتبط: [`widgets`](../examples/index.md#widgets)
+- المثال المرتبط: [`widgets_controls`](../examples/index.md#widgets_controls)
 - صفحة الإعداد: [إعداد الإضافات وأولى الأمثلة](../first-steps.md)
 - فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
 - صفحة الترحيل: [ترحيل مسارات الأمثلة](../migration/example-paths.md)

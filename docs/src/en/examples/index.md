@@ -1,195 +1,217 @@
 # Examples
 
-This is the canonical example catalog for the workspace.
+This catalog records example ownership, history, and current availability across the repository.
 
-For the curated view, best-first list, and visual references, start with [Example Gallery](gallery.md).
+## Current Availability
 
-Run any example with:
+- `Live package`: source still ships in this branch and can be run directly
+- `Static reference`: an HTML or image reference is kept for visual comparison
+- `Archived source`: the historical example name is still documented, but the source file is not shipped in this branch
+
+If you want the current live demo, start with:
 
 ```bash
-cargo run -p <package> --example <name>
+cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
 
-## Tag Legend
-
-- `Learning`: a focused teaching example
-- `Showcase`: a larger or more polished composition
-- `Smoke`: a good candidate for automated or manual release validation
+For the curated view and best-first path, see [Example Gallery](gallery.md).
 
 ## Featured Learning Path
 
 ### `hello_world`
 
-- Package: `univis_ui`
-- Purpose: the smallest facade-level entry point for `UnivisUiPlugin`, a root, and one visible child.
-- Best for: first boot and import sanity.
-- Kind: `Learning`, `Smoke`
+- Availability: `Archived source`
+- Historical package: `univis_ui`
+- Purpose: the smallest facade-level entry point for `UnivisUiPlugin`, a root, and one visible child
+- Use now: [Quick Start](../quick-start.md)
 
 ### `root_screen_hud`
 
-- Package: `univis_ui`
-- Purpose: proves that `URootUi::screen()` stays viewport-fixed while a world root still moves with the camera.
-- Best for: HUD semantics and root-space mental model.
-- Kind: `Learning`, `Smoke`
+- Availability: `Archived source`
+- Historical package: `univis_ui`
+- Purpose: proved that `URootUi::screen()` stayed viewport-fixed while a world root moved with the camera
+- Use now: [Roots and Spaces](../layout/roots.md)
+
+### `android_phone`
+
+- Availability: `Live package`
+- Current package: `android/android_phone_app`
+- Purpose: builds a clean Android-style app screen with search, toggles, sliders, and compact bottom navigation
+- Run now: `cargo run --manifest-path android/android_phone_app/Cargo.toml`
+
+### `widgets_controls`
+
+- Availability: `Live package`
+- Current package: `univis_ui`
+- Purpose: showcases `UButton`, `UCheckbox`, `UToggle`, `URadioGroup`, and `URadioButton` in one screen
+- Run now: `cargo run --example widgets_controls`
+
+### `widgets_inputs`
+
+- Availability: `Live package`
+- Current package: `univis_ui`
+- Purpose: demonstrates `UTextField`, `USelect`, `UDragValue`, and `USeekBar` with live interaction and console messages
+- Run now: `cargo run --example widgets_inputs`
+
+### `widgets_display`
+
+- Availability: `Live package`
+- Current package: `univis_ui`
+- Purpose: demonstrates `UBadge`, `UDivider`, `UProgressBar`, and `UPanel` with animated progress updates
+- Run now: `cargo run --example widgets_display`
+
+### `widgets_containers`
+
+- Availability: `Live package`
+- Current package: `univis_ui`
+- Purpose: demonstrates `UPanelWindow`, `UScrollContainer`, and `UClip` through a resizable panel and a scrollable viewport
+- Run now: `cargo run --example widgets_containers`
+
+### `responsive_dashboard`
+
+- Availability: `Static reference`
+- Historical package: `univis_ui`
+- Purpose: demonstrates a soft dashboard composition that steps from a narrow card into a full desktop workspace
+- Use now: [responsive_dashboard.html](../../assets/visual-references/responsive_dashboard.html)
 
 ### `root_world_scale`
 
-- Package: `univis_ui`
-- Purpose: shows that the same logical canvas can map to different world sizes through `meters_per_unit`.
-- Best for: world-root sizing and scale calibration.
-- Kind: `Learning`, `Smoke`
+- Availability: `Archived source`
+- Historical package: `univis_ui`
+- Purpose: showed that the same logical canvas could map to different world sizes through `meters_per_unit`
+- Use now: [Roots and Spaces](../layout/roots.md)
 
 ### `root_fit_content`
 
-- Package: `univis_ui`
-- Purpose: demonstrates content-sized world roots through `UiCanvasSize::FitContent`.
-- Best for: inspectors, floating cards, and node-like panels.
-- Kind: `Learning`, `Smoke`
+- Availability: `Archived source`
+- Historical package: `univis_ui`
+- Purpose: demonstrated content-sized world roots through `UiCanvasSize::FitContent`
+- Use now: [Roots and Spaces](../layout/roots.md)
 
 ### `root_capsule_overlap`
 
-- Package: `univis_ui`
-- Purpose: demonstrates root-capsule stacking where protruding children stay below another root when their own root is below it.
-- Best for: node-graph style UI and cross-root overlap rules.
-- Kind: `Learning`, `Smoke`
+- Availability: `Archived source`
+- Historical package: `univis_ui`
+- Purpose: demonstrated root-capsule stacking where protruding children stayed below another root
+- Use now: [Interaction Overview](../interaction/overview.md)
 
 ### `border_light_3d`
 
-- Package: `univis_ui_engine`
-- Purpose: exercises the lit `World3d` render path with bloom-friendly styling.
-- Best for: `World3d`, `UPbr`, and visual material validation.
-- Kind: `Learning`, `Smoke`
+- Availability: `Archived source`
+- Historical package: `univis_ui_engine`
+- Purpose: exercised the lit `World3d` render path with bloom-friendly styling
+- Use now: [Rendering Overview](../rendering/overview.md)
 
 ### `interaction`
 
-- Package: `univis_ui_interaction`
-- Purpose: shows how nested interactive elements block, ignore, or pass through hits.
-- Best for: picking semantics and observer-based interaction behavior.
-- Kind: `Learning`, `Smoke`
+- Availability: `Archived source`
+- Historical package: `univis_ui_interaction`
+- Purpose: showed how nested interactive elements block, ignore, or pass through hits
+- Use now: [Interaction Overview](../interaction/overview.md)
 
 ### `widgets`
 
-- Package: `univis_ui_widgets`
-- Purpose: broad widget sampler covering common built-in controls.
-- Best for: surveying the widget surface quickly.
-- Kind: `Learning`
+- Availability: `Archived source`
+- Historical package: `univis_ui_widgets`
+- Purpose: broad widget sampler covering common built-in controls
+- Use now: [Widgets Overview](../widgets/overview.md), `widgets_controls`, and `widgets_display`
 
 ### `text_label`
 
-- Package: `univis_ui_widgets`
-- Purpose: explores `UTextLabel` layout, clipping, overflow, and autosize behavior.
-- Best for: text rendering semantics.
-- Kind: `Learning`
-
-### `mixed_bidi_text`
-
-- Package: `univis_ui_widgets`
-- Purpose: demonstrates mixed Arabic + Latin text with bidi-aware ellipsis and truncation sides.
-- Best for: multilingual text overflow behavior.
-- Kind: `Learning`
-
-### `text_edge_cases`
-
-- Package: `univis_ui_widgets`
-- Purpose: concentrates tricky `UTextLabel` cases like leading digits, mixed bidi strings, truncation sides, autosize clamp, and max-lines.
-- Best for: text overflow regression checks.
-- Kind: `Learning`
+- Availability: `Archived source`
+- Historical package: `univis_ui_widgets`
+- Purpose: explored `UTextLabel` layout, clipping, overflow, and autosize behavior
+- Use now: [Text, Image, and Badge Widgets](../widgets/text-image-badge.md)
 
 ### `text_field`
 
-- Package: `univis_ui_widgets`
-- Purpose: demonstrates editable input, filtering modes, and submit/change messages.
-- Best for: form input and default text-field runtime coverage.
-- Kind: `Learning`
+- Availability: `Archived source`
+- Historical package: `univis_ui_widgets`
+- Purpose: demonstrated editable input, filtering modes, and submit/change messages
+- Use now: [Widget Inputs](../widgets/inputs.md) and `cargo run --example widgets_inputs`
 
 ### `panel_window`
 
-- Package: `univis_ui_widgets`
-- Purpose: shows floating/resizable panel behavior.
-- Best for: tool windows and editor-style layouts.
-- Kind: `Learning`
+- Availability: `Archived source`
+- Historical package: `univis_ui_widgets`
+- Purpose: showed floating and resizable panel behavior
+- Use now: [Panel and Panel Window](../widgets/panel-window.md) and `cargo run --example widgets_containers`
 
 ### `scroll_view`
 
-- Package: `univis_ui_widgets`
-- Purpose: demonstrates scrolling overflow with a dedicated scroll container.
-- Best for: large lists and constrained content areas.
-- Kind: `Learning`
+- Availability: `Archived source`
+- Historical package: `univis_ui_widgets`
+- Purpose: demonstrated scrolling overflow with a dedicated scroll container
+- Use now: [Scroll View](../widgets/scroll-view.md) and `cargo run --example widgets_containers`
 
-## Complete Catalog
+## Package History
 
 ### `univis_ui`
 
-This package also owns the integrated root/layout demos that compose `univis_ui_engine`
-with widgets or interaction helpers.
-
-| Example | Purpose | Best for | Kind |
+| Example | Purpose | Best for | Availability |
 | --- | --- | --- | --- |
-| `hello_world` | Minimal facade-level app with one root and one label. | first run | `Learning`, `Smoke` |
-| `alignment` | Small alignment reference scene. | alignment rules | `Learning` |
-| `ex_node` | Low-level node authoring demo. | engine primitives | `Learning` |
-| `layout_cache` | Visualizes or stresses layout cache behavior. | cache diagnostics | `Learning` |
-| `layout_case_alignment_overflow` | Focused alignment and overflow case. | solver edge cases | `Learning` |
-| `layout_case_flex_wrap` | Demonstrates wrapping behavior in flex layouts. | flex wrap | `Learning` |
-| `layout_case_grid_auto_flow` | Demonstrates grid auto-placement flow. | grid placement | `Learning` |
-| `layout_case_grid_tracks` | Demonstrates grid track sizing and placement. | grid tracks | `Learning` |
-| `layout_case_masonry_ext` | Exercises masonry container extensions. | masonry tuning | `Learning` |
-| `layout_case_radial` | Demonstrates radial placement. | radial layout | `Learning` |
-| `layout_sizing_semantics` | Demonstrates `Auto`, `MinContent`, `MaxContent`, and explicit `min/max` bounds in one screen. | sizing model | `Learning` |
-| `layout_case_stack` | Demonstrates stack layout semantics. | stack layout | `Learning` |
-| `root_screen_hud` | Confirms real HUD behavior for `URootUi::screen()`. | screen roots | `Learning`, `Smoke` |
-| `root_world_scale` | Compares logical canvas size and physical world scaling. | `meters_per_unit` | `Learning`, `Smoke` |
-| `root_capsule_overlap` | Demonstrates sealed root capsules under overlap. | root stacking | `Learning`, `Smoke` |
-| `root_fit_content` | Demonstrates content-sized `World2d` and `World3d` roots. | fit-content roots | `Learning`, `Smoke` |
-| `complex_dashboard` | Integrated dashboard with multiple widgets and denser composition. | facade-level composition | `Showcase` |
-| `card_profile` | Profile card demo with polished presentation and optional bloom. | polished facade card | `Showcase`, `Smoke` |
-| `sci_fi` | Larger full-stack sci-fi HUD scene. | final-look showcase | `Showcase`, `Smoke` |
-| `transit_control` | Dense transit operations board with animated platform cards and dispatch panels. | non-sci-fi showcase composition | `Showcase` |
+| `hello_world` | Minimal facade-level app with one root and one label. | first run | `Archived source` |
+| `alignment` | Small alignment reference scene. | alignment rules | `Archived source` |
+| `ex_node` | Low-level node authoring demo. | engine primitives | `Archived source` |
+| `layout_cache` | Visualized or stressed layout cache behavior. | cache diagnostics | `Archived source` |
+| `layout_case_alignment_overflow` | Focused alignment and overflow case. | solver edge cases | `Archived source` |
+| `layout_case_flex_wrap` | Demonstrated wrapping behavior in flex layouts. | flex wrap | `Archived source` |
+| `layout_case_grid_auto_flow` | Demonstrated grid auto-placement flow. | grid placement | `Archived source` |
+| `layout_case_grid_tracks` | Demonstrated grid track sizing and placement. | grid tracks | `Archived source` |
+| `layout_case_masonry_ext` | Exercised masonry container extensions. | masonry tuning | `Archived source` |
+| `layout_case_radial` | Demonstrated radial placement. | radial layout | `Archived source` |
+| `layout_case_stack` | Demonstrated stack layout semantics. | stack layout | `Archived source` |
+| `layout_sizing_semantics` | Demonstrated `Auto`, intrinsic modes, and explicit `min/max` bounds in one screen. | sizing model | `Archived source` |
+| `root_screen_hud` | Confirmed real HUD behavior for `URootUi::screen()`. | screen roots | `Archived source` |
+| `android_phone` | Android-style app screen with search, toggles, sliders, and compact navigation. | mobile-like screen UI | `Live package` |
+| `widgets_controls` | Focused control/widget surface with buttons, toggles, checkboxes, and radio groups. | common widget actions | `Live package` |
+| `widgets_inputs` | Input-focused widget screen with text, select, drag, and slider controls. | input workflows | `Live package` |
+| `widgets_display` | Visual widget sampler with badges, dividers, panels, and animated progress bars. | display widgets | `Live package` |
+| `widgets_containers` | Container/widget screen with a resizable panel window and scrollable viewport. | panel + scrolling behavior | `Live package` |
+| `responsive_dashboard` | Dashboard study that grew from a narrow card into a desktop workspace. | responsive screen composition | `Static reference` |
+| `root_world_scale` | Compared logical canvas size and physical world scaling. | `meters_per_unit` | `Archived source` |
+| `root_fit_content` | Demonstrated content-sized `World2d` and `World3d` roots. | fit-content roots | `Archived source` |
+| `root_capsule_overlap` | Demonstrated sealed root capsules under overlap. | root stacking | `Archived source` |
+| `complex_dashboard` | Integrated dashboard with multiple widgets and denser composition. | facade-level composition | `Static reference` |
+| `card_profile` | Profile card demo with polished presentation and optional bloom. | polished facade card | `Static reference` |
+| `sci_fi` | Larger full-stack sci-fi HUD scene. | final-look showcase | `Archived source` |
+| `transit_control` | Dense transit operations board with animated cards and dispatch panels. | non-sci-fi showcase composition | `Archived source` |
 
 ### `univis_ui_engine`
 
-| Example | Purpose | Best for | Kind |
+| Example | Purpose | Best for | Availability |
 | --- | --- | --- | --- |
-| `border_light_3d` | Lit `World3d` panel with bloom-friendly rendering. | 3D render path | `Learning`, `Smoke` |
-| `layout_solver_no_widgets` | Solver-heavy scene without widget dependencies. | pure layout debugging | `Learning` |
-| `layout_solver_ultra_complex` | Larger solver stress scene. | solver stress | `Learning`, `Smoke` |
-| `masonry` | Higher-level masonry layout showcase. | masonry reference | `Learning` |
-| `texture` | Texture/image path reference scene. | image geometry | `Learning` |
+| `border_light_3d` | Lit `World3d` panel with bloom-friendly rendering. | 3D render path | `Archived source` |
+| `layout_solver_no_widgets` | Solver-heavy scene without widget dependencies. | pure layout debugging | `Static reference` |
+| `layout_solver_ultra_complex` | Larger solver stress scene. | solver stress | `Static reference` |
+| `masonry` | Higher-level masonry layout showcase. | masonry reference | `Archived source` |
+| `texture` | Texture/image path reference scene. | image geometry | `Archived source` |
 
 ### `univis_ui_widgets`
 
-| Example | Purpose | Best for | Kind |
+| Example | Purpose | Best for | Availability |
 | --- | --- | --- | --- |
-| `drag_value` | Demonstrates drag-to-change numeric input. | numeric controls | `Learning` |
-| `panel_divider` | Demonstrates divider layout inside panels. | panel layout | `Learning` |
-| `panel_window` | Floating and resizable panel windows. | tool windows | `Learning` |
-| `radio` | Radio buttons and groups. | mutually exclusive choices | `Learning` |
-| `scroll_view` | Scroll container behavior and overflow. | scrolling | `Learning` |
-| `seekbar` | Slider-style value selection. | continuous values | `Learning` |
-| `select` | Dropdown selection with options. | single-select inputs | `Learning` |
-| `text_field` | Editable text fields with filters and submit/change events. | text input | `Learning` |
-| `text_label` | Text measurement, overflow, clipping, and autosize. | text rendering | `Learning` |
-| `widget_sizing_semantics` | Focused widget scene for wrap cards, `min_width`, text `MinContent/MaxContent`, and `UImage` intrinsic sizing. | widget sizing model | `Learning` |
-| `mixed_bidi_text` | Mixed Arabic + Latin text with bidi-aware ellipsis and start/end/middle truncation. | multilingual text overflow | `Learning` |
-| `text_edge_cases` | Edge-case text overflow scenes covering digits, mixed bidi text, truncation sides, autosize clamp, and max-lines. | text regression checks | `Learning` |
-| `text_label_zoom` | Text sharpness under zoom changes. | zoom/text fidelity | `Learning` |
-| `toggle` | Binary switch behavior. | on/off state | `Learning` |
-| `widgets` | Multi-widget sampler scene. | quick widget survey | `Learning` |
+| `drag_value` | Demonstrated drag-to-change numeric input. | numeric controls | `Archived source` |
+| `panel_divider` | Demonstrated divider layout inside panels. | panel layout | `Archived source` |
+| `panel_window` | Floating and resizable panel windows. | tool windows | `Archived source` |
+| `radio` | Radio buttons and groups. | mutually exclusive choices | `Archived source` |
+| `scroll_view` | Scroll container behavior and overflow. | scrolling | `Archived source` |
+| `seekbar` | Slider-style value selection. | continuous values | `Archived source` |
+| `select` | Dropdown selection with options. | single-select inputs | `Archived source` |
+| `text_field` | Editable text fields with filters and submit/change events. | text input | `Archived source` |
+| `text_label` | Text measurement, overflow, clipping, and autosize. | text rendering | `Archived source` |
+| `widget_sizing_semantics` | Focused widget scene for wrap cards, `min_width`, text sizing, and image intrinsic sizing. | widget sizing model | `Archived source` |
+| `mixed_bidi_text` | Mixed Arabic + Latin text with bidi-aware ellipsis and truncation. | multilingual text overflow | `Archived source` |
+| `text_edge_cases` | Edge-case text overflow scenes covering digits, bidi text, truncation sides, and max-lines. | text regression checks | `Archived source` |
+| `text_label_zoom` | Text sharpness under zoom changes. | zoom/text fidelity | `Archived source` |
+| `toggle` | Binary switch behavior. | on/off state | `Archived source` |
+| `widgets` | Multi-widget sampler scene. | quick widget survey | `Archived source` |
 
 ### `univis_ui_interaction`
 
-| Example | Purpose | Best for | Kind |
+| Example | Purpose | Best for | Availability |
 | --- | --- | --- | --- |
-| `interaction` | Demonstrates hit blocking, ignore, and passthrough behavior. | picking semantics | `Learning`, `Smoke` |
-
-## Suggested Commands
-
-```bash
-cargo run -p univis_ui --example hello_world
-cargo run -p univis_ui --example root_fit_content
-cargo run -p univis_ui_widgets --example text_field
-cargo run -p univis_ui --example interaction
-```
+| `interaction` | Demonstrated hit blocking, ignore, and passthrough behavior. | picking semantics | `Archived source` |
 
 ## Related Reports
 

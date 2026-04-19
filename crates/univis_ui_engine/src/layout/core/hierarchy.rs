@@ -3,7 +3,7 @@ mod tests;
 
 use bevy::{ecs::relationship::Relationship, platform::collections::HashSet, prelude::*};
 
-use crate::layout::components::{CachedUiContext, LayoutDepth, LayoutTreeDepth};
+use crate::layout::components::{CachedUiContext, LayoutDepth, LayoutTreeDepth, UiLocalStacking};
 use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
 use crate::layout::query::UiPickingContext;
 use crate::layout::univis_node::{UClip, UNode, USelf};
@@ -16,18 +16,29 @@ use crate::schedule::{UiRolloutConfig, UiValidationMode, UiValidationState, UiWo
 pub fn update_layout_hierarchy(
     root_query: Query<Entity, With<ResolvedRootUi>>,
     children_query: Query<&Children>,
+    uself_query: Query<&USelf>,
     mut commands: Commands,
     mut tree_depth: ResMut<LayoutTreeDepth>,
 ) {
     let mut max_depth = 0;
 
     for root_entity in root_query.iter() {
+        let mut paint_order = Vec::new();
         max_depth = max_depth.max(traverse_and_mark(
             root_entity,
             0,
             &children_query,
+            &uself_query,
             &mut commands,
+            &mut paint_order,
         ));
+
+        let total = paint_order.len().max(1) as f32;
+        for (index, entity) in paint_order.into_iter().enumerate() {
+            commands.entity(entity).insert(UiLocalStacking {
+                normalized: index as f32 / total,
+            });
+        }
     }
 
     tree_depth.max_depth = max_depth;
@@ -37,15 +48,35 @@ fn traverse_and_mark(
     entity: Entity,
     depth: usize,
     children_q: &Query<&Children>,
+    uself_q: &Query<&USelf>,
     commands: &mut Commands,
+    paint_order: &mut Vec<Entity>,
 ) -> usize {
     commands.entity(entity).insert(LayoutDepth(depth));
+    paint_order.push(entity);
 
     let mut current_max = depth;
 
     if let Ok(children) = children_q.get(entity) {
-        for &child in children {
-            let child_depth = traverse_and_mark(child, depth + 1, children_q, commands);
+        let mut ordered_children: Vec<(usize, i32, Entity)> = children
+            .iter()
+            .enumerate()
+            .map(|(original_index, child)| {
+                let order = uself_q.get(child).map_or(0, |uself| uself.order);
+                (original_index, order, child)
+            })
+            .collect();
+        ordered_children.sort_unstable_by(
+            |(left_index, left_order, _), (right_index, right_order, _)| {
+                left_order
+                    .cmp(right_order)
+                    .then_with(|| left_index.cmp(right_index))
+            },
+        );
+
+        for (_, _, child) in ordered_children {
+            let child_depth =
+                traverse_and_mark(child, depth + 1, children_q, uself_q, commands, paint_order);
             current_max = current_max.max(child_depth);
         }
     }
@@ -164,6 +195,7 @@ pub fn update_picking_contexts(
             Option<&CachedUiContext>,
             Option<&LayoutDepth>,
             Option<&USelf>,
+            Option<&UiLocalStacking>,
         ),
         With<UNode>,
     >,
@@ -174,6 +206,7 @@ pub fn update_picking_contexts(
             Option<&CachedUiContext>,
             Option<&LayoutDepth>,
             Option<&USelf>,
+            Option<&UiLocalStacking>,
         ),
         Or<(
             Added<UNode>,
@@ -181,6 +214,7 @@ pub fn update_picking_contexts(
             Changed<CachedUiContext>,
             Changed<LayoutDepth>,
             Changed<USelf>,
+            Changed<UiLocalStacking>,
         )>,
     >,
     changed_roots: Query<Entity, Or<(Changed<ResolvedRootUi>, Changed<ResolvedRootStack>)>>,
@@ -201,7 +235,7 @@ pub fn update_picking_contexts(
         );
     }
 
-    for (entity, cached, spatial, depth, uself) in incremental_nodes.iter() {
+    for (entity, cached, spatial, depth, uself, local_stacking) in incremental_nodes.iter() {
         if !visited.insert(entity) {
             continue;
         }
@@ -212,6 +246,7 @@ pub fn update_picking_contexts(
             spatial.copied(),
             depth.copied(),
             uself.copied(),
+            local_stacking.copied(),
             &root_query,
             &mut commands,
         );
@@ -314,10 +349,11 @@ fn sync_picking_context_for_entity(
     spatial: Option<CachedUiContext>,
     depth: Option<LayoutDepth>,
     uself: Option<USelf>,
+    local_stacking: Option<UiLocalStacking>,
     root_query: &Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
     commands: &mut Commands,
 ) {
-    let updated = resolve_picking_context(spatial, depth, uself, root_query);
+    let updated = resolve_picking_context(spatial, depth, uself, local_stacking, root_query);
 
     match updated {
         Some(updated) if cached != Some(updated) => {
@@ -379,6 +415,7 @@ fn sync_picking_context_subtree(
             Option<&CachedUiContext>,
             Option<&LayoutDepth>,
             Option<&USelf>,
+            Option<&UiLocalStacking>,
         ),
         With<UNode>,
     >,
@@ -391,13 +428,14 @@ fn sync_picking_context_subtree(
         return;
     }
 
-    if let Ok((cached, spatial, depth, uself)) = node_contexts.get(entity) {
+    if let Ok((cached, spatial, depth, uself, local_stacking)) = node_contexts.get(entity) {
         sync_picking_context_for_entity(
             entity,
             cached.copied(),
             spatial.copied(),
             depth.copied(),
             uself.copied(),
+            local_stacking.copied(),
             root_query,
             commands,
         );
@@ -487,6 +525,7 @@ fn resolve_picking_context(
     spatial: Option<CachedUiContext>,
     depth: Option<LayoutDepth>,
     uself: Option<USelf>,
+    local_stacking: Option<UiLocalStacking>,
     root_query: &Query<(&ResolvedRootUi, Option<&ResolvedRootStack>), With<ResolvedRootUi>>,
 ) -> Option<UiPickingContext> {
     let spatial = spatial?;
@@ -496,7 +535,10 @@ fn resolve_picking_context(
     let mut camera_entity = spatial.camera_entity;
     let mut space = spatial.space;
     let mut root_sort_key = 0.0;
-    let mut local_depth_key = spatial.root_stack.local_depth_key(layout_depth, order);
+    let mut local_depth_key = local_stacking.map_or_else(
+        || spatial.root_stack.local_depth_key(layout_depth, order),
+        |stack| stack.normalized,
+    );
 
     if let Some(root_entity) = spatial.root_entity
         && let Ok((root, stack)) = root_query.get(root_entity)
@@ -506,7 +548,9 @@ fn resolve_picking_context(
 
         if let Some(stack) = stack.copied() {
             root_sort_key = stack.capsule_sort_key;
-            local_depth_key = stack.local_depth_key(layout_depth, order);
+            if local_stacking.is_none() {
+                local_depth_key = stack.local_depth_key(layout_depth, order);
+            }
         }
     }
 

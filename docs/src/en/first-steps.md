@@ -1,11 +1,17 @@
-# Plugin Setup and First Examples
+# Plugin Setup and First Paths
 
 This page is the shortest task-oriented path after [Quick Start](quick-start.md).
 
 Use it when you want one page that answers two questions:
 
 - which plugins do I really get by default?
-- which example should I run first for the task I care about?
+- what should I open or run first for the task I care about?
+
+## Current Branch Note
+
+Most of the older workspace example sources are archived in this branch. The current live demo is
+the standalone Android-style package under `android/android_phone_app`, while the examples catalog
+now doubles as an ownership/history map for archived names.
 
 ## Facade Setup
 
@@ -50,29 +56,45 @@ Use the dedicated widget plugins directly only when you intentionally want a nar
 ## Camera Setup
 
 - interaction and panel resizing resolve the camera from each `URootUi`
-- a simple `Camera2d` is enough for the smallest screen-space examples
+- a simple `Camera2d` is enough for the smallest screen-space scenes
 - in multi-camera scenes, prefer `UiCameraRef::Entity(camera_entity)`
 
 ## Best-First Paths
 
 ### Basic Screen HUD
 
-Run these in order:
+Start with:
 
-1. `cargo run -p univis_ui --example hello_world`
-2. `cargo run -p univis_ui --example root_screen_hud`
+- [Quick Start](quick-start.md)
+- [`hello_world`](examples/index.md#hello_world)
+- [`root_screen_hud`](examples/index.md#root_screen_hud)
 
 Focus on:
 
 - the smallest facade-level boot path
 - viewport-fixed HUD behavior while the camera moves
 
+### Android App Screen
+
+Run this:
+
+```bash
+cargo run --manifest-path android/android_phone_app/Cargo.toml
+```
+
+Focus on:
+
+- composing a clean Android-style application surface inside `URootUi::screen()`
+- combining `UTextField`, `UToggle`, `USeekBar`, and `UButton` in one narrow screen
+- checking whether your mobile-like spacing still reads well without drawing device hardware
+
 ### World-Space Panel
 
-Run these in order:
+Start with:
 
-1. `cargo run -p univis_ui --example root_world_scale`
-2. `cargo run -p univis_ui --example root_fit_content`
+- [Roots and Spaces](layout/roots.md)
+- [`root_world_scale`](examples/index.md#root_world_scale)
+- [`root_fit_content`](examples/index.md#root_fit_content)
 
 Focus on:
 
@@ -81,9 +103,10 @@ Focus on:
 
 ### Text Input
 
-Run this first:
+Start with:
 
-1. `cargo run -p univis_ui_widgets --example text_field`
+- [Widget Inputs](widgets/inputs.md)
+- [`text_field`](examples/index.md#text_field)
 
 Focus on:
 
@@ -93,19 +116,20 @@ Focus on:
 
 ### Selection Controls
 
-Run these in order:
+Start with:
 
-1. `cargo run -p univis_ui_widgets --example select`
-2. `cargo run -p univis_ui_widgets --example widgets`
+- [Widgets Overview](widgets/overview.md)
+- [`widgets`](examples/index.md#widgets)
 
 Focus on:
 
-- option navigation and disabled-option handling
-- how `USelect` fits into the broader built-in widget surface
+- how selection-oriented controls fit into the broader built-in widget surface
+- how archived example names map back to the current widget APIs
 
 ## Related Pages
 
 - [Quick Start](quick-start.md)
 - [Plugin Truth Table](architecture/plugin-truth-table.md)
 - [Example Gallery](examples/gallery.md)
+- [Android Phone UI](examples/android-phone.md)
 - [Current Limitations](development/current-limitations.md)

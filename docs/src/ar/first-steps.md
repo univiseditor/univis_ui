@@ -1,11 +1,17 @@
-# إعداد الإضافات وأولى الأمثلة
+# إعداد الإضافات وأولى المسارات
 
 هذه الصفحة هي أقصر مسار موجّه بحسب المهمة بعد [البدء السريع](quick-start.md).
 
 استخدمها عندما تريد صفحة واحدة تجيب عن سؤالين:
 
 - ما هي الإضافات التي أحصل عليها فعليًا بشكل افتراضي؟
-- ما هو أول مثال يجب أن أشغّله بحسب المهمة التي تهمني؟
+- ما الذي يجب أن أفتحه أو أشغّله أولًا بحسب المهمة التي تهمني؟
+
+## ملاحظة تخص هذا الفرع
+
+أغلب ملفات الأمثلة القديمة في مساحة العمل أصبحت مؤرشفة داخل هذا الفرع. العرض الحي الحالي هو
+الحزمة المستقلة ذات الطابع Android داخل `android/android_phone_app`، بينما أصبح فهرس الأمثلة
+خريطة للملكية والحالة التاريخية أيضًا.
 
 ## إعداد الواجهة المجمعة
 
@@ -50,29 +56,45 @@ fn main() {
 ## إعداد الكاميرا
 
 - التفاعل وتغيير حجم اللوحات يحسمان الكاميرا من كل `URootUi`
-- تكفي `Camera2d` بسيطة لأصغر أمثلة الواجهة الثابتة على الشاشة
+- تكفي `Camera2d` بسيطة لأصغر مشاهد الواجهة الثابتة على الشاشة
 - في المشاهد متعددة الكاميرات يُفضّل `UiCameraRef::Entity(camera_entity)`
 
 ## مسارات البدء الأفضل
 
 ### واجهة شاشة أساسية
 
-شغّل هذه الأمثلة بالترتيب:
+ابدأ من:
 
-1. `cargo run -p univis_ui --example hello_world`
-2. `cargo run -p univis_ui --example root_screen_hud`
+- [البدء السريع](quick-start.md)
+- [`hello_world`](examples/index.md#hello_world)
+- [`root_screen_hud`](examples/index.md#root_screen_hud)
 
 ما الذي يجب التركيز عليه:
 
 - أصغر مسار تشغيل على مستوى الواجهة المجمعة
 - ثبات واجهة HUD على الشاشة أثناء حركة الكاميرا
 
+### شاشة تطبيق بطابع Android
+
+شغّل هذا العرض:
+
+```bash
+cargo run --manifest-path android/android_phone_app/Cargo.toml
+```
+
+ما الذي يجب التركيز عليه:
+
+- تركيب سطح تطبيق نظيف بطابع Android داخل `URootUi::screen()`
+- دمج `UTextField` و`UToggle` و`USeekBar` و`UButton` داخل شاشة واحدة ضيقة
+- التأكد من أن كثافة العناصر ما تزال مقروءة من دون رسم جسم الهاتف نفسه
+
 ### لوحة داخل العالم
 
-شغّل هذه الأمثلة بالترتيب:
+ابدأ من:
 
-1. `cargo run -p univis_ui --example root_world_scale`
-2. `cargo run -p univis_ui --example root_fit_content`
+- [الجذور والمساحات](layout/roots.md)
+- [`root_world_scale`](examples/index.md#root_world_scale)
+- [`root_fit_content`](examples/index.md#root_fit_content)
 
 ما الذي يجب التركيز عليه:
 
@@ -81,9 +103,10 @@ fn main() {
 
 ### إدخال نصي
 
-ابدأ بهذا المثال:
+ابدأ من:
 
-1. `cargo run -p univis_ui_widgets --example text_field`
+- [مدخلات الوحدات الجاهزة](widgets/inputs.md)
+- [`text_field`](examples/index.md#text_field)
 
 ما الذي يجب التركيز عليه:
 
@@ -93,19 +116,20 @@ fn main() {
 
 ### عناصر الاختيار
 
-شغّل هذه الأمثلة بالترتيب:
+ابدأ من:
 
-1. `cargo run -p univis_ui_widgets --example select`
-2. `cargo run -p univis_ui_widgets --example widgets`
+- [نظرة عامة على الوحدات الجاهزة](widgets/overview.md)
+- [`widgets`](examples/index.md#widgets)
 
 ما الذي يجب التركيز عليه:
 
-- التنقل بين الخيارات وتجاوز الخيارات المعطلة
-- كيف ينسجم `USelect` مع بقية سطح الوحدات الجاهزة
+- كيف تنسجم عناصر الاختيار مع بقية سطح الوحدات الجاهزة
+- كيف تعود أسماء الأمثلة المؤرشفة إلى واجهات الـ API الحالية
 
 ## صفحات مرتبطة
 
 - [البدء السريع](quick-start.md)
 - [جدول حقيقة الإضافات](architecture/plugin-truth-table.md)
 - [معرض الأمثلة](examples/gallery.md)
+- [شاشة تطبيق Android](examples/android-phone.md)
 - [القيود الحالية](development/current-limitations.md)

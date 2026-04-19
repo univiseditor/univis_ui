@@ -2,7 +2,7 @@
 
 ## Goal
 
-Provide a lightweight manual runtime checklist after passing serial release compile checks.
+Provide a lightweight manual runtime checklist after passing compile validation.
 
 ## Pre-check
 
@@ -13,48 +13,37 @@ Run compile validation first:
 ./scripts/verify_serial_release.sh
 ```
 
-## Manual Runtime Scenarios (Priority Order)
+## Manual Runtime Scenarios
 
-1. Screen HUD and world-root separation
-2. World scaling and fit-content root behavior
-3. Root capsule overlap behavior
-4. Pointer interaction transitions
-5. Text input and text rendering behavior
-6. Panel resize behavior
-7. 3D visual path sanity
+1. Android-style narrow-screen package sanity
+2. Visual comparison against archived static references
+3. Text and control readability pass
 
 ## Commands
 
 ```bash
-cargo run --release -p univis_ui --example root_screen_hud
-cargo run --release -p univis_ui --example root_world_scale
-cargo run --release -p univis_ui --example root_fit_content
-cargo run --release -p univis_ui --example root_capsule_overlap
-cargo run --release -p univis_ui --example interaction
-cargo run --release -p univis_ui_widgets --example text_field
-cargo run --release -p univis_ui_widgets --example text_label
-cargo run --release -p univis_ui_widgets --example panel_window
-cargo run --release -p univis_ui_engine --features example_bloom --example border_light_3d
+cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
+
+Open as needed for quick comparison:
+
+- `docs/src/assets/visual-references/responsive_dashboard.html`
+- `docs/src/assets/visual-references/complex_dashboard.html`
+- `docs/src/assets/visual-references/layout_solver_no_widgets.html`
+- `docs/src/assets/visual-references/layout_solver_ultra_complex.html`
 
 ## Pass Criteria
 
 - No startup panics.
-- `root_screen_hud` keeps HUD content fixed while the world root follows camera motion.
-- `root_world_scale` keeps logical sizing separate from physical world scale.
-- `root_fit_content` wraps measured content without obvious clipping or runaway growth.
-- `root_capsule_overlap` preserves closed root stacking.
-- Expected interaction signals (hover/press/click) are observable.
-- `text_field` accepts input and emits expected submit/change behavior.
-- `text_label` remains legible under clipping, overflow, and autosize cases.
-- `panel_window` resize handles respond to pointer drag.
-- `border_light_3d` renders expected 3D-lit visuals.
+- The Android-style package opens and keeps the centered app surface readable in a narrow viewport.
+- `UTextField`, `UToggle`, `USeekBar`, and `UButton` remain visually coherent and interactive.
+- Static references still look close enough to the intended design language for release communication.
 
 ## Failure Triage
 
-1. Capture example name and failure symptom.
-2. Re-run single example with `RUST_BACKTRACE=1`.
-3. Classify as compile/runtime/interaction/rendering regression.
-4. Add issue note with repro command and environment details.
+1. Capture the failing surface and the symptom.
+2. Re-run the Android package with `RUST_BACKTRACE=1` if the failure is runtime-related.
+3. Classify as compile/runtime/widget/rendering regression.
+4. Add an issue note with the repro command and environment details.
 
 See also: [Visual Validation](visual-validation.md) and [Release Readiness](release-readiness.md).

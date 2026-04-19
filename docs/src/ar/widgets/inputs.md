@@ -37,3 +37,7 @@
 - events:
   - `TextFieldChangedEvent`
   - `TextFieldSubmitEvent`
+
+## مثال حي
+
+- استخدم `cargo run --example widgets_inputs` لرؤية `UTextField` و`USelect` و`UDragValue` و`USeekBar`

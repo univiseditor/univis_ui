@@ -1,98 +1,30 @@
 # Benchmark Harness
 
-The repository now includes a CLI baseline suite with two harnesses:
+The historical benchmark harnesses were example-backed. In the current branch, those example
+sources are archived and the committed reports are the primary reference.
 
-- script: `./scripts/run_perf_baselines.sh`
-- solver example: `cargo run -p univis_ui_engine --release --example solver_benchmarks`
-- runtime example: `cargo run -p univis_ui --release --example runtime_benchmarks`
+## Current Reference Artifacts
+
+- `perf_baselines/current_max/2026-04-05/solver_benchmarks.txt`
+- `perf_baselines/current_max/2026-04-05/runtime_benchmarks.txt`
+- `perf_baselines/current_max/2026-04-05/manifest.json`
+- `perf_baselines/current_max/2026-04-05/README.md`
 
 ## Current Coverage
 
-The current baseline wave covers both algorithm-heavy and runtime-heavy paths.
+The committed baseline wave still covers both algorithm-heavy and runtime-heavy paths:
 
-Solver scenarios:
+- solver scenarios such as dense rows, wrapped cards, and grid dashboards
+- runtime scenarios such as root capsules, idle-after-settle, render-only churn, text measurement, picking traversal, widget-heavy panels, and `World3d` panels
 
-- `dense_row_512`
-- `wrap_cards_400`
-- `grid_dashboard_196`
+## How To Use It Now
 
-Runtime scenarios:
+- read the committed `.txt` reports for the raw scenario output
+- read `manifest.json` for the structured metadata
+- use `scripts/render_benchmark_report.py` if you want a rendered report from the stored data
 
-- `root_capsules_96`
-- `idle_after_settle_96`
-- `single_root_local_change_96`
-- `render_only_change_512`
-- `text_measure_180`
-- `picking_grid_512`
-- `widget_panels_240`
-- `world3d_panels_48`
+## Status Of `run_perf_baselines.sh`
 
-The solver harness gives one dense flex row, one wrapped card layout, and one grid-heavy dashboard.
-The runtime harness adds steady-state frames after settlement, localized single-root mutations,
-render-only visual churn, root resolution / stacking, text measurement churn, picking traversal,
-widget-heavy panels, and world-3d panel scenes.
+`./scripts/run_perf_baselines.sh` now exits with guidance because the example-backed harness sources are not currently shipped in this branch.
 
-The runtime harness reads settlement status through the public
-`univis_ui_engine::schedule::UiSettlementRuntimeState` contract instead of
-depending directly on `UiWorkState`.
-
-## How To Run
-
-```bash
-./scripts/run_perf_baselines.sh
-```
-
-To run only one harness directly:
-
-```bash
-cargo run -p univis_ui_engine --release --example solver_benchmarks
-cargo run -p univis_ui --release --example runtime_benchmarks
-```
-
-To shorten the run while iterating locally:
-
-```bash
-UNIVIS_PERF_WARMUP=12 UNIVIS_PERF_ITERATIONS=40 ./scripts/run_perf_baselines.sh
-```
-
-To fail the command when a scenario exceeds its current budget:
-
-```bash
-./scripts/run_perf_baselines.sh --check
-```
-
-## Output
-
-The harness prints:
-
-- scenario name
-- item count
-- average update / solve time in milliseconds
-- `p95` time in milliseconds
-- max solve time in milliseconds
-- current per-scenario budget
-- status (`ok` / `over`)
-
-`p95` is the value used for the current budget gate because it is less noisy than the single worst sample.
-
-## Current Budgets
-
-Solver budgets:
-
-- `dense_row_512`: `1.000ms` p95
-- `wrap_cards_400`: `1.400ms` p95
-- `grid_dashboard_196`: `1.800ms` p95
-
-Runtime budgets:
-
-- `root_capsules_96`: `6.000ms` p95
-- `idle_after_settle_96`: `2.000ms` p95
-- `single_root_local_change_96`: `1.200ms` p95
-- `render_only_change_512`: `1.500ms` p95
-- `text_measure_180`: `4.750ms` p95
-- `picking_grid_512`: `4.000ms` p95
-- `widget_panels_240`: `8.000ms` p95
-- `world3d_panels_48`: `6.000ms` p95
-
-These are repository baselines for the current harnesses, not universal promises for every machine.
-Treat them as drift detectors for this repo and this benchmark shape.
+Treat the committed baseline data as the source of truth until those harness sources return.

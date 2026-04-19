@@ -31,7 +31,7 @@ When a guide references an example:
 
 - point to the canonical entry in `docs/src/en/examples/index.md`
 - mention the owning package
-- prefer `cargo run -p <package> --example <name>` in command snippets
+- only use `cargo run -p <package> --example <name>` when that example source is actually shipped in the current branch; otherwise point to the availability catalog or the current live package
 
 ## API Doc Rules
 

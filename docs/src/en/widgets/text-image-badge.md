@@ -40,3 +40,7 @@ File: `src/widget/badge.rs`
 - dynamic badge styling lives in `UnivisBadgePlugin`
 - this runtime is included by default through `UnivisWidgetPlugin`
 - the dedicated plugin still remains available when you intentionally compose a narrower widget surface
+
+## Live Example
+
+- use `cargo run --example widgets_display` for `UBadge`, `UDivider`, `UProgressBar`, and `UPanel`

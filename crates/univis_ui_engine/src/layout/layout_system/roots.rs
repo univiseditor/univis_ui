@@ -286,10 +286,14 @@ impl ResolvedRootStack {
     }
 
     pub fn local_depth_offset(&self, layout_depth: usize, order: i32) -> f32 {
+        self.local_depth_offset_for_fraction(local_depth_fraction(layout_depth, order))
+    }
+
+    pub fn local_depth_offset_for_fraction(&self, fraction: f32) -> f32 {
         let reserved_steps = self.capsule_band_step * 2.0;
         let usable_band = (self.capsule_band_width - reserved_steps).max(0.0);
 
-        self.capsule_band_step + usable_band * local_depth_fraction(layout_depth, order)
+        self.capsule_band_step + usable_band * fraction.clamp(0.0, 1.0)
     }
 
     pub fn local_depth_key(&self, layout_depth: usize, order: i32) -> f32 {

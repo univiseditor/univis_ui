@@ -29,3 +29,7 @@
 - إدارة مجموعة اختيار واحد.
 - الحدث:
   - `RadioButtonChangedEvent`
+
+## مثال حي
+
+- استخدم `cargo run --example widgets_controls` لرؤية `UButton` و`UCheckbox` و`UToggle` و`URadioGroup` و`URadioButton` في شاشة واحدة

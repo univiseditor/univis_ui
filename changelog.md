@@ -18,7 +18,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 ### Changed
 
-- Changed the examples catalog and widget docs in both English and Arabic so widget-related pages now point to the current live examples instead of only historical archived sources.
+- Changed the examples catalog and widget docs in both English and Arabic so widget-related pages point to current live examples.
 
 ## [2026-04-08]
 
@@ -117,8 +117,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 - Added `TECH_DEBT_INVENTORY.md` as a maintainer-facing backlog for the current large-file refactor wave, covering `text_label.rs`, `layout_system.rs`, `solver.rs`, and `select.rs` with proposed module splits and execution order.
 - Added general `release-readiness` docs pages in English and Arabic so release prep guidance no longer depends on the removed alpha2-specific naming.
-- Added `crates/univis_ui_engine/examples/solver_benchmarks.rs` as a CLI performance harness for the layout solver, covering dense flex, wrapped-card, and grid-dashboard scenarios with `p95` budget checks.
-- Added `crates/univis_ui_engine/examples/runtime_benchmarks.rs` as a second CLI performance harness covering root resolution, text measurement, picking, widget-heavy panels, and world-3d panel scenes.
+- Added CLI performance harnesses for the layout solver and runtime paths, covering dense flex, wrapped-card, grid-dashboard, root resolution, text measurement, picking, widget-heavy panel, and world-3d panel scenarios.
 - Added `scripts/run_perf_baselines.sh` plus bilingual benchmark docs so the current solver and runtime baselines can be run and reviewed from one documented entry point.
 
 ### Changed
@@ -149,13 +148,12 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Added `scripts/check_quality.sh` and `scripts/check_representative_examples.sh` to centralize formatting, linting, workspace checks, library tests, and a curated release-mode example pass around the facade path, root modes, interaction, panel resize, text input, and `World3d`.
 - Added a dedicated representative-examples GitHub Actions job and folded the same checks into the alpha release verification path.
 - Added task-oriented `first-steps` docs pages in English and Arabic so the recommended plugin setup and best-first example path now live in one short onboarding page per language.
-- Added `mixed_bidi_text` and `text_edge_cases` as focused `univis_ui_widgets` examples for mixed Arabic + Latin labels, truncation sides, autosize clamping, and text-overflow edge cases.
+- Added focused text-overflow widget examples for mixed Arabic + Latin labels, truncation sides, autosize clamping, and edge cases.
 - Added embedded `NotoSansArabic-Regular.ttf` and `FreeSerif.otf` theme font handles so the shipped text examples can render Arabic and Latin coverage from repo-owned assets.
 - Added regression tests around grapheme-safe truncation, justify anchoring, local clip behavior, and autosize measurement under parent constraints in `UTextLabel`.
 - Added public `min_width`, `max_width`, `min_height`, and `max_height` controls to `UNode`, plus explicit `UVal::MinContent` and `UVal::MaxContent` sizing modes.
 - Added a dedicated sizing-semantics docs note in both English and Arabic to freeze the alpha-line meaning of `Auto`, `Content`, `MinContent`, `MaxContent`, and `min/max` constraints.
-- Added `layout_sizing_semantics` as a focused `univis_ui_engine` example for contextual `Auto` sizing, explicit intrinsic modes, and min/max-aware flex redistribution.
-- Added `widget_sizing_semantics` as a focused `univis_ui_widgets` example for fixed cards, wrap breakpoints, explicit `min_width`, intrinsic text boxes, and `UImage` native-size behavior.
+- Added focused sizing examples for contextual `Auto` sizing, explicit intrinsic modes, min/max-aware flex redistribution, fixed cards, wrap breakpoints, text sizing, and `UImage` native-size behavior.
 
 ### Changed
 
@@ -200,7 +198,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 ### Added
 
-- Added `root_fit_content` to demonstrate `URootUi::world_2d_fit_content()` and `UiCanvasSize::FitContent { min, max }` for `World3d` roots in one visual example.
+- Added a visual fit-content root example for `URootUi::world_2d_fit_content()` and `UiCanvasSize::FitContent { min, max }` with `World3d` roots.
 - Added `ALPHA2_STATUS.md` and `ALPHA2_STATUS_AR.md` as short root-level stability notes that freeze what is stable, transitional, and still experimental in the current `alpha2` line.
 - Added dedicated docs pages for `alpha2` stability, docs publishing, and a curated example gallery in both English and Arabic.
 - Added a GitHub Pages publishing workflow for the unified `docs/` book and bundled the example gallery with static visual references under `docs/src/assets/`.
@@ -222,7 +220,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Wired `README`, the docs landing pages, and the key guide chapters to their canonical examples, migration pages, and fully qualified public API entry points.
 - Added a dedicated docs authoring workflow, a docs review checklist, and a pull-request template that codifies bilingual docs updates, crate-owned examples, and public `rustdoc` expectations.
 - Added a GitHub Actions workflow for `mdbook build docs`, sequential package-by-package example validation, sequential public-crate `cargo doc --no-deps`, and explicit pre-alpha documentation validation requirements.
-- Refreshed the release notes around the unified `docs/` book and crate-owned example layout, added a dedicated migration page for users coming from older docs/example assumptions, tightened the GitHub discovery path across `README -> docs -> examples -> API docs`, and performed a final consistency pass on names, commands, and package-aware example invocations.
+- Refreshed the release notes around the unified `docs` book and crate-owned example layout, added a dedicated migration page for users coming from previous documentation assumptions, tightened the GitHub discovery path across `README -> docs -> examples -> API docs`, and performed a final consistency pass on names, commands, and package-aware example invocations.
 - Froze the current `URootUi`-centered public surface, explicitly kept `UScreenRoot` and `UWorldRoot` only as deprecated wrappers for the remainder of `alpha2`, re-audited the shipped examples, and published root-level plus in-book stability notes.
 - Wired a GitHub Pages docs publishing workflow, defined the hosted docs URL, documented how the published build is produced from `docs/`, and kept the local `mdbook build docs` path as the canonical contributor flow.
 - Added a curated example gallery, a best-first example list, purpose-driven grouped example sections, and static visual references for representative showcase and solver scenes.
@@ -249,29 +247,27 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Migrated all shipped examples to the `URootUi` API so the example surface now demonstrates `screen()`, `world_2d(...)`, and `world_3d(...)` directly instead of the deprecated root wrappers.
 - Finished the example migration, added explicit `screen` HUD and world-scale showcase examples, and rechecked example semantics around the new root model.
 - Rewrote root docs, quick-start snippets, and interaction support docs around `URootUi`, logical UI units, viewport semantics, and explicit world scaling.
-- Verified the migration by running `cargo check --workspace`, sequential targeted tests for `univis_ui_engine`, `univis_ui_widgets`, and `univis_ui_interaction`, refreshed smoke checks for screen, world, and 3D examples, and final manual visual validation through `root_screen_hud` and `root_world_scale`, while also adding direct verification tests for root resolution, root-bound layout sizing, `Screen`/`World2d`/`World3d` picking paths, panel root-camera resize behavior, world-root attachment, and `meters_per_unit` physical scaling.
+- Verified the migration by running `cargo check --workspace`, sequential targeted tests for `univis_ui_engine`, `univis_ui_widgets`, and `univis_ui_interaction`, refreshed smoke checks for screen, world, and 3D examples, and final manual visual validation of screen HUD and world-scale behavior, while also adding direct verification tests for root resolution, root-bound layout sizing, `Screen`/`World2d`/`World3d` picking paths, panel root-camera resize behavior, world-root attachment, and `meters_per_unit` physical scaling.
 - Made `URootUi` behave as a closed stacking capsule across layout, rendering, text, and picking so descendants never interleave above another root automatically; root-vs-root order is now resolved first, and same-`z` roots break ties by spawn order.
 
 ### Added
 
-- Added `root_screen_hud` to show that `URootUi::screen()` remains visually fixed while the camera moves, rotates, and zooms.
-- Added `root_world_scale` to show that a fixed logical canvas can map to different physical world sizes through `meters_per_unit`.
-- Added `root_capsule_overlap` as a node-graph-style example that demonstrates overlapping roots with protruding ports while keeping each root visually sealed as its own stacking capsule.
+- Added screen-HUD, world-scale, and root-capsule overlap visual examples for `URootUi`.
 - Added content-driven world-root sizing through `UiCanvasSize::FitContent { min, max }` plus `URootUi::world_2d_fit_content()` and `URootUi::world_3d_fit_content()`, allowing world roots to derive their logical canvas from measured content and optionally clamp it.
 
 ### Fixed
 
 - Restored legacy `UWorldRoot` example visibility during `alpha2` by preserving its historical `1 UI unit = 1 world unit` behavior as a compatibility path while the newer `URootUi` scale model continues to use `meters_per_unit`.
 - Fixed the `UTextLabel` SDF edge filtering regression that made some examples render text with an exaggerated halo after the unit-model changes.
-- Fixed bloom-enabled examples such as `border_light_3d`, `card_profile`, and `sci_fi` by pinning camera tonemapping to a LUT-free mode instead of relying on the default `TonyMcMapFace` path, which can fail at runtime when Bevy's `tonemapping_luts` feature is not enabled.
-- Fixed `root_screen_hud` after verification by updating its camera query to the current Bevy `single_mut()` result-based API, allowing the updated example set to compile cleanly.
+- Fixed bloom-enabled examples by pinning camera tonemapping to a LUT-free mode instead of relying on the default `TonyMcMapFace` path, which can fail at runtime when Bevy's `tonemapping_luts` feature is not enabled.
+- Fixed a screen-HUD example after verification by updating its camera query to the current Bevy `single_mut()` result-based API, allowing the updated example set to compile cleanly.
 - Fixed cross-root stacking leaks where a child such as a port or button could visually or interactively rise above another `URootUi` root even though its own root was below that other root.
 - Fixed the world-root sizing gap where `World2d` and `World3d` roots had to be declared with fixed canvas sizes even when the desired behavior was to wrap measured content.
 
 ### Notes
 
 - The `URootUi` migration is still in progress for `alpha2`; additional breaking changes are expected in later iterations.
-- Visual validation confirmed that `URootUi::screen()` stays viewport-fixed while the world canvas continues to move, rotate, and scale with the camera, and that `root_world_scale` keeps screen HUD behavior separate from world-root physical sizing.
+- Visual validation confirmed that `URootUi::screen()` stays viewport-fixed while the world canvas continues to move, rotate, and scale with the camera, and that screen HUD behavior stays separate from world-root physical sizing.
 - The new fit-content world-root mode works best when the root content has intrinsic or fixed sizing; heavy `%` or root-relative flex can still create circular sizing expectations.
 - This changelog entry backfills the previously undocumented `URootUi` migration work that led into `alpha2`.
 
@@ -279,16 +275,13 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 ### Added
 
-- Added `text_label_zoom` example to inspect `UTextLabel` sharpness while changing camera zoom with the mouse wheel, `+`, `-`, and `0`.
+- Added a text zoom example to inspect `UTextLabel` sharpness while changing camera zoom with the mouse wheel, `+`, `-`, and `0`.
 
 ### Changed
 
 - Reduced default `bevy` surface across the workspace by switching to a shared minimal feature set instead of full default features.
 - Moved all internal crates to `bevy = { workspace = true }` so Bevy feature management is centralized in the workspace root.
-- Gated bloom-heavy examples behind the optional `example_bloom` feature:
-  - `border_light_3d`
-  - `card_profile`
-  - `sci_fi`
+- Gated bloom-heavy examples behind the optional `example_bloom` feature.
 - Reworked `UTextLabel` so layout is driven by Bevy's `TextPipeline`/`ComputedTextBlock` path while rendering is handled by a dedicated SDF mesh/material path instead of a `Text2d` child.
 
 ### Fixed

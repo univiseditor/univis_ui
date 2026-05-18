@@ -34,6 +34,10 @@ echo "== Cargo check =="
 cargo check --workspace --all-targets
 
 echo
+echo "== API docs =="
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
+
+echo
 echo "== Public API surface =="
 ./scripts/check_public_api_surface.sh
 

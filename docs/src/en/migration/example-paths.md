@@ -1,37 +1,37 @@
 # Example Path Migration
 
-This page is now mostly historical.
+This page records the current example locations.
 
-Earlier alpha branches moved examples next to the crate that primarily owned them. The current
-branch no longer ships most of those source trees, so use this page as a compatibility glossary
-for older issues, PRs, and docs references.
+## Current Paths
 
-## Current Branch Reality
+- Android package demo: `android/android_phone_app`
+- root workspace examples: `examples/*.rs`
+- grid examples: `examples/grid/*.rs`
+- layout examples: `examples/layout/*.rs`
+- widget examples: `examples/widgets/*.rs`
 
-- live demo package: `android/android_phone_app`
-- static references: `docs/src/assets/visual-references/`
-- archived ownership map: [Examples](../examples/index.md)
+## Current Commands
 
-## Historical Ownership Rules
+Run the Android-style app:
 
-- root `examples/` used to hold facade demos plus cross-crate layout/root scenes
-- `crates/univis_ui_engine/examples/` used to hold engine/layout/render-focused demos
-- `crates/univis_ui_widgets/examples/` used to hold widget-focused demos
-- `examples/interaction.rs` used to hold the interaction-focused scene
+```bash
+cargo run --manifest-path android/android_phone_app/Cargo.toml
+```
 
-## Historical Mappings
+Check every workspace example registered with Cargo:
 
-- `root_*` examples -> `univis_ui`
-- `layout_case_*` examples -> `univis_ui`
-- `alignment`, `ex_node`, `layout_cache`, `layout_sizing_semantics`, `runtime_benchmarks` -> `univis_ui`
-- `text_*`, `panel_*`, `scroll_view`, `select`, `toggle` -> `univis_ui_widgets`
-- `interaction` -> `univis_ui_interaction`
-- `hello_world`, `card_profile`, `sci_fi`, `complex_dashboard` -> `univis_ui`
+```bash
+cargo check --workspace --examples
+```
 
-Treat the mapping above as historical context, not as a guarantee that the source files are still present.
+Check the standalone Android package:
+
+```bash
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+```
 
 ## Related Guides
 
 - [Examples](../examples/index.md)
+- [Example Gallery](../examples/gallery.md)
 - [Testing and Validation](../development/testing.md)
-- [Smoke Test Plan](../development/smoke-test-plan.md)

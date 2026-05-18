@@ -9,9 +9,8 @@ Use it when you want one page that answers two questions:
 
 ## Current Branch Note
 
-Most of the older workspace example sources are archived in this branch. The current live demo is
-the standalone Android-style package under `android/android_phone_app`, while the examples catalog
-now doubles as an ownership/history map for archived names.
+The examples catalog lists only source files that are present in this branch.
+The standalone Android-style package under `android/android_phone_app` is the best full-screen demo.
 
 ## Facade Setup
 
@@ -66,13 +65,12 @@ Use the dedicated widget plugins directly only when you intentionally want a nar
 Start with:
 
 - [Quick Start](quick-start.md)
-- [`hello_world`](examples/index.md#hello_world)
-- [`root_screen_hud`](examples/index.md#root_screen_hud)
+- [`responsive_layout_test`](examples/index.md#workspace-examples)
 
 Focus on:
 
 - the smallest facade-level boot path
-- viewport-fixed HUD behavior while the camera moves
+- viewport-fixed HUD and screen-root behavior
 
 ### Android App Screen
 
@@ -93,8 +91,8 @@ Focus on:
 Start with:
 
 - [Roots and Spaces](layout/roots.md)
-- [`root_world_scale`](examples/index.md#root_world_scale)
-- [`root_fit_content`](examples/index.md#root_fit_content)
+- [`layout_flex`](examples/index.md#layout-modes)
+- [`layout_stack`](examples/index.md#layout-modes)
 
 Focus on:
 
@@ -106,7 +104,7 @@ Focus on:
 Start with:
 
 - [Widget Inputs](widgets/inputs.md)
-- [`text_field`](examples/index.md#text_field)
+- [`widgets_inputs`](examples/index.md#widgets)
 
 Focus on:
 
@@ -119,12 +117,13 @@ Focus on:
 Start with:
 
 - [Widgets Overview](widgets/overview.md)
-- [`widgets`](examples/index.md#widgets)
+- [`widgets_controls`](examples/index.md#widgets)
+- [`widgets_inputs`](examples/index.md#widgets)
 
 Focus on:
 
 - how selection-oriented controls fit into the broader built-in widget surface
-- how archived example names map back to the current widget APIs
+- how the current widget examples map to the built-in widget APIs
 
 ## Related Pages
 

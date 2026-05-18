@@ -16,7 +16,7 @@ Run compile validation first:
 ## Manual Runtime Scenarios
 
 1. Android-style narrow-screen package sanity
-2. Visual comparison against archived static references
+2. Workspace example sanity for affected layout or widget areas
 3. Text and control readability pass
 
 ## Commands
@@ -25,19 +25,14 @@ Run compile validation first:
 cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
 
-Open as needed for quick comparison:
-
-- `docs/src/assets/visual-references/responsive_dashboard.html`
-- `docs/src/assets/visual-references/complex_dashboard.html`
-- `docs/src/assets/visual-references/layout_solver_no_widgets.html`
-- `docs/src/assets/visual-references/layout_solver_ultra_complex.html`
+For workspace examples, use `cargo run --example <name>` with an entry from [Examples](../examples/index.md).
 
 ## Pass Criteria
 
 - No startup panics.
 - The Android-style package opens and keeps the centered app surface readable in a narrow viewport.
 - `UTextField`, `UToggle`, `USeekBar`, and `UButton` remain visually coherent and interactive.
-- Static references still look close enough to the intended design language for release communication.
+- Relevant workspace examples still open and remain visually coherent.
 
 ## Failure Triage
 

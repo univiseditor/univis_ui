@@ -128,8 +128,7 @@ Migration rules:
 - `UWorldRoot { size, is_3d: false }` -> `URootUi::world_2d(size)`
 - `UWorldRoot { size, is_3d: true }` -> `URootUi::world_3d(size)`
 
-If you need the historical world-space physical size from legacy examples,
-set:
+If you need a specific world-space physical size, set:
 
 ```rust
 URootUi {
@@ -149,11 +148,9 @@ URootUi {
 
 ## Related Examples
 
-- [`root_screen_hud`](../examples/index.md#root_screen_hud) in `univis_ui`
-- [`root_world_scale`](../examples/index.md#root_world_scale) in `univis_ui`
-- [`root_fit_content`](../examples/index.md#root_fit_content) in `univis_ui`
-- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) in `univis_ui`
-- [`border_light_3d`](../examples/index.md#border_light_3d) in `univis_ui_engine`
+- [`responsive_layout_test`](../examples/index.md#workspace-examples)
+- [`z_order_hierarchy`](../examples/index.md#workspace-examples)
+- [`layout_stack`](../examples/index.md#layout-modes)
 
 ## Related Migration Notes
 
@@ -170,6 +167,6 @@ URootUi {
 
 ## Where To Look Next
 
-- related example: [`root_screen_hud`](../examples/index.md#root_screen_hud)
+- related example: [`responsive_layout_test`](../examples/index.md#workspace-examples)
 - related API index: [API Reference](../api/index.md)
 - related migration page: [Root API Migration to `URootUi`](../migration/root-api.md)

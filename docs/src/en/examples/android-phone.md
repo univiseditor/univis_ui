@@ -13,24 +13,24 @@ but the desktop-friendly entry point above is the fastest way to inspect the sce
 
 ## What It Demonstrates
 
-- a centered Android-style application surface without a fake hardware frame
-- `UTextField` for top-level search input
-- `UToggle` and `USeekBar` inside a minimal settings layout
-- compact `UButton` actions in a bottom navigation row
-- a narrow viewport composition built around `URootUi::screen()`
+- a full-height Android-style app surface capped to a narrow mobile width
+- a top summary card plus a live `UTextField` search input
+- a scrollable feed using `UClip`, `UScrollContainer`, and `UInteraction`
+- compact mobile controls built from `UToggle`, `USeekBar`, `UBadge`, and `UButton`
+- a bottom navigation row that stays visible while the middle feed grows
 
 ## When To Run It
 
-- when you want the current live demo that still ships with the repository
-- when you want to test spacing density for settings, launcher, or companion-app scenes
-- when you want one scene that mixes layout, widgets, and interaction in a narrow viewport
+- when you want a concrete mobile layout reference instead of isolated widget demos
+- when you want to verify spacing density for phone-sized screens
+- when you want one scene that mixes layout, scrolling, and touch-friendly controls
 
 ## Practical Notes
 
 - the scene uses `URootUi::screen()`, so the app surface stays viewport-fixed like a HUD
-- the layout is intentionally static so core controls stay reachable on touch devices
-- for historical example ownership, see [Examples](index.md)
-- for focused widget behavior, compare it with [`text_field`](index.md#text_field), [`scroll_view`](index.md#scroll_view), and [`widgets`](index.md#widgets)
+- the outer shell uses `max_width` instead of a fake device frame, so the same scene reads well on desktop and Android
+- the center feed is the part meant to scroll; the top summary and bottom navigation remain visible
+- for focused widget behavior, compare it with [`widgets_controls`](index.md#widgets), [`widgets_inputs`](index.md#widgets), and [`widgets_containers`](index.md#widgets)
 
 ## Related Pages
 

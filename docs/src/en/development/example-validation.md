@@ -1,68 +1,46 @@
 # Example Validation Report
 
-## Validation Date
+## Current Validation Scope
 
-- March 6, 2026
+The current branch validates only example sources that exist in the repository.
 
-## Status Note
+## Commands
 
-This page is a historical validation snapshot from an earlier alpha-prep pass.
-The canonical current example catalog now lives in [Examples](../examples/index.md), and the
-current branch no longer ships most of the example sources listed below.
-
-## Validation Mode
-
-- Command style: sequential, release profile
-- Resource guard: `CARGO_BUILD_JOBS=1`
-- Command used:
+Check workspace examples:
 
 ```bash
-./scripts/check_examples_serial_release.sh
+cargo check --workspace --examples
 ```
 
-## Result
+Check the standalone Android package:
 
-- Total examples checked: 28
-- Passed: 28
-- Failed: 0
+```bash
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+```
 
-## Checked Examples
+Run the release-mode representative pass:
 
-- `alignment`
-- `border_light_3d`
-- `card_profile`
-- `drag_value`
-- `ex_node`
-- `hello_world`
-- `interaction`
-- `layout_cache`
-- `layout_case_alignment_overflow`
-- `layout_case_flex_wrap`
-- `layout_case_grid_auto_flow`
-- `layout_case_grid_tracks`
-- `layout_case_masonry_ext`
-- `layout_case_radial`
-- `layout_case_stack`
-- `masonry`
-- `panel_divider`
-- `panel_window`
-- `radio`
-- `sci_fi`
-- `scroll_view`
-- `seekbar`
-- `select`
-- `text_field`
-- `text_label`
-- `texture`
-- `toggle`
-- `widgets`
+```bash
+./scripts/check_representative_examples.sh
+```
 
-## Notes
+## Current Example Sources
 
-- This report confirms compile viability for the then-shipped example set via `cargo check --release -p <package> --example ...`.
-- Runtime behavior still requires manual windowed smoke checks for interaction and visual correctness.
+- `android/android_phone_app/examples/android_phone.rs`
+- `examples/responsive_layout_test.rs`
+- `examples/toggle_seekbar.rs`
+- `examples/z_order_hierarchy.rs`
+- `examples/grid/auto_flow.rs`
+- `examples/grid/columns.rs`
+- `examples/grid/item_placement.rs`
+- `examples/grid/tracks.rs`
+- `examples/layout/flex.rs`
+- `examples/layout/masonry.rs`
+- `examples/layout/radial.rs`
+- `examples/layout/stack.rs`
+- `examples/widgets/containers.rs`
+- `examples/widgets/controls.rs`
+- `examples/widgets/display.rs`
+- `examples/widgets/inputs.rs`
 
-## Runtime Smoke Status
-
-- March 6, 2026: Deferred/skipped for this cycle by request (machine/resource constraints).
-- Planned smoke command set remains documented in [Smoke Test Plan](smoke-test-plan.md).
+Runtime behavior still requires manual windowed smoke checks for interaction and visual correctness.

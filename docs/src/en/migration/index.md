@@ -5,7 +5,7 @@ This section tracks the documentation-facing migration steps around the current 
 ## What Changed Recently
 
 - public roots converged on `URootUi`
-- examples moved next to the crate they best represent
+- the example catalog now lists only sources that exist in this branch
 - the docs now live in one bilingual `docs/` book
 
 ## Start Here
@@ -19,7 +19,7 @@ This section tracks the documentation-facing migration steps around the current 
 ## What This Section Covers
 
 - how to update older root code
-- how to move from older docs/examples discovery habits
-- how to update older example commands and paths
+- how to move from older docs discovery habits
+- where the current example sources live
 - what is considered canonical versus legacy compatibility
 - which limitations are still real in the current alpha line

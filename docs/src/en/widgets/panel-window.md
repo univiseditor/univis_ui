@@ -35,5 +35,4 @@ Fields:
 
 ## Historical Example
 
-The old `panel_window` example source is archived in this branch. Use the catalog entry in
-[Examples](../examples/index.md#panel_window) for ownership/history.
+For a current panel-window scene, run `cargo run --example widgets_containers`.

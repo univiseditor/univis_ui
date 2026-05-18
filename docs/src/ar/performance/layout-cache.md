@@ -22,6 +22,6 @@
 - إذا زاد عدد العقد كبيرًا جدًا.
 - إذا أصبحت قيمة `dirty_ratio` مرتفعة أغلب الوقت.
 
-## مثال مرتبط
+## تحقق مرتبط
 
-- `layout_cache` داخل `univis_ui`
+- `cargo test -p univis_ui_engine --lib layout::core::layout_cache`

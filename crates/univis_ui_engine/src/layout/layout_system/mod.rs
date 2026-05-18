@@ -2,9 +2,11 @@
 #![allow(clippy::type_complexity)]
 //! Root model and root-resolution systems for Univis UI.
 //!
-//! [`URootUi`] is the modern public entry point for authoring UI roots.
-//! Every root resolves into a [`ResolvedRootUi`] plus an internal
-//! [`ResolvedRootStack`] capsule, which keeps cross-root stacking sealed:
+//! [`URootUi`](crate::layout::layout_system::URootUi) is the modern public
+//! entry point for authoring UI roots. Every root resolves into a
+//! [`ResolvedRootUi`](crate::layout::layout_system::ResolvedRootUi) plus an
+//! internal [`ResolvedRootStack`](crate::layout::layout_system::ResolvedRootStack)
+//! capsule, which keeps cross-root stacking sealed:
 //! local ordering stays inside the root and descendants do not automatically
 //! interleave above another root.
 

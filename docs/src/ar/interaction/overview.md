@@ -37,8 +37,10 @@
 
 ## أمثلة مرتبطة
 
-- [`interaction`](../examples/index.md#interaction) داخل `univis_ui_interaction`
-- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui`
+- [`widgets_controls`](../examples/index.md#الوحدات-الجاهزة)
+- [`widgets_inputs`](../examples/index.md#الوحدات-الجاهزة)
+- [`widgets_containers`](../examples/index.md#الوحدات-الجاهزة)
+- [`z_order_hierarchy`](../examples/index.md#أمثلة-مساحة-العمل)
 
 ## نقاط الدخول الرسمية في `API`
 
@@ -48,6 +50,6 @@
 
 ## إلى أين بعد ذلك؟
 
-- المثال المرتبط: [`interaction`](../examples/index.md#interaction)
+- المثال المرتبط: [`widgets_controls`](../examples/index.md#الوحدات-الجاهزة)
 - فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
 - صفحة مرجعية إضافية: [القيود الحالية](../development/current-limitations.md)

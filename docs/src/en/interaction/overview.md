@@ -30,8 +30,10 @@ Interaction depends on `UInteraction` being present on the target entity.
 
 ## Related Examples
 
-- [`interaction`](../examples/index.md#interaction) in `univis_ui_interaction`
-- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) in `univis_ui`
+- [`widgets_controls`](../examples/index.md#widgets)
+- [`widgets_inputs`](../examples/index.md#widgets)
+- [`widgets_containers`](../examples/index.md#widgets)
+- [`z_order_hierarchy`](../examples/index.md#workspace-examples)
 
 ## API Entry Points
 
@@ -41,6 +43,6 @@ Interaction depends on `UInteraction` being present on the target entity.
 
 ## Where To Look Next
 
-- related example: [`interaction`](../examples/index.md#interaction)
+- related example: [`widgets_controls`](../examples/index.md#widgets)
 - related API index: [API Reference](../api/index.md)
 - related migration page: [Current Limitations](../development/current-limitations.md)

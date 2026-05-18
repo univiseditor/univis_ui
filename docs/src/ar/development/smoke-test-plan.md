@@ -16,7 +16,7 @@
 ## سيناريوهات التشغيل اليدوي
 
 1. سلامة حزمة الشاشة الضيقة بطابع Android
-2. مقارنة بصرية مع المراجع الثابتة المؤرشفة
+2. فحص أمثلة مساحة العمل المرتبطة بمناطق التخطيط أو الوحدات المتأثرة
 3. مرور سريع على وضوح النصوص وعناصر التحكم
 
 ## الأوامر
@@ -25,19 +25,14 @@
 cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
 
-وافتح عند الحاجة للمقارنة السريعة:
-
-- `docs/src/assets/visual-references/responsive_dashboard.html`
-- `docs/src/assets/visual-references/complex_dashboard.html`
-- `docs/src/assets/visual-references/layout_solver_no_widgets.html`
-- `docs/src/assets/visual-references/layout_solver_ultra_complex.html`
+لأمثلة مساحة العمل، استخدم `cargo run --example <name>` مع مدخل من [فهرس الأمثلة](../examples/index.md).
 
 ## معايير النجاح
 
 - عدم حدوث panic عند البداية
 - فتح الحزمة بطابع Android مع بقاء سطح التطبيق المقروء داخل العرض الضيق
 - بقاء `UTextField` و`UToggle` و`USeekBar` و`UButton` متماسكة بصريًا وتفاعليًا
-- بقاء المراجع الثابتة قريبة بما يكفي من اللغة البصرية المقصودة لمواد الإصدار
+- فتح أمثلة مساحة العمل المرتبطة وبقاؤها متماسكة بصريًا
 
 ## تشخيص الإخفاق
 

@@ -35,7 +35,7 @@ cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
 - [ ] `cargo doc -p univis_ui --no-deps`
 - [ ] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
 - [ ] `./scripts/check_representative_examples.sh`
-- [ ] مرور بصري يدوي واحد على الحزمة ذات الطابع Android وعلى المراجع الثابتة المؤرشفة من [التحقق البصري](visual-validation.md)
+- [ ] مرور بصري يدوي واحد على الحزمة ذات الطابع Android وعلى الأمثلة الحالية المرتبطة من [التحقق البصري](visual-validation.md)
 - [ ] أن تذكر ملاحظات الإصدار وصفحات الترحيل القصة الحالية نفسها لتوفر الأمثلة
 
 ## قرار إزالة الطبقات المتوافقة

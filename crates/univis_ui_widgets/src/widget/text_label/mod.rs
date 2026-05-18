@@ -1,8 +1,8 @@
 //! Text rendering widgets for Univis UI.
 //!
-//! [`UTextLabel`] measures text through Bevy's text pipeline, then renders the
-//! final result through Univis SDF materials so the same widget can stay sharp
-//! in screen and world roots.
+//! [`UTextLabel`](crate::widget::text_label::UTextLabel) measures text through
+//! Bevy's text pipeline, then renders the final result through Univis SDF
+//! materials so the same widget can stay sharp in screen and world roots.
 
 use bevy::prelude::*;
 use bevy::sprite_render::Material2dPlugin;

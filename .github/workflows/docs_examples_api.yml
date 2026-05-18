@@ -158,7 +158,7 @@ jobs:
             libxkbcommon-x11-0
 
       - name: Generate public API docs for ${{ matrix.package }}
-        run: cargo doc -p ${{ matrix.package }} --no-deps
+        run: RUSTDOCFLAGS="-D warnings" cargo doc -p ${{ matrix.package }} --no-deps
 
   examples:
     name: Examples (${{ matrix.package }})

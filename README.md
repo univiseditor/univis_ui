@@ -12,10 +12,6 @@ Build sharp, scalable UI for Bevy across screen HUDs, world panels, and 3D-lit i
 > Important:
 > `univis_ui` is still in **alpha**. API and behavior can change between versions.
 
-Archived visual reference from the former `card_profile` demo:
-
-![profile](docs/src/assets/profile.png)
-
 ## Why Univis UI
 
 Univis UI is built for teams that want more than a basic HUD layer.
@@ -117,12 +113,12 @@ Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default wi
 - `URootUi` is the canonical public root API
 - `URootUi::screen()`, `URootUi::world_2d(...)`, and `URootUi::world_3d(...)` are the intended entry points
 - `UiSpace`, `UiCameraRef`, and `UiCanvasSize`, including `UiCanvasSize::FitContent { min, max }`, are part of the public root story
-- historical example names remain documented in the bilingual catalog, while the current branch ships the standalone `android/android_phone_app` package plus static visual references under `docs/src/assets/visual-references/`
+- the examples catalog lists only source files that ship in the current branch
 
 ### Deprecated But Still Supported
 
-- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`; they are already de-emphasized in examples and the current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support
-- `meters_per_unit: 1.0` remains the explicit compatibility knob when you need the exact historical world-root physical size from older examples, and it stays on the canonical `URootUi` surface
+- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`; the current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support
+- `meters_per_unit` remains the explicit knob for world-root physical size, and it stays on the canonical `URootUi` surface
 
 ### Still Settling
 
@@ -191,6 +187,7 @@ Good starting points:
 
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
+- [Stable 0.2.x Roadmap](ROADMAP.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
 - [Plugin Setup and First Examples (EN)](docs/src/en/first-steps.md)
@@ -219,7 +216,8 @@ Good starting points:
 
 - `README.md`: project story, strengths, and the fastest entry path.
 - `README_AR.md`: Arabic landing page with the same high-level role.
-- `MIGRATION.md`: migration path from older docs, example paths, and root assumptions.
+- `ROADMAP.md`: execution roadmap from alpha cleanup to beta readiness.
+- `MIGRATION.md`: migration path from older docs and root assumptions.
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
 - `changelog.md`: dated chronological record of notable changes.
@@ -246,9 +244,9 @@ Useful entry points:
 Useful reference entries:
 
 - `android_phone`
-- `responsive_dashboard`
-- `complex_dashboard`
-- `card_profile`
+- `responsive_layout_test`
+- `widgets_controls`
+- `widgets_inputs`
 
 Run the current live demo:
 

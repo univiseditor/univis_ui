@@ -127,8 +127,7 @@ UiCameraRef::Entity(camera_entity)
 - `UWorldRoot { size, is_3d: false }` -> `URootUi::world_2d(size)`
 - `UWorldRoot { size, is_3d: true }` -> `URootUi::world_3d(size)`
 
-إذا احتجت الحفاظ على نفس الحجم الفيزيائي التاريخي لأمثلة فضاء العالم القديمة،
-فاستخدم:
+إذا احتجت حجمًا فيزيائيًا محددًا داخل العالم، فاستخدم:
 
 ```rust
 URootUi {
@@ -148,11 +147,9 @@ URootUi {
 
 ## أمثلة مرتبطة
 
-- [`root_screen_hud`](../examples/index.md#root_screen_hud) داخل `univis_ui`
-- [`root_world_scale`](../examples/index.md#root_world_scale) داخل `univis_ui`
-- [`root_fit_content`](../examples/index.md#root_fit_content) داخل `univis_ui`
-- [`root_capsule_overlap`](../examples/index.md#root_capsule_overlap) داخل `univis_ui`
-- [`border_light_3d`](../examples/index.md#border_light_3d) داخل `univis_ui_engine`
+- [`responsive_layout_test`](../examples/index.md#أمثلة-مساحة-العمل)
+- [`z_order_hierarchy`](../examples/index.md#أمثلة-مساحة-العمل)
+- [`layout_stack`](../examples/index.md#أنماط-التخطيط)
 
 ## صفحات ترحيل مرتبطة
 
@@ -169,6 +166,6 @@ URootUi {
 
 ## إلى أين بعد ذلك؟
 
-- المثال المرتبط: [`root_screen_hud`](../examples/index.md#root_screen_hud)
+- المثال المرتبط: [`responsive_layout_test`](../examples/index.md#أمثلة-مساحة-العمل)
 - فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
 - صفحة الترحيل: [ترحيل الجذور إلى `URootUi`](../migration/root-api.md)

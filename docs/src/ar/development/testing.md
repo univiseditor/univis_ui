@@ -39,9 +39,7 @@ mdbook build docs
 
 ## خطوط الأداء الأساسية
 
-كانت حزم القياس التاريخية مبنية على أمثلة تشغيلية وهي مؤرشفة حاليًا في هذا الفرع.
-
-استخدم هذه الملفات الملتزم بها بدلًا منها:
+استخدم هذه الملفات الملتزم بها:
 
 - `perf_baselines/current_max/2026-04-05/solver_benchmarks.txt`
 - `perf_baselines/current_max/2026-04-05/runtime_benchmarks.txt`
@@ -49,7 +47,7 @@ mdbook build docs
 
 ## التحقق داخل CI
 
-ما تزال GitHub Actions تتحقق من الجودة والوثائق و`API Docs` عبر سير العمل الحالية، كما تبقى سكربتات الأمثلة آمنة للاستدعاء حتى عندما لا توجد ملفات أمثلة تشغيلية في مساحة العمل.
+ما تزال GitHub Actions تتحقق من الجودة والوثائق و`API Docs` وفحوص الأمثلة الحالية عبر سير العمل الحالية.
 
 ## التحقق التسلسلي على الأجهزة الضعيفة
 
@@ -57,13 +55,13 @@ mdbook build docs
 # كل اختبارات lib واحدة تلو الأخرى
 ./scripts/test_lib_serial_release.sh
 
-# كل أمثلة مساحة العمل الحالية إن وجدت
+# كل أمثلة مساحة العمل الحالية التي يعرفها السكربت
 ./scripts/check_examples_serial_release.sh
 
 # حزمة Android الحالية مع فحص أمثلة مساحة العمل
 ./scripts/check_representative_examples.sh
 
-# التحقق الكامل: اختبارات lib + الأمثلة الحالية إن وجدت
+# التحقق الكامل: اختبارات lib + الأمثلة الحالية
 ./scripts/verify_serial_release.sh
 
 # التحقق التسلسلي لحزمة مساحة عمل محددة
@@ -86,7 +84,7 @@ cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
 1. شغّل اختبارات الوحدة المرتبطة بالتغيير
 2. شغّل `./scripts/check_quality.sh`
 3. شغّل `./scripts/check_representative_examples.sh`
-4. شغّل `./scripts/check_examples_serial_release.sh` فقط إذا كان فرعك يشحن أمثلة تشغيلية داخل مساحة العمل
+4. شغّل `cargo check --workspace --examples`
 5. شغّل حزمة Android عندما يمس التغيير السطح الحي الحالي
 6. استخدم [التحقق البصري](visual-validation.md) عندما يكون التغيير ثقيلًا في الرندر أو التخطيط أو التفاعل
 
@@ -101,7 +99,7 @@ cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
 - `cargo doc -p univis_ui --no-deps`
 - `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
 - `./scripts/check_representative_examples.sh`
-- مرور يدوي واحد عبر حزمة Android والمراجع المؤرشفة المذكورة في [التحقق البصري](visual-validation.md)
+- مرور يدوي واحد عبر حزمة Android والأمثلة الحالية المرتبطة
 - مرور واحد عبر [جاهزية الإصدار](release-readiness.md)
 
 ## سياسة لقطات الشاشة

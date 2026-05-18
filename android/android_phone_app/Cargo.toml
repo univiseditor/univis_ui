@@ -26,7 +26,7 @@ bevy = { version = "0.18.1", default-features = false, features = [
 [[example]]
 name = "android_phone"
 path = "examples/android_phone.rs"
-crate-type = ["cdylib"]
+crate-type = ["bin"]
 
 [package.metadata.android]
 package = "com.univis.androidphone"
@@ -37,10 +37,6 @@ strip = "strip"
 [package.metadata.android.sdk]
 min_sdk_version = 29
 target_sdk_version = 34
-
-[package.metadata.android.signing.release]
-path = "/home/abdellah/.android/debug.keystore"
-keystore_password = "android"
 
 [package.metadata.android.application]
 theme = "@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"

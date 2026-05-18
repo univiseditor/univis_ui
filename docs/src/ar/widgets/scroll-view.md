@@ -30,9 +30,6 @@
 - يلزم `UInteraction` على الحاوية لاكتشاف hover.
 - عادةً يدمج مع `UClip { enabled: true }` لإخفاء المحتوى الخارج عن الإطار.
 
-## المثال التاريخي
+## مثال حي
 
 - استخدم `cargo run --example widgets_containers` لرؤية منفذ تمرير حي موصول مع `UClip` و`UInteraction` و`UScrollContainer`
-
-أصبح مصدر المثال القديم `scroll_view` مؤرشفًا في هذا الفرع. استخدم مدخله داخل
-[فهرس الأمثلة](../examples/index.md#scroll_view) لمعرفة الملكية والحالة التاريخية.

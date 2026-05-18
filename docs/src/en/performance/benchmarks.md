@@ -1,7 +1,6 @@
 # Benchmark Harness
 
-The historical benchmark harnesses were example-backed. In the current branch, those example
-sources are archived and the committed reports are the primary reference.
+The committed benchmark reports are the current reference for performance comparisons.
 
 ## Current Reference Artifacts
 
@@ -25,6 +24,4 @@ The committed baseline wave still covers both algorithm-heavy and runtime-heavy 
 
 ## Status Of `run_perf_baselines.sh`
 
-`./scripts/run_perf_baselines.sh` now exits with guidance because the example-backed harness sources are not currently shipped in this branch.
-
-Treat the committed baseline data as the source of truth until those harness sources return.
+`./scripts/run_perf_baselines.sh` currently points maintainers to the committed baseline data used by this branch.

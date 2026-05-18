@@ -8,19 +8,23 @@ The intended long-term root file set is:
 
 - `README.md`
 - `README_AR.md`
+- `ROADMAP.md`
 - `MIGRATION.md`
 - `MIGRATION_AR.md`
 - `RELEASE_NOTES.md`
 - `changelog.md`
+- `ROADMAP.md`
 
 Use them like this:
 
 - `README.md`: landing story and first stop for GitHub visitors
 - `README_AR.md`: Arabic landing story
-- `MIGRATION.md`: migration path from older docs, examples, and assumptions
+- `ROADMAP.md`: forward-looking execution plan from alpha cleanup to beta readiness
+- `MIGRATION.md`: migration path from older docs and assumptions
 - `MIGRATION_AR.md`: Arabic migration path
 - `RELEASE_NOTES.md`: current alpha release-scale summary
 - `changelog.md`: dated historical record
+- `ROADMAP.md`: stabilization plan for the `0.2.0` release line
 
 ## Current Release Story
 
@@ -86,7 +90,7 @@ For `0.2.0-alpha.3`, the intended message is:
 
 - `UScreenRoot` on explicit paths only
 - `UWorldRoot` on explicit paths only
-- explicit `meters_per_unit: 1.0` when preserving the exact historical physical size of older world-root examples
+- explicit `meters_per_unit` when controlling the physical size of world roots
 
 ### Still Settling
 
@@ -107,7 +111,7 @@ For `0.2.0-alpha.3`, the intended message is:
 
 ### Migration
 
-If you are upgrading from older docs, older example paths, or older root wrappers, start here:
+If you are upgrading from older docs or older root wrappers, start here:
 
 - `MIGRATION.md`
 - `MIGRATION_AR.md`
@@ -145,16 +149,18 @@ Run the structure/public-surface guards:
 Run representative examples:
 
 ```bash
-cargo run -p univis_ui --example hello_world
-cargo run -p univis_ui_engine --example root_fit_content
-cargo run -p univis_ui_widgets --example text_field
-cargo run -p univis_ui_interaction --example interaction
+cargo run --manifest-path android/android_phone_app/Cargo.toml
+cargo run --example responsive_layout_test
+cargo run --example widgets_controls
+cargo run --example widgets_inputs
 ```
 
 ## Where To Look Next
 
 - release history and implementation highlights: `changelog.md`
+- stable-readiness plan for the `0.2.x` line: `ROADMAP.md`
 - alpha3 diff report: `ALPHA3_REPORT.md`
+- execution roadmap: `ROADMAP.md`
 - migration summary: `MIGRATION.md`
 - Arabic migration summary: `MIGRATION_AR.md`
 - current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`

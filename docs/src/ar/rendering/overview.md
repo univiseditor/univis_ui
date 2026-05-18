@@ -30,6 +30,5 @@
 
 ## أمثلة مرتبطة
 
-- [`border_light_3d`](../examples/index.md#border_light_3d) داخل `univis_ui_engine`
-- `card_profile` داخل `univis_ui`
-- `sci_fi` داخل `univis_ui`
+- [`widgets_display`](../examples/index.md#الوحدات-الجاهزة)
+- [`responsive_layout_test`](../examples/index.md#أمثلة-مساحة-العمل)

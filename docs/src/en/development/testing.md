@@ -39,9 +39,7 @@ mdbook build docs
 
 ## Performance Baselines
 
-The historical benchmark harnesses were example-backed and are currently archived in this branch.
-
-Use these committed artifacts instead:
+Use these committed artifacts:
 
 - `perf_baselines/current_max/2026-04-05/solver_benchmarks.txt`
 - `perf_baselines/current_max/2026-04-05/runtime_benchmarks.txt`
@@ -49,7 +47,7 @@ Use these committed artifacts instead:
 
 ## CI Validation
 
-GitHub Actions still validates quality, docs, and API docs through the existing workflows, and the example scripts remain safe to call even when no workspace example sources are present.
+GitHub Actions still validates quality, docs, API docs, and current example checks through the existing workflows.
 
 ## Sequential Validation On Low-End Machines
 
@@ -57,13 +55,13 @@ GitHub Actions still validates quality, docs, and API docs through the existing 
 # all lib tests one by one
 ./scripts/test_lib_serial_release.sh
 
-# all currently shipped workspace examples, if any
+# all current workspace examples known to the script
 ./scripts/check_examples_serial_release.sh
 
 # Android package plus workspace example scan
 ./scripts/check_representative_examples.sh
 
-# full validation: lib tests + currently shipped examples
+# full validation: lib tests + current examples
 ./scripts/verify_serial_release.sh
 
 # sequential validation for a specific workspace package
@@ -86,7 +84,7 @@ cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
 1. run the unit tests related to the change
 2. run `./scripts/check_quality.sh`
 3. run `./scripts/check_representative_examples.sh`
-4. run `./scripts/check_examples_serial_release.sh` only if your branch currently ships runnable workspace examples
+4. run `cargo check --workspace --examples`
 5. launch the Android package when the change affects the live demo surface
 6. use [Visual Validation](visual-validation.md) when the change is rendering-, layout-, or interaction-heavy
 
@@ -101,7 +99,7 @@ cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
 - `cargo doc -p univis_ui --no-deps`
 - `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
 - `./scripts/check_representative_examples.sh`
-- one manual pass through the Android package and the archived references in [Visual Validation](visual-validation.md)
+- one manual pass through the Android package and relevant current examples
 - one pass through [Release Readiness](release-readiness.md)
 
 ## Screenshot Policy

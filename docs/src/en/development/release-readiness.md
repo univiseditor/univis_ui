@@ -35,7 +35,7 @@ Confirm that these files describe the same current reality:
 - [ ] `cargo doc -p univis_ui --no-deps`
 - [ ] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
 - [ ] `./scripts/check_representative_examples.sh`
-- [ ] one manual visual pass over the Android package and the archived static references from [Visual Validation](visual-validation.md)
+- [ ] one manual visual pass over the Android package and relevant current examples from [Visual Validation](visual-validation.md)
 - [ ] release notes and migration pages mention the same current example-availability story
 
 ## Wrapper Removal Decision
@@ -50,7 +50,7 @@ For the next alpha cut, the decision is:
 
 - `README.md`: landing story and fastest entry point
 - `README_AR.md`: Arabic landing story
-- `MIGRATION.md`: upgrade path from older docs, examples, and assumptions
+- `MIGRATION.md`: upgrade path from older docs and assumptions
 - `MIGRATION_AR.md`: Arabic migration path
 - `RELEASE_NOTES.md`: current alpha release-scale summary
 - `changelog.md`: chronological dated history

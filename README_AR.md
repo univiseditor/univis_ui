@@ -11,10 +11,6 @@
 > مهم:
 > ما تزال `univis_ui` في مرحلة **alpha**، لذلك يمكن أن تتغير الـ API والسلوك بين الإصدارات.
 
-مرجع بصري مؤرشف من المثال القديم `card_profile`:
-
-![profile](docs/src/assets/profile.png)
-
 ## لماذا Univis UI؟
 
 تم بناء Univis UI للفرق التي تحتاج أكثر من مجرد طبقة HUD بسيطة.
@@ -114,12 +110,12 @@ fn setup(mut commands: Commands) {
 - `URootUi` هو واجهة الجذور العامة الرسمية
 - `URootUi::screen()` و`URootUi::world_2d(...)` و`URootUi::world_3d(...)` هي نقاط الدخول المقصودة
 - `UiSpace` و`UiCameraRef` و`UiCanvasSize` بما فيه `UiCanvasSize::FitContent { min, max }` جزء من قصة الجذور العامة الحالية
-- تبقى أسماء الأمثلة التاريخية موثقة داخل الفهرس الثنائي اللغة، بينما يشحن هذا الفرع حزمة `android/android_phone_app` الحية ومراجع بصرية ثابتة داخل `docs/src/assets/visual-references/`
+- يعرض فهرس الأمثلة فقط ملفات المصدر الموجودة في هذا الفرع
 
 ### ما هو مهجور لكنه ما يزال مدعومًا
 
-- `UScreenRoot` و`UWorldRoot` متاحان فقط كطبقات توافق مهجورة على مسارات صريحة مثل `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`؛ وقد خُفِّض التركيز عليهما في الأمثلة، وهدف الإزالة الحالي هو أول alpha بعد `0.2.0-alpha.3` لا يعود يحتاج دعم الترحيل المبني عليهما
-- تبقى قيمة `meters_per_unit: 1.0` مفتاح توافق صريح عندما تحتاج الحجم الفيزيائي التاريخي نفسه لبعض أمثلة العالم الأقدم، وتبقى ضمن السطح الرسمي `URootUi`
+- `UScreenRoot` و`UWorldRoot` متاحان فقط كطبقات توافق مهجورة على مسارات صريحة مثل `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`؛ وهدف الإزالة الحالي هو أول alpha بعد `0.2.0-alpha.3` لا يعود يحتاج دعم الترحيل المبني عليهما
+- تبقى قيمة `meters_per_unit` مفتاحًا صريحًا لحجم جذور العالم الفيزيائي، وتبقى ضمن السطح الرسمي `URootUi`
 
 ### ما يزال في طور الاستقرار
 
@@ -207,7 +203,8 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 
 - `README.md`: قصة المشروع وأسرع نقطة دخول.
 - `README_AR.md`: صفحة الدخول العربية على المستوى العالي نفسه.
-- `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم ومسارات الأمثلة القديمة وافتراضات الجذور القديمة.
+- `ROADMAP.md`: خارطة التنفيذ من تنظيف alpha إلى جاهزية beta.
+- `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم وافتراضات الجذور القديمة.
 - `MIGRATION_AR.md`: مسار الترحيل العربي.
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha.
 - `changelog.md`: السجل الزمني المرتب حسب التواريخ للتغييرات الملحوظة.
@@ -234,9 +231,9 @@ cargo doc --no-deps -p univis_ui
 مراجع مفيدة للبدء:
 
 - `android_phone`
-- `responsive_dashboard`
-- `complex_dashboard`
-- `card_profile`
+- `responsive_layout_test`
+- `widgets_controls`
+- `widgets_inputs`
 
 شغّل العرض الحي الحالي:
 

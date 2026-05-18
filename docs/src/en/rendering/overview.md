@@ -30,6 +30,5 @@ The render sync system:
 
 ## Related Examples
 
-- [`border_light_3d`](../examples/index.md#border_light_3d) in `univis_ui_engine`
-- `card_profile` in `univis_ui`
-- `sci_fi` in `univis_ui`
+- [`widgets_display`](../examples/index.md#widgets)
+- [`responsive_layout_test`](../examples/index.md#workspace-examples)

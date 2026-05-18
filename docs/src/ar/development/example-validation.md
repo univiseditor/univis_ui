@@ -1,67 +1,46 @@
 # تقرير التحقق من الأمثلة
 
-## تاريخ التحقق
+## نطاق التحقق الحالي
 
-- March 6, 2026
+يتحقق هذا الفرع فقط من ملفات الأمثلة الموجودة فعليًا في المستودع.
 
-## ملاحظة الحالة
+## الأوامر
 
-تمثل هذه الصفحة snapshot تاريخية من دورة أقدم ضمن تحضير `alpha`.
-أما الفهرس الحالي المعتمد للأمثلة فهو موجود في [فهرس الأمثلة](../examples/index.md)، ولم يعد هذا الفرع يشحن أغلب مصادر الأمثلة المذكورة أدناه.
-
-## وضع التحقق
-
-- نمط التنفيذ: تسلسلي وبنسخة `release`
-- تخفيف الضغط: `CARGO_BUILD_JOBS=1`
-- الأمر المستخدم:
+افحص أمثلة مساحة العمل:
 
 ```bash
-./scripts/check_examples_serial_release.sh
+cargo check --workspace --examples
 ```
 
-## النتيجة
+افحص حزمة Android المستقلة:
 
-- إجمالي الأمثلة المفحوصة: 28
-- الناجح: 28
-- الفاشل: 0
+```bash
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+```
 
-## قائمة الأمثلة التي تم فحصها
+شغّل مسار التحقق التمثيلي في وضع release:
 
-- `alignment`
-- `border_light_3d`
-- `card_profile`
-- `drag_value`
-- `ex_node`
-- `hello_world`
-- `interaction`
-- `layout_cache`
-- `layout_case_alignment_overflow`
-- `layout_case_flex_wrap`
-- `layout_case_grid_auto_flow`
-- `layout_case_grid_tracks`
-- `layout_case_masonry_ext`
-- `layout_case_radial`
-- `layout_case_stack`
-- `masonry`
-- `panel_divider`
-- `panel_window`
-- `radio`
-- `sci_fi`
-- `scroll_view`
-- `seekbar`
-- `select`
-- `text_field`
-- `text_label`
-- `texture`
-- `toggle`
-- `widgets`
+```bash
+./scripts/check_representative_examples.sh
+```
 
-## ملاحظات
+## مصادر الأمثلة الحالية
 
-- يؤكد هذا التقرير صلاحية البناء لمجموعة الأمثلة التي كانت مشحونة حينها عبر `cargo check --release -p <package> --example ...`.
-- السلوك وقت التشغيل ما يزال يحتاج smoke checks يدوية (نافذة فعلية) للتفاعل والدقة البصرية.
+- `android/android_phone_app/examples/android_phone.rs`
+- `examples/responsive_layout_test.rs`
+- `examples/toggle_seekbar.rs`
+- `examples/z_order_hierarchy.rs`
+- `examples/grid/auto_flow.rs`
+- `examples/grid/columns.rs`
+- `examples/grid/item_placement.rs`
+- `examples/grid/tracks.rs`
+- `examples/layout/flex.rs`
+- `examples/layout/masonry.rs`
+- `examples/layout/radial.rs`
+- `examples/layout/stack.rs`
+- `examples/widgets/containers.rs`
+- `examples/widgets/controls.rs`
+- `examples/widgets/display.rs`
+- `examples/widgets/inputs.rs`
 
-## حالة Runtime Smoke
-
-- March 6, 2026: تم تأجيل/تخطي هذه المرحلة في هذه الدورة بطلب مباشر (قيود الجهاز/الموارد).
-- أوامر smoke المخطط لها موثقة في [خطة Smoke Tests](smoke-test-plan.md).
+ما يزال سلوك Runtime يحتاج فحوص smoke يدوية بنافذة فعلية للتفاعل والدقة البصرية.

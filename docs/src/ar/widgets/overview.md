@@ -25,11 +25,10 @@
 
 ## أمثلة مرتبطة
 
-- حي الآن: [`widgets_controls`](../examples/index.md#widgets_controls)
-- حي الآن: [`widgets_inputs`](../examples/index.md#widgets_inputs)
-- حي الآن: [`widgets_display`](../examples/index.md#widgets_display)
-- حي الآن: [`widgets_containers`](../examples/index.md#widgets_containers)
-- مرجع تاريخي: [`widgets`](../examples/index.md#widgets)
+- حي الآن: [`widgets_controls`](../examples/index.md#الوحدات-الجاهزة)
+- حي الآن: [`widgets_inputs`](../examples/index.md#الوحدات-الجاهزة)
+- حي الآن: [`widgets_display`](../examples/index.md#الوحدات-الجاهزة)
+- حي الآن: [`widgets_containers`](../examples/index.md#الوحدات-الجاهزة)
 
 ## نقاط الدخول الرسمية في `API`
 
@@ -41,7 +40,7 @@
 
 ## إلى أين بعد ذلك؟
 
-- المثال المرتبط: [`widgets_controls`](../examples/index.md#widgets_controls)
+- المثال المرتبط: [`widgets_controls`](../examples/index.md#الوحدات-الجاهزة)
 - صفحة الإعداد: [إعداد الإضافات وأولى الأمثلة](../first-steps.md)
 - فهرس `API`: [مرجع الواجهة العامة](../api/index.md)
 - صفحة الترحيل: [ترحيل مسارات الأمثلة](../migration/example-paths.md)

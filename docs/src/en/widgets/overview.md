@@ -25,11 +25,10 @@ Each Univis widget is an ECS component plus a small plugin that manages:
 
 ## Related Examples
 
-- live now: [`widgets_controls`](../examples/index.md#widgets_controls)
-- live now: [`widgets_inputs`](../examples/index.md#widgets_inputs)
-- live now: [`widgets_display`](../examples/index.md#widgets_display)
-- live now: [`widgets_containers`](../examples/index.md#widgets_containers)
-- historical reference: [`widgets`](../examples/index.md#widgets)
+- live now: [`widgets_controls`](../examples/index.md#widgets)
+- live now: [`widgets_inputs`](../examples/index.md#widgets)
+- live now: [`widgets_display`](../examples/index.md#widgets)
+- live now: [`widgets_containers`](../examples/index.md#widgets)
 
 ## API Entry Points
 
@@ -41,7 +40,7 @@ Each Univis widget is an ECS component plus a small plugin that manages:
 
 ## Where To Look Next
 
-- related example: [`widgets_controls`](../examples/index.md#widgets_controls)
+- related example: [`widgets_controls`](../examples/index.md#widgets)
 - related setup page: [Plugin Setup and First Examples](../first-steps.md)
 - related API index: [API Reference](../api/index.md)
 - related migration page: [Example Path Migration](../migration/example-paths.md)

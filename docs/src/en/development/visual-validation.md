@@ -6,12 +6,12 @@ This page defines the lightweight manual visual checks that still matter even af
 
 - catch regressions that compile cleanly but look wrong
 - keep the current live demo visually trustworthy
-- use static references where the historical runtime examples are no longer shipped
+- keep runtime visual checks focused on examples and packages that exist in this branch
 
 ## Current Policy
 
 - screenshots remain manual release-prep artifacts, not a required CI output
-- the example gallery may link to static references where useful
+- the example gallery lists only current runnable sources
 - runtime visual checks still matter for layout density, text appearance, widget affordances, and overall polish
 
 ## Live Validation Target
@@ -22,16 +22,6 @@ Run the current live package when the affected area is visual or interaction-hea
 cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
 
-## Static References
-
-Open these when you want quick comparison material without starting Bevy:
-
-- [Responsive Dashboard HTML](../../assets/visual-references/responsive_dashboard.html)
-- [Complex Dashboard HTML](../../assets/visual-references/complex_dashboard.html)
-- [Layout Solver No Widgets HTML](../../assets/visual-references/layout_solver_no_widgets.html)
-- [Layout Solver Ultra Complex HTML](../../assets/visual-references/layout_solver_ultra_complex.html)
-- [Card Profile Screenshot](../../assets/profile.png)
-
 ## What To Look For
 
 ### Android Phone Package
@@ -39,12 +29,6 @@ Open these when you want quick comparison material without starting Bevy:
 - the centered app surface remains balanced in a narrow viewport
 - `UTextField`, `UToggle`, `USeekBar`, and `UButton` remain visually legible and easy to target
 - spacing and density still read well without a fake hardware frame
-
-### Static References
-
-- dashboard hierarchy still looks intentional and readable
-- layout-heavy scenes still resemble the expected solver output
-- polished showcase surfaces still match the archived visual language closely enough for release notes
 
 ## Release-Prep Expectation
 

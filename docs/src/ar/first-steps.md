@@ -9,9 +9,8 @@
 
 ## ملاحظة تخص هذا الفرع
 
-أغلب ملفات الأمثلة القديمة في مساحة العمل أصبحت مؤرشفة داخل هذا الفرع. العرض الحي الحالي هو
-الحزمة المستقلة ذات الطابع Android داخل `android/android_phone_app`، بينما أصبح فهرس الأمثلة
-خريطة للملكية والحالة التاريخية أيضًا.
+يعرض فهرس الأمثلة فقط ملفات المصدر الموجودة في هذا الفرع. الحزمة المستقلة ذات الطابع Android
+داخل `android/android_phone_app` هي أفضل عرض كامل للشاشة.
 
 ## إعداد الواجهة المجمعة
 
@@ -66,8 +65,7 @@ fn main() {
 ابدأ من:
 
 - [البدء السريع](quick-start.md)
-- [`hello_world`](examples/index.md#hello_world)
-- [`root_screen_hud`](examples/index.md#root_screen_hud)
+- [`responsive_layout_test`](examples/index.md#أمثلة-مساحة-العمل)
 
 ما الذي يجب التركيز عليه:
 
@@ -93,8 +91,8 @@ cargo run --manifest-path android/android_phone_app/Cargo.toml
 ابدأ من:
 
 - [الجذور والمساحات](layout/roots.md)
-- [`root_world_scale`](examples/index.md#root_world_scale)
-- [`root_fit_content`](examples/index.md#root_fit_content)
+- [`layout_flex`](examples/index.md#أنماط-التخطيط)
+- [`layout_stack`](examples/index.md#أنماط-التخطيط)
 
 ما الذي يجب التركيز عليه:
 
@@ -106,7 +104,7 @@ cargo run --manifest-path android/android_phone_app/Cargo.toml
 ابدأ من:
 
 - [مدخلات الوحدات الجاهزة](widgets/inputs.md)
-- [`text_field`](examples/index.md#text_field)
+- [`widgets_inputs`](examples/index.md#الوحدات-الجاهزة)
 
 ما الذي يجب التركيز عليه:
 
@@ -119,12 +117,13 @@ cargo run --manifest-path android/android_phone_app/Cargo.toml
 ابدأ من:
 
 - [نظرة عامة على الوحدات الجاهزة](widgets/overview.md)
-- [`widgets`](examples/index.md#widgets)
+- [`widgets_controls`](examples/index.md#الوحدات-الجاهزة)
+- [`widgets_inputs`](examples/index.md#الوحدات-الجاهزة)
 
 ما الذي يجب التركيز عليه:
 
 - كيف تنسجم عناصر الاختيار مع بقية سطح الوحدات الجاهزة
-- كيف تعود أسماء الأمثلة المؤرشفة إلى واجهات الـ API الحالية
+- كيف تعكس الأمثلة الحالية واجهات الـ API للوحدات الجاهزة
 
 ## صفحات مرتبطة
 

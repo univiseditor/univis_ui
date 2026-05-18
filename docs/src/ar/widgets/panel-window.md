@@ -42,7 +42,6 @@ builders:
 
 - استخدم `cargo run --example widgets_containers` لرؤية `UPanelWindow` القابل لتغيير الحجم مع منفذ تمرير مرافق
 
-## المثال التاريخي
+## مثال حي
 
-أصبح مصدر المثال القديم `panel_window` مؤرشفًا في هذا الفرع. استخدم مدخله داخل
-[فهرس الأمثلة](../examples/index.md#panel_window) لمعرفة الملكية والتاريخ.
+شغّل `cargo run --example widgets_containers` لرؤية `UPanelWindow` القابل لتغيير الحجم مع منفذ تمرير مرافق.

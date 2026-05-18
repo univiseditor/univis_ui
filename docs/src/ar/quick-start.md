@@ -72,7 +72,7 @@ fn setup(mut commands: Commands) {
 - التفاعل يحسم الكاميرا من كل `URootUi`.
 - في المشاهد متعددة الكاميرات يُفضّل ربط الجذر صراحة عبر `UiCameraRef::Entity`.
 - `UScreenRoot` و`UWorldRoot` موجودان فقط كطبقات توافق مهجورة على مسارات صريحة مثل `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`.
-- إذا احتجت نفس الحجم الفيزيائي التاريخي لأمثلة فضاء العالم القديمة، فاضبط `meters_per_unit: 1.0` صراحة.
+- اضبط `meters_per_unit` صراحة عندما تحتاج حجمًا فيزيائيًا محددًا لجذور العالم.
 - إذا أردت قائمة إعداد موجزة ومسار أمثلة بحسب المهمة، فانتقل إلى [إعداد الإضافات وأولى الأمثلة](first-steps.md).
 
 إذا كنت تركّب سطح widgets ضيقًا من دون `UnivisWidgetPlugin`، فما يزال بإمكانك إضافة `UnivisTextFieldPlugin` أو `UnivisBadgePlugin` يدويًا.
@@ -100,9 +100,9 @@ fn main() {
 
 ## أمثلة مرتبطة
 
-- [`hello_world`](examples/index.md#hello_world) داخل `univis_ui`
-- [`widgets`](examples/index.md#widgets) داخل `univis_ui_widgets`
-- [`interaction`](examples/index.md#interaction) داخل `univis_ui_interaction`
+- [`responsive_layout_test`](examples/index.md#أمثلة-مساحة-العمل)
+- [`widgets_controls`](examples/index.md#الوحدات-الجاهزة)
+- [`widgets_inputs`](examples/index.md#الوحدات-الجاهزة)
 
 ## صفحات ترحيل مرتبطة
 
@@ -119,7 +119,7 @@ fn main() {
 
 ## إلى أين بعد ذلك؟
 
-- المثال المرتبط: [`hello_world`](examples/index.md#hello_world)
+- المثال المرتبط: [`responsive_layout_test`](examples/index.md#أمثلة-مساحة-العمل)
 - صفحة الإعداد: [إعداد الإضافات وأولى الأمثلة](first-steps.md)
 - فهرس `API`: [مرجع الواجهة العامة](api/index.md)
 - صفحة الترحيل: [ترحيل الجذور إلى `URootUi`](migration/root-api.md)

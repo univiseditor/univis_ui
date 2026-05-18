@@ -22,6 +22,70 @@ example_dir_for_package() {
   fi
 }
 
+manifest_path_for_package() {
+  local package="$1"
+  if [ "$package" = "univis_ui" ]; then
+    printf '%s\n' "Cargo.toml"
+  else
+    printf '%s\n' "crates/$package/Cargo.toml"
+  fi
+}
+
+manifest_example_names_for_package() {
+  local package="$1"
+  local manifest
+  manifest="$(manifest_path_for_package "$package")"
+
+  if [ ! -f "$manifest" ]; then
+    return 0
+  fi
+
+  awk '
+    /^\[\[example\]\]/ { in_example = 1; next }
+    /^\[/ { in_example = 0 }
+    in_example && /^[[:space:]]*name[[:space:]]*=/ {
+      line = $0
+      sub(/^[^"]*"/, "", line)
+      sub(/".*$/, "", line)
+      if (line != "") {
+        print line
+      }
+    }
+  ' "$manifest"
+}
+
+autodiscovered_example_names_for_package() {
+  local package="$1"
+  local examples_dir
+  examples_dir="$(example_dir_for_package "$package")"
+
+  if [ -d "$examples_dir" ]; then
+    find "$examples_dir" -maxdepth 1 -type f -name '*.rs' -printf '%f\n' | sed 's/\.rs$//' | sort
+  fi
+}
+
+example_names_for_package() {
+  local package="$1"
+  {
+    manifest_example_names_for_package "$package"
+    autodiscovered_example_names_for_package "$package"
+  } | sort -u
+}
+
+example_exists_in_package() {
+  local package="$1"
+  local example="$2"
+  local candidate
+
+  while IFS= read -r candidate; do
+    if [ "$candidate" = "$example" ]; then
+      return 0
+    fi
+  done < <(example_names_for_package "$package")
+
+  return 1
+}
+
 feature_args_for_example() {
   local package="$1"
   local example="$2"
@@ -51,15 +115,8 @@ resolve_package_for_example() {
   local example="$1"
   local matches=()
 
-  if [ -f "examples/$example.rs" ]; then
-    matches+=("univis_ui")
-  fi
-
   for package in "${PACKAGES[@]}"; do
-    if [ "$package" = "univis_ui" ]; then
-      continue
-    fi
-    if [ -f "crates/$package/examples/$example.rs" ]; then
+    if example_exists_in_package "$package" "$example"; then
       matches+=("$package")
     fi
   done
@@ -78,6 +135,21 @@ resolve_package_for_example() {
   printf '%s\n' "${matches[0]}"
 }
 
+append_resolved_example() {
+  local package="$1"
+  local example="$2"
+  local i
+
+  for i in "${!RESOLVED_EXAMPLES[@]}"; do
+    if [ "${RESOLVED_PACKAGES[$i]}" = "$package" ] && [ "${RESOLVED_EXAMPLES[$i]}" = "$example" ]; then
+      return 0
+    fi
+  done
+
+  RESOLVED_PACKAGES+=("$package")
+  RESOLVED_EXAMPLES+=("$example")
+}
+
 PKG=""
 if [ "${1:-}" = "-p" ]; then
   if [ -z "${2:-}" ]; then
@@ -92,33 +164,28 @@ declare -a RESOLVED_PACKAGES=()
 declare -a RESOLVED_EXAMPLES=()
 
 if [ -n "$PKG" ]; then
-  EXAMPLES_DIR="$(example_dir_for_package "$PKG")"
   if [ "$#" -gt 0 ]; then
     for example in "$@"; do
-      RESOLVED_PACKAGES+=("$PKG")
-      RESOLVED_EXAMPLES+=("$example")
+      if ! example_exists_in_package "$PKG" "$example"; then
+        echo "Example '$example' was not found in package '$PKG'." >&2
+        exit 1
+      fi
+      append_resolved_example "$PKG" "$example"
     done
-  elif [ -d "$EXAMPLES_DIR" ]; then
+  else
     while IFS= read -r example; do
-      RESOLVED_PACKAGES+=("$PKG")
-      RESOLVED_EXAMPLES+=("$example")
-    done < <(find "$EXAMPLES_DIR" -maxdepth 1 -type f -name '*.rs' -printf '%f\n' | sed 's/\.rs$//' | sort)
+      append_resolved_example "$PKG" "$example"
+    done < <(example_names_for_package "$PKG")
   fi
 elif [ "$#" -gt 0 ]; then
   for example in "$@"; do
-    RESOLVED_PACKAGES+=("$(resolve_package_for_example "$example")")
-    RESOLVED_EXAMPLES+=("$example")
+    append_resolved_example "$(resolve_package_for_example "$example")" "$example"
   done
 else
   for package in "${PACKAGES[@]}"; do
-    EXAMPLES_DIR="$(example_dir_for_package "$package")"
-    if [ ! -d "$EXAMPLES_DIR" ]; then
-      continue
-    fi
     while IFS= read -r example; do
-      RESOLVED_PACKAGES+=("$package")
-      RESOLVED_EXAMPLES+=("$example")
-    done < <(find "$EXAMPLES_DIR" -maxdepth 1 -type f -name '*.rs' -printf '%f\n' | sed 's/\.rs$//' | sort)
+      append_resolved_example "$package" "$example"
+    done < <(example_names_for_package "$package")
   done
 fi
 

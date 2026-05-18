@@ -1,220 +1,76 @@
 # فهرس الأمثلة
 
-يسجل هذا الفهرس ملكية الأمثلة وتاريخها وحالة توفرها الحالية عبر المستودع.
+تعرض هذه الصفحة فقط ملفات الأمثلة الموجودة فعليًا في المستودع الحالي.
 
-## الحالات الحالية
-
-- `حزمة حيّة`: المصدر ما يزال موجودًا ويمكن تشغيله مباشرة
-- `مرجع ثابت`: يوجد ملف HTML أو صورة محفوظة للمقارنة البصرية
-- `مصدر مؤرشف`: الاسم التاريخي للمثال ما يزال موثقًا، لكن ملف المصدر غير موجود في هذا الفرع
-
-إذا أردت العرض الحي الحالي فابدأ من:
+## تشغيل العرض الحالي
 
 ```bash
 cargo run --manifest-path android/android_phone_app/Cargo.toml
 ```
 
-وللعرض المنسق والمسار المقترح للبدء، راجع [معرض الأمثلة](gallery.md).
+## حزمة Android المستقلة
 
-## مسار التعلم المقترح
-
-### `hello_world`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui`
-- الغرض: أصغر نقطة دخول على مستوى الواجهة المجمعة مع جذر واحد وعنصر مرئي واحد
-- استخدم الآن: [البدء السريع](../quick-start.md)
-
-### `root_screen_hud`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui`
-- الغرض: كان يثبت أن `URootUi::screen()` يبقى ثابتًا على الشاشة بينما يتحرك الجذر العالمي مع الكاميرا
-- استخدم الآن: [الجذور والمساحات](../layout/roots.md)
-
-### `android_phone`
-
-- الحالة: `حزمة حيّة`
-- الحزمة الحالية: `android/android_phone_app`
-- الغرض: يبني شاشة تطبيق نظيفة بطابع Android مع بحث وتبديلات ومنزلقات وتنقل سفلي مضغوط
-- شغّله الآن: `cargo run --manifest-path android/android_phone_app/Cargo.toml`
-
-### `widgets_controls`
-
-- الحالة: `حزمة حيّة`
-- الحزمة الحالية: `univis_ui`
-- الغرض: يعرض `UButton` و`UCheckbox` و`UToggle` و`URadioGroup` و`URadioButton` في شاشة واحدة
-- شغّله الآن: `cargo run --example widgets_controls`
-
-### `widgets_inputs`
-
-- الحالة: `حزمة حيّة`
-- الحزمة الحالية: `univis_ui`
-- الغرض: يوضح `UTextField` و`USelect` و`UDragValue` و`USeekBar` مع تفاعل حي ورسائل في الـ console
-- شغّله الآن: `cargo run --example widgets_inputs`
-
-### `widgets_display`
-
-- الحالة: `حزمة حيّة`
-- الحزمة الحالية: `univis_ui`
-- الغرض: يوضح `UBadge` و`UDivider` و`UProgressBar` و`UPanel` مع تحديثات progress متحركة
-- شغّله الآن: `cargo run --example widgets_display`
-
-### `widgets_containers`
-
-- الحالة: `حزمة حيّة`
-- الحزمة الحالية: `univis_ui`
-- الغرض: يوضح `UPanelWindow` و`UScrollContainer` و`UClip` عبر لوحة قابلة لتغيير الحجم ومنفذ قابل للتمرير
-- شغّله الآن: `cargo run --example widgets_containers`
-
-### `responsive_dashboard`
-
-- الحالة: `مرجع ثابت`
-- الحزمة التاريخية: `univis_ui`
-- الغرض: يوضح لوحة تتحول من بطاقة ضيقة إلى مساحة عمل مكتبية كاملة
-- استخدم الآن: [responsive_dashboard.html](../../assets/visual-references/responsive_dashboard.html)
-
-### `root_world_scale`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui`
-- الغرض: كان يوضح كيف يمكن لنفس مساحة الرسم المنطقية أن تقابل أحجامًا عالمية مختلفة عبر `meters_per_unit`
-- استخدم الآن: [الجذور والمساحات](../layout/roots.md)
-
-### `root_fit_content`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui`
-- الغرض: كان يوضح الجذور العالمية المقاسة من المحتوى عبر `UiCanvasSize::FitContent`
-- استخدم الآن: [الجذور والمساحات](../layout/roots.md)
-
-### `root_capsule_overlap`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui`
-- الغرض: كان يوضح تراكب كبسولات الجذور بحيث تبقى الأبناء البارزة أسفل جذر آخر
-- استخدم الآن: [نظرة عامة على التفاعل](../interaction/overview.md)
-
-### `border_light_3d`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui_engine`
-- الغرض: كان يختبر مسار `World3d` المضيء مع تنسيق مناسب لـ bloom
-- استخدم الآن: [نظرة عامة على الرندر](../rendering/overview.md)
-
-### `interaction`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui_interaction`
-- الغرض: كان يوضح كيف تمنع العناصر المتداخلة الضربات أو تتجاهلها أو تمررها
-- استخدم الآن: [نظرة عامة على التفاعل](../interaction/overview.md)
-
-### `widgets`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui_widgets`
-- الغرض: عينة واسعة من الوحدات الجاهزة الشائعة
-- استخدم الآن: [نظرة عامة على الوحدات الجاهزة](../widgets/overview.md) و`widgets_controls` و`widgets_display`
-
-### `text_label`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui_widgets`
-- الغرض: كان يستكشف تخطيط `UTextLabel` والقص والفيض و`autosize`
-- استخدم الآن: [النص والصورة والوسوم](../widgets/text-image-badge.md)
-
-### `text_field`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui_widgets`
-- الغرض: كان يوضح الإدخال القابل للتحرير وأنماط التصفية ورسائل الإرسال والتغيير
-- استخدم الآن: [مدخلات الوحدات الجاهزة](../widgets/inputs.md) و`cargo run --example widgets_inputs`
-
-### `panel_window`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui_widgets`
-- الغرض: كان يوضح اللوحات العائمة القابلة لتغيير الحجم
-- استخدم الآن: [اللوحة ونافذة اللوحة](../widgets/panel-window.md) و`cargo run --example widgets_containers`
-
-### `scroll_view`
-
-- الحالة: `مصدر مؤرشف`
-- الحزمة التاريخية: `univis_ui_widgets`
-- الغرض: كان يوضح التمرير والفيض داخل حاوية مخصصة
-- استخدم الآن: [التمرير](../widgets/scroll-view.md) و`cargo run --example widgets_containers`
-
-## تاريخ ملكية الحزم
-
-### `univis_ui`
-
-| المثال | الغرض | الأنسب لـ | الحالة |
+| المثال | المصدر | الغرض | الأمر |
 | --- | --- | --- | --- |
-| `hello_world` | تطبيق واجهة مجمعة بسيط مع جذر واحد ونص واحد. | أول تشغيل | `مصدر مؤرشف` |
-| `alignment` | مشهد مرجعي صغير للمحاذاة. | قواعد المحاذاة | `مصدر مؤرشف` |
-| `ex_node` | عرض منخفض المستوى لتأليف العقد. | بدائيات المحرك | `مصدر مؤرشف` |
-| `layout_cache` | كان يعرض أو يضغط سلوك الذاكرة المؤقتة للتخطيط. | تشخيص الذاكرة المؤقتة | `مصدر مؤرشف` |
-| `layout_case_alignment_overflow` | حالة مركزة للمحاذاة والفيض. | حالات المحلل الطرفية | `مصدر مؤرشف` |
-| `layout_case_flex_wrap` | كان يوضح التفاف العناصر في flex. | flex wrap | `مصدر مؤرشف` |
-| `layout_case_grid_auto_flow` | كان يوضح التدفق التلقائي في grid. | توزيع grid | `مصدر مؤرشف` |
-| `layout_case_grid_tracks` | كان يوضح أحجام مسارات grid وتموضعها. | مسارات grid | `مصدر مؤرشف` |
-| `layout_case_masonry_ext` | كان يختبر امتدادات masonry. | ضبط masonry | `مصدر مؤرشف` |
-| `layout_case_radial` | كان يوضح الترتيب الشعاعي. | التخطيط الشعاعي | `مصدر مؤرشف` |
-| `layout_case_stack` | كان يوضح دلالات stack. | تخطيط stack | `مصدر مؤرشف` |
-| `layout_sizing_semantics` | كان يوضح `Auto` والأنماط الجوهرية وحدود `min/max` في شاشة واحدة. | نموذج الأحجام | `مصدر مؤرشف` |
-| `root_screen_hud` | كان يؤكد سلوك HUD الحقيقي لـ `URootUi::screen()`. | جذور الشاشة | `مصدر مؤرشف` |
-| `android_phone` | شاشة تطبيق بطابع Android مع بحث وتبديلات ومنزلقات وتنقل سفلي. | واجهات شاشة شبيهة بالهاتف | `حزمة حيّة` |
-| `widgets_controls` | سطح widgets يركز على الأزرار والتبديلات والcheckbox والراديو. | الأفعال الشائعة | `حزمة حيّة` |
-| `widgets_inputs` | شاشة inputs تركز على النص والاختيار والسحب والمنزلقات. | سير عمل الإدخال | `حزمة حيّة` |
-| `widgets_display` | عينة للوحدات البصرية مع badges ومقسمات ولوحات وprogress متحرك. | الوحدات البصرية | `حزمة حيّة` |
-| `widgets_containers` | شاشة للحاويات مع لوحة قابلة لتغيير الحجم ومنفذ قابل للتمرير. | سلوك اللوحات والتمرير | `حزمة حيّة` |
-| `responsive_dashboard` | دراسة لوحة تنتقل من بطاقة ضيقة إلى مساحة عمل مكتبية. | تركيب متجاوب | `مرجع ثابت` |
-| `root_world_scale` | كان يقارن بين حجم مساحة الرسم المنطقية والحجم الفيزيائي في العالم. | `meters_per_unit` | `مصدر مؤرشف` |
-| `root_fit_content` | كان يوضح جذور `World2d` و`World3d` المقاسة من المحتوى. | جذور fit-content | `مصدر مؤرشف` |
-| `root_capsule_overlap` | كان يوضح كبسولات الجذور المغلقة عند التداخل. | تراكب الجذور | `مصدر مؤرشف` |
-| `complex_dashboard` | لوحة مدمجة أكثف تحتوي عدة مناطق واجهة. | تركيب على مستوى الواجهة المجمعة | `مرجع ثابت` |
-| `card_profile` | بطاقة تعريف مصقولة مع bloom اختياري. | بطاقة واجهة متقنة | `مرجع ثابت` |
-| `sci_fi` | مشهد خيال علمي أكبر يستعرض السطح الكامل. | عرض نهائي | `مصدر مؤرشف` |
-| `transit_control` | لوحة تشغيل كثيفة ببطاقات وحالات تشغيل متعددة. | عرض غير خيال علمي | `مصدر مؤرشف` |
+| `android_phone` | `android/android_phone_app/examples/android_phone.rs` | شاشة تطبيق بطابع Android مع بحث وتبديلات ومنزلقات ومحتوى قابل للتمرير وتنقل سفلي. | `cargo run --manifest-path android/android_phone_app/Cargo.toml --example android_phone` |
 
-### `univis_ui_engine`
+وتملك الحزمة نقطة دخول سطح مكتب مباشرة:
 
-| المثال | الغرض | الأنسب لـ | الحالة |
+```bash
+cargo run --manifest-path android/android_phone_app/Cargo.toml
+```
+
+## أمثلة مساحة العمل
+
+| المثال | المصدر | الغرض | الأمر |
 | --- | --- | --- | --- |
-| `border_light_3d` | لوحة `World3d` مضيئة. | مسار الرندر ثلاثي الأبعاد | `مصدر مؤرشف` |
-| `layout_solver_no_widgets` | مشهد يركز على المحلل من دون widgets. | تشخيص التخطيط الصرف | `مرجع ثابت` |
-| `layout_solver_ultra_complex` | مشهد أكبر للضغط على المحلل. | ضغط المحلل | `مرجع ثابت` |
-| `masonry` | عرض أعلى مستوى لتخطيط masonry. | مرجع masonry | `مصدر مؤرشف` |
-| `texture` | مشهد مرجعي لمسار الصور/النسيج. | هندسة الصور | `مصدر مؤرشف` |
+| `responsive_layout_test` | `examples/responsive_layout_test.rs` | مشهد ضغط لتركيب واجهة شاشة متجاوبة. | `cargo run --example responsive_layout_test` |
+| `toggle_seekbar` | `examples/toggle_seekbar.rs` | مشهد تحكم صغير لسلوك toggle وseek-bar. | `cargo run --example toggle_seekbar` |
+| `z_order_hierarchy` | `examples/z_order_hierarchy.rs` | فحص الترتيب البصري وسلوك تراكب الهرمية. | `cargo run --example z_order_hierarchy` |
 
-### `univis_ui_widgets`
+## تخطيط Grid
 
-| المثال | الغرض | الأنسب لـ | الحالة |
+| المثال | المصدر | الغرض | الأمر |
 | --- | --- | --- | --- |
-| `drag_value` | كان يوضح إدخالًا رقميًا بالسحب. | عناصر التحكم الرقمية | `مصدر مؤرشف` |
-| `panel_divider` | كان يوضح المقسم داخل اللوحات. | تخطيط اللوحات | `مصدر مؤرشف` |
-| `panel_window` | لوحات عائمة قابلة لتغيير الحجم. | نوافذ الأدوات | `مصدر مؤرشف` |
-| `radio` | أزرار radio ومجموعاتها. | الاختيارات الحصرية | `مصدر مؤرشف` |
-| `scroll_view` | سلوك حاوية التمرير والفيض. | التمرير | `مصدر مؤرشف` |
-| `seekbar` | اختيار القيم المستمرة بالمنزلق. | القيم المتصلة | `مصدر مؤرشف` |
-| `select` | اختيار منسدِل مع خيارات متعددة. | مدخلات الاختيار الأحادي | `مصدر مؤرشف` |
-| `text_field` | حقول نص قابلة للتحرير مع التصفية ورسائل التغيير/الإرسال. | الإدخال النصي | `مصدر مؤرشف` |
-| `text_label` | قياس النص والفيض والقص و`autosize`. | رندر النص | `مصدر مؤرشف` |
-| `widget_sizing_semantics` | مشهد صغير يركز على أحجام الوحدات والنصوص والصور. | نموذج أحجام الوحدات | `مصدر مؤرشف` |
-| `mixed_bidi_text` | نص عربي + لاتيني مع ellipsis واعٍ بالاتجاه. | فيض النص متعدد اللغات | `مصدر مؤرشف` |
-| `text_edge_cases` | حالات طرفية لفيض النص والأرقام والاتجاهات. | اختبارات تراجع النص | `مصدر مؤرشف` |
-| `text_label_zoom` | حدة النص تحت التكبير. | دقة النص عند الزوم | `مصدر مؤرشف` |
-| `toggle` | سلوك المفتاح الثنائي. | on/off | `مصدر مؤرشف` |
-| `widgets` | مشهد عينة متعددة الوحدات الجاهزة. | نظرة سريعة على السطح | `مصدر مؤرشف` |
+| `grid_columns` | `examples/grid/columns.rs` | أحجام أعمدة grid وسلوك التخطيط. | `cargo run --example grid_columns` |
+| `grid_tracks` | `examples/grid/tracks.rs` | سلوك أحجام مسارات grid. | `cargo run --example grid_tracks` |
+| `grid_auto_flow` | `examples/grid/auto_flow.rs` | سلوك التموضع التلقائي داخل grid. | `cargo run --example grid_auto_flow` |
+| `grid_item_placement` | `examples/grid/item_placement.rs` | التموضع الصريح لعناصر grid. | `cargo run --example grid_item_placement` |
 
-### `univis_ui_interaction`
+## أنماط التخطيط
 
-| المثال | الغرض | الأنسب لـ | الحالة |
+| المثال | المصدر | الغرض | الأمر |
 | --- | --- | --- | --- |
-| `interaction` | كان يوضح الحجب والتجاهل والتمرير في الضربات. | دلالات الالتقاط | `مصدر مؤرشف` |
+| `layout_flex` | `examples/layout/flex.rs` | تركيب flex layout. | `cargo run --example layout_flex` |
+| `layout_masonry` | `examples/layout/masonry.rs` | تركيب masonry layout. | `cargo run --example layout_masonry` |
+| `layout_stack` | `examples/layout/stack.rs` | تركيب stack layout. | `cargo run --example layout_stack` |
+| `layout_radial` | `examples/layout/radial.rs` | تركيب radial layout. | `cargo run --example layout_radial` |
 
-## تقارير مرتبطة
+## الوحدات الجاهزة
 
-- [تقرير التحقق من الأمثلة](../development/example-validation.md)
-- [خطة اختبارات Smoke](../development/smoke-test-plan.md)
-- [ترحيل مسارات الأمثلة](../migration/example-paths.md)
+| المثال | المصدر | الغرض | الأمر |
+| --- | --- | --- | --- |
+| `widgets_controls` | `examples/widgets/controls.rs` | أزرار وتبديلات وcheckbox وradio controls. | `cargo run --example widgets_controls` |
+| `widgets_inputs` | `examples/widgets/inputs.rs` | Text field وselect وdrag-value وseek-bar inputs. | `cargo run --example widgets_inputs` |
+| `widgets_display` | `examples/widgets/display.rs` | نصوص وbadges ومقسمات ولوحات وprogress display. | `cargo run --example widgets_display` |
+| `widgets_containers` | `examples/widgets/containers.rs` | سلوك panel window وscroll-container. | `cargo run --example widgets_containers` |
+
+## التحقق
+
+افحص كل أمثلة مساحة العمل التي يعرفها Cargo حاليًا:
+
+```bash
+cargo check --workspace --examples
+```
+
+وافحص حزمة Android:
+
+```bash
+cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
+```
+
+## صفحات مرتبطة
+
+- [معرض الأمثلة](gallery.md)
+- [شاشة تطبيق Android](android-phone.md)
+- [الاختبارات والتحقق](../development/testing.md)

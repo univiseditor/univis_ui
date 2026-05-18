@@ -72,7 +72,7 @@ fn setup(mut commands: Commands) {
 - Interaction resolves the camera from each `URootUi`.
 - In multi-camera scenes, prefer binding the root explicitly with `UiCameraRef::Entity`.
 - `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`.
-- If you need the historical world-space physical size from older examples, set `meters_per_unit: 1.0` explicitly.
+- Set `meters_per_unit` explicitly when you need a specific physical size for world-space roots.
 - For a task-oriented setup checklist and recommended first runs, continue with [Plugin Setup and First Examples](first-steps.md).
 
 If you compose widgets narrowly without `UnivisWidgetPlugin`, you can still add `UnivisTextFieldPlugin` or `UnivisBadgePlugin` directly.
@@ -100,9 +100,9 @@ fn main() {
 
 ## Related Examples
 
-- [`hello_world`](examples/index.md#hello_world) in `univis_ui`
-- [`widgets`](examples/index.md#widgets) in `univis_ui_widgets`
-- [`interaction`](examples/index.md#interaction) in `univis_ui_interaction`
+- [`responsive_layout_test`](examples/index.md#workspace-examples)
+- [`widgets_controls`](examples/index.md#widgets)
+- [`widgets_inputs`](examples/index.md#widgets)
 
 ## Related Migration Notes
 
@@ -119,7 +119,7 @@ fn main() {
 
 ## Where To Look Next
 
-- related example: [`hello_world`](examples/index.md#hello_world)
+- related example: [`responsive_layout_test`](examples/index.md#workspace-examples)
 - related setup page: [Plugin Setup and First Examples](first-steps.md)
 - related API index: [API Reference](api/index.md)
 - related migration page: [Root API Migration to `URootUi`](migration/root-api.md)

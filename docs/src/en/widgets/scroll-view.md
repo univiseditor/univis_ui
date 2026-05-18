@@ -30,5 +30,4 @@ File: `src/widget/scroll_view.rs`
 
 - use `cargo run --example widgets_containers` for a live scroll viewport wired with `UClip`, `UInteraction`, and `UScrollContainer`
 
-The old `scroll_view` example source is archived in this branch. Use the catalog entry in
-[Examples](../examples/index.md#scroll_view) for ownership/history.
+For a current scroll-container scene, run `cargo run --example widgets_containers`.

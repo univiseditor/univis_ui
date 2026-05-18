@@ -2,6 +2,8 @@
 
 هذه الصفحة هي قائمة التحقق النهائية قبل قطع alpha التالية.
 
+أدلة التحضير المحلية الحالية لـ `0.2.0` مسجلة في ملف الجذر `RELEASE_PREP_0.2.0.md`.
+
 ## الفحوص التي يجب إعادة تشغيلها
 
 أعد فحص هذه الخطوات بالتسلسل:
@@ -25,18 +27,17 @@ cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
 - `RELEASE_NOTES.md`
 - `changelog.md`
 
-## القائمة النهائية
+## القائمة المحلية الحالية
 
-- [ ] `mdbook build docs`
-- [ ] `cargo doc -p univis_ui_style --no-deps`
-- [ ] `cargo doc -p univis_ui_engine --no-deps`
-- [ ] `cargo doc -p univis_ui_interaction --no-deps`
-- [ ] `cargo doc -p univis_ui_widgets --no-deps`
-- [ ] `cargo doc -p univis_ui --no-deps`
-- [ ] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
-- [ ] `./scripts/check_representative_examples.sh`
+- [x] `mdbook build docs`
+- [x] `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`
+- [x] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets` عبر `./scripts/check_representative_examples.sh`
+- [x] `./scripts/check_representative_examples.sh`
+- [x] `./scripts/verify_alpha_release.sh`
+- [x] أن تذكر ملاحظات الإصدار وصفحات الترحيل القصة الحالية نفسها لتوفر الأمثلة
 - [ ] مرور بصري يدوي واحد على الحزمة ذات الطابع Android وعلى الأمثلة الحالية المرتبطة من [التحقق البصري](visual-validation.md)
-- [ ] أن تذكر ملاحظات الإصدار وصفحات الترحيل القصة الحالية نفسها لتوفر الأمثلة
+- [ ] تأكيد GitHub Actions للبوابات نفسها
+- [ ] فرز وإغلاق ملاحظات RC
 
 ## قرار إزالة الطبقات المتوافقة
 
@@ -53,6 +54,7 @@ cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets
 - `MIGRATION.md`: مسار الترقية من الوثائق والأمثلة والافتراضات الأقدم
 - `MIGRATION_AR.md`: مسار الترحيل العربي
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha
+- `RELEASE_PREP_0.2.0.md`: أدلة التحقق المحلية قبل قطع `0.2.0`
 - `changelog.md`: السجل الزمني المرتب حسب التواريخ
 
 ## صفحات مرتبطة

@@ -194,7 +194,7 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 ## مسار الاكتشاف من GitHub
 
 1. اقرأ `README.md` أو `README_AR.md` لفهم قصة المشروع وخريطة الحزم.
-2. راجع [RELEASE_NOTES.md](RELEASE_NOTES.md) لفهم قصة الإصدار الحالية و[changelog.md](changelog.md) لمراجعة السجل الزمني للتنفيذ.
+2. راجع [RELEASE_NOTES.md](RELEASE_NOTES.md) لفهم قصة الإصدار الحالية، و[RELEASE_PREP_0.2.0.md](RELEASE_PREP_0.2.0.md) لأدلة تحضير الإصدار القادم، و[changelog.md](changelog.md) لمراجعة السجل الزمني للتنفيذ.
 3. افتح [صفحة الوثائق الرئيسية](docs/src/index.md) أو رابط الوثائق العامة ثم انتقل إلى فصل الشرح المناسب.
 4. استخدم [معرض الأمثلة (AR)](docs/src/ar/examples/gallery.md) أو [Example Gallery (EN)](docs/src/en/examples/gallery.md) قبل الرجوع إلى الفهرس الكامل.
 5. ولّد `cargo doc --no-deps -p univis_ui` عندما تحتاج المسارات الدقيقة والتواقيع.
@@ -207,6 +207,7 @@ mdbook serve docs -n 127.0.0.1 -p 3000
 - `MIGRATION.md`: مسار الترحيل من الوثائق الأقدم وافتراضات الجذور القديمة.
 - `MIGRATION_AR.md`: مسار الترحيل العربي.
 - `RELEASE_NOTES.md`: الملخص الحالي على مستوى الإصدار alpha.
+- `RELEASE_PREP_0.2.0.md`: أدلة التحقق المحلية قبل قطع `0.2.0`.
 - `changelog.md`: السجل الزمني المرتب حسب التواريخ للتغييرات الملحوظة.
 
 ## `API Docs`

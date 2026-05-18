@@ -12,8 +12,8 @@ The intended long-term root file set is:
 - `MIGRATION.md`
 - `MIGRATION_AR.md`
 - `RELEASE_NOTES.md`
+- `RELEASE_PREP_0.2.0.md`
 - `changelog.md`
-- `ROADMAP.md`
 
 Use them like this:
 
@@ -23,8 +23,8 @@ Use them like this:
 - `MIGRATION.md`: migration path from older docs and assumptions
 - `MIGRATION_AR.md`: Arabic migration path
 - `RELEASE_NOTES.md`: current alpha release-scale summary
+- `RELEASE_PREP_0.2.0.md`: local evidence for the next `0.2.0` stabilization cut
 - `changelog.md`: dated historical record
-- `ROADMAP.md`: stabilization plan for the `0.2.0` release line
 
 ## Current Release Story
 
@@ -45,6 +45,17 @@ The project has changed substantially in these areas:
 - release validation now covers public API exposure and structural guardrails in addition to docs/examples/test passes
 - maintainers now have explicit docs for crate boundaries, naming rules, widget structure, error modeling, and legacy compatibility policy
 - several opaque runtime failure paths were replaced with typed diagnostics and consistent warning messages
+
+## Current `0.2.0` Preparation Status
+
+Local release-prep evidence for the next `0.2.0` stabilization cut is recorded in `RELEASE_PREP_0.2.0.md`.
+
+As of 2026-05-18:
+
+- local `./scripts/verify_alpha_release.sh` passed
+- local `mdbook build docs` passed
+- the ignored local lockfile was refreshed from yanked `fastrand 2.4.0` to `fastrand 2.4.1` before the final package rehearsal
+- GitHub Actions confirmation, manual visual validation, and RC feedback closure are still pending
 
 For `0.2.0-alpha.3`, the intended message is:
 
@@ -159,8 +170,8 @@ cargo run --example widgets_inputs
 
 - release history and implementation highlights: `changelog.md`
 - stable-readiness plan for the `0.2.x` line: `ROADMAP.md`
+- local release-prep evidence: `RELEASE_PREP_0.2.0.md`
 - alpha3 diff report: `ALPHA3_REPORT.md`
-- execution roadmap: `ROADMAP.md`
 - migration summary: `MIGRATION.md`
 - Arabic migration summary: `MIGRATION_AR.md`
 - current large-file refactor backlog: `TECH_DEBT_INVENTORY.md`

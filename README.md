@@ -207,7 +207,7 @@ Good starting points:
 ## GitHub Discovery Path
 
 1. Read this `README.md` for the project story and crate map.
-2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story and [changelog.md](changelog.md) for dated implementation history.
+2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story, [RELEASE_PREP_0.2.0.md](RELEASE_PREP_0.2.0.md) for next-release evidence, and [changelog.md](changelog.md) for dated implementation history.
 3. Open [Docs Home](docs/src/index.md) or the hosted docs URL and jump into the relevant guide.
 4. Use the language-specific [Example Gallery (EN)](docs/src/en/examples/gallery.md) or [Example Gallery (AR)](docs/src/ar/examples/gallery.md) before dropping to the full index.
 5. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
@@ -220,6 +220,7 @@ Good starting points:
 - `MIGRATION.md`: migration path from older docs and root assumptions.
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
+- `RELEASE_PREP_0.2.0.md`: local verification evidence for the next `0.2.0` cut.
 - `changelog.md`: dated chronological record of notable changes.
 
 ## API Docs

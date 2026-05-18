@@ -2,6 +2,8 @@
 
 This page is the final pre-release checklist for the next alpha cut.
 
+Current local `0.2.0` prep evidence is recorded at the repository root in `RELEASE_PREP_0.2.0.md`.
+
 ## Compile Checks To Re-run
 
 Compile-check these sequentially:
@@ -25,18 +27,17 @@ Confirm that these files describe the same current reality:
 - `RELEASE_NOTES.md`
 - `changelog.md`
 
-## Final Checklist
+## Current Local Checklist
 
-- [ ] `mdbook build docs`
-- [ ] `cargo doc -p univis_ui_style --no-deps`
-- [ ] `cargo doc -p univis_ui_engine --no-deps`
-- [ ] `cargo doc -p univis_ui_interaction --no-deps`
-- [ ] `cargo doc -p univis_ui_widgets --no-deps`
-- [ ] `cargo doc -p univis_ui --no-deps`
-- [ ] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets`
-- [ ] `./scripts/check_representative_examples.sh`
+- [x] `mdbook build docs`
+- [x] `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps`
+- [x] `cargo check --manifest-path android/android_phone_app/Cargo.toml --all-targets` through `./scripts/check_representative_examples.sh`
+- [x] `./scripts/check_representative_examples.sh`
+- [x] `./scripts/verify_alpha_release.sh`
+- [x] release notes and migration pages mention the same current example-availability story
 - [ ] one manual visual pass over the Android package and relevant current examples from [Visual Validation](visual-validation.md)
-- [ ] release notes and migration pages mention the same current example-availability story
+- [ ] GitHub Actions confirmation for the same gates
+- [ ] RC feedback triage and closure
 
 ## Wrapper Removal Decision
 
@@ -53,6 +54,7 @@ For the next alpha cut, the decision is:
 - `MIGRATION.md`: upgrade path from older docs and assumptions
 - `MIGRATION_AR.md`: Arabic migration path
 - `RELEASE_NOTES.md`: current alpha release-scale summary
+- `RELEASE_PREP_0.2.0.md`: local evidence for the next `0.2.0` cut
 - `changelog.md`: chronological dated history
 
 ## Related Pages

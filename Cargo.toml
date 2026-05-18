@@ -16,6 +16,7 @@ include = [
     "/README.md",
     "/README_AR.md",
     "/RELEASE_NOTES.md",
+    "/RELEASE_PREP_0.2.0.md",
     "/MIGRATION.md",
     "/MIGRATION_AR.md",
     "/ROADMAP.md",

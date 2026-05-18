@@ -6,6 +6,7 @@ This roadmap defines what must be completed before declaring the `0.2.x` line st
 
 - Latest documented public release: `0.2.0-alpha.3`.
 - Target milestone: first stable contract cut for the `0.2.x` line (`0.2.0`).
+- Latest local release-prep evidence: `RELEASE_PREP_0.2.0.md`.
 - No roadmap item is considered complete until evidence is linked in release notes, changelog, and CI logs.
 
 ## Scope and Intent
@@ -65,11 +66,11 @@ Status key: `Not started` / `In progress` / `Done`.
 
 | ID | Task | Owner | Status | Completion evidence |
 |---|---|---|---|---|
-| R1 | Freeze `0.2` public API surface | Maintainers | Not started | RC announcement + no planned breakage in `0.2.x` |
-| R2 | Docs parity pass across root docs | Maintainers | In progress | Cross-checked wording in `README`, `MIGRATION`, `RELEASE_NOTES`, `ROADMAP` |
-| R3 | Guardrails + quality gates green | CI + Maintainers | Not started | Successful CI runs for `./scripts/check_quality.sh`, `./scripts/check_public_api_surface.sh`, `./scripts/check_structure_guardrails.sh`, and `./scripts/check_engine_boundary_guardrails.sh` |
-| R4 | Release rehearsal run | Maintainers | Not started | Logged output of `./scripts/verify_alpha_release.sh` attached to release prep notes |
-| R5 | Known limitations signoff | Maintainers | Not started | Release notes include clear caveats and visual checklist |
+| R1 | Freeze `0.2` public API surface | Maintainers | In progress | Local public-surface guard passed; RC announcement still pending |
+| R2 | Docs parity pass across root docs | Maintainers | Done | Cross-checked wording in `README`, `MIGRATION`, `RELEASE_NOTES`, `ROADMAP`, and `RELEASE_PREP_0.2.0.md` |
+| R3 | Guardrails + quality gates green | CI + Maintainers | In progress | Local `./scripts/verify_alpha_release.sh` passed; GitHub Actions confirmation still pending |
+| R4 | Release rehearsal run | Maintainers | Done | `RELEASE_PREP_0.2.0.md` records a successful local `./scripts/verify_alpha_release.sh` run |
+| R5 | Known limitations signoff | Maintainers | In progress | Release notes and validation docs list caveats; manual visual pass still pending |
 | R6 | RC feedback triage and closure | Maintainers | Not started | All RC regressions fixed or explicitly deferred |
 | R7 | Final `0.2.0` tag readiness | Maintainers | Not started | Final changelog/release notes signoff |
 
@@ -93,12 +94,14 @@ Status key: `Not started` / `In progress` / `Done`.
 ## Execution Checklist
 
 - [ ] **Freeze window opened**: announce `0.2` API freeze and accept only blocker fixes.
-- [ ] **Docs parity pass**: reconcile `README`, `MIGRATION`, `RELEASE_NOTES`, and examples index pages.
-- [ ] **Guardrails pass**: run `./scripts/check_quality.sh` and ensure no skipped gates.
-- [ ] **Release rehearsal**: run `./scripts/verify_alpha_release.sh` and archive logs/artifacts.
+- [x] **Docs parity pass**: reconcile `README`, `MIGRATION`, `RELEASE_NOTES`, and examples index pages.
+- [x] **Guardrails pass**: run `./scripts/check_quality.sh` and ensure no skipped gates.
+- [x] **Release rehearsal**: run `./scripts/verify_alpha_release.sh` and archive logs/artifacts.
 - [ ] **Known-limits signoff**: confirm release notes include current caveats and manual visual checks.
 - [ ] **RC feedback window closed**: triage all `0.2.0-rc.*` regressions or defer explicitly to `0.2.1+` / `0.3.0`.
 - [ ] **Tag readiness**: confirm changelog and release notes wording is final for `0.2.0`.
+
+Checked items above are local repository evidence. `0.2.0` still requires GitHub Actions confirmation and RC feedback closure before tagging.
 
 ## Governance Rules During RC
 

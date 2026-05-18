@@ -10,6 +10,17 @@ Use this file for the dated chronological record.
 Use `RELEASE_NOTES.md` for the current alpha release summary.
 Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
+## [2026-05-18]
+
+### Added
+
+- Added `RELEASE_PREP_0.2.0.md` to record local verification evidence for the next `0.2.0` stabilization cut.
+
+### Changed
+
+- Updated the `0.2.0` roadmap and bilingual release-readiness docs with the current local gate status, while keeping CI confirmation, manual visual validation, and RC feedback closure explicit as pending release-process work.
+- Documented the local ignored-lockfile refresh from yanked `fastrand 2.4.0` to `fastrand 2.4.1`, then reran the full local release rehearsal successfully.
+
 ## [2026-04-19]
 
 ### Added

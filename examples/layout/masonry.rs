@@ -191,7 +191,7 @@ fn spawn_masonry_board(
             .spawn((
                 ChildOf(board),
                 UNode {
-                    width: UVal::Auto,
+                    width: UVal::Flex(1.0),
                     height: UVal::Px(height),
                     padding: USides::all(12.0),
                     background_color: color,

@@ -629,6 +629,7 @@ fn child_depth_stays_inside_its_root_capsule_band() {
                 height: UVal::Px(50.0),
                 ..default()
             },
+            #[allow(deprecated)]
             USelf {
                 order: 32,
                 ..default()

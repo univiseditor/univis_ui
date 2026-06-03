@@ -26,7 +26,8 @@ impl Plugin for UnivisNodePlugin {
             .register_type::<UOverflowPosition>()
             .register_type::<UFlexWrap>()
             .register_type::<UTrackSize>()
-            .register_type::<UGridAutoFlow>();
+            .register_type::<UGridAutoFlow>()
+            .register_type::<UZIndex>();
     }
 }
 
@@ -494,6 +495,7 @@ pub struct USelf {
     pub bottom: UVal,
     pub right: UVal,
     /// Layout order for siblings and local stacking inside the same root capsule.
+    #[deprecated(since = "0.2.0-alpha.3", note = "Use `UZIndex` component instead for sorting and stacking contexts.")]
     pub order: i32,
     pub position_type: UPositionType,
     /// Advanced item-only layout controls.
@@ -501,6 +503,7 @@ pub struct USelf {
 }
 impl Default for USelf {
     fn default() -> Self {
+        #[allow(deprecated)]
         Self {
             align_self: UAlignSelf::Auto,
             left: UVal::Auto,
@@ -522,6 +525,29 @@ impl USelf {
         }
     }
 }
+
+/// Defines the Z-index depth behavior of the node.
+///
+/// This replaces `USelf::order` and handles Stacking Contexts.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Reflect)]
+#[reflect(Component)]
+pub enum UZIndex {
+    /// Normal sorting inside the parent. Does not break out.
+    Auto,
+    /// Explicit local sorting inside the parent. Acts like CSS relative z-index
+    /// by forming a local stacking context. Does not interleave with other roots.
+    Local(i32),
+    /// Absolute global sorting. Breaks out of the local tree completely and
+    /// sorts globally based on this integer.
+    Global(i32),
+}
+
+impl Default for UZIndex {
+    fn default() -> Self {
+        UZIndex::Auto
+    }
+}
+
 /// Self alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UAlignSelf {

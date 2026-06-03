@@ -6,7 +6,7 @@ use bevy::{ecs::relationship::Relationship, platform::collections::HashSet, prel
 use crate::layout::components::{CachedUiContext, LayoutDepth, LayoutTreeDepth, UiLocalStacking};
 use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
 use crate::layout::query::UiPickingContext;
-use crate::layout::univis_node::{UClip, UNode, USelf};
+use crate::layout::univis_node::{UClip, UNode, USelf, UZIndex};
 use crate::schedule::{UiRolloutConfig, UiValidationMode, UiValidationState, UiWorkState};
 
 /// System to update the `LayoutDepth` component for all UI nodes.
@@ -17,6 +17,7 @@ pub fn update_layout_hierarchy(
     root_query: Query<Entity, With<ResolvedRootUi>>,
     children_query: Query<&Children>,
     uself_query: Query<&USelf>,
+    zindex_query: Query<&UZIndex>,
     mut commands: Commands,
     mut tree_depth: ResMut<LayoutTreeDepth>,
 ) {
@@ -29,6 +30,7 @@ pub fn update_layout_hierarchy(
             0,
             &children_query,
             &uself_query,
+            &zindex_query,
             &mut commands,
             &mut paint_order,
         ));
@@ -49,6 +51,7 @@ fn traverse_and_mark(
     depth: usize,
     children_q: &Query<&Children>,
     uself_q: &Query<&USelf>,
+    zindex_q: &Query<&UZIndex>,
     commands: &mut Commands,
     paint_order: &mut Vec<Entity>,
 ) -> usize {
@@ -62,7 +65,15 @@ fn traverse_and_mark(
             .iter()
             .enumerate()
             .map(|(original_index, child)| {
-                let order = uself_q.get(child).map_or(0, |uself| uself.order);
+                #[allow(deprecated)]
+                let order = zindex_q.get(child).map_or_else(
+                    |_| uself_q.get(child).map_or(0, |uself| uself.order),
+                    |zindex| match zindex {
+                        UZIndex::Auto => uself_q.get(child).map_or(0, |uself| uself.order),
+                        UZIndex::Local(z) => *z,
+                        UZIndex::Global(z) => *z, // Temporary fallback for Global until full separate pass is built
+                    },
+                );
                 (original_index, order, child)
             })
             .collect();
@@ -76,7 +87,7 @@ fn traverse_and_mark(
 
         for (_, _, child) in ordered_children {
             let child_depth =
-                traverse_and_mark(child, depth + 1, children_q, uself_q, commands, paint_order);
+                traverse_and_mark(child, depth + 1, children_q, uself_q, zindex_q, commands, paint_order);
             current_max = current_max.max(child_depth);
         }
     }
@@ -530,6 +541,7 @@ fn resolve_picking_context(
 ) -> Option<UiPickingContext> {
     let spatial = spatial?;
     let layout_depth = depth.map_or(0, |value| value.0);
+    #[allow(deprecated)]
     let order = uself.map_or(0, |value| value.order);
 
     let mut camera_entity = spatial.camera_entity;

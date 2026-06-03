@@ -445,6 +445,7 @@ fn apply_results_to_children(
             let next_y =
                 ((parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0)) * world_scale;
 
+            #[allow(deprecated)]
             let order = uself.map(|value| value.order).unwrap_or(0);
             let next_z = local_stacking.map_or_else(
                 || root_stack.local_depth_offset(layout_depth.0, order),

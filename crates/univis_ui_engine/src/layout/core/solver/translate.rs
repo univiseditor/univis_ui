@@ -29,6 +29,7 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
             } else {
                 Some(u.align_self)
             },
+            #[allow(deprecated)]
             u.order,
         )
     } else {

@@ -25,6 +25,7 @@ pub struct UiPickingContext {
     pub clip_ancestor: Option<Entity>,
     pub root_sort_key: f32,
     pub local_depth_key: f32,
+    pub world_scale: f32,
 }
 
 impl Default for UiPickingContext {
@@ -36,6 +37,7 @@ impl Default for UiPickingContext {
             clip_ancestor: None,
             root_sort_key: 0.0,
             local_depth_key: 0.0,
+            world_scale: 1.0,
         }
     }
 }

@@ -552,11 +552,14 @@ fn resolve_picking_context(
         |stack| stack.normalized,
     );
 
+    let mut world_scale = 1.0;
+
     if let Some(root_entity) = spatial.root_entity
         && let Ok((root, stack)) = root_query.get(root_entity)
     {
         camera_entity = root.camera_entity;
         space = root.space;
+        world_scale = root.ui_units_to_world_scale();
 
         if let Some(stack) = stack.copied() {
             root_sort_key = stack.capsule_sort_key;
@@ -573,5 +576,6 @@ fn resolve_picking_context(
         clip_ancestor: spatial.clip_ancestor,
         root_sort_key,
         local_depth_key,
+        world_scale,
     })
 }

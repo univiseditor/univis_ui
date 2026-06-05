@@ -57,6 +57,9 @@ bevy = { version = "0.18.1", default-features = false, features = [
     "bevy_gizmos_render",
     "bevy_pbr",
     "bevy_picking",
+    "mesh_picking",
+    "tonemapping_luts",
+    "zstd_rust",
     "keyboard",
     "mouse",
 ] }
@@ -187,3 +190,12 @@ path = "examples/widgets/single/text_field.rs"
 [[example]]
 name = "single_toggle"
 path = "examples/widgets/single/toggle.rs"
+
+[[example]]
+name = "picking_3d"
+path = "examples/picking_3d.rs"
+
+
+
+
+

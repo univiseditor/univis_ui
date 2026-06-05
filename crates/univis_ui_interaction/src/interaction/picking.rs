@@ -170,13 +170,13 @@ fn build_picking_candidate_buckets(
             .push(PreparedPickingCandidate {
                 entity,
                 global_transform: *global_transform,
-                half_size: Vec2::new(size.width, size.height) * 0.5,
+                half_size: Vec2::new(size.width, size.height) * 0.5 * picking_context.world_scale,
                 radius_vec: Vec4::new(
                     node.border_radius.top_right,
                     node.border_radius.bottom_right,
                     node.border_radius.top_left,
                     node.border_radius.bottom_left,
-                ),
+                ) * picking_context.world_scale,
                 picking_context,
                 root_sort_key: picking_context.root_sort_key,
                 local_depth_key: picking_context.local_depth_key,

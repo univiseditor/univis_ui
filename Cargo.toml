@@ -123,3 +123,67 @@ path = "examples/widgets/containers.rs"
 [[example]]
 name = "responsive_layout_test"
 path = "examples/responsive_layout_test.rs"
+
+[[example]]
+name = "widgets_media"
+path = "examples/widgets/media.rs"
+
+[[example]]
+name = "single_badge"
+path = "examples/widgets/single/badge.rs"
+
+[[example]]
+name = "single_button"
+path = "examples/widgets/single/button.rs"
+
+[[example]]
+name = "single_checkbox"
+path = "examples/widgets/single/checkbox.rs"
+
+[[example]]
+name = "single_divider"
+path = "examples/widgets/single/divider.rs"
+
+[[example]]
+name = "single_drag_value"
+path = "examples/widgets/single/drag_value.rs"
+
+[[example]]
+name = "single_icon_btn"
+path = "examples/widgets/single/icon_btn.rs"
+
+[[example]]
+name = "single_image"
+path = "examples/widgets/single/image.rs"
+
+[[example]]
+name = "single_panel"
+path = "examples/widgets/single/panel.rs"
+
+[[example]]
+name = "single_progress"
+path = "examples/widgets/single/progress.rs"
+
+[[example]]
+name = "single_radio"
+path = "examples/widgets/single/radio.rs"
+
+[[example]]
+name = "single_scroll_view"
+path = "examples/widgets/single/scroll_view.rs"
+
+[[example]]
+name = "single_seekbar"
+path = "examples/widgets/single/seekbar.rs"
+
+[[example]]
+name = "single_select"
+path = "examples/widgets/single/select.rs"
+
+[[example]]
+name = "single_text_field"
+path = "examples/widgets/single/text_field.rs"
+
+[[example]]
+name = "single_toggle"
+path = "examples/widgets/single/toggle.rs"

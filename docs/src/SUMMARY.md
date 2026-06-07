@@ -66,6 +66,7 @@
     - [حالة التوافق القديم](ar/migration/legacy-compatibility.md)
     - [ترحيل مسارات الأمثلة](ar/migration/example-paths.md)
     - [القيود الحالية](ar/development/current-limitations.md)
+  - [سجل التغييرات](ar/changelog.md)
 # English
   - [Getting Started](en/intro.md)
     - [Quick Start](en/quick-start.md)
@@ -131,3 +132,4 @@
     - [Legacy Compatibility Status](en/migration/legacy-compatibility.md)
     - [Example Path Migration](en/migration/example-paths.md)
     - [Current Limitations](en/development/current-limitations.md)
+  - [Changelog](en/changelog.md)

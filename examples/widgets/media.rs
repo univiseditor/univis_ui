@@ -1,6 +1,6 @@
+use bevy::asset::RenderAssetUsages;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy::asset::RenderAssetUsages;
 use univis_ui::prelude::*;
 
 fn main() {
@@ -233,37 +233,44 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         .id();
 
     // Native size image
-    let col1 = commands.spawn((
-        ChildOf(img_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 8.0,
-            ..default()
-        }
-    )).id();
-    
+    let col1 = commands
+        .spawn((
+            ChildOf(img_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 8.0,
+                ..default()
+            },
+        ))
+        .id();
+
     commands.spawn((
         ChildOf(col1),
         UImage::new(tex_landscape.clone())
             .with_size(UVal::Auto, UVal::Auto)
             .with_radius(UCornerRadius::all(8.0)),
     ));
-    commands.spawn((ChildOf(col1), label_node(), text("Native Size (Auto)", 13.0, Color::srgb(0.6, 0.6, 0.6))));
-
+    commands.spawn((
+        ChildOf(col1),
+        label_node(),
+        text("Native Size (Auto)", 13.0, Color::srgb(0.6, 0.6, 0.6)),
+    ));
 
     // Fixed size image
-    let col2 = commands.spawn((
-        ChildOf(img_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 8.0,
-            ..default()
-        }
-    )).id();
+    let col2 = commands
+        .spawn((
+            ChildOf(img_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 8.0,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(col2),
@@ -271,8 +278,11 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
             .with_size(UVal::Px(120.0), UVal::Px(120.0))
             .with_radius(UCornerRadius::all(16.0)),
     ));
-    commands.spawn((ChildOf(col2), label_node(), text("Fixed (120x120)", 13.0, Color::srgb(0.6, 0.6, 0.6))));
-
+    commands.spawn((
+        ChildOf(col2),
+        label_node(),
+        text("Fixed (120x120)", 13.0, Color::srgb(0.6, 0.6, 0.6)),
+    ));
 }
 
 fn panel(commands: &mut Commands, parent: Entity, width: f32, height: f32, title: &str) -> Entity {

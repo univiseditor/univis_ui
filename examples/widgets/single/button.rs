@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use univis_ui::prelude::*;
 
-
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -44,20 +43,67 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 20.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
     // Standard Buttons
-    let row1 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, ..default() })).id();
-    commands.spawn((ChildOf(row1), UButton::primary())).with_children(|b| { b.spawn(UTextLabel::new("Primary")); });
-    commands.spawn((ChildOf(row1), UButton::secondary())).with_children(|b| { b.spawn(UTextLabel::new("Secondary")); });
-    commands.spawn((ChildOf(row1), UButton::danger())).with_children(|b| { b.spawn(UTextLabel::new("Danger")); });
-    commands.spawn((ChildOf(row1), UButton::success())).with_children(|b| { b.spawn(UTextLabel::new("Success")); });
+    let row1 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
+    commands
+        .spawn((ChildOf(row1), UButton::primary()))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Primary"));
+        });
+    commands
+        .spawn((ChildOf(row1), UButton::secondary()))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Secondary"));
+        });
+    commands
+        .spawn((ChildOf(row1), UButton::danger()))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Danger"));
+        });
+    commands
+        .spawn((ChildOf(row1), UButton::success()))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Success"));
+        });
 
     // Buttons with custom widths & disabled state (if manually managed)
-    let row2 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, ..default() })).id();
-    commands.spawn((ChildOf(row2), UButton::primary(), UNode { width: UVal::Px(200.0), ..default() })).with_children(|b| { 
-        b.spawn(UTextLabel::new("Wide Button")); 
-    });
+    let row2 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
+    commands
+        .spawn((
+            ChildOf(row2),
+            UButton::primary(),
+            UNode {
+                width: UVal::Px(200.0),
+                ..default()
+            },
+        ))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Wide Button"));
+        });
 }

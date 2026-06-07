@@ -169,7 +169,7 @@ cargo run --example widgets_inputs
 ## Where To Look Next
 
 - release history and implementation highlights: `changelog.md`
-- stable-readiness plan for the `0.2.x` line: `ROADMAP.md`
+- stable-readiness plan for the `0.3.x` line: `ROADMAP.md`
 - local release-prep evidence: `RELEASE_PREP_0.3.0.md`
 - alpha3 diff report: `ALPHA3_REPORT.md`
 - migration summary: `MIGRATION.md`

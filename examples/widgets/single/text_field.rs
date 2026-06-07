@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use univis_ui::prelude::*;
 use univis_ui::prelude::TextFieldInputType;
+use univis_ui::prelude::*;
 
 fn main() {
     App::new()
@@ -45,7 +45,7 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 20.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
@@ -63,11 +63,12 @@ fn setup(mut commands: Commands) {
             .input_type(TextFieldInputType::Password),
     ));
 
-    commands.spawn((ChildOf(panel), UTextLabel::new("Pre-filled & Max Length (10)")));
     commands.spawn((
         ChildOf(panel),
-        UTextField::new()
-            .with_text("Hello")
-            .with_max_length(10),
+        UTextLabel::new("Pre-filled & Max Length (10)"),
+    ));
+    commands.spawn((
+        ChildOf(panel),
+        UTextField::new().with_text("Hello").with_max_length(10),
     ));
 }

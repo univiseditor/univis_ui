@@ -191,13 +191,7 @@ path = "examples/widgets/single/text_field.rs"
 name = "single_toggle"
 path = "examples/widgets/single/toggle.rs"
 
-[[example]]
-name = "picking_3d"
-path = "examples/3d/picking_3d.rs"
 
-[[example]]
-name = "picking_2d"
-path = "examples/picking_2d.rs"
 
 [[example]]
 name = "text_3d"

@@ -1,7 +1,7 @@
-use bevy::prelude::*;
-use univis_ui::prelude::*;
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::asset::RenderAssetUsages;
+use bevy::prelude::*;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use univis_ui::prelude::*;
 
 fn main() {
     App::new()
@@ -60,24 +60,53 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
                 gap: 32.0,
                 align_items: UAlignItems::End,
                 ..default()
-            }
+            },
         ))
         .id();
 
     let tex_large = images.add(test_image(200, 100, [60, 120, 200, 255]));
     let tex_square = images.add(test_image(80, 80, [200, 100, 80, 255]));
 
-    let col1 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Column, gap: 8.0, ..default() })).id();
+    let col1 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 8.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(col1),
-        UImage::new(tex_large.clone()).with_size(UVal::Auto, UVal::Auto).with_radius(UCornerRadius::all(8.0)),
+        UImage::new(tex_large.clone())
+            .with_size(UVal::Auto, UVal::Auto)
+            .with_radius(UCornerRadius::all(8.0)),
     ));
     commands.spawn((ChildOf(col1), UTextLabel::new("Auto size (200x100)")));
 
-    let col2 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Column, gap: 8.0, ..default() })).id();
+    let col2 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 8.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(col2),
-        UImage::new(tex_square.clone()).with_size(UVal::Px(120.0), UVal::Px(120.0)).with_radius(UCornerRadius::all(32.0)),
+        UImage::new(tex_square.clone())
+            .with_size(UVal::Px(120.0), UVal::Px(120.0))
+            .with_radius(UCornerRadius::all(32.0)),
     ));
-    commands.spawn((ChildOf(col2), UTextLabel::new("Fixed (120x120), Big Radius")));
+    commands.spawn((
+        ChildOf(col2),
+        UTextLabel::new("Fixed (120x120), Big Radius"),
+    ));
 }

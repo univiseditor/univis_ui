@@ -44,7 +44,7 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 24.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
@@ -60,15 +60,12 @@ fn setup(mut commands: Commands) {
         USeekBar::volume_style().with_value(0.75), // Usually 0.0 to 1.0
     ));
 
-    commands.spawn((ChildOf(panel), UTextLabel::new("Video/Timeline Style Seekbar")));
     commands.spawn((
         ChildOf(panel),
-        USeekBar::video_style().with_value(0.3),
+        UTextLabel::new("Video/Timeline Style Seekbar"),
     ));
+    commands.spawn((ChildOf(panel), USeekBar::video_style().with_value(0.3)));
 
     commands.spawn((ChildOf(panel), UTextLabel::new("Brightness Style Seekbar")));
-    commands.spawn((
-        ChildOf(panel),
-        USeekBar::brightness_style().with_value(0.9),
-    ));
+    commands.spawn((ChildOf(panel), USeekBar::brightness_style().with_value(0.9)));
 }

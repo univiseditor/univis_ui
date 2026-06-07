@@ -86,8 +86,15 @@ fn traverse_and_mark(
         );
 
         for (_, _, child) in ordered_children {
-            let child_depth =
-                traverse_and_mark(child, depth + 1, children_q, uself_q, zindex_q, commands, paint_order);
+            let child_depth = traverse_and_mark(
+                child,
+                depth + 1,
+                children_q,
+                uself_q,
+                zindex_q,
+                commands,
+                paint_order,
+            );
             current_max = current_max.max(child_depth);
         }
     }

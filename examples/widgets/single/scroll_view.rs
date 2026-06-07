@@ -76,22 +76,24 @@ fn setup(mut commands: Commands) {
     ));
 
     for index in 1..=20 {
-        let card = commands.spawn((
-            ChildOf(list),
-            UNode {
-                width: UVal::Percent(1.0),
-                height: UVal::Px(60.0),
-                background_color: Color::srgba(0.1, 0.2, 0.3, 0.8),
-                border_radius: UCornerRadius::all(8.0),
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                align_items: UAlignItems::Center,
-                justify_content: UJustifyContent::Center,
-                ..default()
-            }
-        )).id();
+        let card = commands
+            .spawn((
+                ChildOf(list),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Px(60.0),
+                    background_color: Color::srgba(0.1, 0.2, 0.3, 0.8),
+                    border_radius: UCornerRadius::all(8.0),
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    align_items: UAlignItems::Center,
+                    justify_content: UJustifyContent::Center,
+                    ..default()
+                },
+            ))
+            .id();
 
         commands.spawn((
             ChildOf(card),

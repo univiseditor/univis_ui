@@ -33,64 +33,42 @@ fn setup(
     ));
 
     // 3D UI Node with Text
-    commands.spawn((
-        URootUi::world_3d(Vec2::new(800.0, 600.0)),
-        Transform::from_xyz(0.0, 2.0, 0.0).with_scale(Vec3::splat(1.0)),
-        UPanel::card(),
-        UNode {
-            width: UVal::Px(800.0),
-            height: UVal::Px(600.0),
-            padding: USides::all(24.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 24.0,
-            ..default()
-        },
-    )).with_children(|parent| {
-        parent.spawn((
-            UTextLabel {
-                text: "Hello 3D World!".into(),
-                font_size: 64.0,
-                color: Color::srgb(1.0, 0.8, 0.2),
-                ..default()
-            },
+    commands
+        .spawn((
+            URootUi::world_3d(Vec2::new(800.0, 600.0)),
+            Transform::from_xyz(0.0, 2.0, 0.0).with_scale(Vec3::splat(1.0)),
+            UPanel::card(),
             UNode {
-                background_color: Color::NONE,
-                ..default()
-            },
-        ));
-        
-        parent.spawn((
-            UTextLabel {
-                text: "This text is rendered using a PBR shader.".into(),
-                font_size: 32.0,
-                color: Color::WHITE,
-                ..default()
-            },
-            UNode {
-                background_color: Color::NONE,
-                ..default()
-            },
-        ));
-        
-        parent.spawn((
-            UButton::primary(),
-            UNode {
-                padding: USides::all(16.0),
+                width: UVal::Px(800.0),
+                height: UVal::Px(600.0),
+                padding: USides::all(24.0),
                 ..default()
             },
             ULayout {
                 display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 24.0,
                 ..default()
             },
-        )).with_children(|btn| {
-            btn.spawn((
+        ))
+        .with_children(|parent| {
+            parent.spawn((
                 UTextLabel {
-                    text: "Click Me".into(),
-                    font_size: 24.0,
+                    text: "Hello 3D World!".into(),
+                    font_size: 64.0,
+                    color: Color::srgb(1.0, 0.8, 0.2),
+                    ..default()
+                },
+                UNode {
+                    background_color: Color::NONE,
+                    ..default()
+                },
+            ));
+
+            parent.spawn((
+                UTextLabel {
+                    text: "This text is rendered using a PBR shader.".into(),
+                    font_size: 32.0,
                     color: Color::WHITE,
                     ..default()
                 },
@@ -99,6 +77,32 @@ fn setup(
                     ..default()
                 },
             ));
+
+            parent
+                .spawn((
+                    UButton::primary(),
+                    UNode {
+                        padding: USides::all(16.0),
+                        ..default()
+                    },
+                    ULayout {
+                        display: UDisplay::Flex,
+                        ..default()
+                    },
+                ))
+                .with_children(|btn| {
+                    btn.spawn((
+                        UTextLabel {
+                            text: "Click Me".into(),
+                            font_size: 24.0,
+                            color: Color::WHITE,
+                            ..default()
+                        },
+                        UNode {
+                            background_color: Color::NONE,
+                            ..default()
+                        },
+                    ));
+                });
         });
-    });
 }

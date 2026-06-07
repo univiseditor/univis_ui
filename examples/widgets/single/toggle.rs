@@ -43,24 +43,60 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 24.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
     // iOS Style
-    let row1 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, align_items: UAlignItems::Center, ..default() })).id();
+    let row1 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row1), UTextLabel::new("iOS Style:     ")));
     commands.spawn((ChildOf(row1), UToggle::ios_style().with_checked(true)));
     commands.spawn((ChildOf(row1), UToggle::ios_style().with_checked(false)));
 
     // Material Style
-    let row2 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, align_items: UAlignItems::Center, ..default() })).id();
+    let row2 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row2), UTextLabel::new("Material Style:")));
     commands.spawn((ChildOf(row2), UToggle::material_style().with_checked(true)));
     commands.spawn((ChildOf(row2), UToggle::material_style().with_checked(false)));
 
     // Sci-Fi Style
-    let row3 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, align_items: UAlignItems::Center, ..default() })).id();
+    let row3 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row3), UTextLabel::new("Sci-Fi Style:  ")));
     commands.spawn((ChildOf(row3), UToggle::sci_fi_style().with_checked(true)));
     commands.spawn((ChildOf(row3), UToggle::sci_fi_style().with_checked(false)));

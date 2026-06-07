@@ -495,7 +495,10 @@ pub struct USelf {
     pub bottom: UVal,
     pub right: UVal,
     /// Layout order for siblings and local stacking inside the same root capsule.
-    #[deprecated(since = "0.2.0-alpha.3", note = "Use `UZIndex` component instead for sorting and stacking contexts.")]
+    #[deprecated(
+        since = "0.2.0-alpha.3",
+        note = "Use `UZIndex` component instead for sorting and stacking contexts."
+    )]
     pub order: i32,
     pub position_type: UPositionType,
     /// Advanced item-only layout controls.

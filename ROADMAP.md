@@ -1,26 +1,26 @@
 # Roadmap to Stable `0.3.0` (without moving to `1.0.0`)
 
-This roadmap defines what must be completed before declaring the `0.2.x` line stable.
+This roadmap defines what must be completed before declaring the `0.3.x` line stable.
 
 ## Current Snapshot (2026-05-18)
 
 - Latest documented public release: `0.3.0`.
-- Target milestone: first stable contract cut for the `0.2.x` line (`0.3.0`).
+- Target milestone: first stable contract cut for the `0.3.x` line (`0.3.0`).
 - Latest local release-prep evidence: `RELEASE_PREP_0.3.0.md`.
 - No roadmap item is considered complete until evidence is linked in release notes, changelog, and CI logs.
 
 ## Scope and Intent
 
 - Keep the project on `0.x` while Bevy itself is pre-`1.0`.
-- Ship a stable contract for the `0.2.x` line.
+- Ship a stable contract for the `0.3.x` line.
 - Defer intentional breaking changes to the next breaking window (`0.3.0`).
 
 ## Versioning Policy (0.x)
 
-- `0.2.x` is treated as a compatibility contract line for users.
+- `0.3.x` is treated as a compatibility contract line for users.
 - Any intentional breaking public API change moves to `0.3.0`.
-- Backward-compatible fixes and improvements stay in `0.2.x` patch releases.
-- Release communication must always state whether a change is `0.2.x`-safe or `0.3.0`-targeted.
+- Backward-compatible fixes and improvements stay in `0.3.x` patch releases.
+- Release communication must always state whether a change is `0.3.x`-safe or `0.3.0`-targeted.
 
 ## Release Stages
 
@@ -34,8 +34,8 @@ This roadmap defines what must be completed before declaring the `0.2.x` line st
 ### 1. API Freeze For The `0.2` Line
 
 - Freeze recommended public surfaces and preludes.
-- Keep deprecated wrappers explicit-only during `0.2.x`.
-- Document compatibility guarantees for `0.2.x` in release notes.
+- Keep deprecated wrappers explicit-only during `0.3.x`.
+- Document compatibility guarantees for `0.3.x` in release notes.
 
 ### 2. Documentation Consistency Sweep
 
@@ -78,7 +78,7 @@ Status key: `Not started` / `In progress` / `Done`.
 
 `0.3.0` can be cut only when all conditions are true:
 
-1. No planned breaking changes remain for `0.2.x`.
+1. No planned breaking changes remain for `0.3.x`.
 2. Required release verification scripts pass in CI.
 3. Docs and migration pages are consistent and updated.
 4. Known limitations are clearly listed in release notes.
@@ -88,8 +88,8 @@ Status key: `Not started` / `In progress` / `Done`.
 ## Deferred To `0.3.0`
 
 - Removing deprecated compatibility wrappers, if migration feedback remains clean.
-- Any public API reshaping that breaks `0.2.x` consumers.
-- Large behavior changes that alter established `0.2.x` semantics.
+- Any public API reshaping that breaks `0.3.x` consumers.
+- Large behavior changes that alter established `0.3.x` semantics.
 
 ## Execution Checklist
 
@@ -112,4 +112,4 @@ Checked items above are local repository evidence. `0.3.0` still requires GitHub
 ## Notes
 
 - This roadmap intentionally does not target `1.0.0`.
-- Stability here means a clear contract for `0.2.x`, with the next breaking window at `0.3.0`.
+- Stability here means a clear contract for `0.3.x`, with the next breaking window at `0.3.0`.

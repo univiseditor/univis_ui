@@ -43,7 +43,7 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 16.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
@@ -55,14 +55,18 @@ fn setup(mut commands: Commands) {
         ChildOf(panel),
         UCheckbox::new("Default Checked").checked(true),
     ));
-    
+
     // Custom Color Checkboxes
     commands.spawn((
         ChildOf(panel),
-        UCheckbox::new("Custom Color (Warning)").checked(true).with_color(Color::srgb(0.9, 0.6, 0.1)),
+        UCheckbox::new("Custom Color (Warning)")
+            .checked(true)
+            .with_color(Color::srgb(0.9, 0.6, 0.1)),
     ));
     commands.spawn((
         ChildOf(panel),
-        UCheckbox::new("Custom Color (Danger)").checked(true).with_color(Color::srgb(0.9, 0.2, 0.2)),
+        UCheckbox::new("Custom Color (Danger)")
+            .checked(true)
+            .with_color(Color::srgb(0.9, 0.2, 0.2)),
     ));
 }

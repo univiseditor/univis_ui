@@ -43,23 +43,87 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Row,
                 gap: 48.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
     // Standard Vertical Group
-    let col1 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Column, gap: 12.0, ..default() })).id();
-    commands.spawn((ChildOf(col1), UTextLabel { text: "Vertical Group".into(), font_size: 18.0, ..default() }));
-    let group1 = commands.spawn((ChildOf(col1), URadioGroup::new().with_default("apple"))).id();
-    commands.spawn((ChildOf(group1), URadioButton::new("apple"))).with_children(|b| { b.spawn(UTextLabel::new("Apple")); });
-    commands.spawn((ChildOf(group1), URadioButton::new("banana"))).with_children(|b| { b.spawn(UTextLabel::new("Banana")); });
-    commands.spawn((ChildOf(group1), URadioButton::new("cherry"))).with_children(|b| { b.spawn(UTextLabel::new("Cherry")); });
+    let col1 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
+    commands.spawn((
+        ChildOf(col1),
+        UTextLabel {
+            text: "Vertical Group".into(),
+            font_size: 18.0,
+            ..default()
+        },
+    ));
+    let group1 = commands
+        .spawn((ChildOf(col1), URadioGroup::new().with_default("apple")))
+        .id();
+    commands
+        .spawn((ChildOf(group1), URadioButton::new("apple")))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Apple"));
+        });
+    commands
+        .spawn((ChildOf(group1), URadioButton::new("banana")))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Banana"));
+        });
+    commands
+        .spawn((ChildOf(group1), URadioButton::new("cherry")))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Cherry"));
+        });
 
     // Stylized Group (Danger/Success styles)
-    let col2 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Column, gap: 12.0, ..default() })).id();
-    commands.spawn((ChildOf(col2), UTextLabel { text: "Styled Buttons".into(), font_size: 18.0, ..default() }));
-    let group2 = commands.spawn((ChildOf(col2), URadioGroup::new().allow_deselect())).id();
-    commands.spawn((ChildOf(group2), URadioButton::primary_style("opt1"))).with_children(|b| { b.spawn(UTextLabel::new("Primary Option")); });
-    commands.spawn((ChildOf(group2), URadioButton::success_style("opt2"))).with_children(|b| { b.spawn(UTextLabel::new("Success Option")); });
-    commands.spawn((ChildOf(group2), URadioButton::danger_style("opt3"))).with_children(|b| { b.spawn(UTextLabel::new("Danger Option")); });
+    let col2 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
+    commands.spawn((
+        ChildOf(col2),
+        UTextLabel {
+            text: "Styled Buttons".into(),
+            font_size: 18.0,
+            ..default()
+        },
+    ));
+    let group2 = commands
+        .spawn((ChildOf(col2), URadioGroup::new().allow_deselect()))
+        .id();
+    commands
+        .spawn((ChildOf(group2), URadioButton::primary_style("opt1")))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Primary Option"));
+        });
+    commands
+        .spawn((ChildOf(group2), URadioButton::success_style("opt2")))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Success Option"));
+        });
+    commands
+        .spawn((ChildOf(group2), URadioButton::danger_style("opt3")))
+        .with_children(|b| {
+            b.spawn(UTextLabel::new("Danger Option"));
+        });
 }

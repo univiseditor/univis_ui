@@ -187,7 +187,7 @@ Good starting points:
 
 - [Docs Home](docs/src/index.md)
 - [Migration Summary](MIGRATION.md)
-- [Stable 0.2.x Roadmap](ROADMAP.md)
+- [Stable 0.3.x Roadmap](ROADMAP.md)
 - [Quick Start (EN)](docs/src/en/quick-start.md)
 - [Quick Start (AR)](docs/src/ar/quick-start.md)
 - [Plugin Setup and First Examples (EN)](docs/src/en/first-steps.md)

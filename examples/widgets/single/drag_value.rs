@@ -44,29 +44,89 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 16.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
-    commands.spawn((ChildOf(panel), UTextLabel::new("Drag values left/right to change them.")));
+    commands.spawn((
+        ChildOf(panel),
+        UTextLabel::new("Drag values left/right to change them."),
+    ));
 
     // Standard Drag Value
-    let row1 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, align_items: UAlignItems::Center, ..default() })).id();
+    let row1 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row1), UTextLabel::new("Default (Step 1.0): ")));
     commands.spawn((ChildOf(row1), UDragValue::new().with_value(50.0)));
 
     // Ranged Drag Value
-    let row2 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, align_items: UAlignItems::Center, ..default() })).id();
+    let row2 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row2), UTextLabel::new("Clamped (0-100):    ")));
-    commands.spawn((ChildOf(row2), UDragValue::new().with_value(25.0).with_range(0.0, 100.0)));
+    commands.spawn((
+        ChildOf(row2),
+        UDragValue::new().with_value(25.0).with_range(0.0, 100.0),
+    ));
 
     // Fine/Precise Drag Value
-    let row3 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, align_items: UAlignItems::Center, ..default() })).id();
+    let row3 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row3), UTextLabel::new("Precise (Step 0.01):")));
-    commands.spawn((ChildOf(row3), UDragValue::new().with_value(1.23).with_step(0.01).with_decimals(2)));
+    commands.spawn((
+        ChildOf(row3),
+        UDragValue::new()
+            .with_value(1.23)
+            .with_step(0.01)
+            .with_decimals(2),
+    ));
 
     // Disabled Drag Value
-    let row4 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, align_items: UAlignItems::Center, ..default() })).id();
+    let row4 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row4), UTextLabel::new("Disabled:           ")));
     commands.spawn((ChildOf(row4), UDragValue::new().with_value(42.0).disabled()));
 }

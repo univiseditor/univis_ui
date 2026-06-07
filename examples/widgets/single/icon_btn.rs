@@ -44,13 +44,24 @@ fn setup(mut commands: Commands) {
                 gap: 20.0,
                 align_items: UAlignItems::Center,
                 ..default()
-            }
+            },
         ))
         .id();
 
     commands.spawn((ChildOf(panel), UTextLabel::new("Standard Icon Buttons")));
-    
-    let row1 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, ..default() })).id();
+
+    let row1 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((ChildOf(row1), UIconButton::primary(Icon::PLAY)));
     commands.spawn((ChildOf(row1), UIconButton::secondary(Icon::PAUSE)));
     commands.spawn((ChildOf(row1), UIconButton::danger(Icon::X)));
@@ -61,7 +72,18 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((ChildOf(panel), UTextLabel::new("Customized Icon Buttons")));
 
-    let row2 = commands.spawn((ChildOf(panel), UNode::default(), ULayout { display: UDisplay::Flex, flex_direction: UFlexDirection::Row, gap: 16.0, ..default() })).id();
+    let row2 = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(row2),
         UIconButton {

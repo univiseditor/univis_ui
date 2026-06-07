@@ -70,4 +70,4 @@ Arabic mirrors:
 - guides: `docs/src/en/*` and `docs/src/ar/*`
 - current example list: `docs/src/en/examples/index.md` and `docs/src/ar/examples/index.md`
 - API reference: generated `cargo doc --no-deps -p univis_ui`
-- release-readiness roadmap for the stable `0.2.x` line: `ROADMAP.md`
+- release-readiness roadmap for the stable `0.3.x` line: `ROADMAP.md`

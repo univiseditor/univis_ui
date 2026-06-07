@@ -44,16 +44,38 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 16.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
     commands.spawn((ChildOf(panel), UTextLabel::new("0% Progress")));
-    commands.spawn((ChildOf(panel), UProgressBar { value: 0.0, ..default() }));
+    commands.spawn((
+        ChildOf(panel),
+        UProgressBar {
+            value: 0.0,
+            ..default()
+        },
+    ));
 
     commands.spawn((ChildOf(panel), UTextLabel::new("50% Progress")));
-    commands.spawn((ChildOf(panel), UProgressBar { value: 0.5, ..default() }));
+    commands.spawn((
+        ChildOf(panel),
+        UProgressBar {
+            value: 0.5,
+            ..default()
+        },
+    ));
 
-    commands.spawn((ChildOf(panel), UTextLabel::new("100% Progress (Custom Color)")));
-    commands.spawn((ChildOf(panel), UProgressBar { value: 1.0, bar_color: Color::srgb(0.2, 0.8, 0.3), ..default() }));
+    commands.spawn((
+        ChildOf(panel),
+        UTextLabel::new("100% Progress (Custom Color)"),
+    ));
+    commands.spawn((
+        ChildOf(panel),
+        UProgressBar {
+            value: 1.0,
+            bar_color: Color::srgb(0.2, 0.8, 0.3),
+            ..default()
+        },
+    ));
 }

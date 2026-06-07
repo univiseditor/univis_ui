@@ -44,7 +44,7 @@ fn setup(mut commands: Commands) {
                 flex_direction: UFlexDirection::Column,
                 gap: 24.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
@@ -69,5 +69,11 @@ fn setup(mut commands: Commands) {
     commands.spawn((ChildOf(panel), select2));
 
     // Spacer to allow popup space at the bottom
-    commands.spawn((ChildOf(panel), UNode { height: UVal::Px(150.0), ..default() }));
+    commands.spawn((
+        ChildOf(panel),
+        UNode {
+            height: UVal::Px(150.0),
+            ..default()
+        },
+    ));
 }

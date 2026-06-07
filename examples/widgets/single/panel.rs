@@ -44,8 +44,18 @@ fn setup(mut commands: Commands) {
             },
         ))
         .id();
-    commands.spawn((ChildOf(glass_panel), UTextLabel { text: "Glass Panel".into(), font_size: 24.0, ..default() }));
-    commands.spawn((ChildOf(glass_panel), UTextLabel::new("Transparent background with subtle border and blur effect.")));
+    commands.spawn((
+        ChildOf(glass_panel),
+        UTextLabel {
+            text: "Glass Panel".into(),
+            font_size: 24.0,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(glass_panel),
+        UTextLabel::new("Transparent background with subtle border and blur effect."),
+    ));
 
     // Card Panel
     let card_panel = commands
@@ -60,8 +70,16 @@ fn setup(mut commands: Commands) {
             },
         ))
         .id();
-    commands.spawn((ChildOf(card_panel), UTextLabel { text: "Card Panel".into(), font_size: 24.0, ..default() }));
-    commands.spawn((ChildOf(card_panel), UTextLabel::new("Solid background, meant for grouped content.")));
-
-
+    commands.spawn((
+        ChildOf(card_panel),
+        UTextLabel {
+            text: "Card Panel".into(),
+            font_size: 24.0,
+            ..default()
+        },
+    ));
+    commands.spawn((
+        ChildOf(card_panel),
+        UTextLabel::new("Solid background, meant for grouped content."),
+    ));
 }

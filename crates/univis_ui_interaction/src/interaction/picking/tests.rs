@@ -56,6 +56,7 @@ fn sample_picking_context(
         clip_ancestor,
         root_sort_key,
         local_depth_key: stack.local_depth_key(layout_depth, order),
+        world_scale: 1.0,
     }
 }
 

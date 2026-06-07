@@ -1,6 +1,6 @@
 # Release Notes
 
-This file replaces the version-specific `RELEASE_NOTES_0.2.0-alpha.1.md` root note and keeps the current alpha release story in one stable location.
+This file replaces the version-specific `RELEASE_NOTES_0.3.0-alpha.1.md` root note and keeps the current alpha release story in one stable location.
 
 ## Where To Read What
 
@@ -12,7 +12,7 @@ The intended long-term root file set is:
 - `MIGRATION.md`
 - `MIGRATION_AR.md`
 - `RELEASE_NOTES.md`
-- `RELEASE_PREP_0.2.0.md`
+- `RELEASE_PREP_0.3.0.md`
 - `changelog.md`
 
 Use them like this:
@@ -23,14 +23,14 @@ Use them like this:
 - `MIGRATION.md`: migration path from older docs and assumptions
 - `MIGRATION_AR.md`: Arabic migration path
 - `RELEASE_NOTES.md`: current alpha release-scale summary
-- `RELEASE_PREP_0.2.0.md`: local evidence for the next `0.2.0` stabilization cut
+- `RELEASE_PREP_0.3.0.md`: local evidence for the next `0.3.0` stabilization cut
 - `changelog.md`: dated historical record
 
 ## Current Release Story
 
-Latest published release tracked here: `0.2.0-alpha.3`
+Latest published release tracked here: `0.3.0`
 
-This release should be understood as an engineering-quality and maintainability follow-up to `0.2.0-alpha.2`, not as a reset of the `alpha2` public API baseline. The root model, workspace shape, and crate-owned example layout from `alpha2` remain in place, while `alpha3` focuses on making that baseline cleaner, easier to maintain, and harder to regress.
+This release should be understood as an engineering-quality and maintainability follow-up to `0.3.0-alpha.2`, not as a reset of the `alpha2` public API baseline. The root model, workspace shape, and crate-owned example layout from `alpha2` remain in place, while `alpha3` focuses on making that baseline cleaner, easier to maintain, and harder to regress.
 
 Public docs URL:
 
@@ -46,9 +46,9 @@ The project has changed substantially in these areas:
 - maintainers now have explicit docs for crate boundaries, naming rules, widget structure, error modeling, and legacy compatibility policy
 - several opaque runtime failure paths were replaced with typed diagnostics and consistent warning messages
 
-## Current `0.2.0` Preparation Status
+## Current `0.3.0` Preparation Status
 
-Local release-prep evidence for the next `0.2.0` stabilization cut is recorded in `RELEASE_PREP_0.2.0.md`.
+Local release-prep evidence for the next `0.3.0` stabilization cut is recorded in `RELEASE_PREP_0.3.0.md`.
 
 As of 2026-05-18:
 
@@ -57,7 +57,7 @@ As of 2026-05-18:
 - the ignored local lockfile was refreshed from yanked `fastrand 2.4.0` to `fastrand 2.4.1` before the final package rehearsal
 - GitHub Actions confirmation, manual visual validation, and RC feedback closure are still pending
 
-For `0.2.0-alpha.3`, the intended message is:
+For `0.3.0`, the intended message is:
 
 - the `alpha2` runtime and migration baseline is still the public foundation
 - the default user-facing import path is clearer and exposes less accidental surface area
@@ -170,7 +170,7 @@ cargo run --example widgets_inputs
 
 - release history and implementation highlights: `changelog.md`
 - stable-readiness plan for the `0.2.x` line: `ROADMAP.md`
-- local release-prep evidence: `RELEASE_PREP_0.2.0.md`
+- local release-prep evidence: `RELEASE_PREP_0.3.0.md`
 - alpha3 diff report: `ALPHA3_REPORT.md`
 - migration summary: `MIGRATION.md`
 - Arabic migration summary: `MIGRATION_AR.md`
@@ -180,7 +180,7 @@ cargo run --example widgets_inputs
 ## Notes
 
 - the completed `URootUi` migration baseline remains the foundation for the current alpha line
-- `0.2.0-alpha.3` is the release that turns the post-`alpha2` cleanup wave into a documented public-surface and maintainability milestone
+- `0.3.0` is the release that turns the post-`alpha2` cleanup wave into a documented public-surface and maintainability milestone
 - the old version-specific release note file was removed to keep one stable root-level release note entry point
 - this file should stay focused on release-scale summary rather than acting as a duplicate of `README` or `MIGRATION`
-- `0.2.0-alpha.2` remains the release that closed the previous docs/examples/release cleanup wave
+- `0.3.0-alpha.2` remains the release that closed the previous docs/examples/release cleanup wave

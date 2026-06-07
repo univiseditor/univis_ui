@@ -4,7 +4,7 @@
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.3"
+univis_ui = "0.3.0"
 ```
 
 ## 2) تطبيق بسيط

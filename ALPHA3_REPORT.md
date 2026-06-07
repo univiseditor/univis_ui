@@ -2,7 +2,7 @@
 
 ## Scope
 
-- This report compares the released `0.2.0-alpha.2` baseline to the current `0.2.0-alpha.3` preparation state.
+- This report compares the released `0.3.0-alpha.2` baseline to the current `0.3.0` preparation state.
 - It focuses on engineering quality, structure, public API clarity, documentation, and release validation.
 - It does not try to restate every historical `alpha2` migration detail that is already captured in `changelog.md`.
 
@@ -245,4 +245,4 @@ The current `alpha3` prep state was checked with:
 
 If you need one short sentence for the team:
 
-`0.2.0-alpha.3` keeps the `alpha2` public model, but makes the library significantly cleaner to consume, maintain, and validate.
+`0.3.0` keeps the `alpha2` public model, but makes the library significantly cleaner to consume, maintain, and validate.

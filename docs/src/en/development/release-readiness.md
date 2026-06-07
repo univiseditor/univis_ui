@@ -2,7 +2,7 @@
 
 This page is the final pre-release checklist for the next alpha cut.
 
-Current local `0.2.0` prep evidence is recorded at the repository root in `RELEASE_PREP_0.2.0.md`.
+Current local `0.3.0` prep evidence is recorded at the repository root in `RELEASE_PREP_0.3.0.md`.
 
 ## Compile Checks To Re-run
 
@@ -54,7 +54,7 @@ For the next alpha cut, the decision is:
 - `MIGRATION.md`: upgrade path from older docs and assumptions
 - `MIGRATION_AR.md`: Arabic migration path
 - `RELEASE_NOTES.md`: current alpha release-scale summary
-- `RELEASE_PREP_0.2.0.md`: local evidence for the next `0.2.0` cut
+- `RELEASE_PREP_0.3.0.md`: local evidence for the next `0.3.0` cut
 - `changelog.md`: chronological dated history
 
 ## Related Pages

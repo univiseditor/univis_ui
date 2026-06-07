@@ -1,12 +1,12 @@
-# Roadmap to Stable `0.2.0` (without moving to `1.0.0`)
+# Roadmap to Stable `0.3.0` (without moving to `1.0.0`)
 
 This roadmap defines what must be completed before declaring the `0.2.x` line stable.
 
 ## Current Snapshot (2026-05-18)
 
-- Latest documented public release: `0.2.0-alpha.3`.
-- Target milestone: first stable contract cut for the `0.2.x` line (`0.2.0`).
-- Latest local release-prep evidence: `RELEASE_PREP_0.2.0.md`.
+- Latest documented public release: `0.3.0`.
+- Target milestone: first stable contract cut for the `0.2.x` line (`0.3.0`).
+- Latest local release-prep evidence: `RELEASE_PREP_0.3.0.md`.
 - No roadmap item is considered complete until evidence is linked in release notes, changelog, and CI logs.
 
 ## Scope and Intent
@@ -24,12 +24,12 @@ This roadmap defines what must be completed before declaring the `0.2.x` line st
 
 ## Release Stages
 
-1. `0.2.0-rc.1`
-2. `0.2.0-rc.2` (optional, if regressions are found)
-3. `0.2.0`
+1. `0.3.0-rc.1`
+2. `0.3.0-rc.2` (optional, if regressions are found)
+3. `0.3.0`
 4. `0.2.1+` patch line for non-breaking fixes
 
-## Must-Have Before `0.2.0`
+## Must-Have Before `0.3.0`
 
 ### 1. API Freeze For The `0.2` Line
 
@@ -67,16 +67,16 @@ Status key: `Not started` / `In progress` / `Done`.
 | ID | Task | Owner | Status | Completion evidence |
 |---|---|---|---|---|
 | R1 | Freeze `0.2` public API surface | Maintainers | In progress | Local public-surface guard passed; RC announcement still pending |
-| R2 | Docs parity pass across root docs | Maintainers | Done | Cross-checked wording in `README`, `MIGRATION`, `RELEASE_NOTES`, `ROADMAP`, and `RELEASE_PREP_0.2.0.md` |
+| R2 | Docs parity pass across root docs | Maintainers | Done | Cross-checked wording in `README`, `MIGRATION`, `RELEASE_NOTES`, `ROADMAP`, and `RELEASE_PREP_0.3.0.md` |
 | R3 | Guardrails + quality gates green | CI + Maintainers | In progress | Local `./scripts/verify_alpha_release.sh` passed; GitHub Actions confirmation still pending |
-| R4 | Release rehearsal run | Maintainers | Done | `RELEASE_PREP_0.2.0.md` records a successful local `./scripts/verify_alpha_release.sh` run |
+| R4 | Release rehearsal run | Maintainers | Done | `RELEASE_PREP_0.3.0.md` records a successful local `./scripts/verify_alpha_release.sh` run |
 | R5 | Known limitations signoff | Maintainers | In progress | Release notes and validation docs list caveats; manual visual pass still pending |
 | R6 | RC feedback triage and closure | Maintainers | Not started | All RC regressions fixed or explicitly deferred |
-| R7 | Final `0.2.0` tag readiness | Maintainers | Not started | Final changelog/release notes signoff |
+| R7 | Final `0.3.0` tag readiness | Maintainers | Not started | Final changelog/release notes signoff |
 
-## Definition Of Done For `0.2.0`
+## Definition Of Done For `0.3.0`
 
-`0.2.0` can be cut only when all conditions are true:
+`0.3.0` can be cut only when all conditions are true:
 
 1. No planned breaking changes remain for `0.2.x`.
 2. Required release verification scripts pass in CI.
@@ -98,16 +98,16 @@ Status key: `Not started` / `In progress` / `Done`.
 - [x] **Guardrails pass**: run `./scripts/check_quality.sh` and ensure no skipped gates.
 - [x] **Release rehearsal**: run `./scripts/verify_alpha_release.sh` and archive logs/artifacts.
 - [ ] **Known-limits signoff**: confirm release notes include current caveats and manual visual checks.
-- [ ] **RC feedback window closed**: triage all `0.2.0-rc.*` regressions or defer explicitly to `0.2.1+` / `0.3.0`.
-- [ ] **Tag readiness**: confirm changelog and release notes wording is final for `0.2.0`.
+- [ ] **RC feedback window closed**: triage all `0.3.0-rc.*` regressions or defer explicitly to `0.2.1+` / `0.3.0`.
+- [ ] **Tag readiness**: confirm changelog and release notes wording is final for `0.3.0`.
 
-Checked items above are local repository evidence. `0.2.0` still requires GitHub Actions confirmation and RC feedback closure before tagging.
+Checked items above are local repository evidence. `0.3.0` still requires GitHub Actions confirmation and RC feedback closure before tagging.
 
 ## Governance Rules During RC
 
-- Only blocker fixes are allowed after `0.2.0-rc.1`; feature work moves to `0.2.1+` or `0.3.0`.
+- Only blocker fixes are allowed after `0.3.0-rc.1`; feature work moves to `0.2.1+` or `0.3.0`.
 - Every accepted RC fix must include a changelog note, regression test when applicable, and migration/release-note impact review.
-- Any proposed breaking change automatically exits the `0.2.0` scope and is queued for `0.3.0`.
+- Any proposed breaking change automatically exits the `0.3.0` scope and is queued for `0.3.0`.
 
 ## Notes
 

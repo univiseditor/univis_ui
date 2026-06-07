@@ -14,11 +14,11 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 
 ### Added
 
-- Added `RELEASE_PREP_0.2.0.md` to record local verification evidence for the next `0.2.0` stabilization cut.
+- Added `RELEASE_PREP_0.3.0.md` to record local verification evidence for the next `0.3.0` stabilization cut.
 
 ### Changed
 
-- Updated the `0.2.0` roadmap and bilingual release-readiness docs with the current local gate status, while keeping CI confirmation, manual visual validation, and RC feedback closure explicit as pending release-process work.
+- Updated the `0.3.0` roadmap and bilingual release-readiness docs with the current local gate status, while keeping CI confirmation, manual visual validation, and RC feedback closure explicit as pending release-process work.
 - Documented the local ignored-lockfile refresh from yanked `fastrand 2.4.0` to `fastrand 2.4.1`, then reran the full local release rehearsal successfully.
 
 ## [2026-04-19]
@@ -48,20 +48,20 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Changed text measurement and select runtime setup to use typed internal errors plus structured warnings instead of opaque `Result<_, ()>`-style failure paths.
 - Changed the docs, migration notes, root landing pages, and compatibility wording so `alpha3` consistently describes the canonical API story, the explicit-only wrapper policy, and the next removal window for deprecated roots.
 - Changed CI and review expectations so quality gates, public API checks, structure guardrails, docs updates, and package-aware example validation are all part of the standard release path.
-- Changed the root crate and workspace crate versions from `0.2.0-alpha.2` to `0.2.0-alpha.3`.
+- Changed the root crate and workspace crate versions from `0.3.0-alpha.2` to `0.3.0`.
 
 ### Removed
 
 - Removed the old monolithic `crates/univis_ui_engine/src/layout/algorithms/places/display.rs` in favor of `placement.rs` plus focused helpers/tests.
 - Removed the old monolithic `crates/univis_ui_engine/src/layout/layout_system/types.rs` in favor of the focused `roots.rs` and `legacy_compat.rs` split.
 
-## [0.2.0-alpha.3] - 2026-04-08
+## [0.3.0] - 2026-04-08
 
 ### Changed
 
-- Bumped the facade crate and all public workspace crates from `0.2.0-alpha.2` to `0.2.0-alpha.3`.
+- Bumped the facade crate and all public workspace crates from `0.3.0-alpha.2` to `0.3.0`.
 - Promoted the post-`alpha2` engineering-quality wave into the current alpha release, focusing on API curation, maintainability, diagnostics, and release-discipline rather than on introducing a new feature family.
-- Finalized the current explicit-only compatibility story for `UScreenRoot` and `UWorldRoot` during `alpha3`, while deferring the actual removal decision to the first alpha after `0.2.0-alpha.3` if migration feedback stays clean.
+- Finalized the current explicit-only compatibility story for `UScreenRoot` and `UWorldRoot` during `alpha3`, while deferring the actual removal decision to the first alpha after `0.3.0` if migration feedback stays clean.
 
 ### Notes
 
@@ -191,14 +191,14 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Fixed the mixed-text demo card layouts by opting fixed-width flex items out of shrink, preventing overlap in wrapped example grids.
 - Fixed grid and flex stretch behavior so `Auto` items can still fill contextual space while `MinContent` and `MaxContent` keep their intrinsic size unless alignment explicitly overrides them.
 
-## [0.2.0-alpha.2] - 2026-03-27
+## [0.3.0-alpha.2] - 2026-03-27
 
 ### Changed
 
-- Bumped the facade crate and all public workspace crates from `0.2.0-alpha.1` to `0.2.0-alpha.2`.
+- Bumped the facade crate and all public workspace crates from `0.3.0-alpha.1` to `0.3.0-alpha.2`.
 - Promoted the current `alpha2` line from an in-progress stabilization wave to a release-ready milestone after finishing the `URootUi` baseline, the docs and API-doc cleanup, the crate-owned example migration, and the alpha2 stabilization work.
 - Clarified the long-term root-level file set around `README.md`, `README_AR.md`, `MIGRATION.md`, `MIGRATION_AR.md`, `RELEASE_NOTES.md`, and `changelog.md`, while keeping `ALPHA2_STATUS.md` / `ALPHA2_STATUS_AR.md` as temporary stabilization notes for the current alpha line.
-- Finalized the release communication path so the hosted docs URL, example gallery, migration story, and release-readiness checklist all point at the same `0.2.0-alpha.2` public surface.
+- Finalized the release communication path so the hosted docs URL, example gallery, migration story, and release-readiness checklist all point at the same `0.3.0-alpha.2` public surface.
 
 ### Notes
 
@@ -222,7 +222,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Rewrote `README.md` to focus on the library's practical value, strengths, use cases, quick start, and example entry points instead of spreading low-level reference detail across the landing page.
 - Added `README_AR.md` as a dedicated Arabic landing page and linked it from the main `README.md`.
 - Added repository-level migration summaries in `MIGRATION.md` and `MIGRATION_AR.md`, then removed the temporary docs/examples/API tracking files from the root.
-- Replaced the version-specific `RELEASE_NOTES_0.2.0-alpha.1.md` root note with a stable root-level `RELEASE_NOTES.md`.
+- Replaced the version-specific `RELEASE_NOTES_0.3.0-alpha.1.md` root note with a stable root-level `RELEASE_NOTES.md`.
 - Expanded the generated Rust API docs across the facade crate and core workspace crates by adding crate-level and module-level `rustdoc`, documenting `URootUi`, layout primitives, common widgets, interaction state, and theme resources, and hiding several internal scheduling helpers from the public documentation surface.
 - Redistributed examples so each one now lives under the crate it primarily represents (`univis_ui`, `univis_ui_engine`, `univis_ui_interaction`, or `univis_ui_widgets`), then updated example manifests, package-specific example commands, example indexes, smoke-test docs, and release-validation scripts to follow the new package-aware layout.
 - Froze the bilingual `docs/` information architecture around a mirrored English/Arabic navigation model, added dedicated migration pages, and introduced editorial rules for language separation, naming, and example-link conventions.
@@ -304,7 +304,7 @@ Use `MIGRATION.md` / `MIGRATION_AR.md` for upgrade guidance.
 - Stopped `UTextLabel` from retrying failed text measurement every frame when a font handle is unresolved or not ready yet.
 - Improved `UDragValue` precision on large ranges by adapting drag sensitivity to the widget resolution, making values like `23` practical to hit even across spans such as `1..1000`.
 
-## [0.2.0-alpha.1] - 2026-03-07
+## [0.3.0-alpha.1] - 2026-03-07
 
 ### Added
 

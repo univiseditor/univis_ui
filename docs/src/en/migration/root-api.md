@@ -19,7 +19,7 @@
 
 - `UScreenRoot` and `UWorldRoot` remain deprecated compatibility wrappers.
 - They are explicit-only migration paths and are no longer part of the recommended prelude story.
-- The current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support.
+- The current removal target is the first alpha after `0.3.0` that no longer needs wrapper-based migration support.
 - Set `meters_per_unit` explicitly when you need a specific physical world-root size.
 
 ## Related Guides

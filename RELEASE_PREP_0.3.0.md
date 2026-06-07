@@ -1,8 +1,8 @@
-# `0.2.0` Release Prep Evidence
+# `0.3.0` Release Prep Evidence
 
 Date: 2026-05-18
 
-This note records local evidence for the next `0.2.0` stabilization cut. It does not replace GitHub Actions, an RC announcement, or RC feedback triage.
+This note records local evidence for the next `0.3.0` stabilization cut. It does not replace GitHub Actions, an RC announcement, or RC feedback triage.
 
 ## Status
 
@@ -46,6 +46,6 @@ The package rehearsal completed without the previous local yanked `fastrand` war
 ## Remaining Release-Process Work
 
 - Run the same gates in GitHub Actions and link the CI run.
-- Open the `0.2.0-rc.1` freeze/feedback window.
+- Open the `0.3.0-rc.1` freeze/feedback window.
 - Complete one manual visual pass through the Android-style package and the current representative examples.
-- Close or explicitly defer all RC feedback before tagging `0.2.0`.
+- Close or explicitly defer all RC feedback before tagging `0.3.0`.

@@ -36,17 +36,17 @@ Univis UI is built for teams that want more than a basic HUD layer.
 
 ```toml
 [dependencies]
-univis_ui = "0.2.0-alpha.3"
+univis_ui = "0.3.0"
 ```
 
 If you want direct control over the internal layers:
 
 ```toml
 [dependencies]
-univis_ui_engine = "0.2.0-alpha.3"
-univis_ui_style = "0.2.0-alpha.3"
-univis_ui_interaction = "0.2.0-alpha.3"
-univis_ui_widgets = "0.2.0-alpha.3"
+univis_ui_engine = "0.3.0"
+univis_ui_style = "0.3.0"
+univis_ui_interaction = "0.3.0"
+univis_ui_widgets = "0.3.0"
 ```
 
 ## Crate Map
@@ -117,7 +117,7 @@ Facade note: `UnivisUiPlugin` includes `UnivisWidgetPlugin`, and that default wi
 
 ### Deprecated But Still Supported
 
-- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`; the current removal target is the first alpha after `0.2.0-alpha.3` that no longer needs wrapper-based migration support
+- `UScreenRoot` and `UWorldRoot` remain available only as deprecated compatibility wrappers on explicit paths such as `univis_ui::layout::layout_system::{UScreenRoot, UWorldRoot}`; the current removal target is the first alpha after `0.3.0` that no longer needs wrapper-based migration support
 - `meters_per_unit` remains the explicit knob for world-root physical size, and it stays on the canonical `URootUi` surface
 
 ### Still Settling
@@ -207,7 +207,7 @@ Good starting points:
 ## GitHub Discovery Path
 
 1. Read this `README.md` for the project story and crate map.
-2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story, [RELEASE_PREP_0.2.0.md](RELEASE_PREP_0.2.0.md) for next-release evidence, and [changelog.md](changelog.md) for dated implementation history.
+2. Check [RELEASE_NOTES.md](RELEASE_NOTES.md) for the current release story, [RELEASE_PREP_0.3.0.md](RELEASE_PREP_0.3.0.md) for next-release evidence, and [changelog.md](changelog.md) for dated implementation history.
 3. Open [Docs Home](docs/src/index.md) or the hosted docs URL and jump into the relevant guide.
 4. Use the language-specific [Example Gallery (EN)](docs/src/en/examples/gallery.md) or [Example Gallery (AR)](docs/src/ar/examples/gallery.md) before dropping to the full index.
 5. Generate `cargo doc --no-deps -p univis_ui` when you need exact type paths and signatures.
@@ -220,7 +220,7 @@ Good starting points:
 - `MIGRATION.md`: migration path from older docs and root assumptions.
 - `MIGRATION_AR.md`: Arabic migration path.
 - `RELEASE_NOTES.md`: current alpha release-scale summary.
-- `RELEASE_PREP_0.2.0.md`: local verification evidence for the next `0.2.0` cut.
+- `RELEASE_PREP_0.3.0.md`: local verification evidence for the next `0.3.0` cut.
 - `changelog.md`: dated chronological record of notable changes.
 
 ## API Docs

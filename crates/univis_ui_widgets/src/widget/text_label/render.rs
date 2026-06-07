@@ -4,6 +4,7 @@ pub(super) mod mesh;
 mod sdf;
 
 use bevy::asset::{Asset, AssetId, Assets, RenderAssetUsages};
+use univis_ui_engine::layout::components::CachedUiContext;
 use bevy::color::LinearRgba;
 use bevy::ecs::relationship::Relationship;
 use bevy::image::{DynamicTextureAtlasBuilder, ImageSampler, TextureAtlasLayout};
@@ -133,6 +134,7 @@ pub(super) fn sync_text_label_meshes(
             Ref<UTextLabelLayoutCache>,
             Option<&Children>,
             Has<UI3d>,
+            Option<&CachedUiContext>,
         ),
         Or<(
             Added<UTextLabel>,
@@ -156,7 +158,7 @@ pub(super) fn sync_text_label_meshes(
         With<TextChildMarker>,
     >,
 ) {
-    for (entity, label, node, computed_size, computed, layout_cache, children, is_3d) in label_query.iter()
+    for (entity, label, node, computed_size, computed, layout_cache, children, is_3d, cached_context) in label_query.iter()
     {
         let mut existing_children = HashMap::new();
         if let Some(children) = children {
@@ -196,6 +198,13 @@ pub(super) fn sync_text_label_meshes(
         let render_scale = resolved_render_scale(label.render_scale);
         let content_clip = label_content_clip_rect(&label, &node, &computed_size);
         let horizontal_offset = text_horizontal_offset(&label, &node, &computed_size, text_size);
+        
+        let ui_to_world_scale = if is_3d {
+            cached_context.map_or(1.0, |c| c.ui_to_world_scale)
+        } else {
+            1.0
+        };
+
         let mut page_batches: HashMap<AssetId<Image>, TextPageBatch> = HashMap::default();
 
         if !layout_cache.displayed_text.is_empty() && text_size.x > 0.0 && text_size.y > 0.0 {
@@ -355,17 +364,18 @@ pub(super) fn sync_text_label_meshes(
                     } else {
                         Some(quad)
                     };
-                    let Some(quad) = clipped_quad else {
-                        continue;
-                    };
-
-                    page_batches
-                        .entry(atlas_info.texture.id())
-                        .and_modify(|batch| batch.quads.push(quad.clone()))
-                        .or_insert_with(|| TextPageBatch {
-                            texture: atlas_info.texture.clone(),
-                            quads: vec![quad],
-                        });
+                    if let Some(mut q) = clipped_quad {
+                        q.center *= ui_to_world_scale;
+                        q.size *= ui_to_world_scale;
+                        
+                        page_batches
+                            .entry(atlas_info.texture.id())
+                            .and_modify(|batch| batch.quads.push(q.clone()))
+                            .or_insert_with(|| TextPageBatch {
+                                texture: atlas_info.texture.clone(),
+                                quads: vec![q],
+                            });
+                    }
                 }
             }
         }

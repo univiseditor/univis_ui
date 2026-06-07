@@ -35,7 +35,7 @@ fn setup(
     // 3D UI Node with Text
     commands.spawn((
         URootUi::world_3d(Vec2::new(800.0, 600.0)),
-        Transform::from_xyz(0.0, 2.0, 0.0).with_scale(Vec3::splat(0.01)),
+        Transform::from_xyz(0.0, 2.0, 0.0).with_scale(Vec3::splat(1.0)),
         UPanel::card(),
         UNode {
             width: UVal::Px(800.0),

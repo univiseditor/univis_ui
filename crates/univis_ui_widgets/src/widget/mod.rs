@@ -232,6 +232,7 @@ fn add_interactive_widget_plugins(app: &mut App) {
 
 pub(super) fn register_widget_embedded_assets(app: &mut App) {
     embedded_asset!(app, "shaders/text_label_sdf.wgsl");
+    embedded_asset!(app, "shaders/text_label_sdf_3d.wgsl");
 }
 
 fn warn_on_widget_runtime_limitations(

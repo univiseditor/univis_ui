@@ -7,7 +7,7 @@ use bevy::asset::{Asset, AssetId, Assets, RenderAssetUsages};
 use bevy::color::LinearRgba;
 use bevy::ecs::relationship::Relationship;
 use bevy::image::{DynamicTextureAtlasBuilder, ImageSampler, TextureAtlasLayout};
-use bevy::mesh::{Indices, Mesh, Mesh2d, PrimitiveTopology};
+use bevy::mesh::{Indices, Mesh, Mesh2d, Mesh3d, PrimitiveTopology};
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::render_resource::{AsBindGroup, Extent3d, TextureDimension, TextureFormat};
@@ -17,6 +17,7 @@ use bevy::text::{ComputedTextBlock, CosmicFontSystem};
 use std::collections::HashMap;
 use univis_ui_engine::layout::query::{ComputedSize, ResolvedRootStack, ResolvedRootUi};
 use univis_ui_engine::layout::univis_node::{UClip, UNode};
+use univis_ui_engine::layout::components::UI3d;
 
 use self::atlas::{
     UTextLabelAtlasCache, UTextLabelAtlasKey, UTextLabelGlyphAtlasInfo, UTextLabelGlyphKey,
@@ -24,7 +25,7 @@ use self::atlas::{
 };
 use self::clip_sync::{clip_quad_to_rect, label_content_clip_rect};
 use self::mesh::{
-    TextGlyphQuad, TextPageBatch, build_text_material, build_text_page_mesh, resolved_render_scale,
+    TextGlyphQuad, TextPageBatch, build_text_material, build_text_material_3d, build_text_page_mesh, resolved_render_scale,
     text_horizontal_offset,
 };
 use self::sdf::build_sdf_glyph_image;
@@ -71,6 +72,47 @@ impl Material2d for UTextLabelSdfMaterial {
     }
 }
 
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub(super) struct UTextLabelSdfMaterial3d {
+    #[uniform(0)]
+    color: LinearRgba,
+    #[uniform(0)]
+    clip_radius: Vec4,
+    #[uniform(0)]
+    clip_center: Vec2,
+    #[uniform(0)]
+    clip_size: Vec2,
+    #[uniform(0)]
+    edge_softness: f32,
+    #[uniform(0)]
+    use_clip: u32,
+    #[uniform(0)]
+    _pad: Vec2,
+    #[texture(1)]
+    #[sampler(2)]
+    texture: Handle<Image>,
+}
+
+impl Material for UTextLabelSdfMaterial3d {
+    fn fragment_shader() -> ShaderRef {
+        "embedded://univis_ui_widgets/widget/shaders/text_label_sdf_3d.wgsl".into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode {
+        AlphaMode::Blend
+    }
+
+    fn specialize(
+        _pipeline: &bevy::pbr::MaterialPipeline,
+        descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
+        _layout: &bevy::mesh::MeshVertexBufferLayoutRef,
+        _key: bevy::pbr::MaterialPipelineKey<Self>,
+    ) -> Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
+        descriptor.primitive.cull_mode = None;
+        Ok(())
+    }
+}
+
 pub(super) fn sync_text_label_meshes(
     mut commands: Commands,
     mut atlas_cache: ResMut<UTextLabelAtlasCache>,
@@ -78,6 +120,7 @@ pub(super) fn sync_text_label_meshes(
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<UTextLabelSdfMaterial>>,
+    mut materials_3d: ResMut<Assets<UTextLabelSdfMaterial3d>>,
     mut font_system: ResMut<CosmicFontSystem>,
     mut swash_cache: ResMut<bevy::text::SwashCache>,
     label_query: Query<
@@ -89,6 +132,7 @@ pub(super) fn sync_text_label_meshes(
             Ref<ComputedTextBlock>,
             Ref<UTextLabelLayoutCache>,
             Option<&Children>,
+            Has<UI3d>,
         ),
         Or<(
             Added<UTextLabel>,
@@ -104,29 +148,45 @@ pub(super) fn sync_text_label_meshes(
             Entity,
             &ChildOf,
             &TextRenderPageMarker,
-            &Mesh2d,
-            &MeshMaterial2d<UTextLabelSdfMaterial>,
+            Option<&Mesh2d>,
+            Option<&Mesh3d>,
+            Option<&MeshMaterial2d<UTextLabelSdfMaterial>>,
+            Option<&MeshMaterial3d<UTextLabelSdfMaterial3d>>,
         ),
         With<TextChildMarker>,
     >,
 ) {
-    for (entity, label, node, computed_size, computed, layout_cache, children) in label_query.iter()
+    for (entity, label, node, computed_size, computed, layout_cache, children, is_3d) in label_query.iter()
     {
         let mut existing_children = HashMap::new();
         if let Some(children) = children {
             for child in children {
-                if let Ok((child_entity, child_of, page_marker, mesh_handle, material_handle)) =
+                if let Ok((child_entity, child_of, page_marker, mesh_2d, mesh_3d, mat_2d, mat_3d)) =
                     child_query.get(*child)
                 {
                     if child_of.get() == entity {
-                        existing_children.insert(
-                            page_marker.texture_id,
-                            (
-                                child_entity,
-                                mesh_handle.0.clone(),
-                                material_handle.0.clone(),
-                            ),
-                        );
+                        let child_is_3d = mesh_3d.is_some() || mat_3d.is_some();
+                        if child_is_3d == is_3d {
+                            let mesh_handle = if child_is_3d {
+                                mesh_3d.map(|m| m.0.clone())
+                            } else {
+                                mesh_2d.map(|m| m.0.clone())
+                            };
+                            let mat_handle_2d = mat_2d.map(|m| m.0.clone());
+                            let mat_handle_3d = mat_3d.map(|m| m.0.clone());
+                            
+                            if let Some(m) = mesh_handle {
+                                existing_children.insert(
+                                    page_marker.texture_id,
+                                    (
+                                        child_entity,
+                                        m,
+                                        mat_handle_2d,
+                                        mat_handle_3d,
+                                    ),
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -315,12 +375,22 @@ pub(super) fn sync_text_label_meshes(
             let mesh = build_text_page_mesh(&batch.quads);
 
             match existing {
-                Some((child_entity, mesh_handle, material_handle)) => {
+                Some((child_entity, mesh_handle, mat_handle_2d, mat_handle_3d)) => {
                     if let Some(existing_mesh) = meshes.get_mut(&mesh_handle) {
                         *existing_mesh = mesh;
                     }
-                    if let Some(existing_material) = materials.get_mut(&material_handle) {
-                        *existing_material = build_text_material(&label, batch.texture.clone());
+                    if is_3d {
+                        if let Some(h) = mat_handle_3d {
+                            if let Some(existing_material) = materials_3d.get_mut(&h) {
+                                *existing_material = build_text_material_3d(&label, batch.texture.clone());
+                            }
+                        }
+                    } else {
+                        if let Some(h) = mat_handle_2d {
+                            if let Some(existing_material) = materials.get_mut(&h) {
+                                *existing_material = build_text_material(&label, batch.texture.clone());
+                            }
+                        }
                     }
                     commands
                         .entity(child_entity)
@@ -328,22 +398,29 @@ pub(super) fn sync_text_label_meshes(
                 }
                 None => {
                     commands.entity(entity).with_children(|parent| {
-                        parent.spawn((
+                        let mut child_cmd = parent.spawn((
                             TextRenderPageMarker { texture_id },
                             TextChildMarker,
-                            Mesh2d(meshes.add(mesh)),
-                            MeshMaterial2d(
-                                materials.add(build_text_material(&label, batch.texture.clone())),
-                            ),
                             Transform::default(),
                             Visibility::Inherited,
                         ));
+                        if is_3d {
+                            child_cmd.insert((
+                                Mesh3d(meshes.add(mesh)),
+                                MeshMaterial3d(materials_3d.add(build_text_material_3d(&label, batch.texture.clone()))),
+                            ));
+                        } else {
+                            child_cmd.insert((
+                                Mesh2d(meshes.add(mesh)),
+                                MeshMaterial2d(materials.add(build_text_material(&label, batch.texture.clone()))),
+                            ));
+                        }
                     });
                 }
             }
         }
 
-        for (_, (stale_child, _, _)) in existing_children {
+        for (_, (stale_child, _, _, _)) in existing_children {
             commands.entity(stale_child).despawn();
         }
     }

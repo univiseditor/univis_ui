@@ -90,3 +90,19 @@ pub(super) fn build_text_material(
         texture,
     }
 }
+
+pub(super) fn build_text_material_3d(
+    label: &UTextLabel,
+    texture: Handle<Image>,
+) -> UTextLabelSdfMaterial3d {
+    UTextLabelSdfMaterial3d {
+        color: label.color.into(),
+        clip_radius: Vec4::ZERO,
+        clip_center: Vec2::ZERO,
+        clip_size: Vec2::ZERO,
+        edge_softness: DEFAULT_TEXT_EDGE_SOFTNESS,
+        use_clip: 0,
+        _pad: Vec2::ZERO,
+        texture,
+    }
+}

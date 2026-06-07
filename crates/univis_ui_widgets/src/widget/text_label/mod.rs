@@ -21,7 +21,7 @@ pub use self::model::{
 };
 use self::render::atlas::UTextLabelAtlasCache;
 use self::render::clip_sync::sync_text_clipper_materials;
-use self::render::{UTextLabelSdfMaterial, sync_text_label_meshes};
+use self::render::{UTextLabelSdfMaterial, UTextLabelSdfMaterial3d, sync_text_label_meshes};
 
 #[cfg(test)]
 use self::measure::bidi::{
@@ -58,6 +58,7 @@ impl Plugin for UnivisTextPlugin {
             .register_type::<UTextLabelLayoutCache>()
             .init_resource::<UTextLabelAtlasCache>()
             .add_plugins(Material2dPlugin::<UTextLabelSdfMaterial>::default())
+            .add_plugins(MaterialPlugin::<UTextLabelSdfMaterial3d>::default())
             .add_systems(
                 UiSettlementSchedule,
                 measure_text_label_layout
@@ -85,8 +86,8 @@ impl Plugin for UnivisTextPlugin {
             .add_systems(
                 UiSettlementSchedule,
                 sync_text_label_meshes
-                    .in_set(UnivisPostUpdateSet::ExternalPrepare)
-                    .before(UnivisPostUpdateSet::LayoutMeasure),
+                    .in_set(UnivisPostUpdateSet::RenderSync)
+                    .after(univis_ui_engine::layout::layout_system::sync_cached_ui3d),
             )
             .add_systems(
                 UiSettlementSchedule,

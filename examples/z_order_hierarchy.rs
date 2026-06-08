@@ -306,7 +306,13 @@ fn toggle_priority_branch_order(
     let mut next_order = None;
     for mut z_index in &mut priority_branch_query {
         let new_order = match *z_index {
-            UZIndex::Local(order) => if order > 0 { -1 } else { 1 },
+            UZIndex::Local(order) => {
+                if order > 0 {
+                    -1
+                } else {
+                    1
+                }
+            }
             _ => 1,
         };
         *z_index = UZIndex::Local(new_order);

@@ -8,7 +8,7 @@ use bevy::prelude::*;
 
 use crate::layout::layout_system::UiSpace;
 
-pub use crate::layout::components::{CachedUiContext, IntrinsicSize, LayoutDepth};
+pub use crate::layout::components::{CachedUiContext, IntrinsicSize, LayoutDepth, UI3d};
 pub use crate::layout::geometry::ComputedSize;
 pub use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
 

@@ -15,8 +15,7 @@ use bevy::shader::ShaderRef;
 use bevy::sprite_render::{AlphaMode2d, Material2d, MeshMaterial2d};
 use bevy::text::{ComputedTextBlock, CosmicFontSystem};
 use std::collections::HashMap;
-use univis_ui_engine::layout::components::CachedUiContext;
-use univis_ui_engine::layout::components::UI3d;
+use univis_ui_engine::layout::query::{CachedUiContext, UI3d};
 use univis_ui_engine::layout::query::{ComputedSize, ResolvedRootStack, ResolvedRootUi};
 use univis_ui_engine::layout::univis_node::{UClip, UNode};
 

@@ -289,7 +289,7 @@ fn setup(mut commands: Commands) {
 
 fn toggle_priority_branch_order(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut priority_branch_query: Query<&mut USelf, With<PriorityBranch>>,
+    mut priority_branch_query: Query<&mut UZIndex, With<PriorityBranch>>,
     mut label_query: Query<
         (
             &mut UTextLabel,
@@ -304,9 +304,13 @@ fn toggle_priority_branch_order(
     }
 
     let mut next_order = None;
-    for mut uself in &mut priority_branch_query {
-        uself.order = if uself.order > 0 { -1 } else { 1 };
-        next_order = Some(uself.order);
+    for mut z_index in &mut priority_branch_query {
+        let new_order = match *z_index {
+            UZIndex::Local(order) => if order > 0 { -1 } else { 1 },
+            _ => 1,
+        };
+        *z_index = UZIndex::Local(new_order);
+        next_order = Some(new_order);
     }
 
     let Some(next_order) = next_order else {
@@ -323,14 +327,16 @@ fn toggle_priority_branch_order(
     }
 }
 
-fn absolute(left: f32, top: f32, order: i32) -> USelf {
-    USelf {
-        left: UVal::Px(left),
-        top: UVal::Px(top),
-        order,
-        position_type: UPositionType::Absolute,
-        ..default()
-    }
+fn absolute(left: f32, top: f32, order: i32) -> (USelf, UZIndex) {
+    (
+        USelf {
+            left: UVal::Px(left),
+            top: UVal::Px(top),
+            position_type: UPositionType::Absolute,
+            ..default()
+        },
+        UZIndex::Local(order),
+    )
 }
 
 fn panel_node(width: f32, height: f32, background_color: Color) -> UNode {

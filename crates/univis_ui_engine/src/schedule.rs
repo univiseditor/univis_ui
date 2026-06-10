@@ -37,27 +37,40 @@ pub enum UnivisPostUpdateSet {
 /// High-level settlement stages tracked for the current UI mutation generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UiWorkStage {
+    /// Root resolution stage.
     RootResolve,
+    /// Hierarchy analysis stage.
     Hierarchy,
+    /// Intrinsic measurement and fit-content evaluation stage.
     Measure,
+    /// Final layout downward solving and positioning.
     Solve,
+    /// Render-side synchronization stage.
     Render,
 }
 
+/// Tracks which high-level settlement stages are pending execution.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct UiPendingStages {
+    /// True if root resolution is pending.
     pub root_resolve: bool,
+    /// True if hierarchy analysis is pending.
     pub hierarchy: bool,
+    /// True if intrinsic measurement is pending.
     pub measure: bool,
+    /// True if downward layout solving is pending.
     pub solve: bool,
+    /// True if render-side synchronization is pending.
     pub render: bool,
 }
 
 impl UiPendingStages {
+    /// Returns `true` if any stage is pending.
     pub fn any(self) -> bool {
         self.root_resolve || self.hierarchy || self.measure || self.solve || self.render
     }
 
+    /// Merges another `UiPendingStages` into this one, setting each flag to true if it is true in either instance.
     pub fn merge(&mut self, other: Self) {
         self.root_resolve |= other.root_resolve;
         self.hierarchy |= other.hierarchy;
@@ -70,6 +83,7 @@ impl UiPendingStages {
 /// Configuration for the bounded UI settlement loop.
 #[derive(Resource, Debug, Clone)]
 pub struct UiSettlementConfig {
+    /// Maximum number of layout iterations allowed per frame.
     pub max_iterations: u32,
 }
 
@@ -95,12 +109,19 @@ pub enum UiValidationMode {
 /// stable while selectively enabling the new settlement behavior.
 #[derive(Resource, Debug, Clone)]
 pub struct UiRolloutConfig {
+    /// Whether to use the cached UI context optimization.
     pub use_cached_ui_context: bool,
+    /// Whether to perform incremental measurement (skipping unchanged subtrees).
     pub use_incremental_measure: bool,
+    /// Whether to perform incremental layout solving.
     pub use_incremental_solve: bool,
+    /// Whether to perform incremental render synchronization.
     pub use_incremental_render: bool,
+    /// Whether to use the mesh cache to reuse geometry meshes when possible.
     pub use_mesh_cache: bool,
+    /// Whether to enable picking tests after settlement finishes.
     pub use_post_settle_picking: bool,
+    /// The validation mode for checking layout mismatches.
     pub validation: UiValidationMode,
 }
 
@@ -262,12 +283,16 @@ pub fn sync_picking_runtime_state(
 /// Validation diagnostics produced by rollout shadow checks.
 #[derive(Resource, Debug, Clone, Default)]
 pub struct UiValidationState {
+    /// The generation of the UI context that was validated.
     pub cached_context_generation: u64,
+    /// The number of mismatches detected during validation.
     pub cached_context_mismatches: usize,
+    /// The generation that triggered a warning, if any.
     pub cached_context_warning_generation: Option<u64>,
 }
 
 impl UiValidationState {
+    /// Records the result of a cached context check.
     pub fn record_cached_context_check(&mut self, generation: u64, mismatches: usize) {
         self.cached_context_generation = generation;
         self.cached_context_mismatches = mismatches;

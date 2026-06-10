@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use super::{ResolvedRootUi, URootUi, UScreenRoot, UWorldRoot, UiSpace};
 use crate::internal_prelude::*;
 
+/// Synchronizes the `UI3d` component on nodes based on whether their root is in 3D space.
 pub fn sync_cached_ui3d(
     mut commands: Commands,
     roots_changed: Query<

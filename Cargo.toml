@@ -52,6 +52,8 @@ bevy = { version = "0.18.1", default-features = false, features = [
     "common_api",
     "bevy_render",
     "bevy_core_pipeline",
+    "bevy_post_process",
+    "tonemapping_luts",
     "bevy_sprite",
     "bevy_sprite_render",
     "bevy_gizmos_render",
@@ -208,3 +210,11 @@ path = "examples/2d/picking_2d.rs"
 [[example]]
 name = "toggle_seekbar"
 path = "examples/toggle_seekbar.rs"
+
+[[example]]
+name = "complex_showcase"
+path = "examples/complex_showcase.rs"
+
+[[example]]
+name = "hud_and_3d_control"
+path = "examples/3d/hud_and_3d_control.rs"

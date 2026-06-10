@@ -7,7 +7,9 @@ use std::collections::HashMap;
 /// Cached material handles attached to a rendered node.
 #[derive(Component, Default)]
 pub struct MaterialHandles {
+    /// Cached 2D material handle.
     pub material_2d: Option<Handle<UNodeMaterial>>,
+    /// Cached 3D material handle.
     pub material_3d: Option<Handle<UNodeMaterial3d>>,
 }
 
@@ -21,6 +23,7 @@ pub struct MaterialPool {
 }
 
 impl MaterialPool {
+    /// Resets the pool statistics for the current frame.
     pub fn reset_stats(&mut self) {
         self.reused_count = 0;
         self.created_count = 0;
@@ -47,11 +50,14 @@ impl MeshCacheKey {
 #[derive(Resource, Default)]
 pub struct MeshPool {
     meshes_by_size: HashMap<MeshCacheKey, Handle<Mesh>>,
+    /// Number of mesh handles reused from the pool.
     pub reused_count: usize,
+    /// Number of new mesh handles created this frame.
     pub created_count: usize,
 }
 
 impl MeshPool {
+    /// Retrieves an existing mesh matching the size from the cache, or creates a new one.
     pub fn mesh_for_size(&mut self, size: Vec2, meshes: &mut Assets<Mesh>) -> Handle<Mesh> {
         let key = MeshCacheKey::from_size(size);
 
@@ -66,6 +72,7 @@ impl MeshPool {
         mesh
     }
 
+    /// Resets the pool statistics for the current frame.
     pub fn reset_stats(&mut self) {
         self.reused_count = 0;
         self.created_count = 0;

@@ -19,12 +19,19 @@ pub use crate::layout::layout_system::{ResolvedRootStack, ResolvedRootUi};
 #[derive(Component, Clone, Copy, Debug, PartialEq, Reflect)]
 #[reflect(Component)]
 pub struct UiPickingContext {
+    /// Entity ID of the resolved root capsule handling this node.
     pub root_entity: Option<Entity>,
+    /// Entity ID of the camera this node renders to.
     pub camera_entity: Option<Entity>,
+    /// The UI space (Screen, World2d, World3d) this node belongs to.
     pub space: UiSpace,
+    /// Entity ID of the ancestor clip bounds for this node, if any.
     pub clip_ancestor: Option<Entity>,
+    /// Global stacking key of the root capsule for root-level sorting.
     pub root_sort_key: f32,
+    /// Local z-offset relative to the root for hierarchical sorting.
     pub local_depth_key: f32,
+    /// Scaling factor converting logical UI units to world units.
     pub world_scale: f32,
 }
 

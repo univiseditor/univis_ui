@@ -34,6 +34,7 @@ const DEFAULT_BARS_SECTION_HEIGHT: f32 = 64.0;
 const DEFAULT_PANEL_PADDING: f32 = 14.0;
 const DEFAULT_SECTION_GAP: f32 = 10.0;
 
+/// Bevy plugin that enables visual profiling for the UI layout engine.
 pub struct UnivisLayoutProfilingPlugin;
 
 impl Plugin for UnivisLayoutProfilingPlugin {
@@ -55,5 +56,6 @@ impl Plugin for UnivisLayoutProfilingPlugin {
     }
 }
 
+/// Legacy alias for the profiling plugin.
 #[deprecated(note = "Use `UnivisLayoutProfilingPlugin` instead.")]
 pub type LayoutProfilingPlugin = UnivisLayoutProfilingPlugin;

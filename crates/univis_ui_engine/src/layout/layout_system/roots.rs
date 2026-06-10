@@ -25,7 +25,12 @@ pub enum UiCanvasSize {
     /// Use an explicit logical canvas size.
     Fixed(Vec2),
     /// Measure the root content and clamp the result if needed.
-    FitContent { min: Vec2, max: Option<Vec2> },
+    FitContent {
+        /// The minimum size to enforce.
+        min: Vec2,
+        /// The maximum size to enforce, or None for unbounded.
+        max: Option<Vec2>,
+    },
 }
 
 /// Selects which camera a root should resolve against.
@@ -174,6 +179,7 @@ pub(super) const ROOT_STACK_EDIT_EPSILON: f32 = 1.0e-5;
 /// read-only application state.
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
 pub struct ResolvedRootUi {
+    /// The entity ID of this root node.
     pub root_entity: Entity,
     /// Resolved UI space for this root.
     pub space: UiSpace,
@@ -181,6 +187,7 @@ pub struct ResolvedRootUi {
     pub canvas: UiCanvasSize,
     /// Final logical canvas size after resolving viewport or fixed sizing.
     pub canvas_size: Vec2,
+    /// The camera entity this root is rendering to, if applicable.
     pub camera_entity: Option<Entity>,
     /// Physical world size per logical UI unit for world-space roots.
     pub meters_per_unit: f32,
@@ -228,11 +235,17 @@ impl ResolvedRootUi {
 /// root cannot visually leak above another root unless the root itself is above it.
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
 pub struct ResolvedRootStack {
+    /// The Z-index provided by the user.
     pub authored_root_z: f32,
+    /// The spawn order of this root used for deterministic tie-breaking.
     pub spawn_rank: u64,
+    /// The final key used for sorting roots globally.
     pub capsule_sort_key: f32,
+    /// The base Z-depth for this root's local stacking context.
     pub capsule_band_base: f32,
+    /// The total depth span allocated to this root.
     pub capsule_band_width: f32,
+    /// The depth step increment used per internal local layer.
     pub capsule_band_step: f32,
     pub(crate) applied_root_z: f32,
     pub(crate) initialized: bool,
@@ -253,8 +266,8 @@ impl Default for ResolvedRootStack {
         }
     }
 }
-
 impl ResolvedRootStack {
+    /// Creates a new root stack state from external capsule metrics.
     pub fn with_capsule(capsule_band_base: f32, capsule_band_width: f32) -> Self {
         let capsule_band_width = capsule_band_width.max(ROOT_CAPSULE_MIN_BAND_WIDTH);
         Self {
@@ -281,14 +294,17 @@ impl ResolvedRootStack {
         }
     }
 
+    /// Returns the highest Z-depth used by this root's capsule.
     pub fn capsule_ceiling(&self) -> f32 {
         self.capsule_band_base + self.capsule_band_width
     }
 
+    /// Calculates a local Z-offset based on logical depth and layout order.
     pub fn local_depth_offset(&self, layout_depth: usize, order: i32) -> f32 {
         self.local_depth_offset_for_fraction(local_depth_fraction(layout_depth, order))
     }
 
+    /// Calculates a local Z-offset from a [0.0, 1.0] fractional depth map.
     pub fn local_depth_offset_for_fraction(&self, fraction: f32) -> f32 {
         let reserved_steps = self.capsule_band_step * 2.0;
         let usable_band = (self.capsule_band_width - reserved_steps).max(0.0);
@@ -296,10 +312,12 @@ impl ResolvedRootStack {
         self.capsule_band_step + usable_band * fraction.clamp(0.0, 1.0)
     }
 
+    /// Resolves the absolute local depth key used for visual rendering sorting.
     pub fn local_depth_key(&self, layout_depth: usize, order: i32) -> f32 {
         self.local_depth_offset(layout_depth, order)
     }
 
+    /// Recommends an offset for text nodes specifically to ensure they render above generic backgrounds.
     pub fn text_child_offset(&self) -> f32 {
         self.capsule_band_step
     }
@@ -313,21 +331,28 @@ impl ResolvedRootStack {
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
 #[reflect(Component)]
 pub struct UiRootSettlementState {
+    /// The highest layout generation observed under this root.
     pub current_generation: u64,
+    /// Number of nodes waiting to be measured.
     pub pending_measure: u32,
+    /// Number of nodes waiting to be solved.
     pub pending_solve: u32,
+    /// Number of nodes waiting to be rendered.
     pub pending_render: u32,
 }
 
 impl UiRootSettlementState {
+    /// Returns true if any stage is pending settlement in this root.
     pub fn has_pending(&self) -> bool {
         self.pending_measure > 0 || self.pending_solve > 0 || self.pending_render > 0
     }
 
+    /// Returns true if the root is fully settled.
     pub fn is_settled(&self) -> bool {
         !self.has_pending()
     }
 
+    /// Observes the state of a descendant node and updates the counters.
     pub fn observe_node(&mut self, versions: UiNodeStageVersions) {
         self.current_generation = self.current_generation.max(
             versions
@@ -389,6 +414,7 @@ pub struct UScreenRoot;
     RootSpawnRank
 )]
 pub struct UWorldRoot {
+    /// Legacy explicit size mapping for world roots.
     pub size: Vec2,
     /// Legacy compatibility flag. New code should express this through `UiSpace`.
     pub is_3d: bool,

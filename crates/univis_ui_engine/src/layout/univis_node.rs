@@ -31,12 +31,13 @@ impl Plugin for UnivisNodePlugin {
     }
 }
 
+/// Determines the shape and corner treatment of a node.
 #[derive(Reflect, Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UShapeMode {
     /// Rounded corners.
     #[default]
     Round,
-    /// Chamfered corners.
+    /// Chamfered corners (angled cuts instead of curves).
     Cut,
 }
 
@@ -87,7 +88,7 @@ pub struct UNode {
     pub background_color: Color,
     /// Corner radius for rounded rectangles (independent corners).
     pub border_radius: UCornerRadius,
-
+    /// The shape mode (e.g. rounded or cut corners).
     pub shape_mode: UShapeMode,
 }
 
@@ -147,7 +148,9 @@ fn sanitize_bounds(min: f32, max: f32) -> (f32, f32) {
 /// Defines a border rendered around a [`UNode`].
 #[derive(Component, Clone)]
 pub struct UBorder {
+    /// The color of the border.
     pub color: Color,
+    /// The width (thickness) of the border.
     pub width: f32,
     /// Border radius can differ from the node's radius.
     pub radius: UCornerRadius,
@@ -208,15 +211,19 @@ impl Default for ULayout {
 /// Alignment options for layout (Standard CSS-like).
 #[derive(Clone, Copy, PartialEq, Debug, Default, Reflect)]
 pub enum LayoutAlign {
+    /// Align to the start of the layout axis.
     #[default]
     Start,
+    /// Align to the center of the layout axis.
     Center,
+    /// Align to the end of the layout axis.
     End,
 }
 
 /// Defines how items are aligned on the Cross Axis.
 #[derive(Clone, Copy, PartialEq, Debug, Reflect)]
 pub enum UAlignItems {
+    /// Automatically align based on parent or contextual layout defaults.
     Auto,
     /// The items are packed in their default position as if no alignment was applied.
     Default,
@@ -241,22 +248,33 @@ pub enum UAlignItems {
 /// Layout direction (Main Axis).
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UFlexDirection {
-    Row,           // Left -> Right
-    Column,        // Top -> Bottom
-    RowReverse,    // Right -> Left (New)
-    ColumnReverse, // Bottom -> Top (New)
+    /// Items are placed left to right.
+    Row,
+    /// Items are placed top to bottom.
+    Column,
+    /// Items are placed right to left.
+    RowReverse,
+    /// Items are placed bottom to top.
+    ColumnReverse,
 }
 
 /// Distribution of space along the Main Axis.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Reflect)]
 pub enum UJustifyContent {
+    /// Items are packed toward the start.
     #[default]
     Start,
+    /// Items are packed toward the center.
     Center,
+    /// Items are packed toward the end.
     End,
+    /// Items are evenly distributed with equal space between them.
     SpaceBetween,
+    /// Items stretch to fill available space.
     Stretch,
+    /// Items are evenly distributed with half-size spaces on the ends.
     SpaceAround,
+    /// Items are evenly distributed with equal space around them.
     SpaceEvenly,
 }
 
@@ -280,64 +298,105 @@ pub enum UDisplay {
 /// CSS-inspired extended alignment values for self alignment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
 pub enum UAlignSelfExt {
+    /// Inherit from parent.
     #[default]
     Auto,
+    /// Normal default alignment.
     Normal,
+    /// Align to start.
     Start,
+    /// Align to end.
     End,
+    /// Align to center.
     Center,
+    /// Stretch to fill.
     Stretch,
+    /// Baseline alignment.
     Baseline,
+    /// First baseline alignment.
     FirstBaseline,
+    /// Last baseline alignment.
     LastBaseline,
+    /// Flex start alignment.
     FlexStart,
+    /// Flex end alignment.
     FlexEnd,
+    /// Self start alignment.
     SelfStart,
+    /// Self end alignment.
     SelfEnd,
+    /// Left alignment.
     Left,
+    /// Right alignment.
     Right,
 }
 
 /// CSS-inspired extended alignment values for container item alignment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
 pub enum UAlignItemsExt {
+    /// Normal default alignment.
     #[default]
     Normal,
+    /// Align to start.
     Start,
+    /// Align to end.
     End,
+    /// Align to center.
     Center,
+    /// Stretch to fill.
     Stretch,
+    /// Baseline alignment.
     Baseline,
+    /// First baseline alignment.
     FirstBaseline,
+    /// Last baseline alignment.
     LastBaseline,
+    /// Flex start alignment.
     FlexStart,
+    /// Flex end alignment.
     FlexEnd,
+    /// Self start alignment.
     SelfStart,
+    /// Self end alignment.
     SelfEnd,
+    /// Left alignment.
     Left,
+    /// Right alignment.
     Right,
 }
 
 /// CSS-inspired extended alignment values for distributing lines/tracks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
 pub enum UContentAlignExt {
+    /// Normal default alignment.
     #[default]
     Normal,
+    /// Align to start.
     Start,
+    /// Align to end.
     End,
+    /// Align to center.
     Center,
+    /// Stretch to fill.
     Stretch,
+    /// Distribute space between items.
     SpaceBetween,
+    /// Distribute space around items.
     SpaceAround,
+    /// Distribute space evenly between items.
     SpaceEvenly,
+    /// Flex start alignment.
     FlexStart,
+    /// Flex end alignment.
     FlexEnd,
 }
 
 /// Overflow position behavior for alignment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
 pub enum UOverflowPosition {
+    /// Safe overflow alignment (prevents data loss).
     Safe,
+    /// Unsafe overflow alignment (default behavior).
     #[default]
     Unsafe,
 }
@@ -345,17 +404,23 @@ pub enum UOverflowPosition {
 /// Flex wrap behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
 pub enum UFlexWrap {
+    /// Items are placed on a single line and do not wrap.
     #[default]
     NoWrap,
+    /// Items wrap onto multiple lines, from top to bottom.
     Wrap,
+    /// Items wrap onto multiple lines, from bottom to top.
     WrapReverse,
 }
 
 /// Grid track sizing.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
 pub enum UTrackSize {
+    /// Fixed size in pixels.
     Px(f32),
+    /// Fractional size taking a share of the remaining space.
     Fr(f32),
+    /// Automatic sizing based on content.
     #[default]
     Auto,
 }
@@ -363,32 +428,43 @@ pub enum UTrackSize {
 /// Grid auto-placement flow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
 pub enum UGridAutoFlow {
+    /// Auto-placed items fill rows.
     #[default]
     Row,
+    /// Auto-placed items fill columns.
     Column,
 }
 
 /// Advanced container-only controls nested under [`ULayout`].
 #[derive(Debug, Clone, PartialEq, Reflect, Default)]
 pub struct ULayoutContainerExt {
+    /// Extended alignment options for containers.
     pub box_align: ULayoutBoxAlignContainer,
+    /// Extended flex container options.
     pub flex: ULayoutFlexContainer,
+    /// Extended grid container options.
     pub grid: ULayoutGridContainer,
 }
 
 /// Extended container-level alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
 pub struct ULayoutBoxAlignContainer {
+    /// Overrides justify items alignment for the container.
     pub justify_items: Option<UAlignItemsExt>,
+    /// Overrides content alignment for the container.
     pub align_content: Option<UContentAlignExt>,
+    /// Specifies the gap between rows.
     pub row_gap: Option<f32>,
+    /// Specifies the gap between columns.
     pub column_gap: Option<f32>,
 }
 
 /// Extended flex container options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub struct ULayoutFlexContainer {
+    /// Wrap behavior for flex items.
     pub wrap: UFlexWrap,
+    /// Alignment of content lines across the cross axis.
     pub align_content: Option<UContentAlignExt>,
 }
 
@@ -404,10 +480,15 @@ impl Default for ULayoutFlexContainer {
 /// Extended grid container options.
 #[derive(Debug, Clone, PartialEq, Reflect)]
 pub struct ULayoutGridContainer {
+    /// Defines the columns of the grid.
     pub template_columns: Vec<UTrackSize>,
+    /// Defines the rows of the grid.
     pub template_rows: Vec<UTrackSize>,
+    /// Defines the auto-placement flow.
     pub auto_flow: UGridAutoFlow,
+    /// Defines the size of implicit rows.
     pub auto_rows: UTrackSize,
+    /// Defines the size of implicit columns.
     pub auto_columns: UTrackSize,
 }
 
@@ -426,17 +507,24 @@ impl Default for ULayoutGridContainer {
 /// Advanced item-only controls nested under [`USelf`].
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
 pub struct ULayoutItemExt {
+    /// Extended child-level alignment overrides.
     pub box_align: ULayoutBoxAlignSelf,
+    /// Extended flex item overrides.
     pub flex: ULayoutFlexItem,
+    /// Extended grid item placement overrides.
     pub grid: ULayoutGridItem,
 }
 
 /// Extended child-level alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub struct ULayoutBoxAlignSelf {
+    /// Overrides justify self alignment.
     pub justify_self: Option<UAlignSelfExt>,
+    /// Overrides align self alignment.
     pub align_self: Option<UAlignSelfExt>,
+    /// Overrides justify overflow behavior.
     pub justify_overflow: UOverflowPosition,
+    /// Overrides align overflow behavior.
     pub align_overflow: UOverflowPosition,
 }
 
@@ -454,17 +542,24 @@ impl Default for ULayoutBoxAlignSelf {
 /// Extended flex item options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
 pub struct ULayoutFlexItem {
+    /// The flex grow factor.
     pub flex_grow: Option<f32>,
+    /// The flex shrink factor.
     pub flex_shrink: Option<f32>,
+    /// The initial main size of the flex item.
     pub flex_basis: Option<UVal>,
 }
 
 /// Extended grid item placement options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub struct ULayoutGridItem {
+    /// The starting column position.
     pub column_start: Option<u32>,
+    /// The number of columns to span.
     pub column_span: u32,
+    /// The starting row position.
     pub row_start: Option<u32>,
+    /// The number of rows to span.
     pub row_span: u32,
 }
 
@@ -490,9 +585,13 @@ pub struct USelf {
     pub align_self: UAlignSelf,
 
     /// Positioning offsets (Works for Relative and Absolute).
+    /// Left positioning offset.
     pub left: UVal,
+    /// Top positioning offset.
     pub top: UVal,
+    /// Bottom positioning offset.
     pub bottom: UVal,
+    /// Right positioning offset.
     pub right: UVal,
     /// Layout order for siblings and local stacking inside the same root capsule.
     #[deprecated(
@@ -500,6 +599,7 @@ pub struct USelf {
         note = "Use `UZIndex` component instead for sorting and stacking contexts."
     )]
     pub order: i32,
+    /// The position type (e.g. Relative or Absolute).
     pub position_type: UPositionType,
     /// Advanced item-only layout controls.
     pub item_ext: ULayoutItemExt,
@@ -521,6 +621,7 @@ impl Default for USelf {
 }
 
 impl USelf {
+    /// Returns the raw pixel value of the left offset, or 0.0 if not pixel-based.
     pub fn get_val(&self) -> f32 {
         match &self.left {
             UVal::Px(p) => *p,
@@ -554,27 +655,38 @@ impl Default for UZIndex {
 /// Self alignment options.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect)]
 pub enum UAlignSelf {
-    Auto, // Inherit from parent
+    /// Inherit alignment from the parent.
+    Auto,
+    /// Align to the start of the cross axis.
     Start,
+    /// Align to the center of the cross axis.
     Center,
+    /// Align to the end of the cross axis.
     End,
+    /// Stretch to fill the cross axis.
     Stretch,
 }
 
 #[derive(Debug, Clone, Copy, Reflect)]
 /// Explicit top/right/bottom/left offsets in resolved scalar form.
 pub struct UPosition {
+    /// Resolved top offset.
     pub top: Option<f32>,
+    /// Resolved right offset.
     pub right: Option<f32>,
+    /// Resolved bottom offset.
     pub bottom: Option<f32>,
+    /// Resolved left offset.
     pub left: Option<f32>,
 }
 
 /// Determines whether the node stays in normal flow or is taken out of flow.
 #[derive(Reflect, Clone, Debug, Copy, PartialEq)]
 pub enum UPositionType {
-    Relative, // In-flow
-    Absolute, // Out-of-flow
+    /// Node stays in normal flow.
+    Relative,
+    /// Node is taken out of flow and positioned absolutely.
+    Absolute,
 }
 
 /// Clips all descendants to the node's resolved bounds and corner radius.
@@ -586,6 +698,7 @@ pub struct UClip {
     pub enabled: bool,
 }
 impl UClip {
+    /// Creates a new `UClip` component with the specified enabled state.
     pub fn enabled(enable: bool) -> Self {
         UClip { enabled: enable }
     }

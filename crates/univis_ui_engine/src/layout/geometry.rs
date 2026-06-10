@@ -89,9 +89,13 @@ impl UVal {
 /// Defines spacing (Padding or Margin) for the four sides of a box.
 #[derive(Reflect, Clone, Copy, Debug, Default, PartialEq)]
 pub struct USides {
+    /// Space on the left side.
     pub left: f32,
+    /// Space on the right side.
     pub right: f32,
+    /// Space on the top side.
     pub top: f32,
+    /// Space on the bottom side.
     pub bottom: f32,
 }
 
@@ -198,9 +202,13 @@ impl USides {
 /// Defines the radius for each corner of a rounded rectangle independently.
 #[derive(Reflect, Clone, Copy, Debug, Default, PartialEq)]
 pub struct UCornerRadius {
+    /// Radius of the top-left corner.
     pub top_left: f32,
+    /// Radius of the top-right corner.
     pub top_right: f32,
+    /// Radius of the bottom-right corner.
     pub bottom_right: f32,
+    /// Radius of the bottom-left corner.
     pub bottom_left: f32,
 }
 
@@ -235,21 +243,25 @@ impl UCornerRadius {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
 /// Padding totals expressed along the current main/cross axis pair.
+#[derive(Debug, Clone, Copy, Default)]
 pub struct AxisPadding {
-    pub main: f32,  // Sum of padding on the main axis
-    pub cross: f32, // Sum of padding on the cross axis
+    /// Sum of padding on the main layout axis.
+    pub main: f32,
+    /// Sum of padding on the cross layout axis.
+    pub cross: f32,
 }
 
 /// Helper for converting between world axes and main/cross layout axes.
 ///
 /// This lets the solver share one implementation for row and column layouts.
 pub struct AxisHelper {
+    /// The resolved layout direction axis.
     axis: UFlexDirection,
 }
 
 impl AxisHelper {
+    /// Creates a new `AxisHelper` from the given layout flex direction.
     pub fn new(axis: UFlexDirection) -> Self {
         Self { axis }
     }
@@ -267,6 +279,7 @@ impl AxisHelper {
         matches!(self.axis, UFlexDirection::Row | UFlexDirection::RowReverse)
     }
 
+    /// Converts a world-space size `Vec2` into a `(main, cross)` tuple.
     pub fn from_world(&self, size: Vec2) -> (f32, f32) {
         if self.is_row() {
             (size.x, size.y) // Main=Width
@@ -275,6 +288,7 @@ impl AxisHelper {
         }
     }
 
+    /// Converts a `(main, cross)` size into a world-space `Vec2`.
     pub fn to_world(&self, main: f32, cross: f32) -> Vec2 {
         if self.is_row() {
             Vec2::new(main, cross)
@@ -283,6 +297,9 @@ impl AxisHelper {
         }
     }
 
+    /// Extracts box constraints oriented along the main and cross axes.
+    ///
+    /// Returns a tuple of `(min_main, max_main, min_cross, max_cross)`.
     pub fn extract_constraints(&self, constraints: BoxConstraints) -> (f32, f32, f32, f32) {
         if self.is_row() {
             (
@@ -301,6 +318,7 @@ impl AxisHelper {
         }
     }
 
+    /// Extracts padding resolved for the main and cross axes.
     pub fn extract_padding(&self, padding: USides) -> AxisPadding {
         if self.is_row() {
             AxisPadding {
@@ -315,8 +333,9 @@ impl AxisHelper {
         }
     }
 
-    // Margins follow the item even when the axis flips, so logical ordering
-    // is still enough here.
+    /// Extracts layout margin into a tuple ordered as `(main_start, main_end, cross_start, cross_end)`.
+    ///
+    /// Margins follow the item even when the axis flips, so logical ordering is still enough here.
     pub fn extract_margin_sides(&self, margin: USides) -> (f32, f32, f32, f32) {
         if self.is_row() {
             (margin.left, margin.right, margin.top, margin.bottom)
@@ -325,8 +344,8 @@ impl AxisHelper {
         }
     }
 
-    // The remaining helpers (`get_main_spec`, `get_cross_spec`) follow the same
-    // row-vs-column branching pattern.
+    /// Extracts the main axis sizing specification from a general `SolverSpec`.
+    /// Returns `(mode, val, flex)`.
     pub fn get_main_spec(&self, spec: &SolverSpec) -> (SolverSizeMode, f32, f32) {
         if self.is_row() {
             (spec.width_mode, spec.width_val, spec.width_flex)
@@ -335,6 +354,8 @@ impl AxisHelper {
         }
     }
 
+    /// Extracts the cross axis sizing specification from a general `SolverSpec`.
+    /// Returns `(mode, val, flex)`.
     pub fn get_cross_spec(&self, spec: &SolverSpec) -> (SolverSizeMode, f32, f32) {
         if self.is_row() {
             (spec.height_mode, spec.height_val, spec.height_flex)
@@ -347,9 +368,13 @@ impl AxisHelper {
 /// Minimum and maximum size constraints passed from parent to child.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BoxConstraints {
+    /// The minimum allowed width.
     pub min_width: f32,
+    /// The maximum allowed width.
     pub max_width: f32,
+    /// The minimum allowed height.
     pub min_height: f32,
+    /// The maximum allowed height.
     pub max_height: f32,
 }
 

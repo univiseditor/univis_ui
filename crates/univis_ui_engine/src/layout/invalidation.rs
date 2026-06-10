@@ -6,16 +6,24 @@ use crate::schedule::UiPendingStages;
 /// Public layout invalidation flags that external crates can request from the engine.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct UiLayoutInvalidation {
+    /// Forces dirty state on the entity itself.
     pub dirty_self: bool,
+    /// Forces dirty state on the entity's ancestors.
     pub dirty_ancestors: bool,
+    /// Forces measurement re-evaluation on the entity.
     pub measure_self: bool,
+    /// Forces measurement re-evaluation on the entity's ancestors.
     pub measure_ancestors: bool,
+    /// Forces layout solving on the entity.
     pub solve_self: bool,
+    /// Forces layout solving on the entity's ancestors.
     pub solve_ancestors: bool,
+    /// Forces render synchronization on the entity.
     pub render_self: bool,
 }
 
 impl UiLayoutInvalidation {
+    /// Merges another invalidation request into this one using boolean OR.
     pub fn merge(&mut self, other: Self) {
         self.dirty_self |= other.dirty_self;
         self.dirty_ancestors |= other.dirty_ancestors;
@@ -40,6 +48,7 @@ impl UiLayoutInvalidation {
         }
     }
 
+    /// Converts this invalidation struct into the set of pending settlement stages.
     pub fn pending_stages(self) -> UiPendingStages {
         UiPendingStages {
             root_resolve: false,
@@ -59,22 +68,27 @@ pub struct UiInvalidateRequestQueue {
 }
 
 impl UiInvalidateRequestQueue {
+    /// Adds an invalidation request for a specific entity.
     pub fn request(&mut self, entity: Entity, invalidation: UiLayoutInvalidation) {
         self.requests.entry(entity).or_default().merge(invalidation);
     }
 
+    /// Returns `true` if there are no pending invalidation requests.
     pub fn is_empty(&self) -> bool {
         self.requests.is_empty()
     }
 
+    /// Returns the total number of pending invalidation requests.
     pub fn len(&self) -> usize {
         self.requests.len()
     }
 
+    /// Returns the current pending invalidation request for a given entity, if any.
     pub fn request_for(&self, entity: Entity) -> Option<UiLayoutInvalidation> {
         self.requests.get(&entity).copied()
     }
 
+    /// Calculates the union of all pending stages required by the queued invalidations.
     pub fn pending_stages(&self) -> UiPendingStages {
         let mut pending = UiPendingStages::default();
         for invalidation in self.requests.values().copied() {

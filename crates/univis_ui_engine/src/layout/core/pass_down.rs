@@ -377,21 +377,13 @@ fn collect_solver_items_into(
 }
 
 fn build_constraints(container_size: Vec2, node_spec: &UNode) -> BoxConstraints {
-    let mut constraints = BoxConstraints::tight(container_size);
     let (min_width, max_width) = node_spec.width_bounds();
     let (min_height, max_height) = node_spec.height_bounds();
 
-    if node_spec.width.uses_intrinsic_measurement() {
-        constraints.min_width = min_width;
-        constraints.max_width = max_width;
-    }
+    let clamped_width = container_size.x.clamp(min_width, max_width);
+    let clamped_height = container_size.y.clamp(min_height, max_height);
 
-    if node_spec.height.uses_intrinsic_measurement() {
-        constraints.min_height = min_height;
-        constraints.max_height = max_height;
-    }
-
-    constraints
+    BoxConstraints::tight(Vec2::new(clamped_width, clamped_height))
 }
 
 fn apply_results_to_children(

@@ -95,8 +95,8 @@ pub struct UNode {
 impl Default for UNode {
     fn default() -> Self {
         Self {
-            width: UVal::Content,
-            height: UVal::Content,
+            width: UVal::Auto,
+            height: UVal::Auto,
             min_width: 0.0,
             max_width: f32::INFINITY,
             min_height: 0.0,

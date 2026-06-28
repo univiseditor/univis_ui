@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Grid with Empty Cells (CSS Grid Equivalent)</title>
+    <style>
+        body {
+            background-color: #0b0d12; /* Deep slate matching Rust example */
+            color: #ffffff;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            gap: 24px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4da6ff;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #b3c6ff;
+            text-align: center;
+            max-width: 600px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        /* 
+           The Main Grid Container 
+           Corresponds to 'grid' entity in empty_cells.rs
+        */
+        .grid-container {
+            width: 640px;
+            height: 420px;
+            padding: 16px;
+            background-color: rgba(255, 255, 255, 0.03); /* UNode::background_color */
+            border-radius: 16px; /* UNode::border_radius */
+            border: 2px solid rgba(51, 128, 255, 0.2); /* UBorder */
+            box-sizing: border-box;
+            
+            /* Activates CSS Grid */
+            display: grid;
+            /* 3 Columns (1fr each) -> template_columns in Rust */
+            grid-template-columns: repeat(3, 1fr);
+            /* 3 Rows with 120px heights -> template_rows in Rust */
+            grid-template-rows: repeat(3, 120px);
+            /* Gaps -> row_gap and column_gap in Rust */
+            row-gap: 12px;
+            column-gap: 12px;
+        }
+
+        /* Generic card/block styles */
+        .block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            padding: 16px;
+            box-sizing: border-box;
+            text-align: center;
+            background-color: rgba(20, 26, 38, 0.6);
+            gap: 6px;
+        }
+
+        .block-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .block-coords {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* 
+           Below are the individual Grid Items (Blocks A-E) 
+           placed explicitly at coordinates (leaving others empty)
+        */
+
+        /* 1. Block A: Row 1, Col 1 */
+        .block-a {
+            border: 2px solid #1a66e6; /* Blue border */
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        /* 2. Block B: Row 1, Col 3 */
+        .block-b {
+            border: 2px solid #e6334d; /* Red border */
+            grid-column: 3;
+            grid-row: 1;
+        }
+
+        /* 3. Block C: Row 2, Col 2 */
+        .block-c {
+            border: 2px solid #1ab366; /* Green border */
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        /* 4. Block D: Row 3, Col 1 */
+        .block-d {
+            border: 2px solid #e6801a; /* Orange border */
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        /* 5. Block E: Row 3, Col 3 */
+        .block-e {
+            border: 2px solid #9933e6; /* Purple border */
+            grid-column: 3;
+            grid-row: 3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="title">◈ GRID LAYOUT: EMPTY CELLS ◈</h1>
+    <p class="subtitle">This showcase demonstrates explicit coordinate placement (1..3 columns & rows),<br>leaving the remaining cells completely empty to form a checkerboard pattern.</p>
+
+    <div class="grid-container">
+        <!-- Block A -->
+        <div class="block block-a">
+            <div class="block-title">Block A</div>
+            <div class="block-coords">Row: 1, Col: 1</div>
+        </div>
+
+        <!-- Empty Cell: Row 1, Col 2 -->
+
+        <!-- Block B -->
+        <div class="block block-b">
+            <div class="block-title">Block B</div>
+            <div class="block-coords">Row: 1, Col: 3</div>
+        </div>
+
+        <!-- Empty Cell: Row 2, Col 1 -->
+
+        <!-- Block C -->
+        <div class="block block-c">
+            <div class="block-title">Block C</div>
+            <div class="block-coords">Row: 2, Col: 2</div>
+        </div>
+
+        <!-- Empty Cell: Row 2, Col 3 -->
+
+        <!-- Block D -->
+        <div class="block block-d">
+            <div class="block-title">Block D</div>
+            <div class="block-coords">Row: 3, Col: 1</div>
+        </div>
+
+        <!-- Empty Cell: Row 3, Col 2 -->
+
+        <!-- Block E -->
+        <div class="block block-e">
+            <div class="block-title">Block E</div>
+            <div class="block-coords">Row: 3, Col: 3</div>
+        </div>
+    </div>
+
+</body>
+</html>

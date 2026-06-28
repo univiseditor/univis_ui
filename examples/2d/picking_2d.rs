@@ -1,5 +1,5 @@
 use bevy::{
-    input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll},
+    input::mouse::{AccumulatedMouseMotion},
     prelude::*,
 };
 use univis_ui::prelude::*;

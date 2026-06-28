@@ -16,7 +16,7 @@ include = [
     "/README.md",
     "/README_AR.md",
     "/RELEASE_NOTES.md",
-    "/RELEASE_PREP_0.2.0.md",
+    "/RELEASE_PREP_0.3.0.md",
     "/MIGRATION.md",
     "/MIGRATION_AR.md",
     "/ROADMAP.md",
@@ -94,6 +94,20 @@ name = "grid_item_placement"
 path = "examples/grid/item_placement.rs"
 
 [[example]]
+name = "grid_complex_dashboard"
+path = "examples/grid/complex_dashboard.rs"
+
+[[example]]
+name = "grid_simple_blocks"
+path = "examples/grid/simple_blocks.rs"
+
+[[example]]
+name = "grid_empty_cells"
+path = "examples/grid/empty_cells.rs"
+
+
+
+[[example]]
 name = "layout_flex"
 path = "examples/layout/flex.rs"
 
@@ -128,6 +142,11 @@ path = "examples/widgets/containers.rs"
 [[example]]
 name = "responsive_layout_test"
 path = "examples/responsive_layout_test.rs"
+
+[[example]]
+name = "responsive_hud"
+path = "examples/responsive_hud.rs"
+
 
 [[example]]
 name = "widgets_media"
@@ -216,5 +235,23 @@ name = "complex_showcase"
 path = "examples/complex_showcase.rs"
 
 [[example]]
-name = "hud_and_3d_control"
-path = "examples/3d/hud_and_3d_control.rs"
+name = "sci_fi_showcase"
+path = "examples/3d/sci_fi_showcase.rs"
+
+[[example]]
+name = "border_lighting"
+path = "examples/3d/border_lighting.rs"
+
+[[example]]
+name = "border_shapes_2d"
+path = "examples/2d/border_shapes_2d.rs"
+
+[[example]]
+name = "hud_showcase"
+path = "examples/2d/hud_showcase.rs"
+
+
+
+[[example]]
+name = "grid_bento"
+path = "examples/grid/bento.rs"

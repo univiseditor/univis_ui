@@ -115,11 +115,11 @@ fn setup(mut commands: Commands) {
                         ],
                         // 5 Rows: Fixed Header/Footer, flexible center panels
                         template_rows: vec![
-                            UTrackSize::Px(56.0),  // Row 1 (Header)
-                            UTrackSize::Fr(1.0),   // Row 2 (Top body)
-                            UTrackSize::Fr(1.2),   // Row 3 (Mid body)
-                            UTrackSize::Fr(0.8),   // Row 4 (Low body)
-                            UTrackSize::Px(44.0),  // Row 5 (Footer)
+                            UTrackSize::Px(56.0), // Row 1 (Header)
+                            UTrackSize::Fr(1.0),  // Row 2 (Top body)
+                            UTrackSize::Fr(1.2),  // Row 3 (Mid body)
+                            UTrackSize::Fr(0.8),  // Row 4 (Low body)
+                            UTrackSize::Px(44.0), // Row 5 (Footer)
                         ],
                         ..default()
                     },
@@ -157,27 +157,28 @@ fn setup(mut commands: Commands) {
         text("◈ STARSHIP COMMAND CONTROL DASHBOARD ◈", 18.0, Color::WHITE),
     ));
     // Status Badge
-    let status_badge = commands.spawn((
-        ChildOf(header_card),
-        UNode {
-            padding: USides::axes(14.0, 6.0),
-            background_color: Color::srgba(0.0, 0.8, 0.3, 0.25),
-            border_radius: UCornerRadius::all(8.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgb(0.0, 1.0, 0.4),
-            width: 1.0,
-            radius: UCornerRadius::all(8.0),
-            offset: 0.0,
-        },
-    )).id();
+    let status_badge = commands
+        .spawn((
+            ChildOf(header_card),
+            UNode {
+                padding: USides::axes(14.0, 6.0),
+                background_color: Color::srgba(0.0, 0.8, 0.3, 0.25),
+                border_radius: UCornerRadius::all(8.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgb(0.0, 1.0, 0.4),
+                width: 1.0,
+                radius: UCornerRadius::all(8.0),
+                offset: 0.0,
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(status_badge),
         label_node(),
         text("SYSTEM STATUS: ONLINE", 12.0, Color::srgb(0.5, 1.0, 0.7)),
     ));
-
 
     // Tile 2: Primary Core Telemetry (Spans 2 columns, 2 rows)
     let core_card = spawn_grid_card(
@@ -204,24 +205,49 @@ fn setup(mut commands: Commands) {
     ));
     // Sub-items for reactor core status
     let mut add_core_row = |parent, label: &str, value: &str, color: Color| {
-        let row = commands.spawn((
-            ChildOf(parent),
-            UNode::default(),
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                justify_content: UJustifyContent::SpaceBetween,
-                ..default()
-            }
-        )).id();
-        commands.spawn((ChildOf(row), label_node(), text(label, 13.0, Color::srgb(0.7, 0.75, 0.8))));
+        let row = commands
+            .spawn((
+                ChildOf(parent),
+                UNode::default(),
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    justify_content: UJustifyContent::SpaceBetween,
+                    ..default()
+                },
+            ))
+            .id();
+        commands.spawn((
+            ChildOf(row),
+            label_node(),
+            text(label, 13.0, Color::srgb(0.7, 0.75, 0.8)),
+        ));
         commands.spawn((ChildOf(row), label_node(), text(value, 13.0, color)));
     };
-    add_core_row(core_card, "Reactor Temp:", "4,820 °C", Color::srgb(1.0, 0.3, 0.3));
-    add_core_row(core_card, "Coolant Flow:", "100% (STABLE)", Color::srgb(0.3, 1.0, 0.5));
-    add_core_row(core_card, "Fuel Cell Charge:", "94.2% (OK)", Color::srgb(0.3, 0.8, 1.0));
-    add_core_row(core_card, "Plasma Coherence:", "99.8%", Color::srgb(0.9, 0.4, 1.0));
-
+    add_core_row(
+        core_card,
+        "Reactor Temp:",
+        "4,820 °C",
+        Color::srgb(1.0, 0.3, 0.3),
+    );
+    add_core_row(
+        core_card,
+        "Coolant Flow:",
+        "100% (STABLE)",
+        Color::srgb(0.3, 1.0, 0.5),
+    );
+    add_core_row(
+        core_card,
+        "Fuel Cell Charge:",
+        "94.2% (OK)",
+        Color::srgb(0.3, 0.8, 1.0),
+    );
+    add_core_row(
+        core_card,
+        "Plasma Coherence:",
+        "99.8%",
+        Color::srgb(0.9, 0.4, 1.0),
+    );
 
     // Tile 3: Main Tactical Visualization Map (Spans 3 columns, 2 rows)
     let tactical_card = spawn_grid_card(
@@ -244,31 +270,37 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         ChildOf(tactical_card),
         label_node(),
-        text("TACTICAL TELEMETRY SECTOR 4-B", 16.0, Color::srgb(0.4, 0.8, 1.0)),
+        text(
+            "TACTICAL TELEMETRY SECTOR 4-B",
+            16.0,
+            Color::srgb(0.4, 0.8, 1.0),
+        ),
     ));
     // Simulating a radar grid
-    let radar_circle = commands.spawn((
-        ChildOf(tactical_card),
-        UNode {
-            width: UVal::Px(150.0),
-            height: UVal::Px(150.0),
-            background_color: Color::srgba(0.0, 0.6, 1.0, 0.04),
-            border_radius: UCornerRadius::all(75.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.0, 0.7, 1.0, 0.3),
-            width: 2.0,
-            radius: UCornerRadius::all(75.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::Center,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let radar_circle = commands
+        .spawn((
+            ChildOf(tactical_card),
+            UNode {
+                width: UVal::Px(150.0),
+                height: UVal::Px(150.0),
+                background_color: Color::srgba(0.0, 0.6, 1.0, 0.04),
+                border_radius: UCornerRadius::all(75.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.0, 0.7, 1.0, 0.3),
+                width: 2.0,
+                radius: UCornerRadius::all(75.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::Center,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     // Radar Blip
     commands.spawn((
         ChildOf(radar_circle),
@@ -283,9 +315,12 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         ChildOf(tactical_card),
         label_node(),
-        text("TARGET RANGE: 14,000 km | THREAT: LOW", 13.0, Color::srgb(0.7, 0.8, 0.9)),
+        text(
+            "TARGET RANGE: 14,000 km | THREAT: LOW",
+            13.0,
+            Color::srgb(0.7, 0.8, 0.9),
+        ),
     ));
-
 
     // Tile 4: Command Controls Panel (Spans 1 column, 1 row)
     let control_card = spawn_grid_card(
@@ -306,13 +341,20 @@ fn setup(mut commands: Commands) {
         gap: 10.0,
         ..default()
     });
-    commands.spawn((ChildOf(control_card), label_node(), text("WARP CORE", 14.0, Color::WHITE)));
+    commands.spawn((
+        ChildOf(control_card),
+        label_node(),
+        text("WARP CORE", 14.0, Color::WHITE),
+    ));
     commands.spawn((
         ChildOf(control_card),
         UToggle::sci_fi_style().with_checked(true),
     ));
-    commands.spawn((ChildOf(control_card), label_node(), text("DRIVE STATUS", 11.0, Color::srgb(0.6, 0.6, 0.7))));
-
+    commands.spawn((
+        ChildOf(control_card),
+        label_node(),
+        text("DRIVE STATUS", 11.0, Color::srgb(0.6, 0.6, 0.7)),
+    ));
 
     // Tile 5: Auxiliary Backup Battery (Spans 1 column, 2 rows)
     let aux_card = spawn_grid_card(
@@ -338,28 +380,30 @@ fn setup(mut commands: Commands) {
         text("AUX POWER", 14.0, Color::srgb(0.8, 0.6, 1.0)),
     ));
     // Vertical battery fill simulation
-    let battery_shell = commands.spawn((
-        ChildOf(aux_card),
-        UNode {
-            width: UVal::Px(40.0),
-            height: UVal::Px(120.0),
-            padding: USides::all(3.0),
-            background_color: Color::srgba(0.2, 0.0, 0.4, 0.2),
-            border_radius: UCornerRadius::all(6.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgb(0.6, 0.2, 1.0),
-            width: 1.5,
-            radius: UCornerRadius::all(6.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::ColumnReverse, // Fill from bottom
-            ..default()
-        }
-    )).id();
+    let battery_shell = commands
+        .spawn((
+            ChildOf(aux_card),
+            UNode {
+                width: UVal::Px(40.0),
+                height: UVal::Px(120.0),
+                padding: USides::all(3.0),
+                background_color: Color::srgba(0.2, 0.0, 0.4, 0.2),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgb(0.6, 0.2, 1.0),
+                width: 1.5,
+                radius: UCornerRadius::all(6.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::ColumnReverse, // Fill from bottom
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(battery_shell),
         UNode {
@@ -375,7 +419,6 @@ fn setup(mut commands: Commands) {
         label_node(),
         text("78% CAP", 13.0, Color::srgb(0.8, 0.7, 0.9)),
     ));
-
 
     // Tile 6: Log Activities Panel (Spans 3 columns, 1 row)
     let log_card = spawn_grid_card(
@@ -398,27 +441,48 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         ChildOf(log_card),
         label_node(),
-        text("SYSTEM EVENT LOGS (SECTOR 4)", 14.0, Color::srgb(0.4, 1.0, 0.6)),
+        text(
+            "SYSTEM EVENT LOGS (SECTOR 4)",
+            14.0,
+            Color::srgb(0.4, 1.0, 0.6),
+        ),
     ));
     // Add log lines
     let mut add_log_line = |parent, prefix: &str, message: &str| {
-        let row = commands.spawn((
-            ChildOf(parent),
-            UNode::default(),
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                gap: 8.0,
-                ..default()
-            }
-        )).id();
-        commands.spawn((ChildOf(row), label_node(), text(prefix, 11.0, Color::srgb(0.4, 0.8, 0.5))));
-        commands.spawn((ChildOf(row), label_node(), text(message, 11.0, Color::srgb(0.8, 0.85, 0.8))));
+        let row = commands
+            .spawn((
+                ChildOf(parent),
+                UNode::default(),
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    gap: 8.0,
+                    ..default()
+                },
+            ))
+            .id();
+        commands.spawn((
+            ChildOf(row),
+            label_node(),
+            text(prefix, 11.0, Color::srgb(0.4, 0.8, 0.5)),
+        ));
+        commands.spawn((
+            ChildOf(row),
+            label_node(),
+            text(message, 11.0, Color::srgb(0.8, 0.85, 0.8)),
+        ));
     };
     add_log_line(log_card, "[12:38:02]", "Warp drive stabilizer aligned.");
-    add_log_line(log_card, "[12:38:05]", "Auxiliary shield generator testing completed successfully.");
-    add_log_line(log_card, "[12:38:11]", "Warning: Sector 4-B threat scanning initiated.");
-
+    add_log_line(
+        log_card,
+        "[12:38:05]",
+        "Auxiliary shield generator testing completed successfully.",
+    );
+    add_log_line(
+        log_card,
+        "[12:38:11]",
+        "Warning: Sector 4-B threat scanning initiated.",
+    );
 
     // Tile 7: Shield & Deflector Controls (Spans 2 columns, 1 row)
     let shield_card = spawn_grid_card(
@@ -452,7 +516,6 @@ fn setup(mut commands: Commands) {
             .show_value(),
     ));
 
-
     // Tile 8: Bottom Footer Panel (Spans all 6 columns)
     let footer_card = spawn_grid_card(
         &mut commands,
@@ -474,12 +537,20 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         ChildOf(footer_card),
         label_node(),
-        text("UNIVIS ENGINE - GRID ARCHITECTURE DEMO", 12.0, Color::srgb(0.5, 0.6, 0.7)),
+        text(
+            "UNIVIS ENGINE - GRID ARCHITECTURE DEMO",
+            12.0,
+            Color::srgb(0.5, 0.6, 0.7),
+        ),
     ));
     commands.spawn((
         ChildOf(footer_card),
         label_node(),
-        text("VERSION 0.3.0 | SECURITY MODE A", 12.0, Color::srgb(0.5, 0.6, 0.7)),
+        text(
+            "VERSION 0.3.0 | SECURITY MODE A",
+            12.0,
+            Color::srgb(0.5, 0.6, 0.7),
+        ),
     ));
 }
 

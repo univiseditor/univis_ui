@@ -53,12 +53,15 @@ fn main() {
         .add_plugins(UnivisUiPlugin)
         .init_resource::<TerminalState>()
         .add_systems(Startup, setup)
-        .add_systems(Update, (
-            rotate_core,
-            sync_ui_to_state,
-            update_diagnostic_sim,
-            camera_control,
-        ))
+        .add_systems(
+            Update,
+            (
+                rotate_core,
+                sync_ui_to_state,
+                update_diagnostic_sim,
+                camera_control,
+            ),
+        )
         .run();
 }
 
@@ -69,25 +72,29 @@ fn setup(
 ) {
     // --- 1. LIGHTS & CAMERAS ---
     // Standard 3D Camera with MainCamera orbit component
-    let main_camera_entity = commands.spawn((
-        Camera3d::default(),
-        MainCamera {
-            orbit_distance: 4.8,
-            pitch: -0.15,
-            yaw: -0.25,
-        },
-        Transform::from_xyz(0.0, 1.8, 4.5).looking_at(Vec3::new(0.0, 0.6, 0.0), Vec3::Y),
-    )).id();
+    let main_camera_entity = commands
+        .spawn((
+            Camera3d::default(),
+            MainCamera {
+                orbit_distance: 4.8,
+                pitch: -0.15,
+                yaw: -0.25,
+            },
+            Transform::from_xyz(0.0, 1.8, 4.5).looking_at(Vec3::new(0.0, 0.6, 0.0), Vec3::Y),
+        ))
+        .id();
 
     // Secondary overlay Camera for 2D Screen-space HUD
-    let hud_camera_entity = commands.spawn((
-        Camera2d,
-        Camera {
-            order: 1,
-            clear_color: ClearColorConfig::None,
-            ..default()
-        },
-    )).id();
+    let hud_camera_entity = commands
+        .spawn((
+            Camera2d,
+            Camera {
+                order: 1,
+                clear_color: ClearColorConfig::None,
+                ..default()
+            },
+        ))
+        .id();
 
     // Directional light for shadows & physical highlights
     commands.spawn((
@@ -193,21 +200,23 @@ fn setup(
         .id();
 
     // LEFT SECTION: Radial Orbital Selector
-    let left_col = commands.spawn((
-        ChildOf(glass_panel),
-        UNode {
-            width: UVal::Px(320.0),
-            height: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let left_col = commands
+        .spawn((
+            ChildOf(glass_panel),
+            UNode {
+                width: UVal::Px(320.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(left_col),
@@ -221,26 +230,28 @@ fn setup(
     ));
 
     // The Radial Layout container
-    let radial_selector = commands.spawn((
-        ChildOf(left_col),
-        UNode {
-            width: UVal::Px(240.0),
-            height: UVal::Px(240.0),
-            background_color: Color::srgba(0.0, 0.1, 0.2, 0.3),
-            border_radius: UCornerRadius::all(120.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.0, 0.8, 1.0, 0.15),
-            width: 1.0,
-            radius: UCornerRadius::all(120.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Radial,
-            ..default()
-        }
-    )).id();
+    let radial_selector = commands
+        .spawn((
+            ChildOf(left_col),
+            UNode {
+                width: UVal::Px(240.0),
+                height: UVal::Px(240.0),
+                background_color: Color::srgba(0.0, 0.1, 0.2, 0.3),
+                border_radius: UCornerRadius::all(120.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.0, 0.8, 1.0, 0.15),
+                width: 1.0,
+                radius: UCornerRadius::all(120.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Radial,
+                ..default()
+            },
+        ))
+        .id();
 
     let sectors = ["NAV", "SCAN", "LINK", "DRON", "PING", "DATA"];
     let sector_colors = [
@@ -253,22 +264,24 @@ fn setup(
     ];
 
     for (name, color) in sectors.into_iter().zip(sector_colors) {
-        let btn = commands.spawn((
-            ChildOf(radial_selector),
-            UButton::secondary(),
-            UNode {
-                width: UVal::Px(58.0),
-                height: UVal::Px(58.0),
-                border_radius: UCornerRadius::all(29.0),
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                justify_content: UJustifyContent::Center,
-                align_items: UAlignItems::Center,
-                ..default()
-            }
-        )).id();
+        let btn = commands
+            .spawn((
+                ChildOf(radial_selector),
+                UButton::secondary(),
+                UNode {
+                    width: UVal::Px(58.0),
+                    height: UVal::Px(58.0),
+                    border_radius: UCornerRadius::all(29.0),
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    justify_content: UJustifyContent::Center,
+                    align_items: UAlignItems::Center,
+                    ..default()
+                },
+            ))
+            .id();
         commands.spawn((
             ChildOf(btn),
             UTextLabel {
@@ -277,7 +290,7 @@ fn setup(
                 color,
                 ..default()
             },
-            UNode::default()
+            UNode::default(),
         ));
     }
 
@@ -293,39 +306,40 @@ fn setup(
     ));
 
     // Divider between columns
-    commands.spawn((
-        ChildOf(glass_panel),
-        UDivider::horizontal(),
-    ));
+    commands.spawn((ChildOf(glass_panel), UDivider::horizontal()));
 
     // RIGHT SECTION: Reactor Core Telemetry & Controls
-    let right_col = commands.spawn((
-        ChildOf(glass_panel),
-        UNode {
-            width: UVal::Flex(1.0),
-            height: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Start,
-            gap: 12.0,
-            ..default()
-        }
-    )).id();
+    let right_col = commands
+        .spawn((
+            ChildOf(glass_panel),
+            UNode {
+                width: UVal::Flex(1.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Start,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
 
-    let title_block = commands.spawn((
-        ChildOf(right_col),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 4.0,
-            ..default()
-        }
-    )).id();
+    let title_block = commands
+        .spawn((
+            ChildOf(right_col),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 4.0,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(title_block),
@@ -349,32 +363,36 @@ fn setup(
     ));
 
     // Controls Container
-    let ctrl_area = commands.spawn((
-        ChildOf(right_col),
-        UNode {
-            width: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 14.0,
-            ..default()
-        }
-    )).id();
+    let ctrl_area = commands
+        .spawn((
+            ChildOf(right_col),
+            UNode {
+                width: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 14.0,
+                ..default()
+            },
+        ))
+        .id();
 
     // Core Active Toggle
-    let toggle_row = commands.spawn((
-        ChildOf(ctrl_area),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            gap: 16.0,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let toggle_row = commands
+        .spawn((
+            ChildOf(ctrl_area),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 16.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(toggle_row),
         UTextLabel {
@@ -432,32 +450,39 @@ fn setup(
     ));
 
     // Action button
-    let actions_row = commands.spawn((
-        ChildOf(right_col),
-        UNode {
-            width: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            justify_content: UJustifyContent::End,
-            gap: 12.0,
-            ..default()
-        }
-    )).id();
+    let actions_row = commands
+        .spawn((
+            ChildOf(right_col),
+            UNode {
+                width: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                justify_content: UJustifyContent::End,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
 
     // Emergency purge button
-    let purge_btn = commands.spawn((
-        ChildOf(actions_row),
-        UButton::danger(),
-        UNode {
-            padding: USides::axes(18.0, 8.0),
-            border_radius: UCornerRadius::all(8.0),
-            ..default()
-        },
-        ULayout { display: UDisplay::Flex, ..default() }
-    )).id();
+    let purge_btn = commands
+        .spawn((
+            ChildOf(actions_row),
+            UButton::danger(),
+            UNode {
+                padding: USides::axes(18.0, 8.0),
+                border_radius: UCornerRadius::all(8.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(purge_btn),
         UTextLabel {
@@ -469,45 +494,48 @@ fn setup(
         UNode::default(),
     ));
 
-
     // --- 4. SCREEN-SPACE HUD ---
-    let hud_root = commands.spawn((
-        URootUi {
-            camera: UiCameraRef::Entity(hud_camera_entity),
-            ..URootUi::screen()
-        },
-        UNode {
-            width: UVal::Percent(1.0),
-            height: UVal::Percent(1.0),
-            padding: USides::all(20.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            justify_content: UJustifyContent::SpaceBetween,
-            ..default()
-        }
-    )).id();
+    let hud_root = commands
+        .spawn((
+            URootUi {
+                camera: UiCameraRef::Entity(hud_camera_entity),
+                ..URootUi::screen()
+            },
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                padding: USides::all(20.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                justify_content: UJustifyContent::SpaceBetween,
+                ..default()
+            },
+        ))
+        .id();
 
     // Header bar
-    let hud_header = commands.spawn((
-        ChildOf(hud_root),
-        UPanel::glass(),
-        UNode {
-            width: UVal::Percent(1.0),
-            padding: USides::axes(24.0, 10.0),
-            border_radius: UCornerRadius::all(12.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let hud_header = commands
+        .spawn((
+            ChildOf(hud_root),
+            UPanel::glass(),
+            UNode {
+                width: UVal::Percent(1.0),
+                padding: USides::axes(24.0, 10.0),
+                border_radius: UCornerRadius::all(12.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(hud_header),
@@ -532,18 +560,20 @@ fn setup(
     ));
 
     // Footer info
-    let hud_footer = commands.spawn((
-        ChildOf(hud_root),
-        UNode {
-            width: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::SpaceBetween,
-            ..default()
-        }
-    )).id();
+    let hud_footer = commands
+        .spawn((
+            ChildOf(hud_root),
+            UNode {
+                width: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::SpaceBetween,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(hud_footer),

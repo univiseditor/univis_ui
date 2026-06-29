@@ -64,10 +64,7 @@ fn main() {
         }))
         .add_plugins(UnivisUiPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, (
-            animate_hover_elements,
-            camera_control,
-        ))
+        .add_systems(Update, (animate_hover_elements, camera_control))
         .run();
 }
 
@@ -77,16 +74,17 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // --- 1. LIGHTS & CAMERAS ---
-    let camera_3d = commands.spawn((
-        Camera3d::default(),
-        MainCamera {
-            orbit_distance: 4.6,
-            pitch: -0.15,
-            yaw: -0.3,
-        },
-        Transform::from_xyz(0.0, 1.8, 4.5).looking_at(Vec3::new(0.0, 0.6, 0.0), Vec3::Y),
-    )).id();
-
+    let camera_3d = commands
+        .spawn((
+            Camera3d::default(),
+            MainCamera {
+                orbit_distance: 4.6,
+                pitch: -0.15,
+                yaw: -0.3,
+            },
+            Transform::from_xyz(0.0, 1.8, 4.5).looking_at(Vec3::new(0.0, 0.6, 0.0), Vec3::Y),
+        ))
+        .id();
 
     commands.insert_resource(GlobalAmbientLight {
         color: Color::srgb(0.02, 0.03, 0.08),
@@ -179,42 +177,43 @@ fn setup(
         UNode::default(),
     ));
 
-    commands.spawn((
-        ChildOf(settings_board),
-        UDivider::horizontal(),
-    ));
+    commands.spawn((ChildOf(settings_board), UDivider::horizontal()));
 
     // Two-column content layout
-    let content = commands.spawn((
-        ChildOf(settings_board),
-        UNode {
-            width: UVal::Percent(1.0),
-            height: UVal::Flex(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            gap: 20.0,
-            ..default()
-        }
-    )).id();
+    let content = commands
+        .spawn((
+            ChildOf(settings_board),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Flex(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 20.0,
+                ..default()
+            },
+        ))
+        .id();
 
     // --- LEFT COLUMN: Settings Categories ---
-    let left_col = commands.spawn((
-        ChildOf(content),
-        UNode {
-            width: UVal::Px(240.0),
-            height: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 12.0,
-            ..default()
-        }
-    )).id();
+    let left_col = commands
+        .spawn((
+            ChildOf(content),
+            UNode {
+                width: UVal::Px(240.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
 
     let categories = [
         ("GRAPHICS", Color::srgb(0.0, 0.9, 1.0)),
@@ -224,94 +223,100 @@ fn setup(
     ];
 
     for (name, glow_color) in categories {
-        commands.spawn((
-            ChildOf(left_col),
+        commands
+            .spawn((
+                ChildOf(left_col),
+                UInteraction::default(),
+                Pickable::default(),
+                AnimHover::with_target_color(glow_color),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Px(56.0),
+                    padding: USides::axes(16.0, 10.0),
+                    background_color: Color::srgba(0.05, 0.07, 0.12, 0.5),
+                    border_radius: UCornerRadius::all(14.0),
+                    ..default()
+                },
+                UBorder {
+                    color: Color::srgba(0.2, 0.3, 0.4, 0.3),
+                    width: 1.0,
+                    radius: UCornerRadius::all(14.0),
+                    offset: 0.0,
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    align_items: UAlignItems::Center,
+                    ..default()
+                },
+            ))
+            .with_children(|card| {
+                card.spawn((
+                    UNode::default(),
+                    UTextLabel {
+                        text: name.to_string(),
+                        font_size: 14.0,
+                        color: Color::srgba(1.0, 1.0, 1.0, 0.85),
+                        ..default()
+                    },
+                ));
+            });
+    }
+
+    // --- RIGHT COLUMN: Active Option Settings ---
+    let right_col = commands
+        .spawn((
+            ChildOf(content),
+            UNode {
+                width: UVal::Flex(1.0),
+                height: UVal::Percent(1.0),
+                padding: USides::all(16.0),
+                background_color: Color::srgba(0.04, 0.06, 0.1, 0.4),
+                border_radius: UCornerRadius::all(20.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.2, 0.3, 0.4, 0.15),
+                width: 1.0,
+                radius: UCornerRadius::all(20.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
+
+    // Option 1: Resolution Selection Dropdown Card
+    let option1 = commands
+        .spawn((
+            ChildOf(right_col),
             UInteraction::default(),
             Pickable::default(),
-            AnimHover::with_target_color(glow_color),
+            AnimHover::default(),
             UNode {
                 width: UVal::Percent(1.0),
-                height: UVal::Px(56.0),
-                padding: USides::axes(16.0, 10.0),
-                background_color: Color::srgba(0.05, 0.07, 0.12, 0.5),
-                border_radius: UCornerRadius::all(14.0),
+                padding: USides::all(14.0),
+                background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
+                border_radius: UCornerRadius::all(12.0),
                 ..default()
             },
             UBorder {
                 color: Color::srgba(0.2, 0.3, 0.4, 0.3),
                 width: 1.0,
-                radius: UCornerRadius::all(14.0),
+                radius: UCornerRadius::all(12.0),
                 offset: 0.0,
             },
             ULayout {
                 display: UDisplay::Flex,
+                justify_content: UJustifyContent::SpaceBetween,
                 align_items: UAlignItems::Center,
                 ..default()
-            }
-        )).with_children(|card| {
-            card.spawn((
-                UNode::default(),
-                UTextLabel {
-                    text: name.to_string(),
-                    font_size: 14.0,
-                    color: Color::srgba(1.0, 1.0, 1.0, 0.85),
-                    ..default()
-                }
-            ));
-        });
-    }
-
-    // --- RIGHT COLUMN: Active Option Settings ---
-    let right_col = commands.spawn((
-        ChildOf(content),
-        UNode {
-            width: UVal::Flex(1.0),
-            height: UVal::Percent(1.0),
-            padding: USides::all(16.0),
-            background_color: Color::srgba(0.04, 0.06, 0.1, 0.4),
-            border_radius: UCornerRadius::all(20.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.2, 0.3, 0.4, 0.15),
-            width: 1.0,
-            radius: UCornerRadius::all(20.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 16.0,
-            ..default()
-        }
-    )).id();
-
-    // Option 1: Resolution Selection Dropdown Card
-    let option1 = commands.spawn((
-        ChildOf(right_col),
-        UInteraction::default(),
-        Pickable::default(),
-        AnimHover::default(),
-        UNode {
-            width: UVal::Percent(1.0),
-            padding: USides::all(14.0),
-            background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
-            border_radius: UCornerRadius::all(12.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.2, 0.3, 0.4, 0.3),
-            width: 1.0,
-            radius: UCornerRadius::all(12.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(option1),
@@ -336,31 +341,33 @@ fn setup(
     ));
 
     // Option 2: Texture Quality Card
-    let option2 = commands.spawn((
-        ChildOf(right_col),
-        UInteraction::default(),
-        Pickable::default(),
-        AnimHover::default(),
-        UNode {
-            width: UVal::Percent(1.0),
-            padding: USides::all(14.0),
-            background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
-            border_radius: UCornerRadius::all(12.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.2, 0.3, 0.4, 0.3),
-            width: 1.0,
-            radius: UCornerRadius::all(12.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let option2 = commands
+        .spawn((
+            ChildOf(right_col),
+            UInteraction::default(),
+            Pickable::default(),
+            AnimHover::default(),
+            UNode {
+                width: UVal::Percent(1.0),
+                padding: USides::all(14.0),
+                background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
+                border_radius: UCornerRadius::all(12.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.2, 0.3, 0.4, 0.3),
+                width: 1.0,
+                radius: UCornerRadius::all(12.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(option2),
@@ -385,41 +392,45 @@ fn setup(
     ));
 
     // Option 3: Volume Slider Card
-    let option3 = commands.spawn((
-        ChildOf(right_col),
-        UInteraction::default(),
-        Pickable::default(),
-        AnimHover::default(),
-        UNode {
-            width: UVal::Percent(1.0),
-            padding: USides::all(14.0),
-            background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
-            border_radius: UCornerRadius::all(12.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.2, 0.3, 0.4, 0.3),
-            width: 1.0,
-            radius: UCornerRadius::all(12.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 8.0,
-            ..default()
-        }
-    )).id();
+    let option3 = commands
+        .spawn((
+            ChildOf(right_col),
+            UInteraction::default(),
+            Pickable::default(),
+            AnimHover::default(),
+            UNode {
+                width: UVal::Percent(1.0),
+                padding: USides::all(14.0),
+                background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
+                border_radius: UCornerRadius::all(12.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.2, 0.3, 0.4, 0.3),
+                width: 1.0,
+                radius: UCornerRadius::all(12.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 8.0,
+                ..default()
+            },
+        ))
+        .id();
 
-    let slider_header = commands.spawn((
-        ChildOf(option3),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::SpaceBetween,
-            ..default()
-        }
-    )).id();
+    let slider_header = commands
+        .spawn((
+            ChildOf(option3),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::SpaceBetween,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(slider_header),
@@ -445,35 +456,39 @@ fn setup(
 
     commands.spawn((
         ChildOf(option3),
-        USeekBar::sci_fi_style().with_range(0.0, 100.0).with_value(80.0)
+        USeekBar::sci_fi_style()
+            .with_range(0.0, 100.0)
+            .with_value(80.0),
     ));
 
     // Option 4: V-Sync Toggle Card
-    let option4 = commands.spawn((
-        ChildOf(right_col),
-        UInteraction::default(),
-        Pickable::default(),
-        AnimHover::default(),
-        UNode {
-            width: UVal::Percent(1.0),
-            padding: USides::all(14.0),
-            background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
-            border_radius: UCornerRadius::all(12.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.2, 0.3, 0.4, 0.3),
-            width: 1.0,
-            radius: UCornerRadius::all(12.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let option4 = commands
+        .spawn((
+            ChildOf(right_col),
+            UInteraction::default(),
+            Pickable::default(),
+            AnimHover::default(),
+            UNode {
+                width: UVal::Percent(1.0),
+                padding: USides::all(14.0),
+                background_color: Color::srgba(0.06, 0.09, 0.14, 0.5),
+                border_radius: UCornerRadius::all(12.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.2, 0.3, 0.4, 0.3),
+                width: 1.0,
+                radius: UCornerRadius::all(12.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(option4),
@@ -486,28 +501,27 @@ fn setup(
         UNode::default(),
     ));
 
-    commands.spawn((
-        ChildOf(option4),
-        UToggle::ios_style().with_checked(true),
-    ));
+    commands.spawn((ChildOf(option4), UToggle::ios_style().with_checked(true)));
 
     // Instructions foot label on HUD
-    let hud_root = commands.spawn((
-        URootUi::screen(),
-        UNode {
-            width: UVal::Percent(1.0),
-            height: UVal::Percent(1.0),
-            padding: USides::all(20.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            justify_content: UJustifyContent::End,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let hud_root = commands
+        .spawn((
+            URootUi::screen(),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                padding: USides::all(20.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                justify_content: UJustifyContent::End,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(hud_root),
@@ -531,12 +545,16 @@ fn animate_hover_elements(
 
     for (mut transform, mut border, interaction, mut anim) in &mut query {
         let (dest_scale, dest_border_w, dest_border_c) = match interaction {
-            UInteraction::Hovered | UInteraction::Pressed => {
-                (anim.target_scale, anim.target_border_width, anim.target_border_color)
-            }
-            _ => {
-                (anim.base_scale, anim.base_border_width, anim.base_border_color)
-            }
+            UInteraction::Hovered | UInteraction::Pressed => (
+                anim.target_scale,
+                anim.target_border_width,
+                anim.target_border_color,
+            ),
+            _ => (
+                anim.base_scale,
+                anim.base_border_width,
+                anim.base_border_color,
+            ),
         };
 
         // Smoothly lerp Transform scale
@@ -544,7 +562,8 @@ fn animate_hover_elements(
         transform.scale = anim.current_scale;
 
         // Smoothly lerp UBorder width
-        anim.current_border_width = anim.current_border_width + (dest_border_w - anim.current_border_width) * speed * dt;
+        anim.current_border_width =
+            anim.current_border_width + (dest_border_w - anim.current_border_width) * speed * dt;
         border.width = anim.current_border_width;
 
         // Smoothly lerp UBorder color

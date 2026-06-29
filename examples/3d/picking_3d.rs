@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use bevy::picking::prelude::MeshPickingPlugin;
 use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll};
+use bevy::picking::prelude::MeshPickingPlugin;
+use bevy::prelude::*;
 use univis_ui::prelude::*;
 
 // Components for controlling the 3D scene
@@ -105,40 +105,41 @@ fn setup(
 
     // 3. Spawns an interactive rotating cube in the center
     // We add Pickable and an observer to handle clicks directly on the 3D mesh
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgb(0.8, 0.3, 0.3),
-            metallic: 0.1,
-            perceptual_roughness: 0.7,
-            ..default()
-        })),
-        Transform::from_xyz(1.2, 1.0, 0.0),
-        RotatingCube,
-        Pickable::default(),
-    )).observe(
-        |trigger: On<Pointer<Click>>,
-         mut settings: ResMut<AppSettings>,
-         mut toggle_query: Query<&mut UToggle, With<RotationToggle>>| {
-            if trigger.button == PointerButton::Primary {
-                // Toggle rotation in settings
-                settings.cube_rotation_enabled = !settings.cube_rotation_enabled;
-                
-                // Keep the UI toggle widget in sync
-                for mut toggle in &mut toggle_query {
-                    toggle.checked = settings.cube_rotation_enabled;
+    commands
+        .spawn((
+            Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(0.8, 0.3, 0.3),
+                metallic: 0.1,
+                perceptual_roughness: 0.7,
+                ..default()
+            })),
+            Transform::from_xyz(1.2, 1.0, 0.0),
+            RotatingCube,
+            Pickable::default(),
+        ))
+        .observe(
+            |trigger: On<Pointer<Click>>,
+             mut settings: ResMut<AppSettings>,
+             mut toggle_query: Query<&mut UToggle, With<RotationToggle>>| {
+                if trigger.button == PointerButton::Primary {
+                    // Toggle rotation in settings
+                    settings.cube_rotation_enabled = !settings.cube_rotation_enabled;
+
+                    // Keep the UI toggle widget in sync
+                    for mut toggle in &mut toggle_query {
+                        toggle.checked = settings.cube_rotation_enabled;
+                    }
                 }
-            }
-        },
-    );
+            },
+        );
 
     // 4. Spawns a world-space 3D UI root
     // Positions: UI at (-1.2, 1.0, 0.0), angled slightly (0.3 rad) to face the camera
     let root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(600.0, 500.0)),
-            Transform::from_xyz(-1.2, 1.0, 0.0)
-                .with_rotation(Quat::from_rotation_y(0.35)),
+            Transform::from_xyz(-1.2, 1.0, 0.0).with_rotation(Quat::from_rotation_y(0.35)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -175,7 +176,7 @@ fn setup(
                 flex_direction: UFlexDirection::Column,
                 gap: 20.0,
                 ..default()
-            }
+            },
         ))
         .id();
 
@@ -213,17 +214,19 @@ fn setup(
     // 7. Interactive UI Controls
 
     // A. Cube Rotation Toggle
-    let row_spin = commands.spawn((
-        ChildOf(panel),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            align_items: UAlignItems::Center,
-            gap: 16.0,
-            ..default()
-        }
-    )).id();
+    let row_spin = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(row_spin),
         UNode::default(),
@@ -259,17 +262,19 @@ fn setup(
     ));
 
     // C. Panel Emissive Toggle (Glow)
-    let row_glow = commands.spawn((
-        ChildOf(panel),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            align_items: UAlignItems::Center,
-            gap: 16.0,
-            ..default()
-        }
-    )).id();
+    let row_glow = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(row_glow),
         UNode::default(),
@@ -392,7 +397,11 @@ fn sync_ui_to_settings(
     for mut label in &mut label_query {
         label.text = format!(
             "Cube Rotation: {}\nCube Speed: {:.2}\nPanel Metallic: {:.2}\nPanel Roughness: {:.2}",
-            if settings.cube_rotation_enabled { "ENABLED" } else { "DISABLED" },
+            if settings.cube_rotation_enabled {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            },
             settings.cube_rotation_speed,
             settings.panel_metallic,
             settings.panel_roughness

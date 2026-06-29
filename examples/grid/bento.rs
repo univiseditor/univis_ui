@@ -29,7 +29,7 @@ fn setup(mut commands: Commands) {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
                 background_color: Color::srgb(0.12, 0.12, 0.12), // Dark background
-                padding: USides::all(40.0), // Padding around the grid
+                padding: USides::all(40.0),                      // Padding around the grid
                 ..default()
             },
             ULayout {
@@ -124,7 +124,7 @@ fn setup(mut commands: Commands) {
     spawn_item(2, 2, 1, 1);
     // Box 3 (Top-Right, small)
     spawn_item(4, 1, 1, 1);
-    
+
     // Box 4 (Mid-Left, small)
     spawn_item(1, 1, 3, 1);
     // Box 5 (Center, tall)
@@ -133,7 +133,7 @@ fn setup(mut commands: Commands) {
     spawn_item(3, 1, 2, 1);
     // Box 7 (Right, small)
     spawn_item(4, 1, 2, 1);
-    
+
     // Box 8 (Bottom-Left, wide)
     spawn_item(1, 2, 4, 1);
     // Box 9 (Bottom-Right, wide & tall)

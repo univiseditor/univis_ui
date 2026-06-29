@@ -106,20 +106,40 @@ fn setup(mut commands: Commands) {
         .id();
 
     // Title text group
-    let title_group = spawn_container(&mut commands, header_panel, UVal::Auto, UFlexDirection::Column, 4.0);
+    let title_group = spawn_container(
+        &mut commands,
+        header_panel,
+        UVal::Auto,
+        UFlexDirection::Column,
+        4.0,
+    );
     commands.spawn((
         ChildOf(title_group),
         label_node(),
-        text("◈ TACTICAL RESPONSIVE HUD CONSOLE ◈", 22.0, Color::srgb(0.0, 0.8, 1.0)),
+        text(
+            "◈ TACTICAL RESPONSIVE HUD CONSOLE ◈",
+            22.0,
+            Color::srgb(0.0, 0.8, 1.0),
+        ),
     ));
     commands.spawn((
         ChildOf(title_group),
         label_node(),
-        text("Simulating 3 screen layout guidelines from Vegas Web (Desktop vs Mobile layouts)", 12.0, Color::srgb(0.5, 0.6, 0.7)),
+        text(
+            "Simulating 3 screen layout guidelines from Vegas Web (Desktop vs Mobile layouts)",
+            12.0,
+            Color::srgb(0.5, 0.6, 0.7),
+        ),
     ));
 
     // Breakpoint indicator pill
-    let indicator_group = spawn_container(&mut commands, header_panel, UVal::Auto, UFlexDirection::Row, 8.0);
+    let indicator_group = spawn_container(
+        &mut commands,
+        header_panel,
+        UVal::Auto,
+        UFlexDirection::Row,
+        8.0,
+    );
     commands.spawn((
         ChildOf(indicator_group),
         BreakpointIndicator,
@@ -167,7 +187,11 @@ fn setup(mut commands: Commands) {
                         ..default()
                     },
                     grid: ULayoutGridContainer {
-                        template_columns: vec![UTrackSize::Fr(1.0), UTrackSize::Fr(1.0), UTrackSize::Fr(1.0)],
+                        template_columns: vec![
+                            UTrackSize::Fr(1.0),
+                            UTrackSize::Fr(1.0),
+                            UTrackSize::Fr(1.0),
+                        ],
                         ..default()
                     },
                     ..default()
@@ -178,9 +202,24 @@ fn setup(mut commands: Commands) {
         .id();
 
     // Spawning 3 Simulated Device Frames
-    spawn_example_frame(&mut commands, screens_container, 1, "EXAMPLE 1: 3-BLOCK GRID");
-    spawn_example_frame(&mut commands, screens_container, 2, "EXAMPLE 2: SPLIT SIDEBAR");
-    spawn_example_frame(&mut commands, screens_container, 3, "EXAMPLE 3: DATA MATRIX");
+    spawn_example_frame(
+        &mut commands,
+        screens_container,
+        1,
+        "EXAMPLE 1: 3-BLOCK GRID",
+    );
+    spawn_example_frame(
+        &mut commands,
+        screens_container,
+        2,
+        "EXAMPLE 2: SPLIT SIDEBAR",
+    );
+    spawn_example_frame(
+        &mut commands,
+        screens_container,
+        3,
+        "EXAMPLE 3: DATA MATRIX",
+    );
 }
 
 fn spawn_example_frame(commands: &mut Commands, parent: Entity, id: u32, title: &str) {
@@ -215,26 +254,28 @@ fn spawn_example_frame(commands: &mut Commands, parent: Entity, id: u32, title: 
         .id();
 
     // Frame Title Bar
-    let title_bar = commands.spawn((
-        ChildOf(frame),
-        UNode {
-            width: UVal::Percent(1.0),
-            padding: USides::bottom(6.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.0, 0.8, 1.0, 0.2),
-            width: 1.0,
-            radius: UCornerRadius::all(0.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        },
-    )).id();
+    let title_bar = commands
+        .spawn((
+            ChildOf(frame),
+            UNode {
+                width: UVal::Percent(1.0),
+                padding: USides::bottom(6.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.0, 0.8, 1.0, 0.2),
+                width: 1.0,
+                radius: UCornerRadius::all(0.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(title_bar),
@@ -284,9 +325,18 @@ fn spawn_example_frame(commands: &mut Commands, parent: Entity, id: u32, title: 
                         template_columns: if id == 1 {
                             vec![UTrackSize::Fr(2.0), UTrackSize::Fr(1.0)]
                         } else {
-                            vec![UTrackSize::Fr(1.0), UTrackSize::Fr(1.0), UTrackSize::Fr(1.0), UTrackSize::Fr(1.5)]
+                            vec![
+                                UTrackSize::Fr(1.0),
+                                UTrackSize::Fr(1.0),
+                                UTrackSize::Fr(1.0),
+                                UTrackSize::Fr(1.5),
+                            ]
                         },
-                        template_rows: vec![UTrackSize::Fr(1.0), UTrackSize::Fr(2.0), UTrackSize::Fr(2.0)],
+                        template_rows: vec![
+                            UTrackSize::Fr(1.0),
+                            UTrackSize::Fr(2.0),
+                            UTrackSize::Fr(2.0),
+                        ],
                         ..default()
                     },
                     ..default()
@@ -306,27 +356,163 @@ fn spawn_example_frame(commands: &mut Commands, parent: Entity, id: u32, title: 
 
     match id {
         1 => {
-            spawn_hud_block(commands, grid_area, 1, 'A', "SYS_A: MAIN_CORE", "ACTIVE", cyan);
-            spawn_hud_block(commands, grid_area, 1, 'B', "SYS_B: POWER_SHIELD", "ONLINE", green);
-            spawn_hud_block(commands, grid_area, 1, 'C', "SYS_C: SECTOR_GRID", "ONLINE", orange);
+            spawn_hud_block(
+                commands,
+                grid_area,
+                1,
+                'A',
+                "SYS_A: MAIN_CORE",
+                "ACTIVE",
+                cyan,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                1,
+                'B',
+                "SYS_B: POWER_SHIELD",
+                "ONLINE",
+                green,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                1,
+                'C',
+                "SYS_C: SECTOR_GRID",
+                "ONLINE",
+                orange,
+            );
         }
         2 => {
-            spawn_hud_block(commands, grid_area, 2, 'A', "SYS_A: TELEMETRY", "ACTIVE", cyan);
-            spawn_hud_block(commands, grid_area, 2, 'B', "SYS_B: REACTOR_LINK", "ONLINE", green);
-            spawn_hud_block(commands, grid_area, 2, 'C', "SYS_C: THRUSTERS", "STABLE", orange);
-            spawn_hud_block(commands, grid_area, 2, 'D', "SYS_D: COOLING_SYS", "STABLE", violet);
-            spawn_hud_block(commands, grid_area, 2, 'E', "SYS_E: COMMS_LINK", "STABLE", cyan);
-            spawn_hud_block(commands, grid_area, 2, 'F', "SYS_F: RADAR_MATRIX", "SCANNING", red);
+            spawn_hud_block(
+                commands,
+                grid_area,
+                2,
+                'A',
+                "SYS_A: TELEMETRY",
+                "ACTIVE",
+                cyan,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                2,
+                'B',
+                "SYS_B: REACTOR_LINK",
+                "ONLINE",
+                green,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                2,
+                'C',
+                "SYS_C: THRUSTERS",
+                "STABLE",
+                orange,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                2,
+                'D',
+                "SYS_D: COOLING_SYS",
+                "STABLE",
+                violet,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                2,
+                'E',
+                "SYS_E: COMMS_LINK",
+                "STABLE",
+                cyan,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                2,
+                'F',
+                "SYS_F: RADAR_MATRIX",
+                "SCANNING",
+                red,
+            );
         }
         3 => {
-            spawn_hud_block(commands, grid_area, 3, 'A', "SYS_A: GLOBAL_GRID", "ACTIVE", cyan);
-            spawn_hud_block(commands, grid_area, 3, 'B', "SYS_B: SENSORS_L1", "STABLE", green);
-            spawn_hud_block(commands, grid_area, 3, 'C', "SYS_C: SENSORS_L2", "STABLE", green);
-            spawn_hud_block(commands, grid_area, 3, 'D', "SYS_D: SENSORS_L3", "STABLE", green);
-            spawn_hud_block(commands, grid_area, 3, 'E', "SYS_E: AMBIENT_L1", "STABLE", cyan);
-            spawn_hud_block(commands, grid_area, 3, 'F', "SYS_F: AMBIENT_L2", "STABLE", cyan);
-            spawn_hud_block(commands, grid_area, 3, 'G', "SYS_G: AMBIENT_L3", "STABLE", cyan);
-            spawn_hud_block(commands, grid_area, 3, 'H', "SYS_H: LOGS_STREAM", "STREAMING", orange);
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'A',
+                "SYS_A: GLOBAL_GRID",
+                "ACTIVE",
+                cyan,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'B',
+                "SYS_B: SENSORS_L1",
+                "STABLE",
+                green,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'C',
+                "SYS_C: SENSORS_L2",
+                "STABLE",
+                green,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'D',
+                "SYS_D: SENSORS_L3",
+                "STABLE",
+                green,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'E',
+                "SYS_E: AMBIENT_L1",
+                "STABLE",
+                cyan,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'F',
+                "SYS_F: AMBIENT_L2",
+                "STABLE",
+                cyan,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'G',
+                "SYS_G: AMBIENT_L3",
+                "STABLE",
+                cyan,
+            );
+            spawn_hud_block(
+                commands,
+                grid_area,
+                3,
+                'H',
+                "SYS_H: LOGS_STREAM",
+                "STREAMING",
+                orange,
+            );
         }
         _ => {}
     }
@@ -354,7 +540,12 @@ fn spawn_hud_block(
                 ..default()
             },
             UBorder {
-                color: Color::srgba(color.to_linear().red, color.to_linear().green, color.to_linear().blue, 0.3),
+                color: Color::srgba(
+                    color.to_linear().red,
+                    color.to_linear().green,
+                    color.to_linear().blue,
+                    0.3,
+                ),
                 width: 1.5,
                 radius: UCornerRadius::all(10.0),
                 offset: 0.0,
@@ -393,15 +584,16 @@ fn spawn_hud_block(
         text(
             label,
             8.0,
-            Color::srgba(color.to_linear().red, color.to_linear().green, color.to_linear().blue, 0.75),
+            Color::srgba(
+                color.to_linear().red,
+                color.to_linear().green,
+                color.to_linear().blue,
+                0.75,
+            ),
         ),
     ));
 
-    commands.spawn((
-        ChildOf(header_row),
-        label_node(),
-        text(status, 8.0, color),
-    ));
+    commands.spawn((ChildOf(header_row), label_node(), text(status, 8.0, color)));
 
     // Big central letter
     commands.spawn((
@@ -454,8 +646,14 @@ fn update_responsive_hud(
     mut indicator: Query<&mut UTextLabel, With<BreakpointIndicator>>,
     mut state: ResMut<LayoutState>,
     mut invalidate_queue: ResMut<UiInvalidateRequestQueue>,
-    mut main_container: Query<(Entity, &mut ULayout), (With<SimulatedScreensContainer>, Without<GridExample>)>,
-    mut examples_grids: Query<(Entity, &GridExample, &mut ULayout), (With<GridExample>, Without<SimulatedScreensContainer>)>,
+    mut main_container: Query<
+        (Entity, &mut ULayout),
+        (With<SimulatedScreensContainer>, Without<GridExample>),
+    >,
+    mut examples_grids: Query<
+        (Entity, &GridExample, &mut ULayout),
+        (With<GridExample>, Without<SimulatedScreensContainer>),
+    >,
     mut frames: Query<(Entity, &mut UNode), With<SimulatedFrame>>,
     mut blocks: Query<(Entity, &HudBlock, &mut USelf)>,
 ) {
@@ -467,7 +665,8 @@ fn update_responsive_hud(
     let height = window.height();
     let is_desktop = width >= 900.0;
 
-    let resized = (width - state.last_width).abs() > 0.5 || (height - state.last_height).abs() > 0.5;
+    let resized =
+        (width - state.last_width).abs() > 0.5 || (height - state.last_height).abs() > 0.5;
     let mode_changed = state.is_desktop != Some(is_desktop);
 
     state.last_width = width;
@@ -488,7 +687,10 @@ fn update_responsive_hud(
     // Update breakpoint label display
     for mut label in &mut indicator {
         let label_text = if is_desktop {
-            format!("ACTIVE BREAKPOINT: DESKTOP (W: {}px >= 900px)", width as u32)
+            format!(
+                "ACTIVE BREAKPOINT: DESKTOP (W: {}px >= 900px)",
+                width as u32
+            )
         } else {
             format!("ACTIVE BREAKPOINT: MOBILE (W: {}px < 900px)", width as u32)
         };
@@ -519,14 +721,10 @@ fn update_responsive_hud(
             1 => {
                 if is_desktop {
                     layout.grid_columns = 2;
-                    layout.container_ext.grid.template_columns = vec![
-                        UTrackSize::Fr(2.0),
-                        UTrackSize::Fr(1.0),
-                    ];
-                    layout.container_ext.grid.template_rows = vec![
-                        UTrackSize::Fr(1.0),
-                        UTrackSize::Fr(2.5),
-                    ];
+                    layout.container_ext.grid.template_columns =
+                        vec![UTrackSize::Fr(2.0), UTrackSize::Fr(1.0)];
+                    layout.container_ext.grid.template_rows =
+                        vec![UTrackSize::Fr(1.0), UTrackSize::Fr(2.5)];
                 } else {
                     layout.grid_columns = 1;
                     layout.container_ext.grid.template_columns = vec![UTrackSize::Fr(1.0)];
@@ -624,54 +822,224 @@ fn get_placement(example_id: u32, letter: char, is_desktop: bool) -> ULayoutGrid
     if is_desktop {
         match (example_id, letter) {
             // Example 1
-            (1, 'A') => ULayoutGridItem { column_start: Some(1), column_span: 2, row_start: Some(1), row_span: 1 },
-            (1, 'B') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(2), row_span: 1 },
-            (1, 'C') => ULayoutGridItem { column_start: Some(2), column_span: 1, row_start: Some(2), row_span: 1 },
+            (1, 'A') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 2,
+                row_start: Some(1),
+                row_span: 1,
+            },
+            (1, 'B') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (1, 'C') => ULayoutGridItem {
+                column_start: Some(2),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
 
             // Example 2
-            (2, 'A') => ULayoutGridItem { column_start: Some(1), column_span: 4, row_start: Some(1), row_span: 1 },
-            (2, 'B') => ULayoutGridItem { column_start: Some(1), column_span: 3, row_start: Some(2), row_span: 1 },
-            (2, 'C') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(3), row_span: 1 },
-            (2, 'D') => ULayoutGridItem { column_start: Some(2), column_span: 1, row_start: Some(3), row_span: 1 },
-            (2, 'E') => ULayoutGridItem { column_start: Some(3), column_span: 1, row_start: Some(3), row_span: 1 },
-            (2, 'F') => ULayoutGridItem { column_start: Some(4), column_span: 1, row_start: Some(2), row_span: 2 },
+            (2, 'A') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 4,
+                row_start: Some(1),
+                row_span: 1,
+            },
+            (2, 'B') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 3,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (2, 'C') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (2, 'D') => ULayoutGridItem {
+                column_start: Some(2),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (2, 'E') => ULayoutGridItem {
+                column_start: Some(3),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (2, 'F') => ULayoutGridItem {
+                column_start: Some(4),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 2,
+            },
 
             // Example 3
-            (3, 'A') => ULayoutGridItem { column_start: Some(1), column_span: 4, row_start: Some(1), row_span: 1 },
-            (3, 'B') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(2), row_span: 1 },
-            (3, 'C') => ULayoutGridItem { column_start: Some(2), column_span: 1, row_start: Some(2), row_span: 1 },
-            (3, 'D') => ULayoutGridItem { column_start: Some(3), column_span: 1, row_start: Some(2), row_span: 1 },
-            (3, 'E') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(3), row_span: 1 },
-            (3, 'F') => ULayoutGridItem { column_start: Some(2), column_span: 1, row_start: Some(3), row_span: 1 },
-            (3, 'G') => ULayoutGridItem { column_start: Some(3), column_span: 1, row_start: Some(3), row_span: 1 },
-            (3, 'H') => ULayoutGridItem { column_start: Some(4), column_span: 1, row_start: Some(2), row_span: 2 },
+            (3, 'A') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 4,
+                row_start: Some(1),
+                row_span: 1,
+            },
+            (3, 'B') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (3, 'C') => ULayoutGridItem {
+                column_start: Some(2),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (3, 'D') => ULayoutGridItem {
+                column_start: Some(3),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (3, 'E') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (3, 'F') => ULayoutGridItem {
+                column_start: Some(2),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (3, 'G') => ULayoutGridItem {
+                column_start: Some(3),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (3, 'H') => ULayoutGridItem {
+                column_start: Some(4),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 2,
+            },
 
             _ => ULayoutGridItem::default(),
         }
     } else {
         match (example_id, letter) {
             // Example 1 (Stacked)
-            (1, 'A') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(1), row_span: 1 },
-            (1, 'B') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(2), row_span: 1 },
-            (1, 'C') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(3), row_span: 1 },
+            (1, 'A') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(1),
+                row_span: 1,
+            },
+            (1, 'B') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (1, 'C') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
 
             // Example 2 (Stacked: A, B, [C, D, E], F)
-            (2, 'A') => ULayoutGridItem { column_start: Some(1), column_span: 3, row_start: Some(1), row_span: 1 },
-            (2, 'B') => ULayoutGridItem { column_start: Some(1), column_span: 3, row_start: Some(2), row_span: 1 },
-            (2, 'C') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(3), row_span: 1 },
-            (2, 'D') => ULayoutGridItem { column_start: Some(2), column_span: 1, row_start: Some(3), row_span: 1 },
-            (2, 'E') => ULayoutGridItem { column_start: Some(3), column_span: 1, row_start: Some(3), row_span: 1 },
-            (2, 'F') => ULayoutGridItem { column_start: Some(1), column_span: 3, row_start: Some(4), row_span: 1 },
+            (2, 'A') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 3,
+                row_start: Some(1),
+                row_span: 1,
+            },
+            (2, 'B') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 3,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (2, 'C') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (2, 'D') => ULayoutGridItem {
+                column_start: Some(2),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (2, 'E') => ULayoutGridItem {
+                column_start: Some(3),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (2, 'F') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 3,
+                row_start: Some(4),
+                row_span: 1,
+            },
 
             // Example 3 (Stacked: A, [B, C, D], [E, F, G], H)
-            (3, 'A') => ULayoutGridItem { column_start: Some(1), column_span: 3, row_start: Some(1), row_span: 1 },
-            (3, 'B') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(2), row_span: 1 },
-            (3, 'C') => ULayoutGridItem { column_start: Some(2), column_span: 1, row_start: Some(2), row_span: 1 },
-            (3, 'D') => ULayoutGridItem { column_start: Some(3), column_span: 1, row_start: Some(2), row_span: 1 },
-            (3, 'E') => ULayoutGridItem { column_start: Some(1), column_span: 1, row_start: Some(3), row_span: 1 },
-            (3, 'F') => ULayoutGridItem { column_start: Some(2), column_span: 1, row_start: Some(3), row_span: 1 },
-            (3, 'G') => ULayoutGridItem { column_start: Some(3), column_span: 1, row_start: Some(3), row_span: 1 },
-            (3, 'H') => ULayoutGridItem { column_start: Some(1), column_span: 3, row_start: Some(4), row_span: 1 },
+            (3, 'A') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 3,
+                row_start: Some(1),
+                row_span: 1,
+            },
+            (3, 'B') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (3, 'C') => ULayoutGridItem {
+                column_start: Some(2),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (3, 'D') => ULayoutGridItem {
+                column_start: Some(3),
+                column_span: 1,
+                row_start: Some(2),
+                row_span: 1,
+            },
+            (3, 'E') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (3, 'F') => ULayoutGridItem {
+                column_start: Some(2),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (3, 'G') => ULayoutGridItem {
+                column_start: Some(3),
+                column_span: 1,
+                row_start: Some(3),
+                row_span: 1,
+            },
+            (3, 'H') => ULayoutGridItem {
+                column_start: Some(1),
+                column_span: 3,
+                row_start: Some(4),
+                row_span: 1,
+            },
 
             _ => ULayoutGridItem::default(),
         }

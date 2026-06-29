@@ -1,7 +1,4 @@
-use bevy::{
-    input::mouse::{AccumulatedMouseMotion},
-    prelude::*,
-};
+use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*};
 use univis_ui::prelude::*;
 
 fn main() {
@@ -19,11 +16,10 @@ fn main() {
         ))
         .init_resource::<SceneSettings>()
         .add_systems(Startup, setup_scene)
-        .add_systems(Update, (
-            sync_ui_to_settings,
-            camera_control,
-            animate_sprites,
-        ))
+        .add_systems(
+            Update,
+            (sync_ui_to_settings, camera_control, animate_sprites),
+        )
         .run();
 }
 
@@ -76,7 +72,7 @@ fn setup_scene(
     // 2. Interactive 2D Sprites
     // Spawning a few colored shapes
     let circle_mesh = meshes.add(Circle::new(50.0));
-    
+
     let colors = [
         Color::srgb(0.8, 0.2, 0.2),
         Color::srgb(0.2, 0.8, 0.2),
@@ -84,14 +80,16 @@ fn setup_scene(
     ];
 
     for (i, color) in colors.iter().enumerate() {
-        commands.spawn((
-            Mesh2d(circle_mesh.clone()),
-            MeshMaterial2d(materials.add(*color)),
-            Transform::from_xyz((i as f32 - 1.0) * 150.0, 0.0, 0.0),
-            InteractiveSprite,
-            // Bevy Picking requirement for 2D meshes
-            Pickable::default(),
-        )).observe(handle_sprite_clicks);
+        commands
+            .spawn((
+                Mesh2d(circle_mesh.clone()),
+                MeshMaterial2d(materials.add(*color)),
+                Transform::from_xyz((i as f32 - 1.0) * 150.0, 0.0, 0.0),
+                InteractiveSprite,
+                // Bevy Picking requirement for 2D meshes
+                Pickable::default(),
+            ))
+            .observe(handle_sprite_clicks);
     }
 
     // 3. Spawns a screen-space UI root
@@ -173,17 +171,19 @@ fn setup_scene(
     ));
 
     // C. Animation Toggle
-    let row_anim = commands.spawn((
-        ChildOf(panel),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            align_items: UAlignItems::Center,
-            gap: 16.0,
-            ..default()
-        }
-    )).id();
+    let row_anim = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 16.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(row_anim),
         UNode::default(),
@@ -279,9 +279,9 @@ fn handle_sprite_clicks(
         let r = (target.to_bits() % 100) as f32 * 0.01;
         let g = (target.to_bits() % 50) as f32 * 0.02;
         let b = (target.to_bits() % 25) as f32 * 0.04;
-        
+
         let random_color = Color::srgb(r, g, b);
-        
+
         if let Ok(mut mat_handle) = q_materials.get_mut(target) {
             mat_handle.0 = materials.add(random_color);
         }
@@ -303,9 +303,6 @@ fn sync_ui_to_settings(
     }
 
     if let Some(mut label) = label_query.iter_mut().next() {
-        label.text = format!(
-            "Animation Speed: {:.1}",
-            settings.sprite_speed
-        );
+        label.text = format!("Animation Speed: {:.1}", settings.sprite_speed);
     }
 }

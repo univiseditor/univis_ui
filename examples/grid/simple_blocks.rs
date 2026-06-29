@@ -204,7 +204,10 @@ fn spawn_block(
 
     commands.spawn((
         ChildOf(block),
-        UNode { background_color: Color::NONE, ..default() },
+        UNode {
+            background_color: Color::NONE,
+            ..default()
+        },
         UTextLabel {
             text: title.to_string(),
             font_size: 18.0,
@@ -215,7 +218,10 @@ fn spawn_block(
 
     commands.spawn((
         ChildOf(block),
-        UNode { background_color: Color::NONE, ..default() },
+        UNode {
+            background_color: Color::NONE,
+            ..default()
+        },
         UTextLabel {
             text: description.to_string(),
             font_size: 12.0,

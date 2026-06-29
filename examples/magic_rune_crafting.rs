@@ -58,13 +58,16 @@ fn main() {
         .add_plugins(UnivisUiPlugin)
         .init_resource::<RuneState>()
         .add_systems(Startup, setup)
-        .add_systems(Update, (
-            animate_crystal,
-            update_crystal_material,
-            update_status_text,
-            update_mana_bar,
-            camera_control,
-        ))
+        .add_systems(
+            Update,
+            (
+                animate_crystal,
+                update_crystal_material,
+                update_status_text,
+                update_mana_bar,
+                camera_control,
+            ),
+        )
         .run();
 }
 
@@ -75,25 +78,29 @@ fn setup(
 ) {
     // --- 1. CAMERAS & LIGHTING ---
     // 3D Camera for magic table observation
-    let camera_3d = commands.spawn((
-        Camera3d::default(),
-        MainCamera {
-            orbit_distance: 4.5,
-            pitch: -0.22,
-            yaw: -0.4,
-        },
-        Transform::from_xyz(0.0, 2.0, 4.0).looking_at(Vec3::new(0.0, 0.8, 0.0), Vec3::Y),
-    )).id();
+    let camera_3d = commands
+        .spawn((
+            Camera3d::default(),
+            MainCamera {
+                orbit_distance: 4.5,
+                pitch: -0.22,
+                yaw: -0.4,
+            },
+            Transform::from_xyz(0.0, 2.0, 4.0).looking_at(Vec3::new(0.0, 0.8, 0.0), Vec3::Y),
+        ))
+        .id();
 
     // 2D Camera for RPG Screen HUD overlay
-    let camera_2d = commands.spawn((
-        Camera2d,
-        Camera {
-            order: 1,
-            clear_color: ClearColorConfig::None,
-            ..default()
-        },
-    )).id();
+    let camera_2d = commands
+        .spawn((
+            Camera2d,
+            Camera {
+                order: 1,
+                clear_color: ClearColorConfig::None,
+                ..default()
+            },
+        ))
+        .id();
 
     // Soft global ambient lighting
     commands.insert_resource(GlobalAmbientLight {
@@ -216,21 +223,23 @@ fn setup(
         .id();
 
     // LEFT PANEL: The Spellweaver Rune Ring (Radial Layout)
-    let left_col = commands.spawn((
-        ChildOf(main_frame),
-        UNode {
-            width: UVal::Px(310.0),
-            height: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let left_col = commands
+        .spawn((
+            ChildOf(main_frame),
+            UNode {
+                width: UVal::Px(310.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(left_col),
@@ -244,26 +253,28 @@ fn setup(
     ));
 
     // Radial Container: Distributes spells orbital style
-    let radial_ring = commands.spawn((
-        ChildOf(left_col),
-        UNode {
-            width: UVal::Px(230.0),
-            height: UVal::Px(230.0),
-            background_color: Color::srgba(0.08, 0.04, 0.15, 0.4),
-            border_radius: UCornerRadius::all(115.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.8, 0.5, 1.0, 0.15),
-            width: 1.0,
-            radius: UCornerRadius::all(115.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Radial,
-            ..default()
-        }
-    )).id();
+    let radial_ring = commands
+        .spawn((
+            ChildOf(left_col),
+            UNode {
+                width: UVal::Px(230.0),
+                height: UVal::Px(230.0),
+                background_color: Color::srgba(0.08, 0.04, 0.15, 0.4),
+                border_radius: UCornerRadius::all(115.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.8, 0.5, 1.0, 0.15),
+                width: 1.0,
+                radius: UCornerRadius::all(115.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Radial,
+                ..default()
+            },
+        ))
+        .id();
 
     // Spawning 6 different magical runes inside the radial layout
     let runes = [
@@ -277,35 +288,46 @@ fn setup(
 
     for (rune_type, label, color) in runes {
         // Subtle color adaptations for hover/press states
-        let hover_color = Color::srgba(color.to_linear().red * 1.2, color.to_linear().green * 1.2, color.to_linear().blue * 1.2, 0.9);
-        let press_color = Color::srgba(color.to_linear().red * 0.7, color.to_linear().green * 0.7, color.to_linear().blue * 0.7, 1.0);
+        let hover_color = Color::srgba(
+            color.to_linear().red * 1.2,
+            color.to_linear().green * 1.2,
+            color.to_linear().blue * 1.2,
+            0.9,
+        );
+        let press_color = Color::srgba(
+            color.to_linear().red * 0.7,
+            color.to_linear().green * 0.7,
+            color.to_linear().blue * 0.7,
+            1.0,
+        );
 
-        let chip = commands.spawn((
-            ChildOf(radial_ring),
-            UButton::secondary(),
-            UNode {
-                width: UVal::Px(56.0),
-                height: UVal::Px(56.0),
-                border_radius: UCornerRadius::all(28.0),
-                background_color: color,
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                justify_content: UJustifyContent::Center,
-                align_items: UAlignItems::Center,
-                ..default()
-            },
-            UInteractionColors {
-                normal: color,
-                hovered: hover_color,
-                pressed: press_color,
-            },
-        ))
-        .observe(move |_: On<Pointer<Click>>, mut state: ResMut<RuneState>| {
-            state.active_rune = rune_type;
-        })
-        .id();
+        let chip = commands
+            .spawn((
+                ChildOf(radial_ring),
+                UButton::secondary(),
+                UNode {
+                    width: UVal::Px(56.0),
+                    height: UVal::Px(56.0),
+                    border_radius: UCornerRadius::all(28.0),
+                    background_color: color,
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    justify_content: UJustifyContent::Center,
+                    align_items: UAlignItems::Center,
+                    ..default()
+                },
+                UInteractionColors {
+                    normal: color,
+                    hovered: hover_color,
+                    pressed: press_color,
+                },
+            ))
+            .observe(move |_: On<Pointer<Click>>, mut state: ResMut<RuneState>| {
+                state.active_rune = rune_type;
+            })
+            .id();
 
         commands.spawn((
             ChildOf(chip),
@@ -331,40 +353,41 @@ fn setup(
     ));
 
     // Vertical Divider
-    commands.spawn((
-        ChildOf(main_frame),
-        UDivider::horizontal(),
-    ));
+    commands.spawn((ChildOf(main_frame), UDivider::horizontal()));
 
     // RIGHT PANEL: Diagnostic telemetry and Masonry inventory
-    let right_col = commands.spawn((
-        ChildOf(main_frame),
-        UNode {
-            width: UVal::Flex(1.0),
-            height: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Start,
-            gap: 12.0,
-            ..default()
-        }
-    )).id();
+    let right_col = commands
+        .spawn((
+            ChildOf(main_frame),
+            UNode {
+                width: UVal::Flex(1.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Start,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
 
     // Active spell indicator block
-    let top_status = commands.spawn((
-        ChildOf(right_col),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 4.0,
-            ..default()
-        }
-    )).id();
+    let top_status = commands
+        .spawn((
+            ChildOf(right_col),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 4.0,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(top_status),
@@ -402,36 +425,38 @@ fn setup(
     ));
 
     // Masonry Container: Lays out children of different heights in columns automatically
-    let masonry_inventory = commands.spawn((
-        ChildOf(right_col),
-        UNode {
-            width: UVal::Percent(1.0),
-            height: UVal::Px(280.0),
-            padding: USides::all(10.0),
-            background_color: Color::srgba(0.08, 0.05, 0.15, 0.4),
-            border_radius: UCornerRadius::all(16.0),
-            ..default()
-        },
-        UBorder {
-            color: Color::srgba(0.8, 0.5, 1.0, 0.1),
-            width: 1.0,
-            radius: UCornerRadius::all(16.0),
-            offset: 0.0,
-        },
-        ULayout {
-            display: UDisplay::Masonry,
-            grid_columns: 3,
-            container_ext: ULayoutContainerExt {
-                box_align: ULayoutBoxAlignContainer {
-                    row_gap: Some(8.0),
-                    column_gap: Some(8.0),
+    let masonry_inventory = commands
+        .spawn((
+            ChildOf(right_col),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Px(280.0),
+                padding: USides::all(10.0),
+                background_color: Color::srgba(0.08, 0.05, 0.15, 0.4),
+                border_radius: UCornerRadius::all(16.0),
+                ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.8, 0.5, 1.0, 0.1),
+                width: 1.0,
+                radius: UCornerRadius::all(16.0),
+                offset: 0.0,
+            },
+            ULayout {
+                display: UDisplay::Masonry,
+                grid_columns: 3,
+                container_ext: ULayoutContainerExt {
+                    box_align: ULayoutBoxAlignContainer {
+                        row_gap: Some(8.0),
+                        column_gap: Some(8.0),
+                        ..default()
+                    },
                     ..default()
                 },
                 ..default()
             },
-            ..default()
-        }
-    )).id();
+        ))
+        .id();
 
     // Spawn cards with varied heights (which standard Bevy Flexbox cannot fit neatly without gaps)
     let inventory_items = [
@@ -444,30 +469,42 @@ fn setup(
     ];
 
     for (name, height, item_color) in inventory_items {
-        let card = commands.spawn((
-            ChildOf(masonry_inventory),
-            UNode {
-                width: UVal::Flex(1.0),
-                height: UVal::Px(height),
-                padding: USides::all(8.0),
-                background_color: Color::srgba(item_color.to_linear().red, item_color.to_linear().green, item_color.to_linear().blue, 0.15),
-                border_radius: UCornerRadius::all(12.0),
-                ..default()
-            },
-            UBorder {
-                color: Color::srgba(item_color.to_linear().red, item_color.to_linear().green, item_color.to_linear().blue, 0.4),
-                width: 1.0,
-                radius: UCornerRadius::all(12.0),
-                offset: 0.0,
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                justify_content: UJustifyContent::Center,
-                align_items: UAlignItems::Center,
-                ..default()
-            }
-        )).id();
+        let card = commands
+            .spawn((
+                ChildOf(masonry_inventory),
+                UNode {
+                    width: UVal::Flex(1.0),
+                    height: UVal::Px(height),
+                    padding: USides::all(8.0),
+                    background_color: Color::srgba(
+                        item_color.to_linear().red,
+                        item_color.to_linear().green,
+                        item_color.to_linear().blue,
+                        0.15,
+                    ),
+                    border_radius: UCornerRadius::all(12.0),
+                    ..default()
+                },
+                UBorder {
+                    color: Color::srgba(
+                        item_color.to_linear().red,
+                        item_color.to_linear().green,
+                        item_color.to_linear().blue,
+                        0.4,
+                    ),
+                    width: 1.0,
+                    radius: UCornerRadius::all(12.0),
+                    offset: 0.0,
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Column,
+                    justify_content: UJustifyContent::Center,
+                    align_items: UAlignItems::Center,
+                    ..default()
+                },
+            ))
+            .id();
 
         commands.spawn((
             ChildOf(card),
@@ -492,70 +529,86 @@ fn setup(
     }
 
     // --- 4. SCREEN-SPACE RPG HUD ---
-    let hud_root = commands.spawn((
-        URootUi {
-            camera: UiCameraRef::Entity(camera_2d),
-            ..URootUi::screen()
-        },
-        UNode {
-            width: UVal::Percent(1.0),
-            height: UVal::Percent(1.0),
-            padding: USides::all(20.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            justify_content: UJustifyContent::SpaceBetween,
-            ..default()
-        }
-    )).id();
+    let hud_root = commands
+        .spawn((
+            URootUi {
+                camera: UiCameraRef::Entity(camera_2d),
+                ..URootUi::screen()
+            },
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                padding: USides::all(20.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                justify_content: UJustifyContent::SpaceBetween,
+                ..default()
+            },
+        ))
+        .id();
 
     // Top archmage panel
-    let top_hud = commands.spawn((
-        ChildOf(hud_root),
-        UPanel::glass(),
-        UNode {
-            width: UVal::Percent(1.0),
-            padding: USides::axes(20.0, 12.0),
-            border_radius: UCornerRadius::all(16.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            justify_content: UJustifyContent::SpaceBetween,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let top_hud = commands
+        .spawn((
+            ChildOf(hud_root),
+            UPanel::glass(),
+            UNode {
+                width: UVal::Percent(1.0),
+                padding: USides::axes(20.0, 12.0),
+                border_radius: UCornerRadius::all(16.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                justify_content: UJustifyContent::SpaceBetween,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
-    let character_info = commands.spawn((
-        ChildOf(top_hud),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            gap: 12.0,
-            align_items: UAlignItems::Center,
-            ..default()
-        }
-    )).id();
+    let character_info = commands
+        .spawn((
+            ChildOf(top_hud),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                gap: 12.0,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .id();
 
     // Glowing level badge
-    let badge = commands.spawn((
-        ChildOf(character_info),
-        UNode {
-            padding: USides::axes(10.0, 4.0),
-            background_color: Color::srgb(0.8, 0.5, 1.0),
-            border_radius: UCornerRadius::all(8.0),
-            ..default()
-        },
-        ULayout { display: UDisplay::Flex, ..default() }
-    )).id();
+    let badge = commands
+        .spawn((
+            ChildOf(character_info),
+            UNode {
+                padding: USides::axes(10.0, 4.0),
+                background_color: Color::srgb(0.8, 0.5, 1.0),
+                border_radius: UCornerRadius::all(8.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(badge),
-        UTextLabel { text: "LVL 50".to_string(), font_size: 11.0, color: Color::BLACK, ..default() },
+        UTextLabel {
+            text: "LVL 50".to_string(),
+            font_size: 11.0,
+            color: Color::BLACK,
+            ..default()
+        },
         UNode::default(),
     ));
 
@@ -571,19 +624,21 @@ fn setup(
     ));
 
     // Mana container (uses UProgressBar widget)
-    let mana_wrap = commands.spawn((
-        ChildOf(top_hud),
-        UNode {
-            width: UVal::Px(240.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            gap: 4.0,
-            ..default()
-        }
-    )).id();
+    let mana_wrap = commands
+        .spawn((
+            ChildOf(top_hud),
+            UNode {
+                width: UVal::Px(240.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 4.0,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(mana_wrap),
@@ -606,18 +661,20 @@ fn setup(
     ));
 
     // Bottom camera manual
-    let bottom_hud = commands.spawn((
-        ChildOf(hud_root),
-        UNode {
-            width: UVal::Percent(1.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            justify_content: UJustifyContent::SpaceBetween,
-            ..default()
-        }
-    )).id();
+    let bottom_hud = commands
+        .spawn((
+            ChildOf(hud_root),
+            UNode {
+                width: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::SpaceBetween,
+                ..default()
+            },
+        ))
+        .id();
 
     commands.spawn((
         ChildOf(bottom_hud),
@@ -671,12 +728,29 @@ fn update_crystal_material(
         for mat_handle in &query {
             if let Some(material) = materials.get_mut(&mat_handle.0) {
                 let (base, emissive) = match state.active_rune {
-                    MagicRune::Fire => (Color::srgb(0.95, 0.25, 0.15), LinearRgba::rgb(2.5, 0.6, 0.2)),
-                    MagicRune::Frost => (Color::srgb(0.15, 0.75, 0.95), LinearRgba::rgb(0.3, 1.6, 2.5)),
-                    MagicRune::Chaos => (Color::srgb(0.75, 0.15, 0.85), LinearRgba::rgb(1.8, 0.3, 2.5)),
-                    MagicRune::Nature => (Color::srgb(0.25, 0.85, 0.35), LinearRgba::rgb(0.4, 2.5, 0.6)),
-                    MagicRune::Storm => (Color::srgb(0.95, 0.85, 0.15), LinearRgba::rgb(2.5, 2.0, 0.3)),
-                    MagicRune::Void => (Color::srgb(0.1, 0.08, 0.18), LinearRgba::rgb(0.2, 0.1, 0.4)),
+                    MagicRune::Fire => (
+                        Color::srgb(0.95, 0.25, 0.15),
+                        LinearRgba::rgb(2.5, 0.6, 0.2),
+                    ),
+                    MagicRune::Frost => (
+                        Color::srgb(0.15, 0.75, 0.95),
+                        LinearRgba::rgb(0.3, 1.6, 2.5),
+                    ),
+                    MagicRune::Chaos => (
+                        Color::srgb(0.75, 0.15, 0.85),
+                        LinearRgba::rgb(1.8, 0.3, 2.5),
+                    ),
+                    MagicRune::Nature => (
+                        Color::srgb(0.25, 0.85, 0.35),
+                        LinearRgba::rgb(0.4, 2.5, 0.6),
+                    ),
+                    MagicRune::Storm => (
+                        Color::srgb(0.95, 0.85, 0.15),
+                        LinearRgba::rgb(2.5, 2.0, 0.3),
+                    ),
+                    MagicRune::Void => {
+                        (Color::srgb(0.1, 0.08, 0.18), LinearRgba::rgb(0.2, 0.1, 0.4))
+                    }
                 };
                 material.base_color = base;
                 material.emissive = emissive;

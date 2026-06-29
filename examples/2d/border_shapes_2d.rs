@@ -75,21 +75,12 @@ fn main() {
         ))
         .init_resource::<AppSettings>()
         .add_systems(Startup, setup_scene)
-        .add_systems(
-            Update,
-            (
-                sync_ui_to_settings,
-                animate_pulse_border,
-            ),
-        )
+        .add_systems(Update, (sync_ui_to_settings, animate_pulse_border))
         .run();
 }
 
 // ── Setup System ─────────────────────────────────────────────────────────────
-fn setup_scene(
-    mut commands: Commands,
-    settings: Res<AppSettings>,
-) {
+fn setup_scene(mut commands: Commands, settings: Res<AppSettings>) {
     // 1. Camera2d with clear color
     commands.spawn((
         Camera2d,
@@ -185,18 +176,25 @@ fn setup_scene(
     ));
 
     // Helper closure to build sliders
-    let mut add_slider = |parent_entity: Entity, label: &str, min_val: f32, max_val: f32, initial_val: f32, marker: ComponentBox| {
-        let row = commands.spawn((
-            ChildOf(parent_entity),
-            UNode::default(),
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                align_items: UAlignItems::Center,
-                justify_content: UJustifyContent::SpaceBetween,
-                ..default()
-            }
-        )).id();
+    let mut add_slider = |parent_entity: Entity,
+                          label: &str,
+                          min_val: f32,
+                          max_val: f32,
+                          initial_val: f32,
+                          marker: ComponentBox| {
+        let row = commands
+            .spawn((
+                ChildOf(parent_entity),
+                UNode::default(),
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    align_items: UAlignItems::Center,
+                    justify_content: UJustifyContent::SpaceBetween,
+                    ..default()
+                },
+            ))
+            .id();
 
         commands.spawn((
             ChildOf(row),
@@ -213,14 +211,16 @@ fn setup_scene(
         ));
 
         let seek_val = (initial_val - min_val) / (max_val - min_val);
-        let seekbar_entity = commands.spawn((
-            ChildOf(row),
-            USeekBar::sci_fi_style()
-                .with_range(min_val, max_val)
-                .with_value(seek_val)
-                .show_value(),
-        )).id();
-        
+        let seekbar_entity = commands
+            .spawn((
+                ChildOf(row),
+                USeekBar::sci_fi_style()
+                    .with_range(min_val, max_val)
+                    .with_value(seek_val)
+                    .show_value(),
+            ))
+            .id();
+
         marker.add_to(&mut commands, seekbar_entity);
     };
 
@@ -233,49 +233,89 @@ fn setup_scene(
         }
     }
 
-    add_slider(control_panel, "Border Width:", 0.0, 30.0, settings.border_width, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(BorderWidthSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Border Width:",
+        0.0,
+        30.0,
+        settings.border_width,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(BorderWidthSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Border Radius:", 0.0, 60.0, settings.border_radius, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(BorderRadiusSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Border Radius:",
+        0.0,
+        60.0,
+        settings.border_radius,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(BorderRadiusSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Border Offset:", -15.0, 30.0, settings.border_offset, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(BorderOffsetSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Border Offset:",
+        -15.0,
+        30.0,
+        settings.border_offset,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(BorderOffsetSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Pulse Speed:", 0.5, 5.0, settings.pulse_speed, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(PulseSpeedSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Pulse Speed:",
+        0.5,
+        5.0,
+        settings.pulse_speed,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(PulseSpeedSeekBar);
+            },
+        },
+    );
 
     // Control Toggles Row
-    let toggles_row = commands.spawn((
-        ChildOf(control_panel),
-        UNode {
-            margin: USides::top(12.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            justify_content: UJustifyContent::SpaceAround,
-            ..default()
-        }
-    )).id();
+    let toggles_row = commands
+        .spawn((
+            ChildOf(control_panel),
+            UNode {
+                margin: USides::top(12.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                justify_content: UJustifyContent::SpaceAround,
+                ..default()
+            },
+        ))
+        .id();
 
     // Shape Toggle (Round vs Cut)
-    let shape_cell = commands.spawn((
-        ChildOf(toggles_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            align_items: UAlignItems::Center,
-            gap: 6.0,
-            ..default()
-        }
-    )).id();
+    let shape_cell = commands
+        .spawn((
+            ChildOf(toggles_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                align_items: UAlignItems::Center,
+                gap: 6.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(shape_cell),
         UNode::default(),
@@ -293,17 +333,19 @@ fn setup_scene(
     ));
 
     // Pulse Animation Toggle
-    let pulse_cell = commands.spawn((
-        ChildOf(toggles_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            align_items: UAlignItems::Center,
-            gap: 6.0,
-            ..default()
-        }
-    )).id();
+    let pulse_cell = commands
+        .spawn((
+            ChildOf(toggles_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                align_items: UAlignItems::Center,
+                gap: 6.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(pulse_cell),
         UNode::default(),
@@ -410,33 +452,42 @@ fn setup_scene(
         .id();
 
     // Helper closure to build preset cards
-    let mut add_preset_card = |label: &str, radius_val: f32, width_val: f32, offset_val: f32, shape_val: UShapeMode, border_color: Color, bg_color: Color, desc: &str| {
-        let card = commands.spawn((
-            ChildOf(presets_row),
-            UNode {
-                width: UVal::Percent(0.33),
-                height: UVal::Px(280.0),
-                padding: USides::all(20.0),
-                background_color: bg_color,
-                border_radius: UCornerRadius::all(radius_val),
-                shape_mode: shape_val,
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                justify_content: UJustifyContent::Center,
-                align_items: UAlignItems::Center,
-                gap: 12.0,
-                ..default()
-            },
-            UBorder {
-                color: border_color,
-                width: width_val,
-                radius: UCornerRadius::all(radius_val),
-                offset: offset_val,
-            }
-        )).id();
+    let mut add_preset_card = |label: &str,
+                               radius_val: f32,
+                               width_val: f32,
+                               offset_val: f32,
+                               shape_val: UShapeMode,
+                               border_color: Color,
+                               bg_color: Color,
+                               desc: &str| {
+        let card = commands
+            .spawn((
+                ChildOf(presets_row),
+                UNode {
+                    width: UVal::Percent(0.33),
+                    height: UVal::Px(280.0),
+                    padding: USides::all(20.0),
+                    background_color: bg_color,
+                    border_radius: UCornerRadius::all(radius_val),
+                    shape_mode: shape_val,
+                    ..default()
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Column,
+                    justify_content: UJustifyContent::Center,
+                    align_items: UAlignItems::Center,
+                    gap: 12.0,
+                    ..default()
+                },
+                UBorder {
+                    color: border_color,
+                    width: width_val,
+                    radius: UCornerRadius::all(radius_val),
+                    offset: offset_val,
+                },
+            ))
+            .id();
 
         commands.spawn((
             ChildOf(card),
@@ -470,7 +521,7 @@ fn setup_scene(
         UShapeMode::Round,
         Color::srgb(0.0, 1.0, 0.4), // Emerald Green
         Color::srgba(0.01, 0.05, 0.02, 0.85),
-        "Radius: 6.0px (Round)\nWidth: 3.0px\nOffset: 0.0px\n\nSharp, clean cyber look for micro-widgets."
+        "Radius: 6.0px (Round)\nWidth: 3.0px\nOffset: 0.0px\n\nSharp, clean cyber look for micro-widgets.",
     );
 
     // Preset 2: Sci-Fi Armor (Medium Chamfered corners)
@@ -482,7 +533,7 @@ fn setup_scene(
         UShapeMode::Cut,
         Color::srgb(1.0, 0.5, 0.0), // Neon Amber
         Color::srgba(0.06, 0.03, 0.01, 0.85),
-        "Radius: 16.0px (Cut)\nWidth: 6.0px\nOffset: 0.0px\n\nChamfered corners creating a protective frame."
+        "Radius: 16.0px (Cut)\nWidth: 6.0px\nOffset: 0.0px\n\nChamfered corners creating a protective frame.",
     );
 
     // Preset 3: Floating Ring (Large Rounded offset)
@@ -494,7 +545,7 @@ fn setup_scene(
         UShapeMode::Round,
         Color::srgb(0.0, 0.9, 1.0), // Cyan Halo
         Color::srgba(0.01, 0.04, 0.06, 0.8),
-        "Radius: 28.0px (Round)\nWidth: 4.0px\nOffset: 12.0px\n\nFloating border halo offset outside layout boundaries."
+        "Radius: 28.0px (Round)\nWidth: 4.0px\nOffset: 12.0px\n\nFloating border halo offset outside layout boundaries.",
     );
 }
 
@@ -561,7 +612,11 @@ fn sync_ui_to_settings(
             settings.border_radius,
             settings.border_offset,
             settings.shape_mode,
-            if settings.pulse_enabled { "ENABLED" } else { "DISABLED" }
+            if settings.pulse_enabled {
+                "ENABLED"
+            } else {
+                "DISABLED"
+            }
         );
     }
 }

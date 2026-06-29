@@ -197,7 +197,7 @@ fn setup(
     // ── Ambient light ───────────────────────────────────────────────────
     commands.insert_resource(GlobalAmbientLight {
         color: Color::srgb(0.02, 0.03, 0.08), // Darker
-        brightness: 10.0, // Lower brightness for more contrast
+        brightness: 10.0,                     // Lower brightness for more contrast
         affects_lightmapped_meshes: true,
     });
 
@@ -215,9 +215,21 @@ fn setup(
     // ── Atmospheric point lights ────────────────────────────────────────
     let light_positions = [
         (Vec3::new(0.0, 3.0, 4.0), Color::srgb(0.0, 0.4, 1.0), 3000.0),
-        (Vec3::new(6.0, 5.0, -3.0), Color::srgb(0.8, 0.0, 0.5), 2000.0),
-        (Vec3::new(-6.0, 2.0, 2.0), Color::srgb(0.0, 1.0, 0.4), 2500.0),
-        (Vec3::new(-2.0, 7.0, -7.0), Color::srgb(1.0, 0.3, 0.0), 2000.0),
+        (
+            Vec3::new(6.0, 5.0, -3.0),
+            Color::srgb(0.8, 0.0, 0.5),
+            2000.0,
+        ),
+        (
+            Vec3::new(-6.0, 2.0, 2.0),
+            Color::srgb(0.0, 1.0, 0.4),
+            2500.0,
+        ),
+        (
+            Vec3::new(-2.0, 7.0, -7.0),
+            Color::srgb(1.0, 0.3, 0.0),
+            2000.0,
+        ),
         (Vec3::new(4.0, 4.0, 6.0), Color::srgb(0.3, 0.3, 1.0), 1800.0),
     ];
 
@@ -248,9 +260,11 @@ fn setup(
         let x = (i as f32 * 13.4).sin() * 50.0;
         let y = ((i as f32 * 29.1).cos() * 30.0).abs() + 2.0;
         let z = (i as f32 * 17.7).sin() * 50.0;
-        
+
         // Keep them outside the main building cluster
-        if x.abs() < 15.0 && z.abs() < 15.0 { continue; }
+        if x.abs() < 15.0 && z.abs() < 15.0 {
+            continue;
+        }
 
         commands.spawn((
             Mesh3d(particle_mesh.clone()),
@@ -289,7 +303,11 @@ fn setup(
     for i in -20..=20 {
         let is_thick = i % 5 == 0;
         let thickness = if is_thick { 0.04 } else { 0.015 };
-        let mat = if is_thick { grid_mat_thick.clone() } else { grid_mat_thin.clone() };
+        let mat = if is_thick {
+            grid_mat_thick.clone()
+        } else {
+            grid_mat_thin.clone()
+        };
         let pos = i as f32 * 2.0;
 
         // X lines
@@ -463,17 +481,15 @@ fn spawn_building(
             },
         ],
         // Right face: Data stream
-        &[
-            ScreenPlacement {
-                y_fraction: 0.5,
-                x_offset_fraction: 0.0,
-                z_offset: 0.1,
-                width_fraction: 0.9,
-                height_fraction: 0.8,
-                pixel_width: 1000.0,
-                content: ScreenContent::DataStream,
-            },
-        ],
+        &[ScreenPlacement {
+            y_fraction: 0.5,
+            x_offset_fraction: 0.0,
+            z_offset: 0.1,
+            width_fraction: 0.9,
+            height_fraction: 0.8,
+            pixel_width: 1000.0,
+            content: ScreenContent::DataStream,
+        }],
         // Left face: Floating layered screens
         &[
             ScreenPlacement {
@@ -511,14 +527,12 @@ fn spawn_building(
 
         for screen in screens {
             let screen_y = screen.y_fraction * config.size.y;
-            let screen_pos = config.pos
-                + *face_offset
-                + Vec3::new(0.0, screen_y, 0.0);
+            let screen_pos = config.pos + *face_offset + Vec3::new(0.0, screen_y, 0.0);
 
             // Apply horizontal offset along the screen's local X, and push outward along local Z
             let local_right = *rotation * Vec3::X;
             let local_forward = *rotation * Vec3::Z;
-            let final_pos = screen_pos 
+            let final_pos = screen_pos
                 + local_right * (screen.x_offset_fraction * *face_width)
                 + local_forward * screen.z_offset;
 
@@ -564,19 +578,19 @@ fn spawn_holographic_screen(
 ) {
     // High glow for main titles (high intensity HDR)
     let high_glow = Color::from(config.emissive_color * 12.0);
-    
+
     // Medium glow for subtitles and secondary headers
     let medium_glow = Color::from(config.emissive_color * 3.5);
 
     // Calculate physical dimensions and pixel resolutions
     let physical_w = face_width * screen.width_fraction;
     let physical_h = config.size.y * screen.height_fraction;
-    
+
     // We want the width in pixels to be large enough for our big fonts
     let pixel_w = screen.pixel_width;
     let pixel_h = pixel_w * (physical_h / physical_w);
     let pixel_size = Vec2::new(pixel_w, pixel_h);
-    
+
     let meters_per_unit = physical_w / pixel_w;
 
     // We add a slight random phase to each floating panel based on its position
@@ -1015,10 +1029,7 @@ fn animate_progress_bars(
     }
 }
 
-fn animate_status_texts(
-    time: Res<Time>,
-    mut query: Query<(&AnimatedStatusText, &mut UTextLabel)>,
-) {
+fn animate_status_texts(time: Res<Time>, mut query: Query<(&AnimatedStatusText, &mut UTextLabel)>) {
     let t = time.elapsed_secs();
     for (anim, mut label) in &mut query {
         let cycle = ((t * 0.5 + anim.building_index as f32 * 1.3) as u32) % 5;
@@ -1033,10 +1044,7 @@ fn animate_status_texts(
     }
 }
 
-fn animate_data_streams(
-    time: Res<Time>,
-    mut query: Query<(&mut DataStreamText, &mut UTextLabel)>,
-) {
+fn animate_data_streams(time: Res<Time>, mut query: Query<(&mut DataStreamText, &mut UTextLabel)>) {
     let t = time.elapsed_secs();
     for (mut stream, mut label) in &mut query {
         let tick = (t * stream.speed) as u32;
@@ -1049,20 +1057,17 @@ fn animate_data_streams(
     }
 }
 
-fn animate_floating_panels(
-    time: Res<Time>,
-    mut query: Query<(&FloatingPanel, &mut Transform)>,
-) {
+fn animate_floating_panels(time: Res<Time>, mut query: Query<(&FloatingPanel, &mut Transform)>) {
     let t = time.elapsed_secs();
     for (panel, mut transform) in &mut query {
         // Calculate a gentle sine wave hovering effect along the local Y axis
         // We use the base_pos to reset to local origin before applying sine wave
         let offset_y = (t * panel.speed + panel.phase).sin() * panel.amplitude;
         let offset_z = (t * panel.speed * 0.7 + panel.phase).cos() * (panel.amplitude * 0.5);
-        
+
         let local_up = transform.rotation * Vec3::Y;
         let local_forward = transform.rotation * Vec3::Z;
-        
+
         transform.translation = panel.base_pos + local_up * offset_y + local_forward * offset_z;
     }
 }

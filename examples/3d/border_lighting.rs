@@ -99,14 +99,7 @@ fn main() {
         .add_plugins(UnivisUiPlugin)
         .init_resource::<AppSettings>()
         .add_systems(Startup, setup)
-        .add_systems(
-            Update,
-            (
-                camera_control,
-                orbit_lights,
-                sync_ui_to_settings,
-            ),
-        )
+        .add_systems(Update, (camera_control, orbit_lights, sync_ui_to_settings))
         .run();
 }
 
@@ -165,9 +158,24 @@ fn setup(
 
     // 4. Orbiting Point Lights (Red, Green, Blue) with glowing visual spheres
     let light_configurations = [
-        (Color::srgb(1.0, 0.0, 0.05), LinearRgba::rgb(8.0, 0.0, 0.4), 0.0, 1.3),
-        (Color::srgb(0.0, 1.0, 0.2), LinearRgba::rgb(0.0, 8.0, 1.6), 2.094, 1.8),
-        (Color::srgb(0.0, 0.4, 1.0), LinearRgba::rgb(0.0, 3.2, 8.0), 4.188, 0.6),
+        (
+            Color::srgb(1.0, 0.0, 0.05),
+            LinearRgba::rgb(8.0, 0.0, 0.4),
+            0.0,
+            1.3,
+        ),
+        (
+            Color::srgb(0.0, 1.0, 0.2),
+            LinearRgba::rgb(0.0, 8.0, 1.6),
+            2.094,
+            1.8,
+        ),
+        (
+            Color::srgb(0.0, 0.4, 1.0),
+            LinearRgba::rgb(0.0, 3.2, 8.0),
+            4.188,
+            0.6,
+        ),
     ];
 
     let sphere_mesh = meshes.add(Sphere::new(0.05).mesh());
@@ -231,8 +239,7 @@ fn setup(
     let control_root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(700.0, 720.0)),
-            Transform::from_xyz(-1.7, 1.25, 0.1)
-                .with_rotation(Quat::from_rotation_y(0.35)),
+            Transform::from_xyz(-1.7, 1.25, 0.1).with_rotation(Quat::from_rotation_y(0.35)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -316,18 +323,25 @@ fn setup(
     ));
 
     // Helper macro/closure to build sliders
-    let mut add_slider = |parent_entity: Entity, label: &str, min_val: f32, max_val: f32, initial_val: f32, marker: ComponentBox| {
-        let row = commands.spawn((
-            ChildOf(parent_entity),
-            UNode::default(),
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Row,
-                align_items: UAlignItems::Center,
-                justify_content: UJustifyContent::SpaceBetween,
-                ..default()
-            }
-        )).id();
+    let mut add_slider = |parent_entity: Entity,
+                          label: &str,
+                          min_val: f32,
+                          max_val: f32,
+                          initial_val: f32,
+                          marker: ComponentBox| {
+        let row = commands
+            .spawn((
+                ChildOf(parent_entity),
+                UNode::default(),
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    align_items: UAlignItems::Center,
+                    justify_content: UJustifyContent::SpaceBetween,
+                    ..default()
+                },
+            ))
+            .id();
 
         commands.spawn((
             ChildOf(row),
@@ -344,14 +358,16 @@ fn setup(
         ));
 
         let seek_val = (initial_val - min_val) / (max_val - min_val);
-        let seekbar_entity = commands.spawn((
-            ChildOf(row),
-            USeekBar::sci_fi_style()
-                .with_range(min_val, max_val)
-                .with_value(seek_val)
-                .show_value(),
-        )).id();
-        
+        let seekbar_entity = commands
+            .spawn((
+                ChildOf(row),
+                USeekBar::sci_fi_style()
+                    .with_range(min_val, max_val)
+                    .with_value(seek_val)
+                    .show_value(),
+            ))
+            .id();
+
         // Dynamically add the marker component
         marker.add_to(&mut commands, seekbar_entity);
     };
@@ -365,61 +381,128 @@ fn setup(
         }
     }
 
-    add_slider(control_panel, "Border Width:", 0.0, 24.0, settings.border_width, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(BorderWidthSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Border Width:",
+        0.0,
+        24.0,
+        settings.border_width,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(BorderWidthSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Border Radius:", 0.0, 60.0, settings.border_radius, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(BorderRadiusSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Border Radius:",
+        0.0,
+        60.0,
+        settings.border_radius,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(BorderRadiusSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Border Offset:", -15.0, 25.0, settings.border_offset, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(BorderOffsetSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Border Offset:",
+        -15.0,
+        25.0,
+        settings.border_offset,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(BorderOffsetSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Panel Metallic:", 0.0, 1.0, settings.panel_metallic, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(MetallicSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Panel Metallic:",
+        0.0,
+        1.0,
+        settings.panel_metallic,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(MetallicSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Panel Roughness:", 0.0, 1.0, settings.panel_roughness, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(RoughnessSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Panel Roughness:",
+        0.0,
+        1.0,
+        settings.panel_roughness,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(RoughnessSeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Light Intensity:", 500.0, 5000.0, settings.light_intensity, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(LightingIntensitySeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Light Intensity:",
+        500.0,
+        5000.0,
+        settings.light_intensity,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(LightingIntensitySeekBar);
+            },
+        },
+    );
 
-    add_slider(control_panel, "Light Orbit Speed:", 0.0, 4.0, settings.light_orbit_speed, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(OrbitSpeedSeekBar); }
-    });
+    add_slider(
+        control_panel,
+        "Light Orbit Speed:",
+        0.0,
+        4.0,
+        settings.light_orbit_speed,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(OrbitSpeedSeekBar);
+            },
+        },
+    );
 
     // Toggles Row
-    let toggles_row = commands.spawn((
-        ChildOf(control_panel),
-        UNode {
-            margin: USides::top(10.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            justify_content: UJustifyContent::SpaceAround,
-            ..default()
-        }
-    )).id();
+    let toggles_row = commands
+        .spawn((
+            ChildOf(control_panel),
+            UNode {
+                margin: USides::top(10.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                justify_content: UJustifyContent::SpaceAround,
+                ..default()
+            },
+        ))
+        .id();
 
     // Orbit Toggle
-    let orbit_cell = commands.spawn((
-        ChildOf(toggles_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            align_items: UAlignItems::Center,
-            gap: 6.0,
-            ..default()
-        }
-    )).id();
+    let orbit_cell = commands
+        .spawn((
+            ChildOf(toggles_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                align_items: UAlignItems::Center,
+                gap: 6.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(orbit_cell),
         UNode::default(),
@@ -437,17 +520,19 @@ fn setup(
     ));
 
     // Shape Mode Toggle (Round vs Cut)
-    let shape_cell = commands.spawn((
-        ChildOf(toggles_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            align_items: UAlignItems::Center,
-            gap: 6.0,
-            ..default()
-        }
-    )).id();
+    let shape_cell = commands
+        .spawn((
+            ChildOf(toggles_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                align_items: UAlignItems::Center,
+                gap: 6.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(shape_cell),
         UNode::default(),
@@ -464,14 +549,12 @@ fn setup(
         UToggle::sci_fi_style().with_checked(false), // Starts Round (false)
     ));
 
-
     // 7. Dynamic Target Panel (Main Showcase)
     // Located in the center, responding to settings
     let target_root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(500.0, 500.0)),
-            Transform::from_xyz(0.2, 1.25, -0.2)
-                .with_rotation(Quat::from_rotation_y(-0.15)),
+            Transform::from_xyz(0.2, 1.25, -0.2).with_rotation(Quat::from_rotation_y(-0.15)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -544,13 +627,11 @@ fn setup(
         },
     ));
 
-
     // 8. Preset Showcase 1: Cut Corners (Amber Emissive)
     let preset1_root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(320.0, 240.0)),
-            Transform::from_xyz(1.8, 2.05, -0.6)
-                .with_rotation(Quat::from_rotation_y(-0.45)),
+            Transform::from_xyz(1.8, 2.05, -0.6).with_rotation(Quat::from_rotation_y(-0.45)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -621,13 +702,11 @@ fn setup(
         },
     ));
 
-
     // 9. Preset Showcase 2: Offset Ring (Cyan Border Float)
     let preset2_root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(320.0, 240.0)),
-            Transform::from_xyz(1.8, 0.55, -0.6)
-                .with_rotation(Quat::from_rotation_y(-0.45)),
+            Transform::from_xyz(1.8, 0.55, -0.6).with_rotation(Quat::from_rotation_y(-0.45)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -698,13 +777,11 @@ fn setup(
         },
     ));
 
-
     // 10. Preset Showcase 3: Metallic Mirror (Hot Pink Glow)
     let preset3_root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(320.0, 480.0)),
-            Transform::from_xyz(-1.8, 1.25, -1.2)
-                .with_rotation(Quat::from_rotation_y(0.5)),
+            Transform::from_xyz(-1.8, 1.25, -1.2).with_rotation(Quat::from_rotation_y(0.5)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -724,8 +801,8 @@ fn setup(
         .spawn((
             ChildOf(preset3_root),
             UPbr {
-                metallic: 1.0,     // Full mirror metallic
-                roughness: 0.05,   // Very smooth/reflective
+                metallic: 1.0,   // Full mirror metallic
+                roughness: 0.05, // Very smooth/reflective
                 emissive: LinearRgba::BLACK,
             },
             UNode {
@@ -775,13 +852,11 @@ fn setup(
         },
     ));
 
-
     // 11. Preset Showcase 4: Small Rounded Corners (Green/Emerald Border)
     let preset4_root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(280.0, 200.0)),
-            Transform::from_xyz(3.0, 1.25, -1.8)
-                .with_rotation(Quat::from_rotation_y(-0.6)),
+            Transform::from_xyz(3.0, 1.25, -1.8).with_rotation(Quat::from_rotation_y(-0.6)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -852,13 +927,11 @@ fn setup(
         },
     ));
 
-
     // 12. Preset Showcase 5: Large Cut Chamfer (Magenta Emissive)
     let preset5_root = commands
         .spawn((
             URootUi::world_3d(Vec2::new(280.0, 200.0)),
-            Transform::from_xyz(-3.0, 1.25, -1.8)
-                .with_rotation(Quat::from_rotation_y(0.6)),
+            Transform::from_xyz(-3.0, 1.25, -1.8).with_rotation(Quat::from_rotation_y(0.6)),
             UNode {
                 width: UVal::Percent(1.0),
                 height: UVal::Percent(1.0),
@@ -888,7 +961,7 @@ fn setup(
                 padding: USides::all(12.0),
                 background_color: Color::srgba(0.05, 0.01, 0.05, 0.75),
                 border_radius: UCornerRadius::all(45.0), // Very large corner radius!
-                shape_mode: UShapeMode::Cut,            // Cut corners
+                shape_mode: UShapeMode::Cut,             // Cut corners
                 ..default()
             },
             ULayout {
@@ -928,7 +1001,6 @@ fn setup(
             ..default()
         },
     ));
-
 
     // 13. Hint Text at the bottom
     let hint_root = commands

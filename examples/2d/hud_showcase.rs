@@ -637,43 +637,48 @@ fn setup_hud(mut commands: Commands) {
     ));
 
     // Closure to build control rows
-    let mut add_hud_slider = |label: &str, min_val: f32, max_val: f32, initial_val: f32, marker: ComponentBox| {
-        let row = commands.spawn((
-            ChildOf(sidebar),
-            UNode {
-                width: UVal::Percent(1.0),
-                ..default()
-            },
-            ULayout {
-                display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                gap: 4.0,
-                ..default()
-            }
-        )).id();
+    let mut add_hud_slider =
+        |label: &str, min_val: f32, max_val: f32, initial_val: f32, marker: ComponentBox| {
+            let row = commands
+                .spawn((
+                    ChildOf(sidebar),
+                    UNode {
+                        width: UVal::Percent(1.0),
+                        ..default()
+                    },
+                    ULayout {
+                        display: UDisplay::Flex,
+                        flex_direction: UFlexDirection::Column,
+                        gap: 4.0,
+                        ..default()
+                    },
+                ))
+                .id();
 
-        commands.spawn((
-            ChildOf(row),
-            UNode::default(),
-            UTextLabel {
-                text: label.to_string(),
-                color: Color::srgb(0.7, 0.8, 0.9),
-                font_size: 12.0,
-                ..default()
-            },
-        ));
+            commands.spawn((
+                ChildOf(row),
+                UNode::default(),
+                UTextLabel {
+                    text: label.to_string(),
+                    color: Color::srgb(0.7, 0.8, 0.9),
+                    font_size: 12.0,
+                    ..default()
+                },
+            ));
 
-        let seek_val = (initial_val - min_val) / (max_val - min_val);
-        let seekbar_entity = commands.spawn((
-            ChildOf(row),
-            USeekBar::sci_fi_style()
-                .with_range(min_val, max_val)
-                .with_value(seek_val)
-                .show_value(),
-        )).id();
+            let seek_val = (initial_val - min_val) / (max_val - min_val);
+            let seekbar_entity = commands
+                .spawn((
+                    ChildOf(row),
+                    USeekBar::sci_fi_style()
+                        .with_range(min_val, max_val)
+                        .with_value(seek_val)
+                        .show_value(),
+                ))
+                .id();
 
-        marker.add_to(&mut commands, seekbar_entity);
-    };
+            marker.add_to(&mut commands, seekbar_entity);
+        };
 
     struct ComponentBox {
         apply: fn(&mut Commands, Entity),
@@ -684,42 +689,62 @@ fn setup_hud(mut commands: Commands) {
         }
     }
 
-    add_hud_slider("Simulation Vitals (HP):", 0.0, 100.0, 80.0, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(HealthSeekBar); }
-    });
+    add_hud_slider(
+        "Simulation Vitals (HP):",
+        0.0,
+        100.0,
+        80.0,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(HealthSeekBar);
+            },
+        },
+    );
 
-    add_hud_slider("Simulation Shields:", 0.0, 100.0, 60.0, ComponentBox {
-        apply: |c, e| { c.entity(e).insert(ShieldSeekBar); }
-    });
+    add_hud_slider(
+        "Simulation Shields:",
+        0.0,
+        100.0,
+        60.0,
+        ComponentBox {
+            apply: |c, e| {
+                c.entity(e).insert(ShieldSeekBar);
+            },
+        },
+    );
 
     // Control Toggles Row
-    let toggles_row = commands.spawn((
-        ChildOf(sidebar),
-        UNode {
-            width: UVal::Percent(1.0),
-            margin: USides::top(8.0),
-            ..default()
-        },
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Row,
-            justify_content: UJustifyContent::SpaceAround,
-            ..default()
-        }
-    )).id();
+    let toggles_row = commands
+        .spawn((
+            ChildOf(sidebar),
+            UNode {
+                width: UVal::Percent(1.0),
+                margin: USides::top(8.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                justify_content: UJustifyContent::SpaceAround,
+                ..default()
+            },
+        ))
+        .id();
 
     // Warning alert toggle
-    let alert_cell = commands.spawn((
-        ChildOf(toggles_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            align_items: UAlignItems::Center,
-            gap: 4.0,
-            ..default()
-        }
-    )).id();
+    let alert_cell = commands
+        .spawn((
+            ChildOf(toggles_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                align_items: UAlignItems::Center,
+                gap: 4.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(alert_cell),
         UNode::default(),
@@ -737,17 +762,19 @@ fn setup_hud(mut commands: Commands) {
     ));
 
     // Weapon select toggle
-    let weapon_cell = commands.spawn((
-        ChildOf(toggles_row),
-        UNode::default(),
-        ULayout {
-            display: UDisplay::Flex,
-            flex_direction: UFlexDirection::Column,
-            align_items: UAlignItems::Center,
-            gap: 4.0,
-            ..default()
-        }
-    )).id();
+    let weapon_cell = commands
+        .spawn((
+            ChildOf(toggles_row),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                align_items: UAlignItems::Center,
+                gap: 4.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
         ChildOf(weapon_cell),
         UNode::default(),
@@ -773,16 +800,61 @@ fn animate_hud(
     toggle_weapon: Query<&UToggle, With<WeaponSelectToggle>>,
     mut fill_health: Query<&mut UNode, (With<HealthBarFill>, Without<ShieldBarFill>)>,
     mut fill_shield: Query<&mut UNode, (With<ShieldBarFill>, Without<HealthBarFill>)>,
-    mut text_health: Query<&mut UTextLabel, (With<HealthText>, Without<ShieldText>, Without<WeaponLabel>, Without<AlertText>)>,
-    mut text_shield: Query<&mut UTextLabel, (With<ShieldText>, Without<HealthText>, Without<WeaponLabel>, Without<AlertText>)>,
-    mut weapon_label: Query<&mut UTextLabel, (With<WeaponLabel>, Without<HealthText>, Without<ShieldText>, Without<AlertText>)>,
-    mut alert_box: Query<(&mut UBorder, &mut UNode), (With<AlertBox>, Without<HealthBarFill>, Without<ShieldBarFill>)>,
-    mut alert_text: Query<&mut UTextLabel, (With<AlertText>, Without<HealthText>, Without<ShieldText>, Without<WeaponLabel>)>,
+    mut text_health: Query<
+        &mut UTextLabel,
+        (
+            With<HealthText>,
+            Without<ShieldText>,
+            Without<WeaponLabel>,
+            Without<AlertText>,
+        ),
+    >,
+    mut text_shield: Query<
+        &mut UTextLabel,
+        (
+            With<ShieldText>,
+            Without<HealthText>,
+            Without<WeaponLabel>,
+            Without<AlertText>,
+        ),
+    >,
+    mut weapon_label: Query<
+        &mut UTextLabel,
+        (
+            With<WeaponLabel>,
+            Without<HealthText>,
+            Without<ShieldText>,
+            Without<AlertText>,
+        ),
+    >,
+    mut alert_box: Query<
+        (&mut UBorder, &mut UNode),
+        (
+            With<AlertBox>,
+            Without<HealthBarFill>,
+            Without<ShieldBarFill>,
+        ),
+    >,
+    mut alert_text: Query<
+        &mut UTextLabel,
+        (
+            With<AlertText>,
+            Without<HealthText>,
+            Without<ShieldText>,
+            Without<WeaponLabel>,
+        ),
+    >,
     mut radar_dots: Query<(&mut USelf, &RadarDot)>,
 ) {
     // 1. Get current values from seekbars & toggles
-    let health_val = seekbar_health.iter().next().map_or(80.0, |sb| sb.real_value());
-    let shield_val = seekbar_shield.iter().next().map_or(60.0, |sb| sb.real_value());
+    let health_val = seekbar_health
+        .iter()
+        .next()
+        .map_or(80.0, |sb| sb.real_value());
+    let shield_val = seekbar_shield
+        .iter()
+        .next()
+        .map_or(60.0, |sb| sb.real_value());
     let warning_active = toggle_warning.iter().next().map_or(false, |t| t.checked);
     let weapon_mode_secondary = toggle_weapon.iter().next().map_or(false, |t| t.checked);
 

@@ -266,24 +266,22 @@ impl LayoutPlacer for GridPlacer {
         let available_cross = (ctx.container_cross_size - ctx.padding_cross_start * 2.0).max(0.0);
 
         let fallback_cols = self.columns.max(ctx.grid_columns as usize).max(1);
-        let mut required_cols = fallback_cols;
+        let mut start_cols = fallback_cols.max(ctx.grid_template_columns.len());
         for item in items.iter() {
             let col_start = item.spec.grid_column_start.unwrap_or(1) as usize;
             let col_span = item.spec.grid_column_span.max(1) as usize;
-            required_cols = required_cols.max(col_start.saturating_sub(1) + col_span);
+            start_cols = start_cols.max(col_start.saturating_sub(1) + col_span);
         }
 
-        let col_sizes = resolve_track_sizes(
-            &ctx.grid_template_columns,
-            fallback_cols,
-            ctx.grid_auto_columns,
-            available_main,
-            ctx.main_gap,
-            required_cols,
-        );
-        let cols = col_sizes.len().max(1);
+        let mut max_rows = ctx.grid_template_rows.len().max(1);
+        for item in items.iter() {
+            if let Some(r_start) = item.spec.grid_row_start {
+                let r_span = item.spec.grid_row_span.max(1) as usize;
+                max_rows = max_rows.max(r_start.saturating_sub(1) as usize + r_span);
+            }
+        }
 
-        let mut occupancy: Vec<Vec<bool>> = vec![vec![false; cols]];
+        let mut occupancy: Vec<Vec<bool>> = vec![vec![false; start_cols]; max_rows];
         let mut placements: Vec<(usize, usize, usize, usize)> = Vec::with_capacity(items.len());
         let mut auto_cursor_row = 0usize;
         let mut auto_cursor_col = 0usize;
@@ -294,8 +292,7 @@ impl LayoutPlacer for GridPlacer {
             let fixed_col = item
                 .spec
                 .grid_column_start
-                .map(|v| v.saturating_sub(1) as usize)
-                .map(|v| v.min(cols.saturating_sub(1)));
+                .map(|v| v.saturating_sub(1) as usize);
             let fixed_row = item
                 .spec
                 .grid_row_start
@@ -305,8 +302,16 @@ impl LayoutPlacer for GridPlacer {
             let mut found = None;
 
             if let (Some(row), Some(col)) = (fixed_row, fixed_col) {
-                ensure_grid_rows(&mut occupancy, row + row_span, cols);
-                if can_place_span(&occupancy, row, col, row_span, col_span, cols) {
+                let current_cols = occupancy[0].len();
+                if col + col_span > current_cols {
+                    let new_cols = col + col_span;
+                    for row_vec in occupancy.iter_mut() {
+                        row_vec.resize(new_cols, false);
+                    }
+                }
+                let current_cols = occupancy[0].len();
+                ensure_grid_rows(&mut occupancy, row + row_span, current_cols);
+                if can_place_span(&occupancy, row, col, row_span, col_span, current_cols) {
                     found = Some((row, col));
                 }
             }
@@ -320,21 +325,29 @@ impl LayoutPlacer for GridPlacer {
                             fixed_row.unwrap_or(0)
                         };
                         let mut first_col = if fixed_row.is_none() && fixed_col.is_none() {
-                            auto_cursor_col.min(cols.saturating_sub(1))
+                            auto_cursor_col.min(occupancy[0].len().saturating_sub(1))
                         } else {
                             0
                         };
                         loop {
-                            ensure_grid_rows(&mut occupancy, row + row_span, cols);
+                            let current_cols = occupancy[0].len();
+                            ensure_grid_rows(&mut occupancy, row + row_span, current_cols);
                             if let Some(fc) = fixed_col {
-                                if can_place_span(&occupancy, row, fc, row_span, col_span, cols) {
+                                if fc + col_span > current_cols {
+                                    let new_cols = fc + col_span;
+                                    for row_vec in occupancy.iter_mut() {
+                                        row_vec.resize(new_cols, false);
+                                    }
+                                }
+                                let current_cols = occupancy[0].len();
+                                if can_place_span(&occupancy, row, fc, row_span, col_span, current_cols) {
                                     found = Some((row, fc));
                                     break;
                                 }
                             } else {
-                                for col in first_col..cols {
+                                for col in first_col..current_cols {
                                     if can_place_span(
-                                        &occupancy, row, col, row_span, col_span, cols,
+                                        &occupancy, row, col, row_span, col_span, current_cols,
                                     ) {
                                         found = Some((row, col));
                                         break;
@@ -349,55 +362,117 @@ impl LayoutPlacer for GridPlacer {
                         }
                     }
                     UGridAutoFlow::Column => {
-                        let mut search_rows = occupancy.len().max(1);
-                        loop {
-                            ensure_grid_rows(&mut occupancy, search_rows + row_span, cols);
-                            if let Some(fc) = fixed_col {
-                                for row in fixed_row.unwrap_or(0)..(search_rows + row_span) {
-                                    if can_place_span(&occupancy, row, fc, row_span, col_span, cols)
-                                    {
-                                        found = Some((row, fc));
+                        if let Some(fc) = fixed_col {
+                            let mut row = fixed_row.unwrap_or(0);
+                            loop {
+                                let current_cols = occupancy[0].len();
+                                if fc + col_span > current_cols {
+                                    let new_cols = fc + col_span;
+                                    for row_vec in occupancy.iter_mut() {
+                                        row_vec.resize(new_cols, false);
+                                    }
+                                }
+                                let current_cols = occupancy[0].len();
+                                ensure_grid_rows(&mut occupancy, row + row_span, current_cols);
+                                if can_place_span(&occupancy, row, fc, row_span, col_span, current_cols) {
+                                    found = Some((row, fc));
+                                    break;
+                                }
+                                row += 1;
+                            }
+                        } else if let Some(fr) = fixed_row {
+                            let mut col = 0usize;
+                            loop {
+                                let current_cols = occupancy[0].len();
+                                if col + col_span > current_cols {
+                                    let new_cols = col + col_span;
+                                    for row_vec in occupancy.iter_mut() {
+                                        row_vec.resize(new_cols, false);
+                                    }
+                                }
+                                let current_cols = occupancy[0].len();
+                                ensure_grid_rows(&mut occupancy, fr + row_span, current_cols);
+                                if can_place_span(&occupancy, fr, col, row_span, col_span, current_cols) {
+                                    found = Some((fr, col));
+                                    break;
+                                }
+                                col += 1;
+                            }
+                        } else {
+                            let mut col = auto_cursor_col;
+                            let mut first_row = auto_cursor_row;
+                            loop {
+                                let current_cols = occupancy[0].len();
+                                if col + col_span > current_cols {
+                                    let new_cols = col + col_span;
+                                    for row_vec in occupancy.iter_mut() {
+                                        row_vec.resize(new_cols, false);
+                                    }
+                                }
+                                let current_cols = occupancy[0].len();
+                                ensure_grid_rows(&mut occupancy, max_rows, current_cols);
+                                let mut placed = false;
+                                for row in first_row..=(max_rows.saturating_sub(row_span)) {
+                                    if can_place_span(&occupancy, row, col, row_span, col_span, current_cols) {
+                                        found = Some((row, col));
+                                        placed = true;
                                         break;
                                     }
                                 }
-                            } else {
-                                for col in 0..cols {
-                                    for row in fixed_row.unwrap_or(0)..(search_rows + row_span) {
-                                        if can_place_span(
-                                            &occupancy, row, col, row_span, col_span, cols,
-                                        ) {
-                                            found = Some((row, col));
-                                            break;
-                                        }
-                                    }
-                                    if found.is_some() {
-                                        break;
-                                    }
+                                if placed {
+                                    break;
                                 }
+                                first_row = 0;
+                                col += 1;
                             }
-                            if found.is_some() {
-                                break;
-                            }
-                            search_rows += 1;
                         }
                     }
                 }
             }
 
             let (row, col) = found.unwrap_or((0, 0));
-            ensure_grid_rows(&mut occupancy, row + row_span, cols);
+            let current_cols = occupancy[0].len();
+            ensure_grid_rows(&mut occupancy, row + row_span, current_cols);
             mark_span(&mut occupancy, row, col, row_span, col_span);
             placements.push((row, col, row_span, col_span));
 
             if is_fully_auto {
-                auto_cursor_row = row;
-                auto_cursor_col = col + col_span;
-                if auto_cursor_col >= cols {
-                    auto_cursor_row += auto_cursor_col / cols;
-                    auto_cursor_col %= cols;
+                match ctx.grid_auto_flow {
+                    UGridAutoFlow::Row => {
+                        auto_cursor_row = row;
+                        auto_cursor_col = col + col_span;
+                        if auto_cursor_col >= occupancy[0].len() {
+                            auto_cursor_row += auto_cursor_col / occupancy[0].len();
+                            auto_cursor_col %= occupancy[0].len();
+                        }
+                    }
+                    UGridAutoFlow::Column => {
+                        auto_cursor_col = col;
+                        auto_cursor_row = row + row_span;
+                        if auto_cursor_row >= max_rows {
+                            auto_cursor_col += auto_cursor_row / max_rows;
+                            auto_cursor_row %= max_rows;
+                        }
+                    }
                 }
             }
         }
+
+        let final_cols = placements
+            .iter()
+            .map(|(_, col, _, col_span)| col + col_span)
+            .max()
+            .unwrap_or(1);
+
+        let col_sizes = resolve_track_sizes(
+            &ctx.grid_template_columns,
+            fallback_cols,
+            ctx.grid_auto_columns,
+            available_main,
+            ctx.main_gap,
+            final_cols,
+        );
+        let cols = col_sizes.len();
 
         let required_rows = placements
             .iter()

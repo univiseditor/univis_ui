@@ -273,7 +273,26 @@ impl LayoutPlacer for GridPlacer {
             start_cols = start_cols.max(col_start.saturating_sub(1) + col_span);
         }
 
-        let mut max_rows = ctx.grid_template_rows.len().max(1);
+        let mut max_rows = ctx.grid_template_rows.len();
+        if ctx.grid_template_rows.is_empty() && ctx.grid_auto_flow == UGridAutoFlow::Column && available_cross > 0.0 {
+            let auto_row_height = match ctx.grid_auto_rows {
+                UTrackSize::Px(v) => v.max(1.0),
+                _ => {
+                    let mut max_item_cross = 0.0f32;
+                    for item in items.iter() {
+                        let (_, child_cross) = axis.from_world(item.result.size);
+                        max_item_cross = max_item_cross.max(child_cross);
+                    }
+                    max_item_cross.max(1.0)
+                }
+            };
+            let gap = ctx.cross_gap;
+            let fit_rows = ((available_cross + gap) / (auto_row_height + gap)).floor() as usize;
+            max_rows = fit_rows.max(1);
+        } else if max_rows == 0 {
+            max_rows = 1;
+        }
+
         for item in items.iter() {
             if let Some(r_start) = item.spec.grid_row_start {
                 let r_span = item.spec.grid_row_span.max(1) as usize;

@@ -31,9 +31,9 @@ pub(crate) fn text_horizontal_offset(
     let content_width = (computed_size.width - node.padding.width_sum()).max(0.0);
 
     match label.justify {
-        Justify::Left => (-content_width * 0.5) + (text_size.x * 0.5),
+        Justify::Left | Justify::Start => (-content_width * 0.5) + (text_size.x * 0.5),
         Justify::Center | Justify::Justified => 0.0,
-        Justify::Right => (content_width * 0.5) - (text_size.x * 0.5),
+        Justify::Right | Justify::End => (content_width * 0.5) - (text_size.x * 0.5),
     }
 }
 

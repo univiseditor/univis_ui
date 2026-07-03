@@ -11,8 +11,8 @@ pub(super) fn setup_profiler_overlay(mut commands: Commands, theme: Res<Theme>) 
             linebreak: LineBreak::NoWrap,
         },
         TextFont {
-            font: theme.text.font.inter_regular.clone(),
-            font_size: 14.0,
+            font: theme.text.font.inter_regular.clone().into(),
+            font_size: FontSize::Px(14.0),
             ..default()
         },
         TextColor(Color::srgb(0.9, 0.94, 1.0)),

@@ -95,7 +95,7 @@ fn setup(
     // 2. Lights
     commands.spawn((
         DirectionalLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             illuminance: 2000.0,
             ..default()
         },
@@ -105,7 +105,7 @@ fn setup(
     commands.spawn((
         PointLight {
             intensity: 1000.0,
-            shadows_enabled: false,
+            shadow_maps_enabled: false,
             ..default()
         },
         Transform::from_xyz(-2.0, 3.0, 3.0),

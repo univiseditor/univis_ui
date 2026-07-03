@@ -10,7 +10,7 @@ use bevy::asset::{AssetEvent, Assets};
 use bevy::ecs::relationship::Relationship;
 use bevy::prelude::*;
 use bevy::text::{
-    ComputedTextBlock, CosmicFontSystem, FontHinting, LineBreak, LineHeight, TextBounds, TextFont,
+    ComputedTextBlock, FontCx, LayoutCx, LineBreak, LineHeight, LetterSpacing, TextBounds, TextFont,
     TextLayout, TextPipeline,
 };
 use std::collections::HashSet;
@@ -45,7 +45,8 @@ pub fn measure_text_label_layout(
     mut font_events: MessageReader<AssetEvent<Font>>,
     fonts: Res<Assets<Font>>,
     mut text_pipeline: ResMut<TextPipeline>,
-    mut font_system: ResMut<CosmicFontSystem>,
+    mut font_cx: ResMut<FontCx>,
+    mut layout_cx: ResMut<LayoutCx>,
     parents_query: Query<&ChildOf>,
     parent_query: Query<(&UNode, &ComputedSize)>,
     mut query: Query<(
@@ -102,7 +103,8 @@ pub fn measure_text_label_layout(
             &fonts,
             &mut text_pipeline,
             &mut computed,
-            &mut font_system,
+            &mut font_cx,
+            &mut layout_cx,
         ) {
             Ok(measured) => {
                 let Ok((final_text, final_measured, overflowed)) = resolve_final_measured_text(
@@ -115,7 +117,8 @@ pub fn measure_text_label_layout(
                     &fonts,
                     &mut text_pipeline,
                     &mut computed,
-                    &mut font_system,
+                    &mut font_cx,
+                    &mut layout_cx,
                     measured,
                 ) else {
                     reset_text_label_layout_cache(&mut cache);

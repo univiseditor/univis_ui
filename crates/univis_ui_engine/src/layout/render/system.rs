@@ -266,7 +266,7 @@ fn sync_entity_material(
 
             let material_handle = if let Some(mut handles) = handles_opt {
                 if let Some(existing_handle) = &handles.material_3d {
-                    if let Some(existing_mat) = materials_3d.get_mut(existing_handle) {
+                    if let Some(mut existing_mat) = materials_3d.get_mut(existing_handle) {
                         existing_mat.color = base_color.to_vec4();
                         existing_mat.size = size_vec;
                         existing_mat.radius = radius;
@@ -351,7 +351,7 @@ fn sync_entity_material(
         ResolvedRenderMode::Flat2d => {
             let material_handle = if let Some(mut handles) = handles_opt {
                 if let Some(existing_handle) = &handles.material_2d {
-                    if let Some(existing_mat) = materials_2d.get_mut(existing_handle) {
+                    if let Some(mut existing_mat) = materials_2d.get_mut(existing_handle) {
                         existing_mat.color = base_color;
                         existing_mat.radius = radius;
                         existing_mat.border_color = b_color;

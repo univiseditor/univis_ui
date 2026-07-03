@@ -8,11 +8,10 @@ publish = false
 
 [dependencies]
 univis_ui = { path = "../.." }
-bevy = { version = "0.18.1", default-features = false, features = [
+bevy = { version = "0.19.0", default-features = false, features = [
     "default_app",
     "std",
     "android-native-activity",
-    "android_shared_stdcxx",
     "bevy_gilrs",
     "bevy_winit",
     "default_font",

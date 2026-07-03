@@ -99,7 +99,7 @@ fn setup(
     // Directional light for shadows & physical highlights
     commands.spawn((
         DirectionalLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             illuminance: 3000.0,
             ..default()
         },

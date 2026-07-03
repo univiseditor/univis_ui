@@ -91,8 +91,8 @@ fn attach_icon_button_observers(
                     TextColor(button.icon_color),
                     Text2d::new(button.icon),
                     TextFont {
-                        font: font_icon.icon.font.clone(),
-                        font_size: button.icon_size,
+                        font: FontSource::Handle(font_icon.icon.font.clone()),
+                        font_size: FontSize::Px(button.icon_size),
                         ..default()
                     },
                 ));

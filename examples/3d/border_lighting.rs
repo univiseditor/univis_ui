@@ -150,7 +150,7 @@ fn setup(
         DirectionalLight {
             illuminance: 400.0,
             color: Color::srgb(0.2, 0.3, 0.5),
-            shadows_enabled: false,
+            shadow_maps_enabled: false,
             ..default()
         },
         Transform::from_xyz(5.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -187,7 +187,7 @@ fn setup(
                     color,
                     intensity: settings.light_intensity,
                     range: 10.0,
-                    shadows_enabled: false,
+                    shadow_maps_enabled: false,
                     ..default()
                 },
                 Transform::from_xyz(0.0, height, 0.0),

@@ -95,7 +95,7 @@ fn setup(
     // Golden sunlight highlight
     commands.spawn((
         DirectionalLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             illuminance: 1500.0,
             ..default()
         },

@@ -206,7 +206,7 @@ fn setup(
         DirectionalLight {
             illuminance: 300.0,
             color: Color::srgb(0.2, 0.3, 0.6),
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
         Transform::from_xyz(10.0, 20.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -239,7 +239,7 @@ fn setup(
                 color,
                 intensity,
                 range: 40.0,
-                shadows_enabled: false,
+                shadow_maps_enabled: false,
                 ..default()
             },
             Transform::from_translation(pos),
@@ -558,7 +558,7 @@ fn spawn_building(
             ),
             intensity: 5000.0,
             range: config.size.y * 2.5,
-            shadows_enabled: false,
+            shadow_maps_enabled: false,
             ..default()
         },
         Transform::from_xyz(config.pos.x, config.size.y * 0.8, config.pos.z),

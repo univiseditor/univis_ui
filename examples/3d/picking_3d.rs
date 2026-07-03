@@ -88,7 +88,7 @@ fn setup(
     // 2. Lights - One main directional light from top/side, one headlight from camera to lit the UI
     commands.spawn((
         DirectionalLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
         Transform::from_xyz(4.0, 8.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -97,7 +97,7 @@ fn setup(
     commands.spawn((
         DirectionalLight {
             illuminance: 2500.0,
-            shadows_enabled: false,
+            shadow_maps_enabled: false,
             ..default()
         },
         Transform::from_xyz(0.0, 2.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),

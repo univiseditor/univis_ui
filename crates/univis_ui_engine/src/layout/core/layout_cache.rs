@@ -598,7 +598,7 @@ pub fn track_layout_changes(
         let mut invalidation = LayoutInvalidation::default();
 
         if node.is_changed() {
-            let current = node.clone();
+            let current = (*node).clone();
             let previous = cache.update_node_snapshot(entity, current.clone());
             invalidation.merge(classify_node_mutation(
                 previous.as_ref(),
@@ -609,7 +609,7 @@ pub fn track_layout_changes(
         }
 
         if let Some(layout_ref) = layout {
-            let current = layout_ref.clone();
+            let current = (*layout_ref).clone();
             if layout_ref.is_changed() {
                 let previous = cache.update_layout_snapshot(entity, Some(current.clone()));
                 invalidation.merge(classify_layout_mutation(

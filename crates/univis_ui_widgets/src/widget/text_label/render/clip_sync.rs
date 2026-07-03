@@ -187,7 +187,7 @@ pub(crate) fn sync_text_clipper_materials(
         let world_scale = text_world_scale_for_entity(entity, &parents_query, &root_query);
         let root_stack = text_root_stack_for_entity(entity, &parents_query, &root_stack_query);
         let clip = active_clipper_for_entity(entity, &parents_query, &clipper_query, &root_query);
-        let Some(material) = materials.get_mut(&material_handle.0) else {
+        let Some(mut material) = materials.get_mut(&material_handle.0) else {
             continue;
         };
         let desired_transform = text_render_transform(world_scale, root_stack.text_child_offset());

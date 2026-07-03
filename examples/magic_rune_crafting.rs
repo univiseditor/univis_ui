@@ -134,7 +134,7 @@ fn setup(
     // Directional moon-like light
     commands.spawn((
         DirectionalLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             illuminance: 1200.0,
             ..default()
         },
@@ -726,7 +726,7 @@ fn update_crystal_material(
 ) {
     if state.is_changed() {
         for mat_handle in &query {
-            if let Some(material) = materials.get_mut(&mat_handle.0) {
+            if let Some(mut material) = materials.get_mut(&mat_handle.0) {
                 let (base, emissive) = match state.active_rune {
                     MagicRune::Fire => (
                         Color::srgb(0.95, 0.25, 0.15),

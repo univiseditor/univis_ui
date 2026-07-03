@@ -38,7 +38,8 @@ pub(super) fn build_ellipsized_text(
     fonts: &Assets<Font>,
     text_pipeline: &mut TextPipeline,
     computed: &mut ComputedTextBlock,
-    font_system: &mut CosmicFontSystem,
+    font_system: &mut FontCx,
+    layout_cx: &mut LayoutCx,
 ) -> Result<(String, measurement::MeasuredTextInfo), TextMeasureError> {
     let base_direction = base_direction_for_text(&label.text);
     let truncate_side = resolve_truncate_side(label.truncate_side, base_direction);
@@ -54,6 +55,7 @@ pub(super) fn build_ellipsized_text(
         text_pipeline,
         computed,
         font_system,
+        layout_cx,
     )?;
 
     if !text_fits_constraints(&ellipsis_only, bounds, label) {
@@ -69,6 +71,7 @@ pub(super) fn build_ellipsized_text(
             text_pipeline,
             computed,
             font_system,
+            layout_cx,
         )?;
         return Ok((String::new(), empty));
     }
@@ -101,6 +104,7 @@ pub(super) fn build_ellipsized_text(
             text_pipeline,
             computed,
             font_system,
+            layout_cx,
         )?;
 
         if text_fits_constraints(&measured, bounds, label) {

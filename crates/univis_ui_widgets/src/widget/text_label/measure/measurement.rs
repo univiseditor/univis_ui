@@ -93,8 +93,8 @@ pub(super) fn label_text_layout(label: &UTextLabel) -> TextLayout {
 
 pub(super) fn label_text_font(label: &UTextLabel) -> TextFont {
     TextFont {
-        font: label.font.clone(),
-        font_size: label.font_size,
+        font: FontSource::Handle(label.font.clone()),
+        font_size: FontSize::Px(label.font_size),
         ..default()
     }
 }
@@ -110,7 +110,8 @@ pub(super) fn measure_layout_for_text(
     fonts: &Assets<Font>,
     text_pipeline: &mut TextPipeline,
     computed: &mut ComputedTextBlock,
-    font_system: &mut CosmicFontSystem,
+    font_system: &mut FontCx,
+    layout_cx: &mut LayoutCx,
 ) -> Result<MeasuredTextInfo, TextMeasureError> {
     let mut measure = text_pipeline
         .create_text_measure(
@@ -123,17 +124,20 @@ pub(super) fn measure_layout_for_text(
                 text_font,
                 text_color,
                 LineHeight::default(),
+                LetterSpacing::default(),
             )),
             1.0,
             text_layout,
             computed,
             font_system,
-            FontHinting::Disabled,
+            layout_cx,
+            Vec2::ZERO,
+            20.0,
         )
         .map_err(|_| TextMeasureError::new(entity, stage, text.chars().count()))?;
 
     let size = measure.compute_size(bounds, computed, font_system);
-    let line_count = computed.buffer().layout_runs().count();
+    let line_count = computed.buffer().lines().count();
 
     Ok(MeasuredTextInfo {
         size,
@@ -153,7 +157,8 @@ pub(super) fn resolve_final_measured_text(
     fonts: &Assets<Font>,
     text_pipeline: &mut TextPipeline,
     computed: &mut ComputedTextBlock,
-    font_system: &mut CosmicFontSystem,
+    font_system: &mut FontCx,
+    layout_cx: &mut LayoutCx,
     measured: MeasuredTextInfo,
 ) -> Result<(String, MeasuredTextInfo, bool), TextMeasureError> {
     let mut final_text = label.text.clone();
@@ -174,6 +179,7 @@ pub(super) fn resolve_final_measured_text(
             text_pipeline,
             computed,
             font_system,
+            layout_cx,
         )?;
         final_text = displayed_text;
         final_measured = measure_layout_for_text(
@@ -188,6 +194,7 @@ pub(super) fn resolve_final_measured_text(
             text_pipeline,
             computed,
             font_system,
+            layout_cx,
         )?;
     }
 

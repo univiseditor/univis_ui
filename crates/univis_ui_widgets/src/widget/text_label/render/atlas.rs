@@ -7,10 +7,10 @@ pub(crate) struct UTextLabelAtlasCache {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(super) struct UTextLabelAtlasKey {
-    pub(super) font_id: AssetId<Font>,
+    pub(super) font_data_id: u64,
     pub(super) font_size_bits: u32,
-    pub(super) font_weight: u16,
-    pub(super) flags_bits: u32,
+    pub(super) index: u32,
+    pub(super) variations_hash: u64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

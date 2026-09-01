@@ -87,9 +87,19 @@ pub(super) fn update_select_visuals(
     >,
 ) {
     for (entity, select, runtime, mut root_node) in root_query.iter_mut() {
-        root_node.width = UVal::Px(select.width.max(1.0));
-        root_node.height = UVal::Content;
-        root_node.background_color = Color::NONE;
+        // Write-only-on-change — unconditional assignment marks the UNode
+        // changed every frame and keeps the incremental renderer redrawing
+        // the whole panel every frame.
+        let width_px = UVal::Px(select.width.max(1.0));
+        if root_node.width != width_px {
+            root_node.width = width_px;
+        }
+        if root_node.height != UVal::Content {
+            root_node.height = UVal::Content;
+        }
+        if root_node.background_color != Color::NONE {
+            root_node.background_color = Color::NONE;
+        }
 
         if let Ok((interaction, mut trigger_node, mut trigger_border, mut trigger_colors)) =
             trigger_query.get_mut(runtime.trigger_entity)

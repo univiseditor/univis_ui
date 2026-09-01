@@ -131,7 +131,11 @@ impl Default for UiRolloutConfig {
             use_cached_ui_context: true,
             use_incremental_measure: true,
             use_incremental_solve: true,
-            use_incremental_render: true,
+            // Default off: the incremental render frontier flip-flops in
+            // static scenes, redrawing the whole UI tree every other frame
+            // (observed as full-panel flicker). Full sync is cheap at common
+            // UI scales; revisit once frontier generation bookkeeping is fixed.
+            use_incremental_render: false,
             use_mesh_cache: true,
             use_post_settle_picking: true,
             validation: UiValidationMode::Disabled,

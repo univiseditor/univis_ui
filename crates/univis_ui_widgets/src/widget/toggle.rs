@@ -267,14 +267,23 @@ fn animate_toggle_knob(
         let diff = target_offset - toggle.current_offset;
 
         // Snap once the remaining distance is tiny.
+        // Only write when the value actually changes — an unconditional
+        // assignment marks the UToggle component changed every frame, which
+        // re-triggers layout/render invalidation each frame (visible as
+        // whole-panel flicker with the incremental renderer).
         if diff.abs() < 0.01 {
-            toggle.current_offset = target_offset;
+            if toggle.current_offset != target_offset {
+                toggle.current_offset = target_offset;
+            }
             continue;
         }
 
         // Smooth interpolation
         let delta = time.delta_secs() * toggle.animation_speed;
-        toggle.current_offset += diff * delta;
+        let next = toggle.current_offset + diff * delta;
+        if next != toggle.current_offset {
+            toggle.current_offset = next;
+        }
 
         // Apply the resolved offset to the knob.
         let track_entity = children
@@ -334,14 +343,18 @@ pub struct ToggleChangedEvent {
 #[doc(hidden)]
 pub fn emit_toggle_events(
     mut events: MessageWriter<ToggleChangedEvent>,
-    query: Query<(Entity, &UToggle), Changed<UToggle>>,
+    mut query: Query<(Entity, &mut UToggle), Changed<UToggle>>,
 ) {
-    for (entity, toggle) in query.iter() {
+    for (entity, mut toggle) in query.iter_mut() {
         if toggle.checked != toggle.previous_checked {
             events.write(ToggleChangedEvent {
                 entity,
                 checked: toggle.checked,
             });
+            // Sync the previous state so externally-mutated `checked` (game
+            // code driving widgets programmatically) does not re-emit the
+            // event every frame — matches select/seekbar emit behavior.
+            toggle.previous_checked = toggle.checked;
         }
     }
 }

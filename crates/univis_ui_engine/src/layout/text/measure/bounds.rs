@@ -12,6 +12,24 @@ fn node_uses_intrinsic_dimension(spec: &UVal) -> bool {
     spec.uses_intrinsic_measurement()
 }
 
+fn resolve_parent_dimension_bound(
+    spec: &UVal,
+    computed: f32,
+    parent_padding: f32,
+    node_margin: f32,
+) -> Option<f32> {
+    if node_uses_intrinsic_dimension(spec) {
+        None
+    } else {
+        let total_spacing = parent_padding + node_margin;
+        match *spec {
+            UVal::Px(value) => Some((value - total_spacing).max(0.0)),
+            _ if computed > 0.0 => Some((computed - total_spacing).max(0.0)),
+            _ => None,
+        }
+    }
+}
+
 pub(super) fn parent_label_bounds(
     entity: Entity,
     label: &UTextLabel,
@@ -39,23 +57,19 @@ pub(super) fn parent_label_bounds(
         };
     };
 
-    let width = if node_uses_intrinsic_dimension(&parent_node.width) {
-        None
-    } else {
-        Some(
-            (parent_size.width - parent_node.padding.width_sum() - node.margin.width_sum())
-                .max(0.0),
-        )
-    };
+    let width = resolve_parent_dimension_bound(
+        &parent_node.width,
+        parent_size.width,
+        parent_node.padding.width_sum(),
+        node.margin.width_sum(),
+    );
 
-    let height = if node_uses_intrinsic_dimension(&parent_node.height) {
-        None
-    } else {
-        Some(
-            (parent_size.height - parent_node.padding.height_sum() - node.margin.height_sum())
-                .max(0.0),
-        )
-    };
+    let height = resolve_parent_dimension_bound(
+        &parent_node.height,
+        parent_size.height,
+        parent_node.padding.height_sum(),
+        node.margin.height_sum(),
+    );
 
     TextBounds { width, height }
 }
@@ -86,17 +100,19 @@ pub(super) fn parent_label_bounds_from_ids(
         };
     };
 
-    let width = if node_uses_intrinsic_dimension(&parent_node.width) {
-        None
-    } else {
-        Some((parent_size.width - parent_node.padding.width_sum() - margin.width_sum()).max(0.0))
-    };
+    let width = resolve_parent_dimension_bound(
+        &parent_node.width,
+        parent_size.width,
+        parent_node.padding.width_sum(),
+        margin.width_sum(),
+    );
 
-    let height = if node_uses_intrinsic_dimension(&parent_node.height) {
-        None
-    } else {
-        Some((parent_size.height - parent_node.padding.height_sum() - margin.height_sum()).max(0.0))
-    };
+    let height = resolve_parent_dimension_bound(
+        &parent_node.height,
+        parent_size.height,
+        parent_node.padding.height_sum(),
+        margin.height_sum(),
+    );
 
     TextBounds { width, height }
 }

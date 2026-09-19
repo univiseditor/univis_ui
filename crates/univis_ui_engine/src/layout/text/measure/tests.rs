@@ -270,3 +270,93 @@ fn autosize_text_stabilizes_without_requeue_loops() {
     assert!(!work_state.budget_exhausted());
     assert_eq!(work_state.current_generation(), 1);
 }
+
+#[test]
+fn dynamic_text_updated_every_frame_settles_without_exhausting_budget() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+    app.add_systems(
+        UiSettlementSchedule,
+        (
+            sync_text_label_intrinsic_size
+                .in_set(UnivisPostUpdateSet::ExternalPrepare)
+                .before(fit_node_to_text_size),
+            fit_node_to_text_size
+                .in_set(UnivisPostUpdateSet::ExternalPrepare)
+                .before(mark_text_label_layout_dirty),
+            mark_text_label_layout_dirty.in_set(UnivisPostUpdateSet::ExternalPrepare),
+        )
+            .chain(),
+    );
+
+    let root = app
+        .world_mut()
+        .spawn((
+            URootUi::world_2d(Vec2::new(400.0, 200.0)),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout::default(),
+        ))
+        .id();
+
+    let label = app
+        .world_mut()
+        .spawn((
+            ChildOf(root),
+            UNode {
+                width: UVal::Auto,
+                height: UVal::Auto,
+                ..default()
+            },
+            UTextLabel {
+                text: "frame 1".into(),
+                autosize: true,
+                overflow: UTextOverflow::Visible,
+                ..default()
+            },
+            IntrinsicSize::default(),
+            fixed_text_cache(Vec2::new(80.0, 20.0), "frame 1"),
+        ))
+        .id();
+
+    // Frame 1
+    app.update();
+    let work_state = app.world().resource::<UiWorkState>();
+    assert!(work_state.is_settled());
+    assert!(!work_state.budget_exhausted());
+
+    // Frame 2: dynamic text update
+    app.world_mut().entity_mut(label).insert((
+        UTextLabel {
+            text: "frame 2: 60 fps dynamic telemetry".into(),
+            autosize: true,
+            overflow: UTextOverflow::Visible,
+            ..default()
+        },
+        fixed_text_cache(Vec2::new(140.0, 20.0), "frame 2: 60 fps dynamic telemetry"),
+    ));
+    app.update();
+    let work_state = app.world().resource::<UiWorkState>();
+    assert!(work_state.is_settled());
+    assert!(!work_state.budget_exhausted());
+    assert!(work_state.last_frame_iterations() <= 2);
+
+    // Frame 3: continuous text update
+    app.world_mut().entity_mut(label).insert((
+        UTextLabel {
+            text: "frame 3: 120 fps continuous update".into(),
+            autosize: true,
+            overflow: UTextOverflow::Visible,
+            ..default()
+        },
+        fixed_text_cache(Vec2::new(150.0, 20.0), "frame 3: 120 fps continuous update"),
+    ));
+    app.update();
+    let work_state = app.world().resource::<UiWorkState>();
+    assert!(work_state.is_settled());
+    assert!(!work_state.budget_exhausted());
+    assert!(work_state.last_frame_iterations() <= 2);
+}

@@ -13,6 +13,7 @@ use crate::layout::query::{ComputedSize, IntrinsicSize};
 #[cfg(test)]
 use crate::layout::univis_node::ULayout;
 use crate::layout::univis_node::UNode;
+use crate::schedule::UiWorkState;
 #[cfg(test)]
 use crate::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 use bevy::asset::{AssetEvent, Assets};
@@ -22,7 +23,7 @@ use bevy::text::{
     ComputedTextBlock, FontCx, LayoutCx, LetterSpacing, LineBreak, LineHeight, TextBounds,
     TextFont, TextLayout, TextPipeline,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use unicode_bidi::BidiInfo;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -138,7 +139,9 @@ pub fn measure_text_label_layout(
             }
             Err(error) => {
                 log_text_measure_error(error);
-                reset_text_label_layout_cache_preserving_bounds(&mut cache, parent_bounds);
+                if cache.measured_size == Vec2::ZERO {
+                    reset_text_label_layout_cache_preserving_bounds(&mut cache, parent_bounds);
+                }
             }
         }
     }
@@ -146,6 +149,8 @@ pub fn measure_text_label_layout(
 
 pub fn fit_node_to_text_size(
     parents_query: Query<&ChildOf>,
+    work_state: Option<Res<UiWorkState>>,
+    mut adjusted_counts: Local<HashMap<Entity, (u64, u8)>>,
     mut params: ParamSet<(
         Query<(&UNode, &ComputedSize)>,
         Query<(Entity, &UTextLabel, &mut UNode, &UTextLabelLayoutCache)>,
@@ -170,7 +175,21 @@ pub fn fit_node_to_text_size(
         return;
     }
 
+    let current_gen = work_state.as_ref().map_or(0, |w| w.current_generation());
+    if adjusted_counts.len() > 256 {
+        adjusted_counts.retain(|_, (generation, _)| *generation == current_gen);
+    }
+
     for (entity, parent_entity, overflow, margin) in autosize_snapshot {
+        let entry = adjusted_counts.entry(entity).or_insert((current_gen, 0));
+        if entry.0 != current_gen {
+            entry.0 = current_gen;
+            entry.1 = 0;
+        }
+        if entry.1 >= 2 {
+            continue;
+        }
+
         let parent_bounds = {
             let parent_bounds_query = params.p0();
             parent_label_bounds_from_ids(parent_entity, overflow, margin, &parent_bounds_query)
@@ -196,11 +215,17 @@ pub fn fit_node_to_text_size(
         };
 
         const TEXT_AUTOSIZE_EPSILON: f32 = 0.5;
+        let mut changed = false;
         if (current_w - target_width).abs() > TEXT_AUTOSIZE_EPSILON {
             node.width = UVal::Px(target_width);
+            changed = true;
         }
         if (current_h - target_height).abs() > TEXT_AUTOSIZE_EPSILON {
             node.height = UVal::Px(target_height);
+            changed = true;
+        }
+        if changed {
+            entry.1 += 1;
         }
     }
 }

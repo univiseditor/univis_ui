@@ -77,149 +77,180 @@ pub fn downward_solve_pass_safe(
     let use_cached_ui_context = rollout
         .as_ref()
         .map_or(true, |config| config.use_cached_ui_context);
-    let solve_frontier = if use_incremental_solve {
-        cache.take_solve_frontier()
-    } else {
-        cache.all_entities_top_down()
-    };
-
-    for entity in solve_frontier {
-        let depth = cache.depth_for_entity(entity).unwrap_or_default();
-
-        let Some((container_size, constraints, solver_config, cached_context)) = (|| {
-            let (node, layout_opt, children_opt, cached_context, computed) = match nodes.get(entity)
-            {
-                Ok((_, node, layout_opt, _, children_opt, _, cached_context, _, computed, _)) => {
-                    (node, layout_opt, children_opt, cached_context, computed)
-                }
-                Err(_) => return None,
-            };
-
-            let container_size = if depth == 0 {
-                calculate_root_size(entity, &root_query, &intrinsic_query)
-            } else {
-                Vec2::new(computed.width, computed.height)
-            };
-
-            let solver_items_capacity_before = scratch.solver_items.capacity();
-            scratch.solver_items.clear();
-            if let Some(children) = children_opt
-                && !children.is_empty()
-            {
-                collect_solver_items_into(
-                    children,
-                    &nodes,
-                    &intrinsic_query,
-                    &mut scratch.solver_items,
-                );
-            }
-            if let Some(prof) = profiler.as_mut() {
-                if scratch.solver_items.capacity() > solver_items_capacity_before {
-                    prof.solve_scratch_alloc_grows += 1;
-                }
-                prof.solve_scratch_peak = prof.solve_scratch_peak.max(scratch.solver_items.len());
-            }
-
-            let default_layout;
-            let layout = if let Some(layout) = layout_opt {
-                layout
-            } else {
-                default_layout = ULayout::default();
-                &default_layout
-            };
-
-            Some((
-                container_size,
-                if depth == 0 {
-                    BoxConstraints::tight(container_size)
-                } else {
-                    build_constraints(container_size, node)
-                },
-                translate_config(layout, node),
-                cached_context.copied(),
-            ))
-        })() else {
-            cache.clear_solve_dirty(entity);
-            continue;
-        };
-
-        if depth == 0
-            && let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
-        {
-            if (computed.width - container_size.x).abs() > LAYOUT_WRITE_EPSILON {
-                computed.width = container_size.x;
-            }
-            if (computed.height - container_size.y).abs() > LAYOUT_WRITE_EPSILON {
-                computed.height = container_size.y;
-            }
-        }
-
-        if scratch.solver_items.is_empty() {
-            cache.complete_solve(entity);
-            cache.clear_solve_dirty(entity);
-            continue;
-        }
-
-        let solved_size = {
-            let (solver_refs_capacity_before, solver_refs_len) = {
-                let LayoutSolveScratch {
-                    solver_items,
-                    solver_refs,
-                } = &mut *scratch;
-                let solver_refs_capacity_before = solver_refs.capacity();
-                solver_refs.clear();
-                solver_refs.reserve(solver_items.len());
-                for item in solver_items.iter_mut() {
-                    solver_refs.push(item.as_solver_item());
-                }
-                (solver_refs_capacity_before, solver_refs.len())
-            };
-            if let Some(prof) = profiler.as_mut() {
-                if scratch.solver_refs.capacity() > solver_refs_capacity_before {
-                    prof.solve_ref_alloc_grows += 1;
-                }
-                prof.solve_ref_peak = prof.solve_ref_peak.max(solver_refs_len);
-            }
-            solve_flex_layout(&solver_config, constraints, &mut scratch.solver_refs)
-        };
-        solved_count += 1;
-        let final_size = if depth == 0 {
-            container_size
+    let mut solve_iterations = 0;
+    loop {
+        let solve_frontier = if use_incremental_solve {
+            cache.take_solve_frontier()
         } else {
-            solved_size
-        };
-        let solve_generation = cache.stage_versions(entity).solve_input_generation;
-        let (world_scale, root_stack) = resolve_solver_context(
-            entity,
-            use_cached_ui_context.then_some(cached_context).flatten(),
-            &parents_query,
-            &root_query,
-            &root_stack_query,
-        );
-
-        if let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
-            if (computed.width - final_size.x).abs() > LAYOUT_WRITE_EPSILON {
-                computed.width = final_size.x;
+            if solve_iterations > 0 {
+                break;
             }
-            if (computed.height - final_size.y).abs() > LAYOUT_WRITE_EPSILON {
-                computed.height = final_size.y;
+            cache.all_entities_top_down()
+        };
+
+        if solve_frontier.is_empty() {
+            break;
+        }
+
+        solve_iterations += 1;
+        if solve_iterations > 128 {
+            bevy::log::warn!("Downward solve pass exceeded 128 frontier drain iterations");
+            break;
+        }
+
+        for entity in solve_frontier {
+            let depth = cache.depth_for_entity(entity).unwrap_or_default();
+
+            let Some((container_size, constraints, solver_config, cached_context)) = (|| {
+                let (node, layout_opt, children_opt, cached_context, computed) =
+                    match nodes.get(entity) {
+                        Ok((
+                            _,
+                            node,
+                            layout_opt,
+                            _,
+                            children_opt,
+                            _,
+                            cached_context,
+                            _,
+                            computed,
+                            _,
+                        )) => (node, layout_opt, children_opt, cached_context, computed),
+                        Err(_) => return None,
+                    };
+
+                let container_size = if depth == 0 {
+                    calculate_root_size(entity, &root_query, &intrinsic_query)
+                } else {
+                    Vec2::new(computed.width, computed.height)
+                };
+
+                let solver_items_capacity_before = scratch.solver_items.capacity();
+                scratch.solver_items.clear();
+                if let Some(children) = children_opt
+                    && !children.is_empty()
+                {
+                    collect_solver_items_into(
+                        children,
+                        &nodes,
+                        &intrinsic_query,
+                        &mut scratch.solver_items,
+                    );
+                }
+                if let Some(prof) = profiler.as_mut() {
+                    if scratch.solver_items.capacity() > solver_items_capacity_before {
+                        prof.solve_scratch_alloc_grows += 1;
+                    }
+                    prof.solve_scratch_peak =
+                        prof.solve_scratch_peak.max(scratch.solver_items.len());
+                }
+
+                let default_layout;
+                let layout = if let Some(layout) = layout_opt {
+                    layout
+                } else {
+                    default_layout = ULayout::default();
+                    &default_layout
+                };
+
+                Some((
+                    container_size,
+                    if depth == 0 {
+                        BoxConstraints::tight(container_size)
+                    } else {
+                        build_constraints(container_size, node)
+                    },
+                    translate_config(layout, node),
+                    cached_context.copied(),
+                ))
+            })(
+            ) else {
+                cache.clear_solve_dirty(entity);
+                continue;
+            };
+
+            if depth == 0
+                && let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
+            {
+                if (computed.width - container_size.x).abs() > LAYOUT_WRITE_EPSILON {
+                    computed.width = container_size.x;
+                }
+                if (computed.height - container_size.y).abs() > LAYOUT_WRITE_EPSILON {
+                    computed.height = container_size.y;
+                }
+            }
+
+            if scratch.solver_items.is_empty() {
+                cache.complete_solve(entity);
+                cache.clear_solve_dirty(entity);
+                continue;
+            }
+
+            let solved_size = {
+                let (solver_refs_capacity_before, solver_refs_len) = {
+                    let LayoutSolveScratch {
+                        solver_items,
+                        solver_refs,
+                    } = &mut *scratch;
+                    let solver_refs_capacity_before = solver_refs.capacity();
+                    solver_refs.clear();
+                    solver_refs.reserve(solver_items.len());
+                    for item in solver_items.iter_mut() {
+                        solver_refs.push(item.as_solver_item());
+                    }
+                    (solver_refs_capacity_before, solver_refs.len())
+                };
+                if let Some(prof) = profiler.as_mut() {
+                    if scratch.solver_refs.capacity() > solver_refs_capacity_before {
+                        prof.solve_ref_alloc_grows += 1;
+                    }
+                    prof.solve_ref_peak = prof.solve_ref_peak.max(solver_refs_len);
+                }
+                solve_flex_layout(&solver_config, constraints, &mut scratch.solver_refs)
+            };
+            solved_count += 1;
+            let final_size = if depth == 0 {
+                container_size
+            } else {
+                solved_size
+            };
+            let solve_generation = cache.stage_versions(entity).solve_input_generation;
+            let (world_scale, root_stack) = resolve_solver_context(
+                entity,
+                use_cached_ui_context.then_some(cached_context).flatten(),
+                &parents_query,
+                &root_query,
+                &root_stack_query,
+            );
+
+            if let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+                if (computed.width - final_size.x).abs() > LAYOUT_WRITE_EPSILON {
+                    computed.width = final_size.x;
+                }
+                if (computed.height - final_size.y).abs() > LAYOUT_WRITE_EPSILON {
+                    computed.height = final_size.y;
+                }
+            }
+
+            apply_results_to_children(
+                &scratch.solver_items,
+                final_size,
+                solve_generation,
+                world_scale,
+                root_stack,
+                use_incremental_solve,
+                &mut cache,
+                &mut nodes,
+            );
+            cache.complete_solve(entity);
+
+            if use_incremental_solve {
+                cache.clear_solve_dirty(entity);
             }
         }
 
-        apply_results_to_children(
-            &scratch.solver_items,
-            final_size,
-            solve_generation,
-            world_scale,
-            root_stack,
-            use_incremental_solve,
-            &mut cache,
-            &mut nodes,
-        );
-        cache.complete_solve(entity);
-
-        if use_incremental_solve {
-            cache.clear_solve_dirty(entity);
+        if !use_incremental_solve {
+            break;
         }
     }
 

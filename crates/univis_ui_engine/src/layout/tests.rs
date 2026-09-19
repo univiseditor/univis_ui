@@ -940,3 +940,91 @@ fn root_resolution_change_stays_scoped_to_the_changed_root() {
     assert_eq!(root_b_state.current_generation, 1);
     assert!(root_b_state.is_settled());
 }
+
+#[test]
+fn deeply_nested_layout_hierarchy_settles_without_exhausting_budget() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+    let root = app
+        .world_mut()
+        .spawn((
+            URootUi::world_2d(Vec2::new(400.0, 400.0)),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+            ULayout::default(),
+        ))
+        .id();
+
+    let mut current_parent = root;
+    for _ in 0..7 {
+        let child = app
+            .world_mut()
+            .spawn((
+                ChildOf(current_parent),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Percent(1.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
+        current_parent = child;
+    }
+
+    let leaf = app
+        .world_mut()
+        .spawn((
+            ChildOf(current_parent),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Percent(1.0),
+                ..default()
+            },
+        ))
+        .id();
+
+    app.update();
+
+    let work_state = app.world().resource::<UiWorkState>();
+    assert!(work_state.is_settled(), "Frame 1 must be settled");
+    assert!(
+        !work_state.budget_exhausted(),
+        "Frame 1 must not exhaust budget"
+    );
+
+    // Frame 2: Resize root.
+    app.world_mut()
+        .entity_mut(root)
+        .get_mut::<URootUi>()
+        .expect("root must exist")
+        .canvas = UiCanvasSize::Fixed(Vec2::new(800.0, 800.0));
+
+    app.update();
+
+    let work_state = app.world().resource::<UiWorkState>();
+    assert!(
+        work_state.is_settled(),
+        "Frame 2 must be settled (iterations={}, budget_exhausted={})",
+        work_state.last_frame_iterations(),
+        work_state.budget_exhausted()
+    );
+    assert!(
+        !work_state.budget_exhausted(),
+        "Frame 2 must not exhaust budget"
+    );
+    assert_eq!(work_state.last_frame_iterations(), 2);
+
+    let leaf_size = app
+        .world()
+        .entity(leaf)
+        .get::<ComputedSize>()
+        .copied()
+        .expect("leaf must have computed size");
+    assert_eq!(leaf_size.width, 800.0);
+    assert_eq!(leaf_size.height, 800.0);
+}

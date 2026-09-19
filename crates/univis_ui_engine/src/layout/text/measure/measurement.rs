@@ -74,7 +74,7 @@ impl TextMeasureError {
 }
 
 pub(super) fn log_text_measure_error(error: TextMeasureError) {
-    bevy::log::warn!(
+    bevy::log::debug!(
         "[widget/text_label_measure] entity={:?} stage={} text_len={} reason={} action={}",
         error.entity,
         error.stage.as_str(),

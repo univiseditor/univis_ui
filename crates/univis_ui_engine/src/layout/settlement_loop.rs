@@ -44,19 +44,22 @@ pub(super) fn run_ui_settlement_loop(world: &mut World) {
     }
 
     if exhausted {
-        let (generation, pending, iterations) = {
+        let (generation, pending, iterations, settled) = {
             let work_state = world.resource::<UiWorkState>();
             (
                 work_state.current_generation(),
                 work_state.pending(),
                 work_state.last_frame_iterations(),
+                work_state.is_settled(),
             )
         };
 
-        world.resource_mut::<UiWorkState>().mark_budget_exhausted();
-        bevy::log::warn!(
-            "UI settlement exhausted its iteration budget after {iterations} passes (generation={generation}, pending={pending:?})"
-        );
+        if !settled || pending.any() {
+            world.resource_mut::<UiWorkState>().mark_budget_exhausted();
+            bevy::log::warn!(
+                "UI settlement exhausted its iteration budget after {iterations} passes (generation={generation}, pending={pending:?})"
+            );
+        }
     }
 }
 

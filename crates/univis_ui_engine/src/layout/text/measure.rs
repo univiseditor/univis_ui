@@ -33,7 +33,8 @@ use self::bounds::{
 #[cfg(test)]
 use self::invalidation::mark_text_label_layout_dirty;
 use self::invalidation::{
-    next_text_label_layout_cache, parent_bounds_changed, reset_text_label_layout_cache,
+    next_text_label_layout_cache, parent_bounds_changed,
+    reset_text_label_layout_cache_preserving_bounds,
 };
 use self::measurement::{
     TextMeasureStage, label_text_font, label_text_layout, log_text_measure_error,
@@ -121,7 +122,7 @@ pub fn measure_text_label_layout(
                     &mut layout_cx,
                     measured,
                 ) else {
-                    reset_text_label_layout_cache(&mut cache);
+                    reset_text_label_layout_cache_preserving_bounds(&mut cache, parent_bounds);
                     continue;
                 };
 
@@ -137,7 +138,7 @@ pub fn measure_text_label_layout(
             }
             Err(error) => {
                 log_text_measure_error(error);
-                reset_text_label_layout_cache(&mut cache);
+                reset_text_label_layout_cache_preserving_bounds(&mut cache, parent_bounds);
             }
         }
     }
@@ -182,8 +183,8 @@ pub fn fit_node_to_text_size(
 
         let outer_size = measured_text_outer_size(&node, layout_cache);
         let clamped_outer_size = clamp_outer_size_to_bounds(outer_size, parent_bounds);
-        let target_width = clamped_outer_size.x;
-        let target_height = clamped_outer_size.y;
+        let target_width = (clamped_outer_size.x * 2.0).round() / 2.0;
+        let target_height = (clamped_outer_size.y * 2.0).round() / 2.0;
 
         let current_w = match node.width {
             UVal::Px(value) => value,
@@ -194,10 +195,11 @@ pub fn fit_node_to_text_size(
             _ => -1.0,
         };
 
-        if (current_w - target_width).abs() > 0.1 {
+        const TEXT_AUTOSIZE_EPSILON: f32 = 0.5;
+        if (current_w - target_width).abs() > TEXT_AUTOSIZE_EPSILON {
             node.width = UVal::Px(target_width);
         }
-        if (current_h - target_height).abs() > 0.1 {
+        if (current_h - target_height).abs() > TEXT_AUTOSIZE_EPSILON {
             node.height = UVal::Px(target_height);
         }
     }

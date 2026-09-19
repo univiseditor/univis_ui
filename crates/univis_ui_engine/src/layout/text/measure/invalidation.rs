@@ -23,6 +23,7 @@ pub(super) fn next_text_label_layout_cache(
     }
 }
 
+#[allow(dead_code)]
 pub(super) fn reset_text_label_layout_cache(cache: &mut UTextLabelLayoutCache) {
     let next = UTextLabelLayoutCache::default();
     if *cache != next {
@@ -30,9 +31,23 @@ pub(super) fn reset_text_label_layout_cache(cache: &mut UTextLabelLayoutCache) {
     }
 }
 
+pub(super) fn reset_text_label_layout_cache_preserving_bounds(
+    cache: &mut UTextLabelLayoutCache,
+    parent_bounds: TextBounds,
+) {
+    let next = UTextLabelLayoutCache {
+        parent_bound_width: parent_bounds.width,
+        parent_bound_height: parent_bounds.height,
+        ..default()
+    };
+    if *cache != next {
+        *cache = next;
+    }
+}
+
 fn optional_bound_changed(previous: Option<f32>, current: Option<f32>) -> bool {
     match (previous, current) {
-        (Some(previous), Some(current)) => (previous - current).abs() > 0.1,
+        (Some(previous), Some(current)) => (previous - current).abs() > 0.5,
         (None, None) => false,
         _ => true,
     }

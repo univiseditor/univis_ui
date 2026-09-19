@@ -4,8 +4,9 @@ mod tests;
 
 use self::helpers::{
     alignment_offset, allows_explicit_stretch, allows_implicit_stretch, can_place_span,
-    canonical_align_self, ensure_grid_rows, has_explicit_align_self, has_explicit_justify_self,
-    mark_span, resolve_cross_align, resolve_justify_self, resolve_track_sizes,
+    canonical_align_self, compute_content_floors, ensure_grid_rows, has_explicit_align_self,
+    has_explicit_justify_self, mark_span, resolve_cross_align, resolve_justify_self,
+    resolve_track_sizes,
 };
 use bevy::math::Vec2;
 
@@ -519,6 +520,30 @@ impl LayoutPlacer for GridPlacer {
             .max()
             .unwrap_or(1);
 
+        let required_rows = placements
+            .iter()
+            .map(|(row, _, row_span, _)| row + row_span)
+            .max()
+            .unwrap_or(1);
+
+        let total_col_tracks = ctx
+            .grid_template_columns
+            .len()
+            .max(fallback_cols)
+            .max(final_cols)
+            .max(1);
+        let total_row_tracks = ctx.grid_template_rows.len().max(required_rows).max(1);
+
+        let (col_content_floors, row_content_floors) = compute_content_floors(
+            items,
+            &placements,
+            axis,
+            ctx.main_gap,
+            ctx.cross_gap,
+            total_col_tracks,
+            total_row_tracks,
+        );
+
         let col_sizes = resolve_track_sizes(
             &ctx.grid_template_columns,
             fallback_cols,
@@ -526,14 +551,9 @@ impl LayoutPlacer for GridPlacer {
             available_main,
             ctx.main_gap,
             final_cols,
+            &col_content_floors,
         );
         let cols = col_sizes.len();
-
-        let required_rows = placements
-            .iter()
-            .map(|(row, _, row_span, _)| row + row_span)
-            .max()
-            .unwrap_or(1);
 
         let row_sizes = resolve_track_sizes(
             &ctx.grid_template_rows,
@@ -542,6 +562,7 @@ impl LayoutPlacer for GridPlacer {
             available_cross,
             ctx.cross_gap,
             required_rows,
+            &row_content_floors,
         );
 
         let mut col_starts = vec![0.0; cols];

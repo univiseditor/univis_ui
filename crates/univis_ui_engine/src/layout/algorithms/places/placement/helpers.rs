@@ -156,6 +156,111 @@ pub(super) fn allows_explicit_stretch(mode: SolverSizeMode) -> bool {
     !matches!(mode, SolverSizeMode::Fixed | SolverSizeMode::Percent)
 }
 
+pub(super) fn compute_content_floors(
+    items: &[SolverItem],
+    placements: &[(usize, usize, usize, usize)],
+    axis: &AxisHelper,
+    main_gap: f32,
+    cross_gap: f32,
+    total_cols: usize,
+    total_rows: usize,
+) -> (Vec<f32>, Vec<f32>) {
+    let mut col_content_floors = vec![0.0f32; total_cols];
+    let mut row_content_floors = vec![0.0f32; total_rows];
+
+    // Pass 1: Single-span items establish track baseline floors
+    for (idx, item) in items.iter().enumerate() {
+        let (row, col, row_span, col_span) = placements[idx];
+        let (child_main, child_cross) = axis.from_world(item.result.size);
+        let (m_main_start, m_main_end, m_cross_start, m_cross_end) =
+            axis.extract_margin_sides(item.margin);
+
+        if col_span == 1 && col < col_content_floors.len() {
+            let item_min_main = if axis.is_row() {
+                item.spec.min_width
+            } else {
+                item.spec.min_height
+            };
+            let req_main = child_main.max(item_min_main) + m_main_start + m_main_end;
+            col_content_floors[col] = col_content_floors[col].max(req_main);
+        }
+
+        if row_span == 1 && row < row_content_floors.len() {
+            let item_min_cross = if axis.is_row() {
+                item.spec.min_height
+            } else {
+                item.spec.min_width
+            };
+            let req_cross = child_cross.max(item_min_cross) + m_cross_start + m_cross_end;
+            row_content_floors[row] = row_content_floors[row].max(req_cross);
+        }
+    }
+
+    // Pass 2: Multi-span items distribute deficit across spanned columns
+    let mut multi_cols: Vec<usize> = (0..items.len()).filter(|&i| placements[i].3 > 1).collect();
+    multi_cols.sort_by_key(|&i| placements[i].3);
+
+    for idx in multi_cols {
+        let (_, col, _, col_span) = placements[idx];
+        let item = &items[idx];
+        let (child_main, _) = axis.from_world(item.result.size);
+        let (m_main_start, m_main_end, _, _) = axis.extract_margin_sides(item.margin);
+        let item_min_main = if axis.is_row() {
+            item.spec.min_width
+        } else {
+            item.spec.min_height
+        };
+        let req_main = child_main.max(item_min_main) + m_main_start + m_main_end;
+
+        let end_col = (col + col_span).min(col_content_floors.len());
+        let span_len = end_col.saturating_sub(col);
+        if span_len > 0 {
+            let current_span_sum: f32 = col_content_floors[col..end_col].iter().sum::<f32>()
+                + (span_len as f32 - 1.0) * main_gap;
+            if req_main > current_span_sum {
+                let deficit = req_main - current_span_sum;
+                let share = deficit / span_len as f32;
+                for c in col..end_col {
+                    col_content_floors[c] += share;
+                }
+            }
+        }
+    }
+
+    // Pass 3: Multi-span items distribute deficit across spanned rows
+    let mut multi_rows: Vec<usize> = (0..items.len()).filter(|&i| placements[i].2 > 1).collect();
+    multi_rows.sort_by_key(|&i| placements[i].2);
+
+    for idx in multi_rows {
+        let (row, _, row_span, _) = placements[idx];
+        let item = &items[idx];
+        let (_, child_cross) = axis.from_world(item.result.size);
+        let (_, _, m_cross_start, m_cross_end) = axis.extract_margin_sides(item.margin);
+        let item_min_cross = if axis.is_row() {
+            item.spec.min_height
+        } else {
+            item.spec.min_width
+        };
+        let req_cross = child_cross.max(item_min_cross) + m_cross_start + m_cross_end;
+
+        let end_row = (row + row_span).min(row_content_floors.len());
+        let span_len = end_row.saturating_sub(row);
+        if span_len > 0 {
+            let current_span_sum: f32 = row_content_floors[row..end_row].iter().sum::<f32>()
+                + (span_len as f32 - 1.0) * cross_gap;
+            if req_cross > current_span_sum {
+                let deficit = req_cross - current_span_sum;
+                let share = deficit / span_len as f32;
+                for r in row..end_row {
+                    row_content_floors[r] += share;
+                }
+            }
+        }
+    }
+
+    (col_content_floors, row_content_floors)
+}
+
 pub(super) fn resolve_track_sizes(
     template: &[UTrackSize],
     fallback_count: usize,
@@ -163,6 +268,7 @@ pub(super) fn resolve_track_sizes(
     available_space: f32,
     gap: f32,
     required_min: usize,
+    content_floors: &[f32],
 ) -> Vec<f32> {
     let base_count = if template.is_empty() {
         fallback_count.max(1)
@@ -190,36 +296,63 @@ pub(super) fn resolve_track_sizes(
     let mut fixed_sum = 0.0;
     let mut fr_sum = 0.0;
     let mut auto_count = 0usize;
+    let mut auto_floor_sum = 0.0;
 
-    for track in &track_defs {
+    for (i, track) in track_defs.iter().enumerate() {
         match *track {
             UTrackSize::Px(v) => fixed_sum += v.max(0.0),
             UTrackSize::Fr(v) => fr_sum += v.max(0.0),
-            UTrackSize::Auto => auto_count += 1,
+            UTrackSize::Auto => {
+                auto_count += 1;
+                let floor = content_floors.get(i).copied().unwrap_or(0.0).max(0.0);
+                auto_floor_sum += floor;
+            }
         }
     }
 
-    let remaining = (distributable - fixed_sum).max(0.0);
-    let auto_size = if fr_sum <= 0.0 && auto_count > 0 {
-        remaining / auto_count as f32
-    } else {
-        0.0
-    };
+    if fr_sum > 0.0 {
+        let non_fr_base = fixed_sum + auto_floor_sum;
+        let remaining = (distributable - non_fr_base).max(0.0);
 
-    track_defs
-        .iter()
-        .map(|track| match *track {
-            UTrackSize::Px(v) => v.max(0.0),
-            UTrackSize::Fr(v) => {
-                if fr_sum > 0.0 {
-                    (remaining * (v.max(0.0) / fr_sum)).max(0.0)
-                } else {
-                    0.0
+        track_defs
+            .iter()
+            .enumerate()
+            .map(|(i, track)| match *track {
+                UTrackSize::Px(v) => v.max(0.0),
+                UTrackSize::Fr(v) => {
+                    let fr_share = (remaining * (v.max(0.0) / fr_sum)).max(0.0);
+                    let fr_floor = content_floors.get(i).copied().unwrap_or(0.0).max(0.0);
+                    fr_share.max(fr_floor)
                 }
-            }
-            UTrackSize::Auto => auto_size.max(0.0),
-        })
-        .collect()
+                UTrackSize::Auto => content_floors.get(i).copied().unwrap_or(0.0).max(0.0),
+            })
+            .collect()
+    } else if auto_count > 0 {
+        let base_sum = fixed_sum + auto_floor_sum;
+        let extra = (distributable - base_sum).max(0.0);
+        let extra_per_auto = extra / auto_count as f32;
+
+        track_defs
+            .iter()
+            .enumerate()
+            .map(|(i, track)| match *track {
+                UTrackSize::Px(v) => v.max(0.0),
+                UTrackSize::Auto => {
+                    let floor = content_floors.get(i).copied().unwrap_or(0.0).max(0.0);
+                    floor + extra_per_auto
+                }
+                UTrackSize::Fr(_) => 0.0,
+            })
+            .collect()
+    } else {
+        track_defs
+            .iter()
+            .map(|track| match *track {
+                UTrackSize::Px(v) => v.max(0.0),
+                _ => 0.0,
+            })
+            .collect()
+    }
 }
 
 pub(super) fn ensure_grid_rows(occupancy: &mut Vec<Vec<bool>>, rows: usize, cols: usize) {

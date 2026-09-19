@@ -70,6 +70,7 @@ fn track_resolution_uses_fr_distribution() {
         400.0,
         10.0,
         3,
+        &[],
     );
 
     assert_eq!(tracks.len(), 3);
@@ -385,4 +386,95 @@ fn grid_content_item_keeps_intrinsic_size_by_default() {
     assert!((result.size.y - 18.0).abs() < 0.1);
     assert!(result.pos.x.abs() < 0.1);
     assert!(result.pos.y.abs() < 0.1);
+}
+
+#[test]
+fn content_aware_auto_tracks_respect_item_floors() {
+    let mut r1 = SolverResult {
+        size: Vec2::new(100.0, 60.0),
+        pos: Vec2::ZERO,
+    };
+    let mut r2 = SolverResult {
+        size: Vec2::new(100.0, 40.0),
+        pos: Vec2::ZERO,
+    };
+
+    let mut s1 = default_spec();
+    s1.height_mode = SolverSizeMode::Content;
+    s1.height_val = 60.0;
+    let mut s2 = default_spec();
+    s2.height_mode = SolverSizeMode::Content;
+    s2.height_val = 40.0;
+
+    let mut items = vec![
+        SolverItem::new(s1, &mut r1, USides::default()),
+        SolverItem::new(s2, &mut r2, USides::default()),
+    ];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 100.0;
+    ctx.container_cross_size = 0.0; // unconstrained height
+    ctx.grid_columns = 1;
+    ctx.grid_template_columns = vec![UTrackSize::Px(100.0)];
+    ctx.grid_template_rows = vec![UTrackSize::Auto, UTrackSize::Auto];
+    ctx.cross_gap = 10.0;
+
+    let placer = GridPlacer { columns: 1 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    let size = placer.place(&mut items, &axis, &ctx);
+
+    // Row 0 floor is 60.0, Row 1 floor is 40.0
+    // Total height = 60.0 + 40.0 + 10.0 gap = 110.0
+    assert!((size.y - 110.0).abs() < 0.1);
+    assert!(r1.pos.y.abs() < 0.1);
+    // r2 must be placed below r1 with gap, completely eliminating overlap!
+    assert!((r2.pos.y - 70.0).abs() < 0.1);
+}
+
+#[test]
+fn auto_track_with_fr_track_takes_content_floor() {
+    let tracks = resolve_track_sizes(
+        &[UTrackSize::Auto, UTrackSize::Fr(1.0)],
+        2,
+        UTrackSize::Auto,
+        300.0,
+        0.0,
+        2,
+        &[80.0, 0.0],
+    );
+
+    assert_eq!(tracks.len(), 2);
+    // Auto track gets its exact content floor (80.0)
+    assert!((tracks[0] - 80.0).abs() < 0.001);
+    // Fr(1.0) track gets remaining free space (300.0 - 80.0 = 220.0)
+    assert!((tracks[1] - 220.0).abs() < 0.001);
+}
+
+#[test]
+fn multispan_item_distributes_deficit_across_tracks() {
+    let mut r1 = SolverResult {
+        size: Vec2::new(120.0, 30.0),
+        pos: Vec2::ZERO,
+    };
+    let mut s1 = default_spec();
+    s1.grid_column_span = 2;
+    s1.width_mode = SolverSizeMode::Content;
+    s1.width_val = 120.0;
+
+    let mut items = vec![SolverItem::new(s1, &mut r1, USides::default())];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 0.0;
+    ctx.container_cross_size = 50.0;
+    ctx.grid_columns = 2;
+    ctx.grid_template_columns = vec![UTrackSize::Auto, UTrackSize::Auto];
+    ctx.grid_template_rows = vec![UTrackSize::Px(30.0)];
+    ctx.main_gap = 10.0;
+
+    let placer = GridPlacer { columns: 2 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    let size = placer.place(&mut items, &axis, &ctx);
+
+    // Two tracks plus 10 gap must be at least 120.0
+    assert!(size.x >= 120.0 - 0.1);
 }

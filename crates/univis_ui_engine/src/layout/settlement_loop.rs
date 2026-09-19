@@ -211,3 +211,6 @@ pub(super) fn mark_render_complete(
         work_state.complete_stage(UiWorkStage::Render);
     }
 }
+
+#[cfg(test)]
+mod tests;

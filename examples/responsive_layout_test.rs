@@ -126,15 +126,18 @@ impl Breakpoint {
         }
     }
 
-    fn shell_height(self, window_height: f32) -> f32 {
-        let available = (window_height - 120.0).max(320.0);
+    fn base_height(self) -> f32 {
         match self {
-            Self::One => available.min(640.0),
-            Self::Two => available.min(440.0),
-            Self::Three => available.min(520.0),
-            Self::Four => available.min(560.0),
-            Self::Five => available.min(620.0),
+            Self::One => 634.0,
+            Self::Two => 710.0,
+            Self::Three => 728.0,
+            Self::Four => 740.0,
+            Self::Five => 750.0,
         }
+    }
+
+    fn shell_height(self, _window_height: f32) -> f32 {
+        self.base_height()
     }
 
     fn shell_padding(self) -> f32 {
@@ -181,6 +184,40 @@ impl Breakpoint {
                 UTrackSize::Fr(1.85),
                 UTrackSize::Fr(1.0),
                 UTrackSize::Fr(0.92),
+            ],
+        }
+    }
+
+    fn template_rows(self) -> Vec<UTrackSize> {
+        match self {
+            Self::One => vec![
+                UTrackSize::Px(84.0),
+                UTrackSize::Px(244.0),
+                UTrackSize::Px(250.0),
+            ],
+            Self::Two => vec![
+                UTrackSize::Px(54.0),
+                UTrackSize::Px(256.0),
+                UTrackSize::Px(206.0),
+                UTrackSize::Px(120.0),
+            ],
+            Self::Three => vec![
+                UTrackSize::Px(54.0),
+                UTrackSize::Px(270.0),
+                UTrackSize::Px(206.0),
+                UTrackSize::Px(120.0),
+            ],
+            Self::Four => vec![
+                UTrackSize::Px(54.0),
+                UTrackSize::Px(282.0),
+                UTrackSize::Px(206.0),
+                UTrackSize::Px(120.0),
+            ],
+            Self::Five => vec![
+                UTrackSize::Px(54.0),
+                UTrackSize::Px(288.0),
+                UTrackSize::Px(206.0),
+                UTrackSize::Px(120.0),
             ],
         }
     }
@@ -263,6 +300,7 @@ fn setup(mut commands: Commands) {
                     },
                     grid: ULayoutGridContainer {
                         template_columns: Breakpoint::Five.template_columns(),
+                        template_rows: Breakpoint::Five.template_rows(),
                         auto_rows: UTrackSize::Auto,
                         auto_columns: UTrackSize::Auto,
                         ..default()
@@ -299,6 +337,7 @@ fn update_responsive_layout(
         &mut UNode,
         &mut ULayout,
         Option<&mut USelf>,
+        Option<&mut Visibility>,
     )>,
     mut state: ResMut<LayoutState>,
     mut invalidate_queue: ResMut<UiInvalidateRequestQueue>,
@@ -340,8 +379,16 @@ fn update_responsive_layout(
 
     let mut changed = Vec::new();
 
-    for (entity, frame_shell, section_kind, hero_chart, mut node, mut layout, maybe_self) in
-        &mut layout_nodes
+    for (
+        entity,
+        frame_shell,
+        section_kind,
+        hero_chart,
+        mut node,
+        mut layout,
+        maybe_self,
+        visibility,
+    ) in &mut layout_nodes
     {
         if frame_shell.is_some() {
             apply_shell_breakpoint(breakpoint, width, height, &mut node, &mut layout);
@@ -353,7 +400,14 @@ fn update_responsive_layout(
                 continue;
             };
 
-            apply_section_breakpoint(breakpoint, kind, &mut node, &mut layout, &mut uself);
+            apply_section_breakpoint(
+                breakpoint,
+                kind,
+                &mut node,
+                &mut layout,
+                &mut uself,
+                visibility,
+            );
             changed.push(entity);
         }
 
@@ -387,7 +441,7 @@ fn apply_shell_breakpoint(
     layout.container_ext.box_align.row_gap = Some(14.0);
     layout.container_ext.box_align.column_gap = Some(14.0);
     layout.container_ext.grid.template_columns = breakpoint.template_columns();
-    layout.container_ext.grid.template_rows.clear();
+    layout.container_ext.grid.template_rows = breakpoint.template_rows();
     layout.container_ext.grid.auto_rows = UTrackSize::Auto;
     layout.container_ext.grid.auto_columns = UTrackSize::Auto;
 }
@@ -398,15 +452,30 @@ fn apply_section_breakpoint(
     node: &mut UNode,
     layout: &mut ULayout,
     uself: &mut USelf,
+    mut visibility: Option<Mut<Visibility>>,
 ) {
     let placement = section_placement(breakpoint, section);
     if let Some(placement) = placement {
+        if let Some(ref mut vis) = visibility {
+            **vis = Visibility::Inherited;
+        }
         uself.item_ext.grid = ULayoutGridItem {
             column_start: Some(placement.column_start),
             column_span: placement.column_span,
             row_start: Some(placement.row_start),
             row_span: placement.row_span,
         };
+        node.width = UVal::Auto;
+        node.height = UVal::Auto;
+    } else {
+        if let Some(ref mut vis) = visibility {
+            **vis = Visibility::Hidden;
+        }
+        uself.item_ext.grid = ULayoutGridItem::default();
+        node.width = UVal::Px(0.0);
+        node.height = UVal::Px(0.0);
+        node.min_height = 0.0;
+        node.min_width = 0.0;
     }
 
     match section {
@@ -428,62 +497,57 @@ fn apply_section_breakpoint(
                 UAlignItems::Center
             };
             layout.gap = 12.0;
-            node.min_height = if matches!(breakpoint, Breakpoint::One) {
-                82.0
-            } else {
-                56.0
-            };
+            if placement.is_some() {
+                node.min_height = if matches!(breakpoint, Breakpoint::One) {
+                    84.0
+                } else {
+                    54.0
+                };
+            }
         }
         SectionKind::LeftNav => {
             layout.display = visible_display(placement, UDisplay::Flex);
             layout.flex_direction = UFlexDirection::Column;
-            layout.gap = 10.0;
-            node.min_height = 0.0;
+            layout.gap = 12.0;
+            if placement.is_some() {
+                node.min_height = 0.0;
+            }
         }
         SectionKind::Hero => {
             layout.display = visible_display(placement, UDisplay::Flex);
             layout.flex_direction = UFlexDirection::Column;
             layout.gap = 12.0;
-            node.min_height = breakpoint.hero_chart_height() + 112.0;
+            if placement.is_some() {
+                node.min_height = breakpoint.hero_chart_height() + 112.0;
+            }
         }
         SectionKind::Story => {
             layout.display = visible_display(placement, UDisplay::Flex);
             layout.flex_direction = UFlexDirection::Column;
             layout.gap = 10.0;
-            node.min_height = if matches!(breakpoint, Breakpoint::One) {
-                196.0
-            } else {
-                0.0
-            };
+            if placement.is_some() {
+                node.min_height = 0.0;
+            }
         }
         SectionKind::Stats => {
             layout.display = visible_display(placement, UDisplay::Flex);
             layout.flex_direction = UFlexDirection::Column;
             layout.gap = 10.0;
-            node.min_height = 0.0;
+            if placement.is_some() {
+                node.min_height = 0.0;
+            }
         }
         SectionKind::MiniCards => {
             if placement.is_some() {
                 layout.display = UDisplay::Grid;
                 layout.gap = 12.0;
-                layout.grid_columns = if matches!(breakpoint, Breakpoint::One) {
-                    1
-                } else {
-                    2
-                };
+                layout.grid_columns = 2;
                 layout.container_ext.box_align.row_gap = Some(12.0);
                 layout.container_ext.box_align.column_gap = Some(12.0);
                 layout.container_ext.grid.template_columns =
-                    if matches!(breakpoint, Breakpoint::One) {
-                        vec![UTrackSize::Fr(1.0)]
-                    } else {
-                        vec![UTrackSize::Fr(1.0), UTrackSize::Fr(1.0)]
-                    };
-                node.min_height = if matches!(breakpoint, Breakpoint::One) {
-                    170.0
-                } else {
-                    0.0
-                };
+                    vec![UTrackSize::Fr(1.0), UTrackSize::Fr(1.0)];
+                layout.container_ext.grid.template_rows = vec![UTrackSize::Auto];
+                node.min_height = 0.0;
             } else {
                 layout.display = UDisplay::None;
             }
@@ -492,7 +556,9 @@ fn apply_section_breakpoint(
             layout.display = visible_display(placement, UDisplay::Flex);
             layout.flex_direction = UFlexDirection::Column;
             layout.gap = 10.0;
-            node.min_height = 0.0;
+            if placement.is_some() {
+                node.min_height = 0.0;
+            }
         }
     }
 }
@@ -518,18 +584,6 @@ fn section_placement(breakpoint: Breakpoint, section: SectionKind) -> Option<Pla
             column_start: 1,
             column_span: 1,
             row_start: 3,
-            row_span: 1,
-        }),
-        (One, Story) => Some(Placement {
-            column_start: 1,
-            column_span: 1,
-            row_start: 4,
-            row_span: 1,
-        }),
-        (One, MiniCards) => Some(Placement {
-            column_start: 1,
-            column_span: 1,
-            row_start: 5,
             row_span: 1,
         }),
 
@@ -713,13 +767,7 @@ fn spawn_header_section(commands: &mut Commands, parent: Entity) {
         },
     );
 
-    let left = spawn_container(
-        commands,
-        section,
-        UVal::Percent(0.56),
-        UFlexDirection::Column,
-        4.0,
-    );
+    let left = spawn_container(commands, section, UVal::Auto, UFlexDirection::Column, 4.0);
     commands.spawn((
         ChildOf(left),
         label_node(),

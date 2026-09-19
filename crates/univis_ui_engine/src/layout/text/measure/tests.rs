@@ -1,8 +1,8 @@
 use super::*;
+use crate::layout::UnivisLayoutPlugin;
+use crate::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
+use crate::schedule::UiWorkState;
 use bevy::prelude::{App, MinimalPlugins, Update};
-use univis_ui_engine::layout::UnivisLayoutPlugin;
-use univis_ui_engine::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
-use univis_ui_engine::schedule::UiWorkState;
 
 fn fixed_text_cache(size: Vec2, text: &str) -> UTextLabelLayoutCache {
     UTextLabelLayoutCache {

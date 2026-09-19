@@ -119,7 +119,8 @@ fn root_stack_write_noise_does_not_require_subtree_sync() {
     )> = SystemState::new(&mut world);
 
     {
-        let (node_contexts, parents_query, root_query, clipper_query) = system_state.get(&world);
+        let (node_contexts, parents_query, root_query, clipper_query) =
+            system_state.get(&world).unwrap();
         assert!(!root_context_requires_subtree_sync(
             root,
             &node_contexts,
@@ -136,7 +137,8 @@ fn root_stack_write_noise_does_not_require_subtree_sync() {
         .applied_root_z = 128.0;
 
     {
-        let (node_contexts, parents_query, root_query, clipper_query) = system_state.get(&world);
+        let (node_contexts, parents_query, root_query, clipper_query) =
+            system_state.get(&world).unwrap();
         assert!(!root_context_requires_subtree_sync(
             root,
             &node_contexts,
@@ -155,7 +157,8 @@ fn root_stack_write_noise_does_not_require_subtree_sync() {
         stack.capsule_band_step *= 2.0;
     }
 
-    let (node_contexts, parents_query, root_query, clipper_query) = system_state.get(&world);
+    let (node_contexts, parents_query, root_query, clipper_query) =
+        system_state.get(&world).unwrap();
     assert!(root_context_requires_subtree_sync(
         root,
         &node_contexts,

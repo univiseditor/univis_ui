@@ -764,18 +764,30 @@ fn spawn_main_status(
             ..default()
         },
     ));
+    let bar_track = commands
+        .spawn((
+            ChildOf(parent),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Px(60.0),
+                background_color: Color::srgba(0.05, 0.1, 0.15, 0.8),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            ULayout::default(),
+        ))
+        .id();
     commands.spawn((
-        ChildOf(parent),
+        ChildOf(bar_track),
         AnimatedProgress {
             speed: 0.8 + bldg_index as f32 * 0.3,
             phase: bldg_index as f32 * 1.2,
         },
         UNode {
-            height: UVal::Px(80.0), // make progress bar thicker
-            ..default()
-        },
-        UProgressBar {
-            value: 0.6,
+            width: UVal::Percent(0.6),
+            height: UVal::Percent(1.0),
+            background_color: config.color,
+            border_radius: UCornerRadius::all(6.0),
             ..default()
         },
     ));
@@ -786,7 +798,7 @@ fn spawn_main_status(
 fn spawn_metrics(
     commands: &mut Commands,
     parent: Entity,
-    _config: &BuildingConfig,
+    config: &BuildingConfig,
     bldg_index: usize,
     high_glow: Color,
     medium_glow: Color,
@@ -838,18 +850,30 @@ fn spawn_metrics(
                 ..default()
             },
         ));
+        let bar_track = commands
+            .spawn((
+                ChildOf(parent),
+                UNode {
+                    width: UVal::Percent(1.0),
+                    height: UVal::Px(50.0),
+                    background_color: Color::srgba(0.05, 0.1, 0.15, 0.8),
+                    border_radius: UCornerRadius::all(4.0),
+                    ..default()
+                },
+                ULayout::default(),
+            ))
+            .id();
         commands.spawn((
-            ChildOf(parent),
+            ChildOf(bar_track),
             AnimatedProgress {
                 speed: speed + bldg_index as f32 * 0.1,
                 phase: phase_offset + bldg_index as f32 * 0.5,
             },
             UNode {
-                height: UVal::Px(60.0), // make progress bar thicker
-                ..default()
-            },
-            UProgressBar {
-                value: 0.5,
+                width: UVal::Percent(0.5),
+                height: UVal::Percent(1.0),
+                background_color: config.color,
+                border_radius: UCornerRadius::all(4.0),
                 ..default()
             },
         ));
@@ -988,14 +1012,30 @@ fn spawn_status_indicator(
     ));
 
     // Progress bar
+    let bar_track = commands
+        .spawn((
+            ChildOf(parent),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Px(24.0),
+                background_color: Color::srgba(0.05, 0.1, 0.15, 0.8),
+                border_radius: UCornerRadius::all(4.0),
+                ..default()
+            },
+            ULayout::default(),
+        ))
+        .id();
     commands.spawn((
-        ChildOf(parent),
+        ChildOf(bar_track),
         AnimatedProgress {
             speed: 1.0 + bldg_index as f32 * 0.2,
             phase: bldg_index as f32 * 2.0,
         },
-        UProgressBar {
-            value: 0.5,
+        UNode {
+            width: UVal::Percent(0.5),
+            height: UVal::Percent(1.0),
+            background_color: config.color,
+            border_radius: UCornerRadius::all(4.0),
             ..default()
         },
     ));
@@ -1018,14 +1058,11 @@ fn spawn_status_indicator(
 
 // ── ANIMATION SYSTEMS ───────────────────────────────────────────────────────
 
-fn animate_progress_bars(
-    time: Res<Time>,
-    mut query: Query<(&AnimatedProgress, &mut UProgressBar)>,
-) {
+fn animate_progress_bars(time: Res<Time>, mut query: Query<(&AnimatedProgress, &mut UNode)>) {
     let t = time.elapsed_secs();
-    for (anim, mut bar) in &mut query {
+    for (anim, mut node) in &mut query {
         let wave = ((t * anim.speed + anim.phase).sin() * 0.5 + 0.5) * 0.6 + 0.2;
-        bar.value = wave;
+        node.width = UVal::Percent(wave);
     }
 }
 

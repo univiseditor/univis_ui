@@ -55,6 +55,9 @@ pub mod prelude {
         URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
+    pub use crate::layout::text::{
+        UText, UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide,
+    };
     pub use crate::layout::univis_node::*;
     pub use crate::schedule::{
         UiPickingRuntimeState, UiRolloutConfig, UiSettlementConfig, UiSettlementRuntimeState,
@@ -64,7 +67,7 @@ pub mod prelude {
 }
 
 /// Registers the engine-level plugins responsible for node setup, layout
-/// solving, and render synchronization.
+/// solving, text processing, and render synchronization.
 pub struct UnivisEnginePlugin;
 
 impl Plugin for UnivisEnginePlugin {
@@ -75,6 +78,7 @@ impl Plugin for UnivisEnginePlugin {
                 layout::univis_node::UnivisNodePlugin,
                 layout::UnivisLayoutPlugin,
                 layout::render::UnivisRenderPlugin,
+                layout::text::UnivisTextPlugin,
             ));
     }
 }

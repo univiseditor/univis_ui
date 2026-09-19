@@ -7,7 +7,6 @@ cd "$ROOT_DIR"
 echo "== Library tests =="
 cargo test -p univis_ui_engine --lib
 cargo test -p univis_ui_interaction --lib
-cargo test -p univis_ui_widgets --lib
 
 echo
 echo "== Representative examples =="

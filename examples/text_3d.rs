@@ -37,11 +37,12 @@ fn setup(
         .spawn((
             URootUi::world_3d(Vec2::new(800.0, 600.0)),
             Transform::from_xyz(0.0, 2.0, 0.0).with_scale(Vec3::splat(1.0)),
-            UPanel::card(),
             UNode {
                 width: UVal::Px(800.0),
                 height: UVal::Px(600.0),
                 padding: USides::all(24.0),
+                background_color: Color::srgba(0.1, 0.1, 0.15, 0.9),
+                border_radius: UCornerRadius::all(16.0),
                 ..default()
             },
             ULayout {
@@ -80,10 +81,17 @@ fn setup(
 
             parent
                 .spawn((
-                    UButton::primary(),
                     UNode {
-                        padding: USides::all(16.0),
+                        padding: USides::axes(24.0, 16.0),
+                        background_color: Color::srgb(0.2, 0.5, 0.9),
+                        border_radius: UCornerRadius::all(8.0),
                         ..default()
+                    },
+                    UInteraction::default(),
+                    UInteractionColors {
+                        normal: Color::srgb(0.2, 0.5, 0.9),
+                        hovered: Color::srgb(0.3, 0.6, 1.0),
+                        pressed: Color::srgb(0.15, 0.4, 0.8),
                     },
                     ULayout {
                         display: UDisplay::Flex,

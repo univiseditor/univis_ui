@@ -512,21 +512,21 @@ mod tests {
         let mut app = App::new();
 
         let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
-        let cameras = camera_state.get(app.world());
+        let cameras = camera_state.get(app.world()).unwrap();
         let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Auto, &cameras);
         assert_eq!(camera_entity, None);
         assert_eq!(issue, RootResolutionIssue::AutoMissingCamera);
 
         let expected = app.world_mut().spawn(Camera::default()).id();
         let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
-        let cameras = camera_state.get(app.world());
+        let cameras = camera_state.get(app.world()).unwrap();
         let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Auto, &cameras);
         assert_eq!(camera_entity, Some(expected));
         assert_eq!(issue, RootResolutionIssue::None);
 
         app.world_mut().spawn(Camera::default());
         let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
-        let cameras = camera_state.get(app.world());
+        let cameras = camera_state.get(app.world()).unwrap();
         let (camera_entity, issue) = resolve_root_camera(UiCameraRef::Auto, &cameras);
         assert_eq!(camera_entity, None);
         assert_eq!(issue, RootResolutionIssue::AutoAmbiguousCamera);
@@ -544,7 +544,7 @@ mod tests {
             .id();
 
         let mut camera_state = SystemState::<Query<(Entity, &Camera)>>::new(app.world_mut());
-        let cameras = camera_state.get(app.world());
+        let cameras = camera_state.get(app.world()).unwrap();
 
         let (camera_entity, issue) =
             resolve_root_camera(UiCameraRef::Entity(Entity::PLACEHOLDER), &cameras);
@@ -619,7 +619,7 @@ mod tests {
 
         let mut state =
             SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
-        let (cameras, windows) = state.get(app.world());
+        let (cameras, windows) = state.get(app.world()).unwrap();
         let mut issue = RootResolutionIssue::None;
 
         let size = resolve_root_canvas_size(
@@ -658,7 +658,7 @@ mod tests {
 
         let mut state =
             SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
-        let (cameras, windows) = state.get(app.world());
+        let (cameras, windows) = state.get(app.world()).unwrap();
         let mut issue = RootResolutionIssue::None;
 
         let size = resolve_root_canvas_size(
@@ -685,7 +685,7 @@ mod tests {
 
         let mut state =
             SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
-        let (cameras, windows) = state.get(app.world());
+        let (cameras, windows) = state.get(app.world()).unwrap();
         let mut issue = RootResolutionIssue::None;
 
         let size = resolve_root_canvas_size(
@@ -707,7 +707,7 @@ mod tests {
         let missing_camera = app.world_mut().spawn_empty().id();
         let mut state =
             SystemState::<(Query<(Entity, &Camera)>, Query<&Window>)>::new(app.world_mut());
-        let (cameras, windows) = state.get(app.world());
+        let (cameras, windows) = state.get(app.world()).unwrap();
         let mut issue = RootResolutionIssue::None;
 
         let size = resolve_root_canvas_size(

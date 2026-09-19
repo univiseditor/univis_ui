@@ -27,6 +27,8 @@ impl Plugin for UnivisRenderPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "shaders/unode.wgsl");
         embedded_asset!(app, "shaders/unode_3d.wgsl");
+        embedded_asset!(app, "shaders/text_label_sdf.wgsl");
+        embedded_asset!(app, "shaders/text_label_sdf_3d.wgsl");
 
         app.add_plugins(Material2dPlugin::<UNodeMaterial>::default())
             .add_plugins(MaterialPlugin::<UNodeMaterial3d>::default())

@@ -43,12 +43,6 @@ impl Default for SceneSettings {
 
 // Marker components for UI syncing
 #[derive(Component)]
-struct AnimationToggle;
-
-#[derive(Component)]
-struct SpeedSeekBar;
-
-#[derive(Component)]
 struct StatusText;
 
 #[derive(Component)]
@@ -188,37 +182,148 @@ fn setup_scene(
         ChildOf(row_anim),
         UNode::default(),
         UTextLabel {
-            text: "Enable Animation:".to_string(),
+            text: "Animation Controls:".to_string(),
             color: Color::WHITE,
             font_size: 16.0,
             ..default()
         },
     ));
-    commands.spawn((
-        ChildOf(row_anim),
-        AnimationToggle,
-        UToggle::ios_style().with_checked(settings.enable_animation),
-    ));
+    commands
+        .spawn((
+            ChildOf(row_anim),
+            UNode {
+                padding: USides::axes(14.0, 6.0),
+                background_color: Color::srgb(0.2, 0.5, 0.8),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.5, 0.8),
+                hovered: Color::srgb(0.3, 0.6, 0.9),
+                pressed: Color::srgb(0.1, 0.4, 0.7),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<SceneSettings>| {
+                settings.enable_animation = !settings.enable_animation;
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Toggle ON/OFF".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
 
-    // D. Speed Slider
+    // D. Speed Controls Row
+    let row_speed = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
+
     commands.spawn((
-        ChildOf(panel),
+        ChildOf(row_speed),
         UNode::default(),
         UTextLabel {
-            text: "Speed Multiplier:".to_string(),
+            text: "Speed:".to_string(),
             color: Color::WHITE,
             font_size: 16.0,
             ..default()
         },
     ));
-    commands.spawn((
-        ChildOf(panel),
-        SpeedSeekBar,
-        USeekBar::sci_fi_style()
-            .with_range(0.0, 5.0)
-            .with_value(settings.sprite_speed)
-            .show_value(),
-    ));
+
+    commands
+        .spawn((
+            ChildOf(row_speed),
+            UNode {
+                padding: USides::axes(12.0, 6.0),
+                background_color: Color::srgb(0.3, 0.3, 0.35),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.3, 0.3, 0.35),
+                hovered: Color::srgb(0.4, 0.4, 0.45),
+                pressed: Color::srgb(0.2, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<SceneSettings>| {
+                settings.sprite_speed = (settings.sprite_speed - 0.5).max(0.0);
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "- Slower".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
+
+    commands
+        .spawn((
+            ChildOf(row_speed),
+            UNode {
+                padding: USides::axes(12.0, 6.0),
+                background_color: Color::srgb(0.3, 0.3, 0.35),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.3, 0.3, 0.35),
+                hovered: Color::srgb(0.4, 0.4, 0.45),
+                pressed: Color::srgb(0.2, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<SceneSettings>| {
+                settings.sprite_speed = (settings.sprite_speed + 0.5).min(10.0);
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "+ Faster".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
 
     // Helper hint text
     commands.spawn((
@@ -289,20 +394,18 @@ fn handle_sprite_clicks(
 }
 
 fn sync_ui_to_settings(
-    mut settings: ResMut<SceneSettings>,
-    toggle_anim: Query<&UToggle, With<AnimationToggle>>,
-    seek_speed: Query<&USeekBar, With<SpeedSeekBar>>,
+    settings: Res<SceneSettings>,
     mut label_query: Query<&mut UTextLabel, With<StatusText>>,
 ) {
-    if let Some(toggle) = toggle_anim.iter().next() {
-        settings.enable_animation = toggle.checked;
-    }
-
-    if let Some(seek) = seek_speed.iter().next() {
-        settings.sprite_speed = seek.value;
-    }
-
     if let Some(mut label) = label_query.iter_mut().next() {
-        label.text = format!("Animation Speed: {:.1}", settings.sprite_speed);
+        label.text = format!(
+            "Speed: {:.1} | Animation: {}",
+            settings.sprite_speed,
+            if settings.enable_animation {
+                "ON"
+            } else {
+                "OFF"
+            }
+        );
     }
 }

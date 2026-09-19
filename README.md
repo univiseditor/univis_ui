@@ -46,15 +46,13 @@ If you want direct control over the internal layers:
 univis_ui_engine = "0.3.0"
 univis_ui_style = "0.3.0"
 univis_ui_interaction = "0.3.0"
-univis_ui_widgets = "0.3.0"
 ```
 
 ## Crate Map
 
-- `univis_ui`: start here for most applications; use `univis_ui::prelude` for the canonical root, layout, interaction, style, and widget surface.
-- `univis_ui_engine`: depend on this when you need roots, layout, rendering sync, or custom widget/runtime work without the full facade.
+- `univis_ui`: start here for most applications; use `univis_ui::prelude` for the canonical root, layout, text, interaction, and style surface.
+- `univis_ui_engine`: depend on this when you need roots, layout, text measurement/rendering, rendering sync, or custom UI/runtime work without the full facade.
 - `univis_ui_interaction`: depend on this when you only need picking and `UInteraction`-driven feedback on top of engine roots.
-- `univis_ui_widgets`: depend on this when you want the built-in controls but still compose plugins and dependencies yourself.
 - `univis_ui_style`: depend on this when you only need shared theme resources, fonts, icons, or text styles.
 
 Prelude policy:
@@ -238,16 +236,14 @@ Useful entry points:
 - `univis_ui::UnivisUiPlugin`
 - `univis_ui_engine::layout::layout_system::URootUi`
 - `univis_ui_engine::layout::univis_node::UNode`
+- `univis_ui_engine::layout::text::UText`
 - `univis_ui_interaction::interaction::feedback::UInteraction`
-- `univis_ui_widgets::widget::text_label::UTextLabel`
 - `univis_ui_style::style::Theme`
 
 Useful reference entries:
 
 - `android_phone`
 - `responsive_layout_test`
-- `widgets_controls`
-- `widgets_inputs`
 
 Run the current live demo:
 
@@ -258,10 +254,9 @@ cargo run --manifest-path android/android_phone_app/Cargo.toml
 ## Crates
 
 - `univis_ui`: facade entry point and recommended default dependency
-- `univis_ui_engine`: roots, layout, rendering, and core node model
+- `univis_ui_engine`: roots, layout, text rendering, and core node model
 - `univis_ui_interaction`: picking and interaction feedback
 - `univis_ui_style`: fonts, icons, and shared styling resources
-- `univis_ui_widgets`: built-in widgets and widget plugins
 
 ## Current Status
 

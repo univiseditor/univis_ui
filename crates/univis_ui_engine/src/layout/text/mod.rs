@@ -1,12 +1,12 @@
-//! Text rendering widgets for Univis UI.
+//! Text rendering primitive for Univis UI.
 //!
-//! [`UTextLabel`](crate::widget::text_label::UTextLabel) measures text through
+//! [`UText`](crate::layout::text::UText) measures text through
 //! Bevy's text pipeline, then renders the final result through Univis SDF
-//! materials so the same widget can stay sharp in screen and world roots.
+//! materials so the same primitive stays sharp in screen and world roots.
 
+use crate::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 use bevy::prelude::*;
 use bevy::sprite_render::Material2dPlugin;
-use univis_ui_engine::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 
 mod measure;
 mod model;
@@ -17,7 +17,7 @@ pub use self::measure::{
     fit_node_to_text_size, measure_text_label_layout, sync_text_label_intrinsic_size,
 };
 pub use self::model::{
-    TextChildMarker, UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide,
+    TextChildMarker, UText, UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide,
 };
 use self::render::atlas::UTextLabelAtlasCache;
 use self::render::clip_sync::sync_text_clipper_materials;
@@ -37,21 +37,19 @@ use self::render::clip_sync::{LocalClipRect, clip_quad_to_rect, label_content_cl
 #[cfg(test)]
 use self::render::mesh::{TextGlyphQuad, text_horizontal_offset};
 #[cfg(test)]
+use crate::layout::geometry::{USides, UVal};
+#[cfg(test)]
+use crate::layout::query::{ComputedSize, IntrinsicSize};
+#[cfg(test)]
+use crate::layout::univis_node::UNode;
+#[cfg(test)]
 use bevy::text::TextBounds;
-#[cfg(test)]
-use univis_ui_engine::layout::geometry::{USides, UVal};
-#[cfg(test)]
-use univis_ui_engine::layout::query::{ComputedSize, IntrinsicSize};
-#[cfg(test)]
-use univis_ui_engine::layout::univis_node::UNode;
 
-/// Registers the `UTextLabel` measurement and SDF rendering pipeline.
+/// Registers the `UText` measurement and SDF rendering pipeline.
 pub struct UnivisTextPlugin;
 
 impl Plugin for UnivisTextPlugin {
     fn build(&self, app: &mut App) {
-        super::register_widget_embedded_assets(app);
-
         app.register_type::<UTextLabel>()
             .register_type::<UTextOverflow>()
             .register_type::<UTextTruncateSide>()
@@ -87,7 +85,7 @@ impl Plugin for UnivisTextPlugin {
                 UiSettlementSchedule,
                 sync_text_label_meshes
                     .in_set(UnivisPostUpdateSet::RenderSync)
-                    .after(univis_ui_engine::layout::layout_system::sync_cached_ui3d),
+                    .after(crate::layout::layout_system::sync_cached_ui3d),
             )
             .add_systems(
                 UiSettlementSchedule,

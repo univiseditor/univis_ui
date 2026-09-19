@@ -9,7 +9,6 @@ PACKAGES=(
   univis_ui_style
   univis_ui_engine
   univis_ui_interaction
-  univis_ui_widgets
   univis_ui
 )
 

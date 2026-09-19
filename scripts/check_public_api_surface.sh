@@ -6,7 +6,7 @@ TARGET_DIR="$ROOT_DIR/target/public_api_surface"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-BEVY_DEP='bevy = { version = "0.18.1", default-features = false, features = ["default_app", "default_platform", "common_api", "bevy_render", "bevy_core_pipeline", "bevy_sprite", "bevy_sprite_render", "bevy_gizmos_render", "bevy_pbr", "bevy_picking", "keyboard", "mouse"] }'
+BEVY_DEP='bevy = { version = "0.19.0", default-features = false, features = ["default_app", "common_api", "bevy_render", "bevy_core_pipeline", "bevy_sprite", "bevy_sprite_render", "bevy_gizmos_render", "bevy_pbr", "bevy_picking", "keyboard", "mouse"] }'
 
 have_rg() {
   command -v rg >/dev/null 2>&1
@@ -50,9 +50,9 @@ univis_ui = { path = "$ROOT_DIR" }
 univis_ui_engine = { path = "$ROOT_DIR/crates/univis_ui_engine" }
 univis_ui_style = { path = "$ROOT_DIR/crates/univis_ui_style" }
 univis_ui_interaction = { path = "$ROOT_DIR/crates/univis_ui_interaction" }
-univis_ui_widgets = { path = "$ROOT_DIR/crates/univis_ui_widgets" }
 EOF
   printf '%s\n' "$body" >"$case_dir/src/main.rs"
+  cp "$ROOT_DIR/Cargo.lock" "$case_dir/Cargo.lock"
 }
 
 run_success_case() {
@@ -63,7 +63,7 @@ run_success_case() {
 
   write_case "$case_dir" "$body"
   echo "== Public API case: $name =="
-  if ! CARGO_TARGET_DIR="$TARGET_DIR" cargo check --quiet --manifest-path "$case_dir/Cargo.toml" >"$log_file" 2>&1; then
+  if ! CARGO_TARGET_DIR="$TARGET_DIR" cargo check --offline --quiet --manifest-path "$case_dir/Cargo.toml" >"$log_file" 2>&1; then
     cat "$log_file"
     echo "Public API case '$name' failed unexpectedly." >&2
     exit 1
@@ -79,7 +79,7 @@ run_failure_case() {
 
   write_case "$case_dir" "$body"
   echo "== Public API negative case: $name =="
-  if CARGO_TARGET_DIR="$TARGET_DIR" cargo check --quiet --manifest-path "$case_dir/Cargo.toml" >"$log_file" 2>&1; then
+  if CARGO_TARGET_DIR="$TARGET_DIR" cargo check --offline --quiet --manifest-path "$case_dir/Cargo.toml" >"$log_file" 2>&1; then
     cat "$log_file"
     echo "Public API case '$name' was expected to fail but passed." >&2
     exit 1
@@ -99,9 +99,6 @@ fn main() {
     let _root = URootUi::screen();
     let _node = UNode::default();
     let _padding = USides::all(8.0);
-    let _button = UButton::primary();
-    let _panel = UPanel::card();
-    let _select = USelect::new();
     let _label = UTextLabel::default();
     let _interaction = UInteraction::default();
     let _colors = UInteractionColors::default();
@@ -112,12 +109,9 @@ run_success_case "plugin_combinations" '
 use bevy::prelude::*;
 use univis_ui::UnivisUiPlugin;
 use univis_ui_engine::UnivisEnginePlugin;
+use univis_ui_engine::layout::text::UnivisTextPlugin;
 use univis_ui_interaction::interaction::UnivisInteractionPlugin;
 use univis_ui_style::style::UnivisUiStylePlugin;
-use univis_ui_widgets::widget::UnivisWidgetPlugin;
-use univis_ui_widgets::widget::select::UnivisSelectPlugin;
-use univis_ui_widgets::widget::text_field::UnivisTextFieldPlugin;
-use univis_ui_widgets::widget::text_label::UnivisTextPlugin;
 
 fn main() {
     let mut facade_app = App::new();
@@ -128,7 +122,6 @@ fn main() {
         UnivisUiStylePlugin,
         UnivisEnginePlugin,
         UnivisInteractionPlugin,
-        UnivisWidgetPlugin,
     ));
 
     let mut narrow_app = App::new();
@@ -137,40 +130,7 @@ fn main() {
         UnivisEnginePlugin,
         UnivisInteractionPlugin,
         UnivisTextPlugin,
-        UnivisSelectPlugin,
-        UnivisTextFieldPlugin,
     ));
-}
-'
-
-run_success_case "widget_schedule_surface" '
-use univis_ui::widget::schedule::UnivisWidgetUpdateSet as FacadeWidgetSet;
-use univis_ui_widgets::schedule::UnivisWidgetUpdateSet as WidgetSet;
-
-fn main() {
-    let _facade = FacadeWidgetSet::Build;
-    let _widget = WidgetSet::Events;
-    let _ = (_facade, _widget);
-}
-'
-
-run_success_case "widget_layered_surface" '
-use bevy::prelude::*;
-use univis_ui::widget::interactive::{UButton, UnivisInteractiveWidgetPlugin};
-use univis_ui::widget::visual::{UDivider, UnivisVisualWidgetPlugin};
-use univis_ui_widgets::widget::interactive::UTextField;
-use univis_ui_widgets::widget::visual::UProgressBar;
-
-fn main() {
-    let _button = UButton::primary();
-    let _divider = UDivider::horizontal();
-    let _progress = UProgressBar::default();
-    let _text_field = UTextField::default();
-
-    let mut app = App::new();
-    app.add_plugins((UnivisVisualWidgetPlugin, UnivisInteractiveWidgetPlugin));
-
-    let _ = (_button, _divider, _progress, _text_field, app);
 }
 '
 

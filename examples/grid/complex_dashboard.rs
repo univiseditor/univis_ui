@@ -346,10 +346,33 @@ fn setup(mut commands: Commands) {
         label_node(),
         text("WARP CORE", 14.0, Color::WHITE),
     ));
-    commands.spawn((
-        ChildOf(control_card),
-        UToggle::sci_fi_style().with_checked(true),
-    ));
+    commands
+        .spawn((
+            ChildOf(control_card),
+            UNode {
+                width: UVal::Px(44.0),
+                height: UVal::Px(22.0),
+                background_color: Color::srgb(0.1, 0.5, 0.8),
+                border_radius: UCornerRadius::all(11.0),
+                padding: USides::all(2.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                justify_content: UJustifyContent::End,
+                align_items: UAlignItems::Center,
+                ..default()
+            },
+        ))
+        .with_children(|switch| {
+            switch.spawn(UNode {
+                width: UVal::Px(18.0),
+                height: UVal::Px(18.0),
+                background_color: Color::WHITE,
+                border_radius: UCornerRadius::all(9.0),
+                ..default()
+            });
+        });
     commands.spawn((
         ChildOf(control_card),
         label_node(),
@@ -507,13 +530,33 @@ fn setup(mut commands: Commands) {
         label_node(),
         text("DEFLECTOR SHIELDS LEVEL", 14.0, Color::srgb(1.0, 0.9, 0.4)),
     ));
-    // Shield seekbar
+    // Shield track & fill
+    let shield_track = commands
+        .spawn((
+            ChildOf(shield_card),
+            UNode {
+                width: UVal::Percent(1.0),
+                height: UVal::Px(12.0),
+                background_color: Color::srgba(0.1, 0.15, 0.25, 0.8),
+                border_radius: UCornerRadius::all(6.0),
+                padding: USides::all(2.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
-        ChildOf(shield_card),
-        USeekBar::sci_fi_style()
-            .with_range(0.0, 100.0)
-            .with_value(0.85) // 85% shield
-            .show_value(),
+        ChildOf(shield_track),
+        UNode {
+            width: UVal::Percent(0.85),
+            height: UVal::Percent(1.0),
+            background_color: Color::srgb(0.2, 0.7, 1.0),
+            border_radius: UCornerRadius::all(4.0),
+            ..default()
+        },
     ));
 
     // Tile 8: Bottom Footer Panel (Spans all 6 columns)

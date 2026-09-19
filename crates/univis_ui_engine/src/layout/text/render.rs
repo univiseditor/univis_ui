@@ -3,6 +3,9 @@ pub(super) mod clip_sync;
 pub(super) mod mesh;
 mod sdf;
 
+use crate::layout::query::{CachedUiContext, UI3d};
+use crate::layout::query::{ComputedSize, ResolvedRootStack, ResolvedRootUi};
+use crate::layout::univis_node::{UClip, UNode};
 use bevy::asset::{Asset, AssetId, Assets, RenderAssetUsages};
 use bevy::color::LinearRgba;
 use bevy::ecs::relationship::Relationship;
@@ -15,9 +18,6 @@ use bevy::shader::ShaderRef;
 use bevy::sprite_render::{AlphaMode2d, Material2d, MeshMaterial2d};
 use bevy::text::{ComputedTextBlock, FontCx, ScaleCx};
 use std::collections::HashMap;
-use univis_ui_engine::layout::query::{CachedUiContext, UI3d};
-use univis_ui_engine::layout::query::{ComputedSize, ResolvedRootStack, ResolvedRootUi};
-use univis_ui_engine::layout::univis_node::{UClip, UNode};
 
 use self::atlas::{
     UTextLabelAtlasCache, UTextLabelAtlasKey, UTextLabelGlyphAtlasInfo, UTextLabelGlyphKey,
@@ -64,7 +64,7 @@ pub(super) struct UTextLabelSdfMaterial {
 
 impl Material2d for UTextLabelSdfMaterial {
     fn fragment_shader() -> ShaderRef {
-        "embedded://univis_ui_widgets/widget/shaders/text_label_sdf.wgsl".into()
+        "embedded://univis_ui_engine/layout/render/shaders/text_label_sdf.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode2d {
@@ -95,7 +95,7 @@ pub(super) struct UTextLabelSdfMaterial3d {
 
 impl Material for UTextLabelSdfMaterial3d {
     fn fragment_shader() -> ShaderRef {
-        "embedded://univis_ui_widgets/widget/shaders/text_label_sdf_3d.wgsl".into()
+        "embedded://univis_ui_engine/layout/render/shaders/text_label_sdf_3d.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {
@@ -213,10 +213,10 @@ pub(super) fn sync_text_label_meshes(
 
         if !layout_cache.displayed_text.is_empty() && text_size.x > 0.0 && text_size.y > 0.0 {
             use bevy::platform::hash::FixedHasher;
-            use std::hash::BuildHasher;
             use parley::PositionedLayoutItem;
+            use std::hash::BuildHasher;
 
-            for (_line_index, line) in computed.buffer().lines().enumerate() {
+            for line in computed.buffer().lines() {
                 for item in line.items() {
                     if let PositionedLayoutItem::GlyphRun(glyph_run) = item {
                         let run = glyph_run.run();
@@ -259,7 +259,8 @@ pub(super) fn sync_text_label_meshes(
                                 y_bin_bits: (glyph.y * render_scale).to_bits(),
                             };
 
-                            let atlas_pages = atlas_cache.pages_by_font.entry(atlas_key).or_default();
+                            let atlas_pages =
+                                atlas_cache.pages_by_font.entry(atlas_key).or_default();
                             let atlas_info = if let Some(info) = atlas_pages
                                 .iter()
                                 .find_map(|page| page.glyphs.get(&glyph_key))
@@ -269,7 +270,9 @@ pub(super) fn sync_text_label_meshes(
                             } else {
                                 let image = swash::scale::Render::new(&[
                                     swash::scale::Source::ColorOutline(0),
-                                    swash::scale::Source::ColorBitmap(swash::scale::StrikeWith::BestFit),
+                                    swash::scale::Source::ColorBitmap(
+                                        swash::scale::StrikeWith::BestFit,
+                                    ),
                                     swash::scale::Source::Outline,
                                 ])
                                 .format(swash::zeno::Format::Alpha)
@@ -285,7 +288,11 @@ pub(super) fn sync_text_label_meshes(
                                     continue;
                                 }
 
-                                let mask = extract_mask_alpha(&image.data, width as usize, height as usize);
+                                let mask = extract_mask_alpha(
+                                    &image.data,
+                                    width as usize,
+                                    height as usize,
+                                );
                                 if mask.iter().all(|alpha| *alpha == 0) {
                                     continue;
                                 }
@@ -298,17 +305,20 @@ pub(super) fn sync_text_label_meshes(
 
                                 let mut stored = None;
                                 for page in atlas_pages.iter_mut() {
-                                    let Some(mut atlas_layout) = texture_atlases.get_mut(&page.texture_atlas)
+                                    let Some(mut atlas_layout) =
+                                        texture_atlases.get_mut(&page.texture_atlas)
                                     else {
                                         continue;
                                     };
-                                    let Some(mut atlas_image) = images.get_mut(&page.texture) else {
+                                    let Some(mut atlas_image) = images.get_mut(&page.texture)
+                                    else {
                                         continue;
                                     };
-                                    if let Ok(glyph_index) =
-                                        page.builder
-                                            .add_texture(&mut *atlas_layout, &glyph_image, &mut *atlas_image)
-                                    {
+                                    if let Ok(glyph_index) = page.builder.add_texture(
+                                        &mut *atlas_layout,
+                                        &glyph_image,
+                                        &mut *atlas_image,
+                                    ) {
                                         let info = UTextLabelGlyphAtlasInfo {
                                             texture: page.texture.clone(),
                                             texture_atlas: page.texture_atlas.clone(),
@@ -329,19 +339,25 @@ pub(super) fn sync_text_label_meshes(
                                         .size
                                         .width
                                         .max(glyph_image.texture_descriptor.size.height);
-                                    let mut page =
-                                        create_text_atlas_page(&mut images, &mut texture_atlases, min_size);
-                                    let Some(mut atlas_layout) = texture_atlases.get_mut(&page.texture_atlas)
+                                    let mut page = create_text_atlas_page(
+                                        &mut images,
+                                        &mut texture_atlases,
+                                        min_size,
+                                    );
+                                    let Some(mut atlas_layout) =
+                                        texture_atlases.get_mut(&page.texture_atlas)
                                     else {
                                         continue;
                                     };
-                                    let Some(mut atlas_image) = images.get_mut(&page.texture) else {
+                                    let Some(mut atlas_image) = images.get_mut(&page.texture)
+                                    else {
                                         continue;
                                     };
-                                    let Ok(glyph_index) =
-                                        page.builder
-                                            .add_texture(&mut *atlas_layout, &glyph_image, &mut *atlas_image)
-                                    else {
+                                    let Ok(glyph_index) = page.builder.add_texture(
+                                        &mut *atlas_layout,
+                                        &glyph_image,
+                                        &mut *atlas_image,
+                                    ) else {
                                         continue;
                                     };
                                     let info = UTextLabelGlyphAtlasInfo {
@@ -356,7 +372,8 @@ pub(super) fn sync_text_label_meshes(
                                 }
                             };
 
-                            let Some(atlas_layout) = texture_atlases.get(&atlas_info.texture_atlas) else {
+                            let Some(atlas_layout) = texture_atlases.get(&atlas_info.texture_atlas)
+                            else {
                                 continue;
                             };
                             let Some(atlas_image) = images.get(&atlas_info.texture) else {
@@ -371,8 +388,7 @@ pub(super) fn sync_text_label_meshes(
                                 + atlas_info.offset.x as f32
                                 + glyph.x * render_scale)
                                 / render_scale;
-                            let position_y = (glyph.y * render_scale
-                                - atlas_info.offset.y as f32
+                            let position_y = (glyph.y * render_scale - atlas_info.offset.y as f32
                                 + glyph_size_pixels.y * 0.5)
                                 / render_scale;
 

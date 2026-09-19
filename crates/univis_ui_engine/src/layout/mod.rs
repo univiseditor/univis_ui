@@ -42,6 +42,8 @@ mod settlement_loop;
 pub mod solver_types;
 #[cfg(test)]
 mod tests;
+/// Text measurement and SDF rendering types.
+pub mod text;
 /// Core node, layout, and local positioning components.
 pub mod univis_node;
 
@@ -57,5 +59,6 @@ pub mod prelude {
         URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
+    pub use crate::layout::text::{UText, UTextLabel, UTextOverflow, UTextTruncateSide};
     pub use crate::layout::univis_node::*;
 }

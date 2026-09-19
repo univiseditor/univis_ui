@@ -274,7 +274,10 @@ impl LayoutPlacer for GridPlacer {
         }
 
         let mut max_rows = ctx.grid_template_rows.len();
-        if ctx.grid_template_rows.is_empty() && ctx.grid_auto_flow == UGridAutoFlow::Column && available_cross > 0.0 {
+        if ctx.grid_template_rows.is_empty()
+            && ctx.grid_auto_flow == UGridAutoFlow::Column
+            && available_cross > 0.0
+        {
             let auto_row_height = match ctx.grid_auto_rows {
                 UTrackSize::Px(v) => v.max(1.0),
                 _ => {
@@ -359,14 +362,26 @@ impl LayoutPlacer for GridPlacer {
                                     }
                                 }
                                 let current_cols = occupancy[0].len();
-                                if can_place_span(&occupancy, row, fc, row_span, col_span, current_cols) {
+                                if can_place_span(
+                                    &occupancy,
+                                    row,
+                                    fc,
+                                    row_span,
+                                    col_span,
+                                    current_cols,
+                                ) {
                                     found = Some((row, fc));
                                     break;
                                 }
                             } else {
                                 for col in first_col..current_cols {
                                     if can_place_span(
-                                        &occupancy, row, col, row_span, col_span, current_cols,
+                                        &occupancy,
+                                        row,
+                                        col,
+                                        row_span,
+                                        col_span,
+                                        current_cols,
                                     ) {
                                         found = Some((row, col));
                                         break;
@@ -393,7 +408,14 @@ impl LayoutPlacer for GridPlacer {
                                 }
                                 let current_cols = occupancy[0].len();
                                 ensure_grid_rows(&mut occupancy, row + row_span, current_cols);
-                                if can_place_span(&occupancy, row, fc, row_span, col_span, current_cols) {
+                                if can_place_span(
+                                    &occupancy,
+                                    row,
+                                    fc,
+                                    row_span,
+                                    col_span,
+                                    current_cols,
+                                ) {
                                     found = Some((row, fc));
                                     break;
                                 }
@@ -411,7 +433,14 @@ impl LayoutPlacer for GridPlacer {
                                 }
                                 let current_cols = occupancy[0].len();
                                 ensure_grid_rows(&mut occupancy, fr + row_span, current_cols);
-                                if can_place_span(&occupancy, fr, col, row_span, col_span, current_cols) {
+                                if can_place_span(
+                                    &occupancy,
+                                    fr,
+                                    col,
+                                    row_span,
+                                    col_span,
+                                    current_cols,
+                                ) {
                                     found = Some((fr, col));
                                     break;
                                 }
@@ -432,7 +461,14 @@ impl LayoutPlacer for GridPlacer {
                                 ensure_grid_rows(&mut occupancy, max_rows, current_cols);
                                 let mut placed = false;
                                 for row in first_row..=(max_rows.saturating_sub(row_span)) {
-                                    if can_place_span(&occupancy, row, col, row_span, col_span, current_cols) {
+                                    if can_place_span(
+                                        &occupancy,
+                                        row,
+                                        col,
+                                        row_span,
+                                        col_span,
+                                        current_cols,
+                                    ) {
                                         found = Some((row, col));
                                         placed = true;
                                         break;

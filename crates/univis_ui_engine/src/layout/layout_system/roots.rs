@@ -110,7 +110,15 @@ impl URootUi {
             resolution_scale: Self::DEFAULT_RESOLUTION_SCALE,
         }
     }
+}
 
+impl Default for URootUi {
+    fn default() -> Self {
+        Self::screen()
+    }
+}
+
+impl URootUi {
     /// Creates a world-space 2D root with a fixed logical canvas size.
     pub fn world_2d(size: Vec2) -> Self {
         Self {

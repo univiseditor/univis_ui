@@ -1,6 +1,6 @@
 use super::*;
+use crate::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
 use std::collections::HashMap;
-use univis_ui_engine::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
 
 use super::measurement::MeasuredTextInfo;
 

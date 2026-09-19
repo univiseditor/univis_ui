@@ -6,25 +6,25 @@ mod measurement;
 mod tests;
 mod truncation;
 
+use crate::layout::geometry::{USides, UVal};
+#[cfg(test)]
+use crate::layout::layout_system::URootUi;
+use crate::layout::query::{ComputedSize, IntrinsicSize};
+#[cfg(test)]
+use crate::layout::univis_node::ULayout;
+use crate::layout::univis_node::UNode;
+#[cfg(test)]
+use crate::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 use bevy::asset::{AssetEvent, Assets};
 use bevy::ecs::relationship::Relationship;
 use bevy::prelude::*;
 use bevy::text::{
-    ComputedTextBlock, FontCx, LayoutCx, LineBreak, LineHeight, LetterSpacing, TextBounds, TextFont,
-    TextLayout, TextPipeline,
+    ComputedTextBlock, FontCx, LayoutCx, LetterSpacing, LineBreak, LineHeight, TextBounds,
+    TextFont, TextLayout, TextPipeline,
 };
 use std::collections::HashSet;
 use unicode_bidi::BidiInfo;
 use unicode_segmentation::UnicodeSegmentation;
-use univis_ui_engine::layout::geometry::{USides, UVal};
-#[cfg(test)]
-use univis_ui_engine::layout::layout_system::URootUi;
-use univis_ui_engine::layout::query::{ComputedSize, IntrinsicSize};
-#[cfg(test)]
-use univis_ui_engine::layout::univis_node::ULayout;
-use univis_ui_engine::layout::univis_node::UNode;
-#[cfg(test)]
-use univis_ui_engine::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 
 use self::bounds::{
     clamp_outer_size_to_bounds, desired_text_label_intrinsic_size, label_measure_bounds,

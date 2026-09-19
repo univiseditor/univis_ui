@@ -42,21 +42,11 @@ Use their explicit compatibility path only when migrating older code:
 - `univis_ui_style::style::Fonts`
 - `univis_ui_style::style::UnivisUiStylePlugin`
 
-## Widget Types
+## Text Types
 
-- `univis_ui_widgets::widget::text_label::UTextLabel`
-- `univis_ui_widgets::widget::button::UButton`
-- `univis_ui_widgets::widget::checkbox::UCheckbox`
-- `univis_ui_widgets::widget::toggle::UToggle`
-- `univis_ui_widgets::widget::radio::{URadioButton, URadioGroup}`
-- `univis_ui_widgets::widget::seekbar::USeekBar`
-- `univis_ui_widgets::widget::drag_value::UDragValue`
-- `univis_ui_widgets::widget::select::{USelect, USelectOption}`
-- `univis_ui_widgets::widget::text_field::UTextField`
-- `univis_ui_widgets::widget::scroll_view::UScrollContainer`
-- `univis_ui_widgets::widget::panel::{UPanel, UPanelWindow}`
-- `univis_ui_widgets::widget::progress::UProgressBar`
-- `univis_ui_widgets::widget::badge::{UBadge, UTag}`
+- `univis_ui_engine::layout::text::UText`
+- `univis_ui_engine::layout::text::UTextLabel`
+- `univis_ui_engine::layout::text::UnivisTextPlugin`
 
 ## Diagnostics And Rendering Types
 

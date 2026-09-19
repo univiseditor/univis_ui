@@ -1,10 +1,10 @@
-//! Univis UI is the facade crate for the full `univis_ui_*` workspace.
+//! Univis UI is the facade crate for the `univis_ui_*` workspace.
 //!
 //! It gives applications a single import surface with:
 //!
-//! - [`UnivisUiPlugin`] to register style, engine, interaction, and widget plugins.
-//! - [`prelude`] for the most common UI types and widgets.
-//! - namespaced modules such as [`layout`], [`widget`], and [`interaction`] for
+//! - [`UnivisUiPlugin`] to register style, engine, and interaction plugins.
+//! - [`prelude`] for the most common UI layout, text, and interaction types.
+//! - namespaced modules such as [`layout`], [`style`], and [`interaction`] for
 //!   deeper integration work.
 //!
 //! For high-level guides, examples, and migration notes, see the repository `docs/`
@@ -14,12 +14,10 @@ use bevy::prelude::*;
 use univis_ui_engine::UnivisEnginePlugin;
 use univis_ui_interaction::interaction::UnivisInteractionPlugin;
 use univis_ui_style::style::UnivisUiStylePlugin;
-use univis_ui_widgets::widget::UnivisWidgetPlugin;
 
 pub use univis_ui_engine as engine_crate;
 pub use univis_ui_interaction as interaction_crate;
 pub use univis_ui_style as style_crate;
-pub use univis_ui_widgets as widgets_crate;
 
 /// Curated engine access for applications that need more than the recommended facade prelude.
 ///
@@ -46,11 +44,11 @@ pub mod render {
     };
 }
 
-/// Advanced layout access for roots, node primitives, and layout-specific systems.
+/// Advanced layout access for roots, node primitives, text, and layout-specific systems.
 pub mod layout {
     pub use univis_ui_engine::layout::{
         UnivisLayoutPlugin, geometry, image, invalidation, layout_system, pbr, profiling, query,
-        render, univis_node,
+        render, text, univis_node,
     };
 
     /// Common layout-facing imports such as roots, nodes, and geometry helpers.
@@ -59,15 +57,10 @@ pub mod layout {
     }
 }
 
-/// Re-exports the built-in widget modules.
-pub mod widget {
-    pub use univis_ui_widgets::{schedule, widget::*};
-}
-
 /// The recommended import surface for most applications.
 ///
 /// This bundles the facade plugin plus the core public types from the engine,
-/// style, interaction, and widgets crates.
+/// style, and interaction crates.
 ///
 /// Deprecated compatibility wrappers remain available only through explicit
 /// paths such as [`crate::layout::layout_system::UScreenRoot`] and
@@ -77,11 +70,10 @@ pub mod prelude {
     pub use univis_ui_engine::prelude::*;
     pub use univis_ui_interaction::prelude::*;
     pub use univis_ui_style::prelude::*;
-    pub use univis_ui_widgets::prelude::*;
 }
 
 /// Registers the full Univis UI stack in the recommended order:
-/// style, engine, interaction, then widgets.
+/// style, engine, then interaction.
 ///
 /// # Example
 ///
@@ -99,8 +91,7 @@ impl Plugin for UnivisUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(UnivisUiStylePlugin)
             .add_plugins(UnivisEnginePlugin)
-            .add_plugins(UnivisInteractionPlugin)
-            .add_plugins(UnivisWidgetPlugin);
+            .add_plugins(UnivisInteractionPlugin);
     }
 }
 
@@ -122,9 +113,7 @@ mod tests {
         let _root = URootUi::screen();
         let _node = UNode::default();
         let _padding = USides::all(12.0);
-        let _button = UButton::primary();
-        let _panel = UPanel::card();
-        let _select = USelect::new();
+        let _text = UText::default();
         let _label = UTextLabel::default();
         let _interaction = UInteraction::default();
         let _colors = UInteractionColors::default();
@@ -146,7 +135,6 @@ mod tests {
             UnivisUiStylePlugin,
             UnivisEnginePlugin,
             UnivisInteractionPlugin,
-            UnivisWidgetPlugin,
         ));
 
         assert!(app.world().contains_resource::<UiRolloutConfig>());

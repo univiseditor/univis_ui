@@ -132,7 +132,6 @@ jobs:
           - univis_ui_style
           - univis_ui_engine
           - univis_ui_interaction
-          - univis_ui_widgets
           - univis_ui
 
     steps:
@@ -169,7 +168,6 @@ jobs:
       matrix:
         package:
           - univis_ui_engine
-          - univis_ui_widgets
           - univis_ui_interaction
           - univis_ui
 

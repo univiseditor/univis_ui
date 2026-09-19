@@ -8,7 +8,6 @@ PACKAGES=(
   univis_ui_style
   univis_ui_engine
   univis_ui_interaction
-  univis_ui_widgets
   univis_ui
 )
 
@@ -37,7 +36,6 @@ cargo package -p univis_ui_style --allow-dirty --offline --no-verify
 ./scripts/package_alpha_serial.sh --list-only --offline \
   univis_ui_engine \
   univis_ui_interaction \
-  univis_ui_widgets \
   univis_ui
 
 echo

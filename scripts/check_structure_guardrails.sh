@@ -58,17 +58,6 @@ crates/univis_ui_engine/src/layout/pipeline/container.rs
 crates/univis_ui_engine/src/layout/render/system.rs
 crates/univis_ui_engine/src/layout/tests.rs
 crates/univis_ui_engine/src/layout/univis_node.rs
-crates/univis_ui_widgets/src/widget/badge.rs
-crates/univis_ui_widgets/src/widget/button.rs
-crates/univis_ui_widgets/src/widget/checkbox.rs
-crates/univis_ui_widgets/src/widget/divider.rs
-crates/univis_ui_widgets/src/widget/drag_value.rs
-crates/univis_ui_widgets/src/widget/icon_btn.rs
-crates/univis_ui_widgets/src/widget/image.rs
-crates/univis_ui_widgets/src/widget/progress.rs
-crates/univis_ui_widgets/src/widget/scroll_view.rs
-crates/univis_ui_widgets/src/widget/seekbar.rs
-crates/univis_ui_widgets/src/widget/toggle.rs
 EOF
 sort -o "$ALLOWLIST_FILE" "$ALLOWLIST_FILE"
 

@@ -15,22 +15,6 @@ struct MainCamera {
     yaw: f32,
 }
 
-// Marker components for our UI widgets to query them in systems
-#[derive(Component)]
-struct RotationToggle;
-
-#[derive(Component)]
-struct RotationSpeedSeekBar;
-
-#[derive(Component)]
-struct EmissiveToggle;
-
-#[derive(Component)]
-struct MetallicSeekBar;
-
-#[derive(Component)]
-struct RoughnessSeekBar;
-
 #[derive(Component)]
 struct StatusText;
 
@@ -119,17 +103,10 @@ fn setup(
             Pickable::default(),
         ))
         .observe(
-            |trigger: On<Pointer<Click>>,
-             mut settings: ResMut<AppSettings>,
-             mut toggle_query: Query<&mut UToggle, With<RotationToggle>>| {
+            |trigger: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
                 if trigger.button == PointerButton::Primary {
                     // Toggle rotation in settings
                     settings.cube_rotation_enabled = !settings.cube_rotation_enabled;
-
-                    // Keep the UI toggle widget in sync
-                    for mut toggle in &mut toggle_query {
-                        toggle.checked = settings.cube_rotation_enabled;
-                    }
                 }
             },
         );
@@ -160,7 +137,6 @@ fn setup(
     let panel = commands
         .spawn((
             ChildOf(root),
-            UPanel::glass().with_gap(16.0),
             UPbr {
                 metallic: settings.panel_metallic,
                 roughness: settings.panel_roughness,
@@ -169,12 +145,20 @@ fn setup(
             UNode {
                 width: UVal::Px(500.0),
                 padding: USides::all(24.0),
+                background_color: Color::srgba(0.08, 0.1, 0.15, 0.85),
+                border_radius: UCornerRadius::all(16.0),
                 ..default()
+            },
+            UBorder {
+                color: Color::srgba(0.3, 0.5, 0.8, 0.35),
+                width: 1.0,
+                radius: UCornerRadius::all(16.0),
+                offset: 0.0,
             },
             ULayout {
                 display: UDisplay::Flex,
                 flex_direction: UFlexDirection::Column,
-                gap: 20.0,
+                gap: 16.0,
                 ..default()
             },
         ))
@@ -187,6 +171,7 @@ fn setup(
         UTextLabel {
             text: "Univis 3D UI & Picking".to_string(),
             color: Color::WHITE,
+            font_size: 20.0,
             ..default()
         },
     ));
@@ -231,20 +216,64 @@ fn setup(
         ChildOf(row_spin),
         UNode::default(),
         UTextLabel {
-            text: "Enable Spin:".to_string(),
+            text: "Cube Spin:".to_string(),
             color: Color::WHITE,
             ..default()
         },
     ));
-    commands.spawn((
-        ChildOf(row_spin),
-        RotationToggle,
-        UToggle::ios_style().with_checked(settings.cube_rotation_enabled),
-    ));
+    commands
+        .spawn((
+            ChildOf(row_spin),
+            UNode {
+                padding: USides::axes(14.0, 6.0),
+                background_color: Color::srgb(0.2, 0.5, 0.8),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.5, 0.8),
+                hovered: Color::srgb(0.3, 0.6, 0.9),
+                pressed: Color::srgb(0.1, 0.4, 0.7),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.cube_rotation_enabled = !settings.cube_rotation_enabled;
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Toggle Spin".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
 
-    // B. Cube Speed Slider
+    // B. Cube Speed Row
+    let row_speed = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
-        ChildOf(panel),
+        ChildOf(row_speed),
         UNode::default(),
         UTextLabel {
             text: "Spin Speed:".to_string(),
@@ -252,14 +281,78 @@ fn setup(
             ..default()
         },
     ));
-    commands.spawn((
-        ChildOf(panel),
-        RotationSpeedSeekBar,
-        USeekBar::sci_fi_style()
-            .with_range(0.0, 5.0)
-            .with_value(settings.cube_rotation_speed / 5.0)
-            .show_value(),
-    ));
+    commands
+        .spawn((
+            ChildOf(row_speed),
+            UNode {
+                padding: USides::axes(12.0, 6.0),
+                background_color: Color::srgb(0.3, 0.3, 0.35),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.3, 0.3, 0.35),
+                hovered: Color::srgb(0.4, 0.4, 0.45),
+                pressed: Color::srgb(0.2, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.cube_rotation_speed = (settings.cube_rotation_speed - 0.5).max(0.0);
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "- Slower".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
+    commands
+        .spawn((
+            ChildOf(row_speed),
+            UNode {
+                padding: USides::axes(12.0, 6.0),
+                background_color: Color::srgb(0.3, 0.3, 0.35),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.3, 0.3, 0.35),
+                hovered: Color::srgb(0.4, 0.4, 0.45),
+                pressed: Color::srgb(0.2, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.cube_rotation_speed = (settings.cube_rotation_speed + 0.5).min(5.0);
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "+ Faster".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
 
     // C. Panel Emissive Toggle (Glow)
     let row_glow = commands
@@ -284,49 +377,144 @@ fn setup(
             ..default()
         },
     ));
-    commands.spawn((
-        ChildOf(row_glow),
-        EmissiveToggle,
-        UToggle::material_style().with_checked(settings.panel_emissive),
-    ));
+    commands
+        .spawn((
+            ChildOf(row_glow),
+            UNode {
+                padding: USides::axes(14.0, 6.0),
+                background_color: Color::srgb(0.1, 0.5, 0.6),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.1, 0.5, 0.6),
+                hovered: Color::srgb(0.2, 0.6, 0.7),
+                pressed: Color::srgb(0.05, 0.4, 0.5),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.panel_emissive = !settings.panel_emissive;
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Toggle Glow".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
 
-    // D. Metallic Slider
+    // D. Material Controls Row
+    let row_mat = commands
+        .spawn((
+            ChildOf(panel),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 12.0,
+                ..default()
+            },
+        ))
+        .id();
     commands.spawn((
-        ChildOf(panel),
+        ChildOf(row_mat),
         UNode::default(),
         UTextLabel {
-            text: "Panel Metallic:".to_string(),
+            text: "Material:".to_string(),
             color: Color::WHITE,
             ..default()
         },
     ));
-    commands.spawn((
-        ChildOf(panel),
-        MetallicSeekBar,
-        USeekBar::brightness_style()
-            .with_range(0.0, 1.0)
-            .with_value(settings.panel_metallic)
-            .show_value(),
-    ));
-
-    // E. Roughness Slider
-    commands.spawn((
-        ChildOf(panel),
-        UNode::default(),
-        UTextLabel {
-            text: "Panel Roughness:".to_string(),
-            color: Color::WHITE,
-            ..default()
-        },
-    ));
-    commands.spawn((
-        ChildOf(panel),
-        RoughnessSeekBar,
-        USeekBar::brightness_style()
-            .with_range(0.0, 1.0)
-            .with_value(settings.panel_roughness)
-            .show_value(),
-    ));
+    commands
+        .spawn((
+            ChildOf(row_mat),
+            UNode {
+                padding: USides::axes(10.0, 6.0),
+                background_color: Color::srgb(0.3, 0.3, 0.35),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.3, 0.3, 0.35),
+                hovered: Color::srgb(0.4, 0.4, 0.45),
+                pressed: Color::srgb(0.2, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.panel_metallic = (settings.panel_metallic + 0.25).min(1.0);
+                if settings.panel_metallic > 0.99 {
+                    settings.panel_metallic = 0.0;
+                }
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Cycle Metal".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
+    commands
+        .spawn((
+            ChildOf(row_mat),
+            UNode {
+                padding: USides::axes(10.0, 6.0),
+                background_color: Color::srgb(0.3, 0.3, 0.35),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.3, 0.3, 0.35),
+                hovered: Color::srgb(0.4, 0.4, 0.45),
+                pressed: Color::srgb(0.2, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.panel_roughness = (settings.panel_roughness + 0.25).min(1.0);
+                if settings.panel_roughness > 0.99 {
+                    settings.panel_roughness = 0.1;
+                }
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Cycle Rough".to_string(),
+                    color: Color::WHITE,
+                    font_size: 14.0,
+                    ..default()
+                },
+            ));
+        });
 
     // Helper hint text
     commands.spawn((
@@ -355,33 +543,12 @@ fn rotate_cube(
     }
 }
 
-/// System to sync values from UI widgets to AppSettings and apply to PBR UI nodes
+/// System to sync values from AppSettings and apply to PBR UI nodes
 fn sync_ui_to_settings(
-    toggle_rotation: Query<&UToggle, With<RotationToggle>>,
-    seekbar_speed: Query<&USeekBar, With<RotationSpeedSeekBar>>,
-    toggle_emissive: Query<&UToggle, With<EmissiveToggle>>,
-    seekbar_metallic: Query<&USeekBar, With<MetallicSeekBar>>,
-    seekbar_roughness: Query<&USeekBar, With<RoughnessSeekBar>>,
-    mut settings: ResMut<AppSettings>,
+    settings: Res<AppSettings>,
     mut panel_pbr_query: Query<&mut UPbr>,
     mut label_query: Query<&mut UTextLabel, With<StatusText>>,
 ) {
-    if let Some(toggle) = toggle_rotation.iter().next() {
-        settings.cube_rotation_enabled = toggle.checked;
-    }
-    if let Some(seekbar) = seekbar_speed.iter().next() {
-        settings.cube_rotation_speed = seekbar.real_value();
-    }
-    if let Some(toggle) = toggle_emissive.iter().next() {
-        settings.panel_emissive = toggle.checked;
-    }
-    if let Some(seekbar) = seekbar_metallic.iter().next() {
-        settings.panel_metallic = seekbar.real_value();
-    }
-    if let Some(seekbar) = seekbar_roughness.iter().next() {
-        settings.panel_roughness = seekbar.real_value();
-    }
-
     // Apply metallic, roughness, and emissive settings to the panel UPbr components
     for mut pbr in &mut panel_pbr_query {
         pbr.metallic = settings.panel_metallic;

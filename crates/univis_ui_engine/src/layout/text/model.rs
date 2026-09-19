@@ -1,10 +1,13 @@
+use crate::layout::univis_node::{ULayout, UNode};
 use bevy::prelude::*;
 use bevy::text::{ComputedTextBlock, LineBreak};
-use univis_ui_engine::layout::univis_node::{ULayout, UNode};
 
 const DEFAULT_TEXT_RENDER_SCALE: f32 = 8.0;
 
-/// Overflow policy used by [`UTextLabel`].
+/// Canonical text primitive component for Univis UI.
+pub type UText = UTextLabel;
+
+/// Overflow policy used by [`UText`].
 #[derive(Debug, Reflect, Clone, Copy, PartialEq, Eq, Default)]
 #[reflect(Default, Debug, Clone, PartialEq)]
 pub enum UTextOverflow {
@@ -32,8 +35,8 @@ pub enum UTextTruncateSide {
     Middle,
 }
 
-/// A text-rendering widget backed by Bevy text measurement and Univis SDF rendering.
-#[derive(Component, Reflect)]
+/// Core text primitive backed by Bevy text measurement and Univis SDF rendering.
+#[derive(Component, Clone, Reflect, FromTemplate)]
 #[reflect(Component)]
 #[require(UNode, ULayout, Visibility, ComputedTextBlock, UTextLabelLayoutCache)]
 pub struct UTextLabel {

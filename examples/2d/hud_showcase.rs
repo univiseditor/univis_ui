@@ -7,18 +7,25 @@
 use bevy::prelude::*;
 use univis_ui::prelude::*;
 
-// ── Marker Components ────────────────────────────────────────────────────────
-#[derive(Component)]
-struct HealthSeekBar;
+// ── HUD State Resource ──────────────────────────────────────────────────────
+#[derive(Resource)]
+struct HudControls {
+    health: f32,
+    shield: f32,
+    warning: bool,
+    weapon_secondary: bool,
+}
 
-#[derive(Component)]
-struct ShieldSeekBar;
-
-#[derive(Component)]
-struct WarningToggle;
-
-#[derive(Component)]
-struct WeaponSelectToggle;
+impl Default for HudControls {
+    fn default() -> Self {
+        Self {
+            health: 80.0,
+            shield: 60.0,
+            warning: false,
+            weapon_secondary: false,
+        }
+    }
+}
 
 #[derive(Component)]
 struct HealthBarFill;
@@ -61,6 +68,7 @@ fn main() {
             }),
             UnivisUiPlugin,
         ))
+        .init_resource::<HudControls>()
         .add_systems(Startup, setup_hud)
         .add_systems(Update, animate_hud)
         .run();
@@ -636,82 +644,191 @@ fn setup_hud(mut commands: Commands) {
         },
     ));
 
-    // Closure to build control rows
-    let mut add_hud_slider =
-        |label: &str, min_val: f32, max_val: f32, initial_val: f32, marker: ComponentBox| {
-            let row = commands
-                .spawn((
-                    ChildOf(sidebar),
-                    UNode {
-                        width: UVal::Percent(1.0),
-                        ..default()
-                    },
-                    ULayout {
-                        display: UDisplay::Flex,
-                        flex_direction: UFlexDirection::Column,
-                        gap: 4.0,
-                        ..default()
-                    },
-                ))
-                .id();
-
-            commands.spawn((
-                ChildOf(row),
+    // HP Controls Row
+    let hp_row = commands
+        .spawn((
+            ChildOf(sidebar),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 8.0,
+                ..default()
+            },
+        ))
+        .id();
+    commands.spawn((
+        ChildOf(hp_row),
+        UNode::default(),
+        UTextLabel {
+            text: "HP:".to_string(),
+            color: Color::srgb(0.7, 0.8, 0.9),
+            font_size: 12.0,
+            ..default()
+        },
+    ));
+    commands
+        .spawn((
+            ChildOf(hp_row),
+            UNode {
+                padding: USides::axes(10.0, 4.0),
+                background_color: Color::srgb(0.2, 0.25, 0.3),
+                border_radius: UCornerRadius::all(4.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.25, 0.3),
+                hovered: Color::srgb(0.3, 0.35, 0.4),
+                pressed: Color::srgb(0.15, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(|_click: On<Pointer<Click>>, mut hud: ResMut<HudControls>| {
+            hud.health = (hud.health - 10.0).max(0.0);
+        })
+        .with_children(|btn| {
+            btn.spawn((
                 UNode::default(),
                 UTextLabel {
-                    text: label.to_string(),
-                    color: Color::srgb(0.7, 0.8, 0.9),
-                    font_size: 12.0,
+                    text: "- 10".to_string(),
+                    color: Color::WHITE,
+                    font_size: 11.0,
                     ..default()
                 },
             ));
-
-            let seek_val = (initial_val - min_val) / (max_val - min_val);
-            let seekbar_entity = commands
-                .spawn((
-                    ChildOf(row),
-                    USeekBar::sci_fi_style()
-                        .with_range(min_val, max_val)
-                        .with_value(seek_val)
-                        .show_value(),
-                ))
-                .id();
-
-            marker.add_to(&mut commands, seekbar_entity);
-        };
-
-    struct ComponentBox {
-        apply: fn(&mut Commands, Entity),
-    }
-    impl ComponentBox {
-        fn add_to(&self, commands: &mut Commands, entity: Entity) {
-            (self.apply)(commands, entity);
-        }
-    }
-
-    add_hud_slider(
-        "Simulation Vitals (HP):",
-        0.0,
-        100.0,
-        80.0,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(HealthSeekBar);
+        });
+    commands
+        .spawn((
+            ChildOf(hp_row),
+            UNode {
+                padding: USides::axes(10.0, 4.0),
+                background_color: Color::srgb(0.2, 0.25, 0.3),
+                border_radius: UCornerRadius::all(4.0),
+                ..default()
             },
-        },
-    );
-
-    add_hud_slider(
-        "Simulation Shields:",
-        0.0,
-        100.0,
-        60.0,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(ShieldSeekBar);
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.25, 0.3),
+                hovered: Color::srgb(0.3, 0.35, 0.4),
+                pressed: Color::srgb(0.15, 0.2, 0.25),
             },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(|_click: On<Pointer<Click>>, mut hud: ResMut<HudControls>| {
+            hud.health = (hud.health + 10.0).min(100.0);
+        })
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "+ 10".to_string(),
+                    color: Color::WHITE,
+                    font_size: 11.0,
+                    ..default()
+                },
+            ));
+        });
+
+    // Shield Controls Row
+    let shield_row = commands
+        .spawn((
+            ChildOf(sidebar),
+            UNode::default(),
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Row,
+                align_items: UAlignItems::Center,
+                gap: 8.0,
+                ..default()
+            },
+        ))
+        .id();
+    commands.spawn((
+        ChildOf(shield_row),
+        UNode::default(),
+        UTextLabel {
+            text: "Shield:".to_string(),
+            color: Color::srgb(0.7, 0.8, 0.9),
+            font_size: 12.0,
+            ..default()
         },
-    );
+    ));
+    commands
+        .spawn((
+            ChildOf(shield_row),
+            UNode {
+                padding: USides::axes(10.0, 4.0),
+                background_color: Color::srgb(0.2, 0.25, 0.3),
+                border_radius: UCornerRadius::all(4.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.25, 0.3),
+                hovered: Color::srgb(0.3, 0.35, 0.4),
+                pressed: Color::srgb(0.15, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(|_click: On<Pointer<Click>>, mut hud: ResMut<HudControls>| {
+            hud.shield = (hud.shield - 10.0).max(0.0);
+        })
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "- 10".to_string(),
+                    color: Color::WHITE,
+                    font_size: 11.0,
+                    ..default()
+                },
+            ));
+        });
+    commands
+        .spawn((
+            ChildOf(shield_row),
+            UNode {
+                padding: USides::axes(10.0, 4.0),
+                background_color: Color::srgb(0.2, 0.25, 0.3),
+                border_radius: UCornerRadius::all(4.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.25, 0.3),
+                hovered: Color::srgb(0.3, 0.35, 0.4),
+                pressed: Color::srgb(0.15, 0.2, 0.25),
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                ..default()
+            },
+        ))
+        .observe(|_click: On<Pointer<Click>>, mut hud: ResMut<HudControls>| {
+            hud.shield = (hud.shield + 10.0).min(100.0);
+        })
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "+ 10".to_string(),
+                    color: Color::WHITE,
+                    font_size: 11.0,
+                    ..default()
+                },
+            ));
+        });
 
     // Control Toggles Row
     let toggles_row = commands
@@ -731,73 +848,82 @@ fn setup_hud(mut commands: Commands) {
         ))
         .id();
 
-    // Warning alert toggle
-    let alert_cell = commands
+    // Warning alert toggle button
+    commands
         .spawn((
             ChildOf(toggles_row),
-            UNode::default(),
+            UNode {
+                padding: USides::axes(12.0, 6.0),
+                background_color: Color::srgb(0.3, 0.15, 0.15),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.3, 0.15, 0.15),
+                hovered: Color::srgb(0.45, 0.2, 0.2),
+                pressed: Color::srgb(0.2, 0.1, 0.1),
+            },
             ULayout {
                 display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                align_items: UAlignItems::Center,
-                gap: 4.0,
                 ..default()
             },
         ))
-        .id();
-    commands.spawn((
-        ChildOf(alert_cell),
-        UNode::default(),
-        UTextLabel {
-            text: "Danger Alert".to_string(),
-            font_size: 11.0,
-            color: Color::WHITE,
-            ..default()
-        },
-    ));
-    commands.spawn((
-        ChildOf(alert_cell),
-        WarningToggle,
-        UToggle::sci_fi_style().with_checked(false),
-    ));
+        .observe(|_click: On<Pointer<Click>>, mut hud: ResMut<HudControls>| {
+            hud.warning = !hud.warning;
+        })
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Toggle Alert".to_string(),
+                    font_size: 11.0,
+                    color: Color::WHITE,
+                    ..default()
+                },
+            ));
+        });
 
-    // Weapon select toggle
-    let weapon_cell = commands
+    // Weapon select toggle button
+    commands
         .spawn((
             ChildOf(toggles_row),
-            UNode::default(),
+            UNode {
+                padding: USides::axes(12.0, 6.0),
+                background_color: Color::srgb(0.15, 0.25, 0.35),
+                border_radius: UCornerRadius::all(6.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.15, 0.25, 0.35),
+                hovered: Color::srgb(0.2, 0.35, 0.5),
+                pressed: Color::srgb(0.1, 0.2, 0.25),
+            },
             ULayout {
                 display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                align_items: UAlignItems::Center,
-                gap: 4.0,
                 ..default()
             },
         ))
-        .id();
-    commands.spawn((
-        ChildOf(weapon_cell),
-        UNode::default(),
-        UTextLabel {
-            text: "Weapon Mode".to_string(),
-            font_size: 11.0,
-            color: Color::WHITE,
-            ..default()
-        },
-    ));
-    commands.spawn((
-        ChildOf(weapon_cell),
-        WeaponSelectToggle,
-        UToggle::sci_fi_style().with_checked(false),
-    ));
+        .observe(|_click: On<Pointer<Click>>, mut hud: ResMut<HudControls>| {
+            hud.weapon_secondary = !hud.weapon_secondary;
+        })
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Switch Weapon".to_string(),
+                    font_size: 11.0,
+                    color: Color::WHITE,
+                    ..default()
+                },
+            ));
+        });
 }
 
 fn animate_hud(
     time: Res<Time>,
-    seekbar_health: Query<&USeekBar, With<HealthSeekBar>>,
-    seekbar_shield: Query<&USeekBar, With<ShieldSeekBar>>,
-    toggle_warning: Query<&UToggle, With<WarningToggle>>,
-    toggle_weapon: Query<&UToggle, With<WeaponSelectToggle>>,
+    hud: Res<HudControls>,
     mut fill_health: Query<&mut UNode, (With<HealthBarFill>, Without<ShieldBarFill>)>,
     mut fill_shield: Query<&mut UNode, (With<ShieldBarFill>, Without<HealthBarFill>)>,
     mut text_health: Query<
@@ -846,17 +972,11 @@ fn animate_hud(
     >,
     mut radar_dots: Query<(&mut USelf, &RadarDot)>,
 ) {
-    // 1. Get current values from seekbars & toggles
-    let health_val = seekbar_health
-        .iter()
-        .next()
-        .map_or(80.0, |sb| sb.real_value());
-    let shield_val = seekbar_shield
-        .iter()
-        .next()
-        .map_or(60.0, |sb| sb.real_value());
-    let warning_active = toggle_warning.iter().next().map_or(false, |t| t.checked);
-    let weapon_mode_secondary = toggle_weapon.iter().next().map_or(false, |t| t.checked);
+    // 1. Get current values from HudControls
+    let health_val = hud.health;
+    let shield_val = hud.shield;
+    let warning_active = hud.warning;
+    let weapon_mode_secondary = hud.weapon_secondary;
 
     let health_pct = health_val / 100.0;
     let shield_pct = shield_val / 100.0;

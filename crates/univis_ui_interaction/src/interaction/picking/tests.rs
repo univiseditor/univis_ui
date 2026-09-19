@@ -369,7 +369,7 @@ fn is_ancestor_of_walks_up_the_parent_chain() {
     let grandchild = app.world_mut().spawn(ChildOf(child)).id();
 
     let mut state = SystemState::<Query<&ChildOf>>::new(app.world_mut());
-    let parents = state.get(app.world());
+    let parents = state.get(app.world()).unwrap();
 
     assert!(is_ancestor_of(root, grandchild, &parents));
     assert!(is_ancestor_of(child, grandchild, &parents));
@@ -417,7 +417,7 @@ fn is_clipped_by_ancestors_detects_points_outside_enabled_clipper() {
         Query<&ChildOf>,
         Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     )>::new(app.world_mut());
-    let (parents, clippers) = state.get(app.world());
+    let (parents, clippers) = state.get(app.world()).unwrap();
 
     assert!(!is_clipped_by_ancestors(
         child,

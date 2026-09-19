@@ -22,7 +22,7 @@ fn should_skip_intrinsic_only_container_change(
 
 fn rebuild_cache_depths(world: &mut World, cache: &mut LayoutCache, max_depth: usize) {
     let mut system_state: SystemState<Query<(Entity, &LayoutDepth)>> = SystemState::new(world);
-    let query = system_state.get(world);
+    let query = system_state.get(world).unwrap();
     cache.rebuild_depth_map(&query, max_depth);
 }
 

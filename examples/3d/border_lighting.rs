@@ -61,34 +61,6 @@ struct OrbitingLight {
 #[derive(Component)]
 struct MainTargetPanel;
 
-// UI marker components
-#[derive(Component)]
-struct BorderWidthSeekBar;
-
-#[derive(Component)]
-struct BorderRadiusSeekBar;
-
-#[derive(Component)]
-struct BorderOffsetSeekBar;
-
-#[derive(Component)]
-struct MetallicSeekBar;
-
-#[derive(Component)]
-struct RoughnessSeekBar;
-
-#[derive(Component)]
-struct OrbitSpeedSeekBar;
-
-#[derive(Component)]
-struct OrbitToggle;
-
-#[derive(Component)]
-struct ShapeToggle;
-
-#[derive(Component)]
-struct LightingIntensitySeekBar;
-
 #[derive(Component)]
 struct StatusText;
 
@@ -258,7 +230,6 @@ fn setup(
     let control_panel = commands
         .spawn((
             ChildOf(control_root),
-            UPanel::glass().with_gap(14.0),
             UPbr {
                 metallic: 0.1,
                 roughness: 0.4,
@@ -267,6 +238,7 @@ fn setup(
             UNode {
                 width: UVal::Px(640.0),
                 padding: USides::all(24.0),
+                background_color: Color::srgba(0.08, 0.1, 0.15, 0.85),
                 border_radius: UCornerRadius::all(20.0),
                 ..default()
             },
@@ -322,13 +294,11 @@ fn setup(
         },
     ));
 
-    // Helper macro/closure to build sliders
-    let mut add_slider = |parent_entity: Entity,
-                          label: &str,
-                          min_val: f32,
-                          max_val: f32,
-                          initial_val: f32,
-                          marker: ComponentBox| {
+    // Helper closure to build steppers
+    let mut add_stepper = |parent_entity: Entity,
+                           label: &'static str,
+                           on_dec: fn(&mut AppSettings),
+                           on_inc: fn(&mut AppSettings)| {
         let row = commands
             .spawn((
                 ChildOf(parent_entity),
@@ -346,7 +316,7 @@ fn setup(
         commands.spawn((
             ChildOf(row),
             UNode {
-                width: UVal::Px(200.0),
+                width: UVal::Px(240.0),
                 ..default()
             },
             UTextLabel {
@@ -357,119 +327,143 @@ fn setup(
             },
         ));
 
-        let seek_val = (initial_val - min_val) / (max_val - min_val);
-        let seekbar_entity = commands
+        let btn_group = commands
             .spawn((
                 ChildOf(row),
-                USeekBar::sci_fi_style()
-                    .with_range(min_val, max_val)
-                    .with_value(seek_val)
-                    .show_value(),
+                UNode::default(),
+                ULayout {
+                    display: UDisplay::Flex,
+                    flex_direction: UFlexDirection::Row,
+                    gap: 8.0,
+                    ..default()
+                },
             ))
             .id();
 
-        // Dynamically add the marker component
-        marker.add_to(&mut commands, seekbar_entity);
+        // Minus button
+        commands
+            .spawn((
+                ChildOf(btn_group),
+                UNode {
+                    padding: USides::axes(14.0, 6.0),
+                    background_color: Color::srgb(0.2, 0.25, 0.35),
+                    border_radius: UCornerRadius::all(6.0),
+                    ..default()
+                },
+                UInteraction::default(),
+                UInteractionColors {
+                    normal: Color::srgb(0.2, 0.25, 0.35),
+                    hovered: Color::srgb(0.3, 0.35, 0.45),
+                    pressed: Color::srgb(0.15, 0.2, 0.28),
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    ..default()
+                },
+            ))
+            .observe(
+                move |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                    on_dec(&mut settings);
+                },
+            )
+            .with_children(|btn| {
+                btn.spawn((
+                    UNode::default(),
+                    UTextLabel {
+                        text: " - ".to_string(),
+                        color: Color::WHITE,
+                        font_size: 14.0,
+                        ..default()
+                    },
+                ));
+            });
+
+        // Plus button
+        commands
+            .spawn((
+                ChildOf(btn_group),
+                UNode {
+                    padding: USides::axes(14.0, 6.0),
+                    background_color: Color::srgb(0.2, 0.5, 0.8),
+                    border_radius: UCornerRadius::all(6.0),
+                    ..default()
+                },
+                UInteraction::default(),
+                UInteractionColors {
+                    normal: Color::srgb(0.2, 0.5, 0.8),
+                    hovered: Color::srgb(0.3, 0.6, 0.9),
+                    pressed: Color::srgb(0.15, 0.4, 0.7),
+                },
+                ULayout {
+                    display: UDisplay::Flex,
+                    ..default()
+                },
+            ))
+            .observe(
+                move |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                    on_inc(&mut settings);
+                },
+            )
+            .with_children(|btn| {
+                btn.spawn((
+                    UNode::default(),
+                    UTextLabel {
+                        text: " + ".to_string(),
+                        color: Color::WHITE,
+                        font_size: 14.0,
+                        ..default()
+                    },
+                ));
+            });
     };
 
-    struct ComponentBox {
-        apply: fn(&mut Commands, Entity),
-    }
-    impl ComponentBox {
-        fn add_to(&self, commands: &mut Commands, entity: Entity) {
-            (self.apply)(commands, entity);
-        }
-    }
-
-    add_slider(
+    add_stepper(
         control_panel,
         "Border Width:",
-        0.0,
-        24.0,
-        settings.border_width,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(BorderWidthSeekBar);
-            },
-        },
+        |s| s.border_width = (s.border_width - 2.0).clamp(0.0, 24.0),
+        |s| s.border_width = (s.border_width + 2.0).clamp(0.0, 24.0),
     );
 
-    add_slider(
+    add_stepper(
         control_panel,
         "Border Radius:",
-        0.0,
-        60.0,
-        settings.border_radius,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(BorderRadiusSeekBar);
-            },
-        },
+        |s| s.border_radius = (s.border_radius - 5.0).clamp(0.0, 60.0),
+        |s| s.border_radius = (s.border_radius + 5.0).clamp(0.0, 60.0),
     );
 
-    add_slider(
+    add_stepper(
         control_panel,
         "Border Offset:",
-        -15.0,
-        25.0,
-        settings.border_offset,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(BorderOffsetSeekBar);
-            },
-        },
+        |s| s.border_offset = (s.border_offset - 2.0).clamp(-15.0, 25.0),
+        |s| s.border_offset = (s.border_offset + 2.0).clamp(-15.0, 25.0),
     );
 
-    add_slider(
+    add_stepper(
         control_panel,
         "Panel Metallic:",
-        0.0,
-        1.0,
-        settings.panel_metallic,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(MetallicSeekBar);
-            },
-        },
+        |s| s.panel_metallic = ((s.panel_metallic - 0.1) * 10.0).round() / 10.0,
+        |s| s.panel_metallic = ((s.panel_metallic + 0.1) * 10.0).round() / 10.0,
     );
 
-    add_slider(
+    add_stepper(
         control_panel,
         "Panel Roughness:",
-        0.0,
-        1.0,
-        settings.panel_roughness,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(RoughnessSeekBar);
-            },
-        },
+        |s| s.panel_roughness = ((s.panel_roughness - 0.1) * 10.0).round() / 10.0,
+        |s| s.panel_roughness = ((s.panel_roughness + 0.1) * 10.0).round() / 10.0,
     );
 
-    add_slider(
+    add_stepper(
         control_panel,
         "Light Intensity:",
-        500.0,
-        5000.0,
-        settings.light_intensity,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(LightingIntensitySeekBar);
-            },
-        },
+        |s| s.light_intensity = (s.light_intensity - 500.0).clamp(500.0, 5000.0),
+        |s| s.light_intensity = (s.light_intensity + 500.0).clamp(500.0, 5000.0),
     );
 
-    add_slider(
+    add_stepper(
         control_panel,
         "Light Orbit Speed:",
-        0.0,
-        4.0,
-        settings.light_orbit_speed,
-        ComponentBox {
-            apply: |c, e| {
-                c.entity(e).insert(OrbitSpeedSeekBar);
-            },
-        },
+        |s| s.light_orbit_speed = (s.light_orbit_speed - 0.2).clamp(0.0, 4.0),
+        |s| s.light_orbit_speed = (s.light_orbit_speed + 0.2).clamp(0.0, 4.0),
     );
 
     // Toggles Row
@@ -489,65 +483,84 @@ fn setup(
         ))
         .id();
 
-    // Orbit Toggle
-    let orbit_cell = commands
+    // Orbit Toggle Button
+    commands
         .spawn((
             ChildOf(toggles_row),
-            UNode::default(),
+            UNode {
+                padding: USides::axes(16.0, 8.0),
+                background_color: Color::srgb(0.2, 0.35, 0.5),
+                border_radius: UCornerRadius::all(8.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.35, 0.5),
+                hovered: Color::srgb(0.3, 0.45, 0.6),
+                pressed: Color::srgb(0.15, 0.25, 0.4),
+            },
             ULayout {
                 display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                align_items: UAlignItems::Center,
-                gap: 6.0,
                 ..default()
             },
         ))
-        .id();
-    commands.spawn((
-        ChildOf(orbit_cell),
-        UNode::default(),
-        UTextLabel {
-            text: "Orbit Lights".to_string(),
-            color: Color::WHITE,
-            font_size: 13.0,
-            ..default()
-        },
-    ));
-    commands.spawn((
-        ChildOf(orbit_cell),
-        OrbitToggle,
-        UToggle::sci_fi_style().with_checked(settings.orbit_lights_enabled),
-    ));
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.orbit_lights_enabled = !settings.orbit_lights_enabled;
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Toggle Orbit".to_string(),
+                    color: Color::WHITE,
+                    font_size: 13.0,
+                    ..default()
+                },
+            ));
+        });
 
-    // Shape Mode Toggle (Round vs Cut)
-    let shape_cell = commands
+    // Shape Toggle Button
+    commands
         .spawn((
             ChildOf(toggles_row),
-            UNode::default(),
+            UNode {
+                padding: USides::axes(16.0, 8.0),
+                background_color: Color::srgb(0.2, 0.35, 0.5),
+                border_radius: UCornerRadius::all(8.0),
+                ..default()
+            },
+            UInteraction::default(),
+            UInteractionColors {
+                normal: Color::srgb(0.2, 0.35, 0.5),
+                hovered: Color::srgb(0.3, 0.45, 0.6),
+                pressed: Color::srgb(0.15, 0.25, 0.4),
+            },
             ULayout {
                 display: UDisplay::Flex,
-                flex_direction: UFlexDirection::Column,
-                align_items: UAlignItems::Center,
-                gap: 6.0,
                 ..default()
             },
         ))
-        .id();
-    commands.spawn((
-        ChildOf(shape_cell),
-        UNode::default(),
-        UTextLabel {
-            text: "Cut Corners".to_string(),
-            color: Color::WHITE,
-            font_size: 13.0,
-            ..default()
-        },
-    ));
-    commands.spawn((
-        ChildOf(shape_cell),
-        ShapeToggle,
-        UToggle::sci_fi_style().with_checked(false), // Starts Round (false)
-    ));
+        .observe(
+            |_click: On<Pointer<Click>>, mut settings: ResMut<AppSettings>| {
+                settings.shape_mode = match settings.shape_mode {
+                    UShapeMode::Round => UShapeMode::Cut,
+                    UShapeMode::Cut => UShapeMode::Round,
+                };
+            },
+        )
+        .with_children(|btn| {
+            btn.spawn((
+                UNode::default(),
+                UTextLabel {
+                    text: "Toggle Shape (Round/Cut)".to_string(),
+                    color: Color::WHITE,
+                    font_size: 13.0,
+                    ..default()
+                },
+            ));
+        });
 
     // 7. Dynamic Target Panel (Main Showcase)
     // Located in the center, responding to settings
@@ -1054,52 +1067,11 @@ fn orbit_lights(
 
 // ── Sync UI To Settings System ───────────────────────────────────────────────
 fn sync_ui_to_settings(
-    mut settings: ResMut<AppSettings>,
-    toggle_orbit: Query<&UToggle, With<OrbitToggle>>,
-    toggle_shape: Query<&UToggle, With<ShapeToggle>>,
-    seekbar_width: Query<&USeekBar, With<BorderWidthSeekBar>>,
-    seekbar_radius: Query<&USeekBar, With<BorderRadiusSeekBar>>,
-    seekbar_offset: Query<&USeekBar, With<BorderOffsetSeekBar>>,
-    seekbar_metallic: Query<&USeekBar, With<MetallicSeekBar>>,
-    seekbar_roughness: Query<&USeekBar, With<RoughnessSeekBar>>,
-    seekbar_orbit_speed: Query<&USeekBar, With<OrbitSpeedSeekBar>>,
-    seekbar_light_intensity: Query<&USeekBar, With<LightingIntensitySeekBar>>,
+    settings: Res<AppSettings>,
     mut target_panel_query: Query<(&mut UBorder, &mut UPbr, &mut UNode), With<MainTargetPanel>>,
     mut point_light_query: Query<&mut PointLight, With<OrbitingLight>>,
     mut status_text_query: Query<&mut UTextLabel, With<StatusText>>,
 ) {
-    if let Some(toggle) = toggle_orbit.iter().next() {
-        settings.orbit_lights_enabled = toggle.checked;
-    }
-    if let Some(toggle) = toggle_shape.iter().next() {
-        settings.shape_mode = if toggle.checked {
-            UShapeMode::Cut
-        } else {
-            UShapeMode::Round
-        };
-    }
-    if let Some(seekbar) = seekbar_width.iter().next() {
-        settings.border_width = seekbar.real_value();
-    }
-    if let Some(seekbar) = seekbar_radius.iter().next() {
-        settings.border_radius = seekbar.real_value();
-    }
-    if let Some(seekbar) = seekbar_offset.iter().next() {
-        settings.border_offset = seekbar.real_value();
-    }
-    if let Some(seekbar) = seekbar_metallic.iter().next() {
-        settings.panel_metallic = seekbar.real_value();
-    }
-    if let Some(seekbar) = seekbar_roughness.iter().next() {
-        settings.panel_roughness = seekbar.real_value();
-    }
-    if let Some(seekbar) = seekbar_orbit_speed.iter().next() {
-        settings.light_orbit_speed = seekbar.real_value();
-    }
-    if let Some(seekbar) = seekbar_light_intensity.iter().next() {
-        settings.light_intensity = seekbar.real_value();
-    }
-
     // Apply metallic, roughness, shape mode, and border changes to the main target panel
     for (mut border, mut pbr, mut node) in &mut target_panel_query {
         border.width = settings.border_width;

@@ -45,15 +45,13 @@ univis_ui = "0.3.0"
 univis_ui_engine = "0.3.0"
 univis_ui_style = "0.3.0"
 univis_ui_interaction = "0.3.0"
-univis_ui_widgets = "0.3.0"
 ```
 
 ## خريطة الحزم
 
-- `univis_ui`: ابدأ بها في أغلب التطبيقات، واستعمل `univis_ui::prelude` كسطح يومي رسمي للجذور والتخطيط والتفاعل والنمط والوحدات الجاهزة.
-- `univis_ui_engine`: اعتمد عليها عندما تحتاج الجذور أو التخطيط أو مزامنة الرندر أو بناء widgets/runtime مخصص من دون الواجهة المجمعة الكاملة.
+- `univis_ui`: ابدأ بها في أغلب التطبيقات، واستعمل `univis_ui::prelude` كسطح يومي رسمي للجذور والتخطيط والنصوص والتفاعل والنمط.
+- `univis_ui_engine`: اعتمد عليها عندما تحتاج الجذور أو التخطيط أو قياس ورندر النصوص أو مزامنة الرندر من دون الواجهة المجمعة الكاملة.
 - `univis_ui_interaction`: اعتمد عليها عندما تحتاج الالتقاط وحالة `UInteraction` فوق جذور المحرك من دون بقية السطح.
-- `univis_ui_widgets`: اعتمد عليها عندما تريد الوحدات الجاهزة المدمجة لكنك تفضّل تركيب الإضافات والاعتماديات بنفسك.
 - `univis_ui_style`: اعتمد عليها عندما تحتاج فقط موارد النمط المشتركة أو الخطوط أو الأيقونات أو أنماط النص.
 
 سياسة `prelude`:
@@ -225,16 +223,14 @@ cargo doc --no-deps -p univis_ui
 - `univis_ui::UnivisUiPlugin`
 - `univis_ui_engine::layout::layout_system::URootUi`
 - `univis_ui_engine::layout::univis_node::UNode`
+- `univis_ui_engine::layout::text::UText`
 - `univis_ui_interaction::interaction::feedback::UInteraction`
-- `univis_ui_widgets::widget::text_label::UTextLabel`
 - `univis_ui_style::style::Theme`
 
 مراجع مفيدة للبدء:
 
 - `android_phone`
 - `responsive_layout_test`
-- `widgets_controls`
-- `widgets_inputs`
 
 شغّل العرض الحي الحالي:
 
@@ -245,10 +241,9 @@ cargo run --manifest-path android/android_phone_app/Cargo.toml
 ## الحزم
 
 - `univis_ui`: نقطة الدخول المجمعة والاعتمادية الافتراضية الموصى بها
-- `univis_ui_engine`: الجذور، التخطيط، الرندر، ونموذج العقدة الأساسي
+- `univis_ui_engine`: الجذور، التخطيط، رندر النصوص، ونموذج العقدة الأساسي
 - `univis_ui_interaction`: الالتقاط والتفاعل
 - `univis_ui_style`: الخطوط، الأيقونات، والموارد البصرية المشتركة
-- `univis_ui_widgets`: الوحدات الجاهزة والـ widget plugins
 
 ## الحالة الحالية
 

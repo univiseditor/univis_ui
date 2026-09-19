@@ -724,3 +724,76 @@ fn root_resolution_change_stays_scoped_to_the_changed_root() {
     assert_eq!(root_b_state.current_generation, 1);
     assert!(root_b_state.is_settled());
 }
+
+#[test]
+fn display_none_nodes_are_excluded_from_layout_and_have_zero_size() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, UnivisLayoutPlugin));
+
+    let root = app
+        .world_mut()
+        .spawn((
+            URootUi::world_2d(Vec2::new(400.0, 400.0)),
+            UNode {
+                width: UVal::Px(400.0),
+                height: UVal::Px(400.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::Flex,
+                flex_direction: UFlexDirection::Column,
+                gap: 10.0,
+                ..default()
+            },
+        ))
+        .id();
+
+    let child_visible = app
+        .world_mut()
+        .spawn((
+            ChildOf(root),
+            UNode {
+                width: UVal::Px(100.0),
+                height: UVal::Px(50.0),
+                ..default()
+            },
+            ULayout::default(),
+        ))
+        .id();
+
+    let child_hidden = app
+        .world_mut()
+        .spawn((
+            ChildOf(root),
+            UNode {
+                width: UVal::Px(100.0),
+                height: UVal::Px(50.0),
+                ..default()
+            },
+            ULayout {
+                display: UDisplay::None,
+                ..default()
+            },
+        ))
+        .id();
+
+    app.update();
+
+    let vis_size = app
+        .world()
+        .entity(child_visible)
+        .get::<ComputedSize>()
+        .copied()
+        .unwrap();
+    let hidden_size = app
+        .world()
+        .entity(child_hidden)
+        .get::<ComputedSize>()
+        .copied()
+        .unwrap();
+
+    assert_eq!(vis_size.width, 100.0);
+    assert_eq!(vis_size.height, 50.0);
+    assert_eq!(hidden_size.width, 0.0);
+    assert_eq!(hidden_size.height, 0.0);
+}

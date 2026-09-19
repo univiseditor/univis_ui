@@ -145,6 +145,12 @@ pub fn downward_solve_pass_safe(
                         prof.solve_scratch_peak.max(scratch.solver_items.len());
                 }
 
+                if let Some(layout) = layout_opt
+                    && layout.display == UDisplay::None
+                {
+                    return None;
+                }
+
                 let default_layout;
                 let layout = if let Some(layout) = layout_opt {
                     layout
@@ -165,6 +171,13 @@ pub fn downward_solve_pass_safe(
                 ))
             })(
             ) else {
+                if let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+                    if computed.width != 0.0 || computed.height != 0.0 {
+                        computed.width = 0.0;
+                        computed.height = 0.0;
+                    }
+                }
+                cache.complete_solve(entity);
                 cache.clear_solve_dirty(entity);
                 continue;
             };
@@ -374,9 +387,15 @@ fn collect_solver_items_into(
     scratch.reserve(children.len());
 
     for child_entity in children.iter() {
-        let Ok((_, node, _, _, _, uself_opt, _, _, _, _)) = nodes_query.get(child_entity) else {
+        let Ok((_, node, layout_opt, _, _, uself_opt, _, _, _, _)) = nodes_query.get(child_entity)
+        else {
             continue;
         };
+        if let Some(layout) = layout_opt
+            && layout.display == UDisplay::None
+        {
+            continue;
+        }
         let Ok(intrinsic) = intrinsic_query.get(child_entity) else {
             continue;
         };

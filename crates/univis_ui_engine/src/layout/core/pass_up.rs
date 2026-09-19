@@ -36,7 +36,7 @@ pub fn upward_measure_pass_cached(
     mut profiler: Option<ResMut<LayoutProfiler>>,
     mut scratch: Local<MeasurePassScratch>,
     mut params: ParamSet<(
-        Query<(&IntrinsicSize, &UNode, Option<&USelf>)>,
+        Query<(&IntrinsicSize, &UNode, Option<&USelf>, Option<&ULayout>)>,
         Query<(Entity, &UNode, Option<&Children>, Option<&ULayout>)>,
         Query<&mut IntrinsicSize>,
     )>,
@@ -127,9 +127,14 @@ pub fn upward_measure_pass_cached(
                 let q_children = params.p0();
 
                 for child_entity in scratch.child_entities.iter().copied() {
-                    if let Ok((child_intrinsic, child_node, child_uself_opt)) =
+                    if let Ok((child_intrinsic, child_node, child_uself_opt, child_layout_opt)) =
                         q_children.get(child_entity)
                     {
+                        if let Some(layout) = child_layout_opt
+                            && layout.display == UDisplay::None
+                        {
+                            continue;
+                        }
                         if let Some(uself) = child_uself_opt
                             && uself.position_type == UPositionType::Absolute
                         {

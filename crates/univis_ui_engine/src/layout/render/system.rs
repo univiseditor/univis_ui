@@ -109,6 +109,9 @@ pub fn update_materials_optimized(
         Option<&UPbr>,
         Option<&CachedUiContext>,
         Option<&mut MaterialHandles>,
+        Option<&UGradient>,
+        Option<&UShadow>,
+        Option<&UInnerGlow>,
     )>,
     // Clipping queries
     parents_query: Query<&ChildOf>,
@@ -141,8 +144,19 @@ pub fn update_materials_optimized(
     };
 
     for entity in render_frontier {
-        let Ok((entity, node, size, border, image, pbr_opt, cached_context, handles_opt)) =
-            nodes.get_mut(entity)
+        let Ok((
+            entity,
+            node,
+            size,
+            border,
+            image,
+            pbr_opt,
+            cached_context,
+            handles_opt,
+            gradient_opt,
+            shadow_opt,
+            inner_glow_opt,
+        )) = nodes.get_mut(entity)
         else {
             continue;
         };
@@ -157,6 +171,9 @@ pub fn update_materials_optimized(
             cached_context,
             use_cached_ui_context,
             handles_opt,
+            gradient_opt,
+            shadow_opt,
+            inner_glow_opt,
             &parents_query,
             &clipper_query,
             &root_query,
@@ -190,6 +207,9 @@ fn sync_entity_material(
     cached_context: Option<&CachedUiContext>,
     use_cached_ui_context: bool,
     handles_opt: Option<Mut<'_, MaterialHandles>>,
+    gradient_opt: Option<&UGradient>,
+    shadow_opt: Option<&UShadow>,
+    inner_glow_opt: Option<&UInnerGlow>,
     parents_query: &Query<&ChildOf>,
     clipper_query: &Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     root_query: &Query<&ResolvedRootUi>,
@@ -250,10 +270,69 @@ fn sync_entity_material(
     let clip_size = clip_size * world_scale;
     let clip_radius = clip_radius * world_scale;
 
-    let mesh = if use_mesh_cache {
-        mesh_pool.mesh_for_size(size_vec, meshes)
+    // --- visual inputs ---
+    let (grad_start, grad_end, grad_params) = if let Some(grad) = gradient_opt {
+        let (grad_type, param_y, center) = match grad.kind {
+            UGradientKind::Linear { angle } => (1.0, angle, Vec2::ZERO),
+            UGradientKind::Radial { center, radius } => (2.0, radius, center),
+        };
+        (
+            LinearRgba::from(grad.start_color),
+            LinearRgba::from(grad.end_color),
+            Vec4::new(grad_type, param_y, center.x, center.y),
+        )
     } else {
-        meshes.add(Rectangle::new(size_vec.x, size_vec.y))
+        (LinearRgba::NONE, LinearRgba::NONE, Vec4::ZERO)
+    };
+
+    let (shadow_color, shadow_params) = if let Some(s) = shadow_opt {
+        if !s.is_inner {
+            (
+                LinearRgba::from(s.color),
+                Vec4::new(
+                    s.offset.x * world_scale,
+                    s.offset.y * world_scale,
+                    s.blur * world_scale,
+                    s.spread * world_scale,
+                ),
+            )
+        } else {
+            (LinearRgba::NONE, Vec4::ZERO)
+        }
+    } else {
+        (LinearRgba::NONE, Vec4::ZERO)
+    };
+
+    let (inner_glow_color, inner_glow_params) = if let Some(ig) = inner_glow_opt {
+        (
+            LinearRgba::from(ig.color),
+            Vec4::new(ig.blur * world_scale, 1.0, ig.spread * world_scale, 0.0),
+        )
+    } else if let Some(s) = shadow_opt
+        && s.is_inner
+    {
+        (
+            LinearRgba::from(s.color),
+            Vec4::new(s.blur * world_scale, 1.0, s.spread * world_scale, 0.0),
+        )
+    } else {
+        (LinearRgba::NONE, Vec4::ZERO)
+    };
+
+    let shadow_blur = shadow_params.z;
+    let shadow_spread = shadow_params.w;
+    let shadow_offset = shadow_params.xy();
+    let shadow_margin = if shadow_blur > 0.0 {
+        shadow_blur * 2.5 + shadow_spread + shadow_offset.abs().max_element()
+    } else {
+        0.0
+    };
+    let mesh_size = size_vec + Vec2::splat(shadow_margin * 2.0);
+
+    let mesh = if use_mesh_cache {
+        mesh_pool.mesh_for_size(mesh_size, meshes)
+    } else {
+        meshes.add(Rectangle::new(mesh_size.x, mesh_size.y))
     };
 
     match render_context.mode {
@@ -279,6 +358,13 @@ fn sync_entity_material(
                         existing_mat.use_texture = use_tex;
                         existing_mat.shape_mode = shape_mode;
                         existing_mat.texture = tex_handle.clone();
+                        existing_mat.grad_start = grad_start.to_vec4();
+                        existing_mat.grad_end = grad_end.to_vec4();
+                        existing_mat.grad_params = grad_params;
+                        existing_mat.shadow_color = shadow_color.to_vec4();
+                        existing_mat.shadow_params = shadow_params;
+                        existing_mat.inner_glow_color = inner_glow_color.to_vec4();
+                        existing_mat.inner_glow_params = inner_glow_params;
 
                         pool.reused_count += 1;
                         existing_handle.clone()
@@ -296,6 +382,13 @@ fn sync_entity_material(
                             use_tex,
                             shape_mode,
                             tex_handle.clone(),
+                            grad_start.to_vec4(),
+                            grad_end.to_vec4(),
+                            grad_params,
+                            shadow_color.to_vec4(),
+                            shadow_params,
+                            inner_glow_color.to_vec4(),
+                            inner_glow_params,
                         ));
                         handles.material_3d = Some(new_mat.clone());
                         pool.created_count += 1;
@@ -315,6 +408,13 @@ fn sync_entity_material(
                         use_tex,
                         shape_mode,
                         tex_handle.clone(),
+                        grad_start.to_vec4(),
+                        grad_end.to_vec4(),
+                        grad_params,
+                        shadow_color.to_vec4(),
+                        shadow_params,
+                        inner_glow_color.to_vec4(),
+                        inner_glow_params,
                     ));
                     handles.material_3d = Some(new_mat.clone());
                     pool.created_count += 1;
@@ -334,6 +434,13 @@ fn sync_entity_material(
                     use_tex,
                     shape_mode,
                     tex_handle.clone(),
+                    grad_start.to_vec4(),
+                    grad_end.to_vec4(),
+                    grad_params,
+                    shadow_color.to_vec4(),
+                    shadow_params,
+                    inner_glow_color.to_vec4(),
+                    inner_glow_params,
                 ));
                 commands.entity(entity).insert(MaterialHandles {
                     material_2d: None,
@@ -366,6 +473,13 @@ fn sync_entity_material(
                         existing_mat.clip_size = clip_size;
                         existing_mat.clip_radius = clip_radius;
                         existing_mat.use_clip = use_clip;
+                        existing_mat.grad_start = grad_start;
+                        existing_mat.grad_end = grad_end;
+                        existing_mat.grad_params = grad_params;
+                        existing_mat.shadow_color = shadow_color;
+                        existing_mat.shadow_params = shadow_params;
+                        existing_mat.inner_glow_color = inner_glow_color;
+                        existing_mat.inner_glow_params = inner_glow_params;
 
                         pool.reused_count += 1;
                         existing_handle.clone()
@@ -385,6 +499,13 @@ fn sync_entity_material(
                             clip_size,
                             clip_radius,
                             use_clip,
+                            grad_start,
+                            grad_end,
+                            grad_params,
+                            shadow_color,
+                            shadow_params,
+                            inner_glow_color,
+                            inner_glow_params,
                         ));
                         handles.material_2d = Some(new_mat.clone());
                         pool.created_count += 1;
@@ -406,6 +527,13 @@ fn sync_entity_material(
                         clip_size,
                         clip_radius,
                         use_clip,
+                        grad_start,
+                        grad_end,
+                        grad_params,
+                        shadow_color,
+                        shadow_params,
+                        inner_glow_color,
+                        inner_glow_params,
                     ));
                     handles.material_2d = Some(new_mat.clone());
                     pool.created_count += 1;
@@ -427,6 +555,13 @@ fn sync_entity_material(
                     clip_size,
                     clip_radius,
                     use_clip,
+                    grad_start,
+                    grad_end,
+                    grad_params,
+                    shadow_color,
+                    shadow_params,
+                    inner_glow_color,
+                    inner_glow_params,
                 ));
                 commands.entity(entity).insert(MaterialHandles {
                     material_2d: Some(new_mat.clone()),
@@ -563,6 +698,13 @@ fn create_2d_material(
     clip_size: Vec2,
     clip_radius: Vec4,
     use_clip: u32,
+    grad_start: LinearRgba,
+    grad_end: LinearRgba,
+    grad_params: Vec4,
+    shadow_color: LinearRgba,
+    shadow_params: Vec4,
+    inner_glow_color: LinearRgba,
+    inner_glow_params: Vec4,
 ) -> UNodeMaterial {
     UNodeMaterial {
         color: base_color,
@@ -576,11 +718,20 @@ fn create_2d_material(
         shape_mode,
         texture: tex,
         _pad: 0.0,
-        // Clip fields
         clip_center,
         clip_size,
         clip_radius,
         use_clip,
+        _pad1_0: 0.0,
+        _pad1_1: 0.0,
+        _pad1_2: 0.0,
+        grad_start,
+        grad_end,
+        grad_params,
+        shadow_color,
+        shadow_params,
+        inner_glow_color,
+        inner_glow_params,
     }
 }
 
@@ -598,6 +749,13 @@ fn create_3d_material(
     use_tex: u32,
     shape_mode: u32,
     tex: Option<Handle<Image>>,
+    grad_start: Vec4,
+    grad_end: Vec4,
+    grad_params: Vec4,
+    shadow_color: Vec4,
+    shadow_params: Vec4,
+    inner_glow_color: Vec4,
+    inner_glow_params: Vec4,
 ) -> UNodeMaterial3d {
     UNodeMaterial3d {
         color: base_color.to_vec4(),
@@ -612,5 +770,12 @@ fn create_3d_material(
         use_texture: use_tex,
         shape_mode,
         texture: tex,
+        grad_start,
+        grad_end,
+        grad_params,
+        shadow_color,
+        shadow_params,
+        inner_glow_color,
+        inner_glow_params,
     }
 }

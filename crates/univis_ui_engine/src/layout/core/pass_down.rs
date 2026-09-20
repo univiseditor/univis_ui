@@ -12,6 +12,7 @@ use crate::layout::geometry::*;
 use crate::layout::layout_system::*;
 use crate::layout::profiling::LayoutProfiler;
 use crate::layout::solver_types::{SolverSizeMode, SolverSpec};
+use crate::layout::transition::{UTransition, UTransitionState};
 use crate::layout::univis_node::*;
 use crate::schedule::UiRolloutConfig;
 
@@ -63,6 +64,8 @@ pub fn downward_solve_pass_safe(
         &mut ComputedSize,
         &mut Transform,
         Option<&mut Visibility>,
+        Option<&UTransition>,
+        Option<&mut UTransitionState>,
     )>,
 
     intrinsic_query: Query<&IntrinsicSize>,
@@ -115,6 +118,8 @@ pub fn downward_solve_pass_safe(
                             cached_context,
                             _,
                             computed,
+                            _,
+                            _,
                             _,
                             _,
                         )) => (node, layout_opt, children_opt, cached_context, computed),
@@ -173,8 +178,21 @@ pub fn downward_solve_pass_safe(
                 ))
             })(
             ) else {
-                if let Ok((_, _, _, _, _, _, _, _, mut computed, mut transform, mut vis_opt)) =
-                    nodes.get_mut(entity)
+                if let Ok((
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    _,
+                    mut computed,
+                    mut transform,
+                    mut vis_opt,
+                    _,
+                    _,
+                )) = nodes.get_mut(entity)
                 {
                     if computed.width != 0.0 || computed.height != 0.0 {
                         computed.width = 0.0;
@@ -195,7 +213,8 @@ pub fn downward_solve_pass_safe(
             };
 
             if depth == 0
-                && let Ok((_, _, _, _, _, _, _, _, mut computed, _, _)) = nodes.get_mut(entity)
+                && let Ok((_, _, _, _, _, _, _, _, mut computed, _, _, _, _)) =
+                    nodes.get_mut(entity)
             {
                 if (computed.width - container_size.x).abs() > LAYOUT_WRITE_EPSILON {
                     computed.width = container_size.x;
@@ -248,7 +267,7 @@ pub fn downward_solve_pass_safe(
                 &root_stack_query,
             );
 
-            if let Ok((_, _, _, _, _, _, _, _, mut computed, mut transform, mut vis_opt)) =
+            if let Ok((_, _, _, _, _, _, _, _, mut computed, mut transform, mut vis_opt, _, _)) =
                 nodes.get_mut(entity)
             {
                 if (computed.width - final_size.x).abs() > LAYOUT_WRITE_EPSILON {
@@ -403,6 +422,8 @@ fn collect_solver_items_into(
         &mut ComputedSize,
         &mut Transform,
         Option<&mut Visibility>,
+        Option<&UTransition>,
+        Option<&mut UTransitionState>,
     )>,
     intrinsic_query: &Query<&IntrinsicSize>,
     scratch: &mut Vec<SolverScratchItem>,
@@ -410,7 +431,7 @@ fn collect_solver_items_into(
     scratch.reserve(children.len());
 
     for child_entity in children.iter() {
-        let Ok((_, node, layout_opt, _, _, uself_opt, _, _, _, _, _)) =
+        let Ok((_, node, layout_opt, _, _, uself_opt, _, _, _, _, _, _, _)) =
             nodes_query.get(child_entity)
         else {
             continue;
@@ -480,6 +501,8 @@ fn apply_results_to_children(
         &mut ComputedSize,
         &mut Transform,
         Option<&mut Visibility>,
+        Option<&UTransition>,
+        Option<&mut UTransitionState>,
     )>,
 ) {
     for solved in solved_children.iter() {
@@ -495,6 +518,8 @@ fn apply_results_to_children(
             mut computed,
             mut transform,
             mut vis_opt,
+            transition_opt,
+            transition_state_opt,
         )) = nodes_query.get_mut(solved.entity)
         {
             let size_changed = (computed.width - solved.result.size.x).abs() > LAYOUT_WRITE_EPSILON
@@ -520,11 +545,35 @@ fn apply_results_to_children(
                 |stack| root_stack.local_depth_offset_for_fraction(stack.normalized),
             );
 
-            if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
-                transform.translation.x = next_x;
-            }
-            if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
-                transform.translation.y = next_y;
+            let has_transition = transition_opt.is_some();
+            if let Some(mut state) = transition_state_opt {
+                if !state.initialized {
+                    state.target_translation = Vec2::new(next_x, next_y);
+                    state.velocity = Vec2::ZERO;
+                    state.initialized = true;
+                    if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
+                        transform.translation.x = next_x;
+                    }
+                    if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
+                        transform.translation.y = next_y;
+                    }
+                } else {
+                    state.target_translation = Vec2::new(next_x, next_y);
+                }
+            } else if !has_transition {
+                if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
+                    transform.translation.x = next_x;
+                }
+                if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
+                    transform.translation.y = next_y;
+                }
+            } else {
+                if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
+                    transform.translation.x = next_x;
+                }
+                if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
+                    transform.translation.y = next_y;
+                }
             }
             if z_translation_changed(transform.translation.z, next_z) {
                 transform.translation.z = next_z;

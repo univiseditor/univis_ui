@@ -1,13 +1,12 @@
-// 1. تعريف VertexOutput
+// 1. Vertex Output
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
-    @location(0) world_position: vec4<f32>, // سنستخدم هذا لحساب القص
+    @location(0) world_position: vec4<f32>,
     @location(1) world_normal: vec3<f32>,
     @location(2) uv: vec2<f32>,
 };
 
-// 2. هيكلية البيانات (تم تحديثها لتشمل بيانات القص)
-// يجب أن تتطابق تماماً مع ترتيب الذاكرة في Rust
+// 2. Material Uniform Buffer (Organized into strict 16-byte aligned blocks)
 struct UNodeMaterial {
     color: vec4<f32>,        // Offset 0
     border_color: vec4<f32>, // Offset 16
@@ -18,18 +17,25 @@ struct UNodeMaterial {
     softness: f32,           // Offset 64
     shape_mode: u32,         // Offset 68
     use_texture: u32,        // Offset 72
-    
-    // --- بيانات القص الجديدة ---
-    // نحتاج لمحاذاة الذاكرة (Alignment). vec2 يبدأ عند مضاعفات 8.
-    // Offset الحالي هو 76. نحتاج للقفز إلى 80.
-    // (الحشو الضمني سيتم هنا تلقائياً، أو يمكننا إضافة متغير وهمي)
+    _pad0: f32,              // Offset 76
     
     clip_center: vec2<f32>,  // Offset 80
     clip_size: vec2<f32>,    // Offset 88
     clip_radius: vec4<f32>,  // Offset 96
     use_clip: u32,           // Offset 112
-    
-    // حشو نهائي لإكمال الـ 16 bytes alignment
+    _pad1_0: f32,            // Offset 116
+    _pad1_1: f32,            // Offset 120
+    _pad1_2: f32,            // Offset 124
+
+    grad_start: vec4<f32>,   // Offset 128
+    grad_end: vec4<f32>,     // Offset 144
+    grad_params: vec4<f32>,  // Offset 160: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = center.x, w = center.y
+
+    shadow_color: vec4<f32>, // Offset 176
+    shadow_params: vec4<f32>,// Offset 192: x = offset.x, y = offset.y, z = blur, w = spread
+
+    inner_glow_color: vec4<f32>, // Offset 208
+    inner_glow_params: vec4<f32>,// Offset 224: x = blur, y = active (1.0 or 0.0), z = spread, w = 0.0
 };
 
 @group(2) @binding(0) var<uniform> material: UNodeMaterial;
@@ -72,9 +78,14 @@ fn sd_cut_box(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
 // -----------------------------------------------------------------------------
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    // 1. حساب شكل العنصر الحالي (الابن)
+    let shadow_blur = material.shadow_params.z;
+    let shadow_spread = material.shadow_params.w;
+    let shadow_offset = material.shadow_params.xy;
+    let shadow_margin = select(0.0, shadow_blur * 2.5 + shadow_spread + max(abs(shadow_offset.x), abs(shadow_offset.y)), shadow_blur > 0.0);
+    let mesh_size = material.size + vec2<f32>(shadow_margin * 2.0);
+
     let uv_centered = in.uv - 0.5;
-    let p = vec2<f32>(uv_centered.x, -uv_centered.y) * material.size;
+    let p = vec2<f32>(uv_centered.x, -uv_centered.y) * mesh_size;
     let half_size = material.size * 0.5;
     
     var dist_outer: f32;
@@ -86,40 +97,19 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     
     let softness = max(material.softness, 0.0001);
     let aa_width = max(fwidth(dist_outer), softness);
-    var alpha_final = 1.0 - smoothstep(-aa_width, aa_width, dist_outer);
-    
-    // تحسين الأداء: إذا كان العنصر شفافاً تماماً، لا تكمل الحساب
-    if (alpha_final < 0.001) { discard; }
-
-    // ----------------------------------------------------------
-    // 2. منطق القص (Clipping Logic) - الجديد
-    // ----------------------------------------------------------
-    if (material.use_clip == 1u) {
-        // نحتاج لموقع البكسل الحالي في العالم
-        // ونحوله ليكون نسبياً لمركز القص (الأب)
-        // ملاحظة: y مقلوب في Bevy World Space أحياناً، لكن world_position عادة صحيح
-        // إذا ظهر القص مقلوباً، جرب عكس Y هنا
-        let p_clip = in.world_position.xy - material.clip_center;
-        
-        // حساب SDF لمنطقة القص (باعتبارها Rounded Box)
-        // نستخدم half_size للقناع
-        let d_clip = sd_rounded_box(p_clip, material.clip_size * 0.5, material.clip_radius);
-        
-        // حساب ألفا القناع:
-        // إذا كانت المسافة سالبة (داخل الصندوق) -> Alpha 1
-        // إذا كانت المسافة موجبة (خارج الصندوق) -> Alpha 0
-        // نستخدم smoothstep صغيرة جداً للحصول على حواف ناعمة للقص
-        let alpha_clip = 1.0 - smoothstep(-softness, softness, d_clip);
-        
-        // دمج شفافية العنصر مع شفافية القناع
-        alpha_final = min(alpha_final, alpha_clip);
-        
-        // إذا أصبح مخفياً بسبب القص، نتوقف
-        if (alpha_final < 0.001) { discard; }
-    }
-    // ----------------------------------------------------------
-
     let aa_inner = aa_width * 0.5;
+
+    // Optional clipping against parent container
+    var alpha_clip = 1.0;
+    if (material.use_clip == 1u) {
+        let p_clip = in.world_position.xy - material.clip_center;
+        let d_clip = sd_rounded_box(p_clip, material.clip_size * 0.5, material.clip_radius);
+        alpha_clip = 1.0 - smoothstep(-softness, softness, d_clip);
+        if (alpha_clip < 0.001) {
+            discard;
+        }
+    }
+
     let dist_border_end = dist_outer + material.border_width;
     let dist_body_start = dist_outer + material.border_width + material.border_offset;
     
@@ -127,18 +117,68 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
                       smoothstep(-aa_inner, aa_inner, dist_border_end);
     
     let body_mask = 1.0 - smoothstep(-aa_inner, aa_inner, dist_body_start);
-    
+
+    // Body UV relative to the base element bounds
+    let body_uv = (p / material.size) * vec2<f32>(1.0, -1.0) + 0.5;
+
+    // Body fill: color, linear gradient, or radial gradient
     var body_color = material.color;
-    if (material.use_texture == 1u) {
-        body_color = textureSample(texture, texture_sampler, in.uv) * material.color;
+    if (material.grad_params.x == 1.0) {
+        // Linear gradient
+        let angle = material.grad_params.y;
+        let dir = vec2<f32>(cos(angle), sin(angle));
+        let t_lin = clamp(dot(body_uv - 0.5, dir) + 0.5, 0.0, 1.0);
+        body_color = mix(material.grad_start, material.grad_end, t_lin);
+    } else if (material.grad_params.x == 2.0) {
+        // Radial gradient
+        let center = material.grad_params.zw;
+        let radius = max(material.grad_params.y, 0.001);
+        let dist_rad = length(body_uv - center);
+        let t_rad = clamp(dist_rad / radius, 0.0, 1.0);
+        body_color = mix(material.grad_start, material.grad_end, t_rad);
     }
-    
+
+    if (material.use_texture == 1u) {
+        body_color = textureSample(texture, texture_sampler, body_uv) * body_color;
+    }
+
+    // Holographic inner edge glow along chamfers and rounded edges
+    if (material.inner_glow_params.y > 0.5) {
+        let inner_blur = max(material.inner_glow_params.x, 0.001);
+        let dist_inward = max(-dist_body_start, 0.0);
+        let inner_factor = 1.0 - smoothstep(0.0, inner_blur, dist_inward);
+        let glow_alpha = inner_factor * material.inner_glow_color.a;
+        body_color = vec4<f32>(
+            mix(body_color.rgb, material.inner_glow_color.rgb, glow_alpha),
+            max(body_color.a, glow_alpha)
+        );
+    }
+
+    // Base compositing: Outer Shadow -> Border -> Body
     var final_color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+
+    if (shadow_blur > 0.0) {
+        let p_shadow = p - vec2<f32>(shadow_offset.x, -shadow_offset.y);
+        let shadow_radius = material.radius + vec4<f32>(shadow_spread);
+        let half_size_shadow = half_size + vec2<f32>(shadow_spread);
+        var dist_shadow: f32;
+        if (material.shape_mode == 1u) {
+            dist_shadow = sd_cut_box(p_shadow, half_size_shadow, shadow_radius);
+        } else {
+            dist_shadow = sd_rounded_box(p_shadow, half_size_shadow, shadow_radius);
+        }
+        let shadow_factor = 1.0 - smoothstep(-aa_inner, shadow_blur, dist_shadow);
+        let shadow_alpha = shadow_factor * material.shadow_color.a;
+        final_color = vec4<f32>(material.shadow_color.rgb, shadow_alpha);
+    }
+
     final_color = mix(final_color, material.border_color, border_mask);
     final_color = mix(final_color, body_color, body_mask);
-    
-    // تطبيق الشفافية النهائية (بما في ذلك القص)
-    final_color.a = final_color.a * alpha_final;
-    
+    final_color.a = final_color.a * alpha_clip;
+
+    if (final_color.a < 0.001) {
+        discard;
+    }
+
     return final_color;
 }

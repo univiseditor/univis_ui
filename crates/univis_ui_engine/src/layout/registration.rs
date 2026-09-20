@@ -8,7 +8,10 @@ use crate::schedule::{
     sync_settlement_runtime_state,
 };
 
-use super::{components, core, invalidation, layout_system, query, settlement_loop, univis_node};
+use super::{
+    components, core, invalidation, layout_system, query, settlement_loop, transition, univis_node,
+    visual,
+};
 
 pub(super) fn register_layout_types(app: &mut App) {
     app.register_type::<univis_node::USelf>()
@@ -36,7 +39,13 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<univis_node::UTrackSize>()
         .register_type::<univis_node::UTrackBound>()
         .register_type::<univis_node::UTrackRepeat>()
-        .register_type::<univis_node::UGridAutoFlow>();
+        .register_type::<univis_node::UGridAutoFlow>()
+        .register_type::<visual::UGradient>()
+        .register_type::<visual::UGradientKind>()
+        .register_type::<visual::UShadow>()
+        .register_type::<visual::UInnerGlow>()
+        .register_type::<transition::UTransition>()
+        .register_type::<transition::UTransitionState>();
 }
 
 pub(super) fn install_layout_pipeline(app: &mut App) {
@@ -113,6 +122,15 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
             settlement_loop::run_ui_settlement_loop
                 .after(update_text2d_layout)
                 .before(AssetEventSystems),
+        )
+        .add_systems(
+            PostUpdate,
+            (
+                transition::init_transition_states,
+                transition::apply_layout_transitions,
+            )
+                .chain()
+                .after(settlement_loop::run_ui_settlement_loop),
         )
         .add_systems(
             UiSettlementSchedule,

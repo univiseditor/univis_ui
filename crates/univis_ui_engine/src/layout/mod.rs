@@ -46,8 +46,12 @@ pub mod solver_types;
 mod tests;
 /// Text measurement and SDF rendering types.
 pub mod text;
+/// Smooth spring layout transitions.
+pub mod transition;
 /// Core node, layout, and local positioning components.
 pub mod univis_node;
+/// Advanced visual styling: gradients, shadows, and holographic glows.
+pub mod visual;
 
 pub use self::plugin::UnivisLayoutPlugin;
 
@@ -62,5 +66,7 @@ pub mod prelude {
     };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::text::{UText, UTextLabel, UTextOverflow, UTextTruncateSide};
+    pub use crate::layout::transition::*;
     pub use crate::layout::univis_node::*;
+    pub use crate::layout::visual::*;
 }

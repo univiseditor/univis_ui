@@ -62,6 +62,37 @@ pub struct UNodeMaterial {
     /// Flag indicating whether clipping is enabled (1 = enabled, 0 = disabled).
     #[uniform(0)]
     pub use_clip: u32, // 0 = disabled, 1 = enabled
+    #[uniform(0)]
+    pub _pad1_0: f32,
+    #[uniform(0)]
+    pub _pad1_1: f32,
+    #[uniform(0)]
+    pub _pad1_2: f32,
+
+    // --- Visual extensions ---
+    /// Gradient start color.
+    #[uniform(0)]
+    pub grad_start: LinearRgba,
+    /// Gradient end color.
+    #[uniform(0)]
+    pub grad_end: LinearRgba,
+    /// Gradient parameters: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = center.x, w = center.y.
+    #[uniform(0)]
+    pub grad_params: Vec4,
+
+    /// Shadow or outer glow color.
+    #[uniform(0)]
+    pub shadow_color: LinearRgba,
+    /// Shadow parameters: x = offset.x, y = offset.y, z = blur, w = spread.
+    #[uniform(0)]
+    pub shadow_params: Vec4,
+
+    /// Inner holographic glow color.
+    #[uniform(0)]
+    pub inner_glow_color: LinearRgba,
+    /// Inner glow parameters: x = blur, y = active (1.0 or 0.0), z = spread, w = 0.0.
+    #[uniform(0)]
+    pub inner_glow_params: Vec4,
 }
 
 impl Default for UNodeMaterial {
@@ -82,6 +113,16 @@ impl Default for UNodeMaterial {
             clip_size: Vec2::ZERO,
             clip_radius: Vec4::ZERO,
             use_clip: 0,
+            _pad1_0: 0.0,
+            _pad1_1: 0.0,
+            _pad1_2: 0.0,
+            grad_start: LinearRgba::NONE,
+            grad_end: LinearRgba::NONE,
+            grad_params: Vec4::ZERO,
+            shadow_color: LinearRgba::NONE,
+            shadow_params: Vec4::ZERO,
+            inner_glow_color: LinearRgba::NONE,
+            inner_glow_params: Vec4::ZERO,
         }
     }
 }

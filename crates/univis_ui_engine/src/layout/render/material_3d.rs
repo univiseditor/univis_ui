@@ -50,6 +50,31 @@ pub struct UNodeMaterial3d {
     #[uniform(0)]
     pub shape_mode: u32,
 
+    // --- visual extensions (16-byte aligned blocks) ---
+    /// Gradient start color.
+    #[uniform(0)]
+    pub grad_start: Vec4,
+    /// Gradient end color.
+    #[uniform(0)]
+    pub grad_end: Vec4,
+    /// Gradient parameters: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = center.x, w = center.y.
+    #[uniform(0)]
+    pub grad_params: Vec4,
+
+    /// Shadow or outer glow color.
+    #[uniform(0)]
+    pub shadow_color: Vec4,
+    /// Shadow parameters: x = offset.x, y = offset.y, z = blur, w = spread.
+    #[uniform(0)]
+    pub shadow_params: Vec4,
+
+    /// Inner holographic glow color.
+    #[uniform(0)]
+    pub inner_glow_color: Vec4,
+    /// Inner glow parameters: x = blur, y = active (1.0 or 0.0), z = spread, w = 0.0.
+    #[uniform(0)]
+    pub inner_glow_params: Vec4,
+
     // --- texture bindings ---
     /// Optional texture to draw inside the node bounds.
     #[texture(1)]

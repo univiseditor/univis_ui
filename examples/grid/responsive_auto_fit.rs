@@ -309,13 +309,18 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
             UNode {
                 width: UVal::Percent(1.0),
                 padding: USides::axes(14.0, 8.0),
-                background_color: Color::srgba(0.0, 0.2, 0.35, 0.5),
+                background_color: Color::srgba(0.0, 0.15, 0.28, 0.6),
                 border_radius: UCornerRadius::all(8.0),
                 shape_mode: UShapeMode::Cut,
                 ..default()
             },
+            UGradient::horizontal(
+                Color::srgba(0.0, 0.22, 0.38, 0.7),
+                Color::srgba(0.01, 0.08, 0.18, 0.8),
+            ),
+            UInnerGlow::new(Color::srgba(0.0, 0.85, 1.0, 0.25), 6.0),
             UBorder {
-                color: Color::srgba(0.0, 0.85, 1.0, 0.3),
+                color: Color::srgba(0.0, 0.85, 1.0, 0.35),
                 width: 1.0,
                 radius: UCornerRadius::all(8.0),
                 offset: 0.0,
@@ -484,13 +489,21 @@ fn spawn_card(
             UNode {
                 height: UVal::Px(104.0),
                 padding: USides::all(11.0),
-                background_color: Color::srgba(0.05, 0.09, 0.15, 0.95),
+                background_color: Color::srgba(0.04, 0.08, 0.14, 0.95),
                 border_radius: UCornerRadius::all(10.0),
                 shape_mode: UShapeMode::Cut,
                 ..default()
             },
+            UGradient::linear(
+                Color::srgba(0.06, 0.11, 0.20, 0.95),
+                Color::srgba(0.02, 0.04, 0.08, 0.98),
+                core::f32::consts::FRAC_PI_4,
+            ),
+            UShadow::glow(accent.with_alpha(0.25), 14.0),
+            UInnerGlow::new(accent.with_alpha(0.2), 8.0),
+            UTransition::spring(160.0),
             UBorder {
-                color: accent.with_alpha(0.35),
+                color: accent.with_alpha(0.4),
                 width: 1.0,
                 radius: UCornerRadius::all(10.0),
                 offset: 0.0,

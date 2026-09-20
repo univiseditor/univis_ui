@@ -38,7 +38,9 @@ pub(crate) mod internal_prelude {
     pub use crate::layout::profiling::*;
     pub use crate::layout::render::prelude::*;
     pub use crate::layout::solver_types::*;
+    pub use crate::layout::transition::*;
     pub use crate::layout::univis_node::*;
+    pub use crate::layout::visual::*;
     pub use crate::schedule::*;
     pub use univis_ui_style::prelude::*;
 }

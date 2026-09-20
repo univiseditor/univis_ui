@@ -48,7 +48,7 @@ pub mod render {
 pub mod layout {
     pub use univis_ui_engine::layout::{
         UnivisLayoutPlugin, geometry, image, invalidation, layout_system, pbr, profiling, query,
-        render, text, univis_node,
+        render, text, transition, univis_node, visual,
     };
 
     /// Common layout-facing imports such as roots, nodes, and geometry helpers.

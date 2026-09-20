@@ -869,13 +869,10 @@ pub(crate) fn layout_children_changed(previous: Option<&[Entity]>, current: &[En
 pub fn update_depth_cache(
     mut cache: ResMut<LayoutCache>,
     tree_depth: Res<LayoutTreeDepth>,
-
     // Full depth query used when the cache must be rebuilt.
     depth_query: Query<(Entity, &LayoutDepth)>,
-
     // Track newly inserted depth components; they imply new nodes entered the tree.
     added_nodes: Query<Entity, Added<LayoutDepth>>,
-
     // Track removed depth components so deleted nodes are evicted from the cache.
     mut removed_nodes: RemovedComponents<LayoutDepth>,
 ) {

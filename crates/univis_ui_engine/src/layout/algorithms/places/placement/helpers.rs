@@ -400,3 +400,73 @@ pub(super) fn mark_span(
         }
     }
 }
+
+pub struct RadialPlacer;
+
+impl LayoutPlacer for RadialPlacer {
+    fn place(&self, items: &mut [SolverItem], axis: &AxisHelper, ctx: &PlacementContext) -> Vec2 {
+        let count = items.len();
+        if count == 0 {
+            return Vec2::ZERO;
+        }
+
+        let world_size = axis.to_world(ctx.container_main_size, ctx.container_cross_size);
+        let w = world_size.x;
+        let h = world_size.y;
+
+        let min_dim = w.min(h);
+        let radius = if min_dim < 50.0 {
+            let total_item_width: f32 =
+                items.iter().map(|i| axis.from_world(i.result.size).0).sum();
+            (total_item_width * 1.5 / std::f32::consts::TAU).max(100.0)
+        } else {
+            (min_dim * 0.5) - 20.0
+        };
+
+        let angle_step = std::f32::consts::TAU / count as f32;
+
+        let mut min_x = f32::INFINITY;
+        let mut max_x = f32::NEG_INFINITY;
+        let mut min_y = f32::INFINITY;
+        let mut max_y = f32::NEG_INFINITY;
+
+        for (i, item) in items.iter_mut().enumerate() {
+            if item.result.size.x == 0.0 {
+                item.result.size.x = 50.0;
+            }
+            if item.result.size.y == 0.0 {
+                item.result.size.y = 50.0;
+            }
+
+            let angle = (i as f32 * angle_step) - std::f32::consts::FRAC_PI_2;
+            let cx = radius * angle.cos();
+            let cy = radius * angle.sin();
+
+            let pos_x = cx - (item.result.size.x * 0.5);
+            let pos_y = cy - (item.result.size.y * 0.5);
+
+            min_x = min_x.min(pos_x);
+            max_x = max_x.max(pos_x + item.result.size.x);
+            min_y = min_y.min(pos_y);
+            max_y = max_y.max(pos_y + item.result.size.y);
+
+            item.result.pos = Vec2::new(pos_x, pos_y);
+        }
+
+        let content_width = max_x - min_x;
+        let content_height = max_y - min_y;
+
+        let total_w = content_width + ctx.padding_main_start + ctx.padding_main_end;
+        let total_h = content_height + ctx.padding_cross_start * 2.0;
+
+        let shift_x = ctx.padding_main_start - min_x;
+        let shift_y = ctx.padding_cross_start - min_y;
+
+        for item in items.iter_mut() {
+            item.result.pos.x += shift_x;
+            item.result.pos.y += shift_y;
+        }
+
+        axis.to_world(total_w, total_h)
+    }
+}

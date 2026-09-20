@@ -19,7 +19,7 @@ fn main() {
         .add_plugins(UnivisUiPlugin)
         .init_resource::<GridDemoState>()
         .add_systems(Startup, setup)
-        .add_systems(Update, handle_preset_clicks)
+        .add_systems(Update, (handle_input, sync_preset_state))
         .run();
 }
 
@@ -144,7 +144,7 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
         ChildOf(shell),
         label_node(),
         text(
-            "Adaptive CSS Grid: `repeat(auto-fit, minmax(200px, 1fr))` across tactical display modes.",
+            "Click preset buttons below or press [1, 2, 3, 4] / [Space] to switch cockpit display modes.",
             13.0,
             Color::srgb(0.65, 0.78, 0.9),
         ),
@@ -192,6 +192,12 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
                     shape_mode: UShapeMode::Cut,
                     ..default()
                 },
+                UInteraction::default(),
+                UInteractionColors {
+                    normal: bg_color,
+                    hovered: Color::srgba(0.0, 0.6, 0.9, 0.95),
+                    pressed: Color::srgba(0.0, 0.35, 0.6, 0.95),
+                },
                 UBorder {
                     color: if is_active {
                         Color::srgb(0.0, 0.9, 1.0)
@@ -209,6 +215,11 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
                     ..default()
                 },
             ))
+            .observe(
+                move |_click: On<Pointer<Click>>, mut state: ResMut<GridDemoState>| {
+                    state.preset = preset;
+                },
+            )
             .id();
 
         commands.spawn((
@@ -462,65 +473,83 @@ fn spawn_card(
     ));
 }
 
-fn handle_preset_clicks(
+fn handle_input(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window>,
     mut state: ResMut<GridDemoState>,
+) {
+    if keyboard.just_pressed(KeyCode::Digit1) || keyboard.just_pressed(KeyCode::Numpad1) {
+        state.preset = ContainerPreset::CockpitFull;
+    } else if keyboard.just_pressed(KeyCode::Digit2) || keyboard.just_pressed(KeyCode::Numpad2) {
+        state.preset = ContainerPreset::CombatFocus;
+    } else if keyboard.just_pressed(KeyCode::Digit3) || keyboard.just_pressed(KeyCode::Numpad3) {
+        state.preset = ContainerPreset::AuxDisplay;
+    } else if keyboard.just_pressed(KeyCode::Digit4) || keyboard.just_pressed(KeyCode::Numpad4) {
+        state.preset = ContainerPreset::HelmetMini;
+    } else if keyboard.just_pressed(KeyCode::Space) || keyboard.just_pressed(KeyCode::Tab) {
+        state.preset = match state.preset {
+            ContainerPreset::CockpitFull => ContainerPreset::CombatFocus,
+            ContainerPreset::CombatFocus => ContainerPreset::AuxDisplay,
+            ContainerPreset::AuxDisplay => ContainerPreset::HelmetMini,
+            ContainerPreset::HelmetMini => ContainerPreset::CockpitFull,
+        };
+    } else if mouse.just_pressed(MouseButton::Left) {
+        if let Ok(window) = windows.single() {
+            if let Some(cursor) = window.cursor_position() {
+                if cursor.y >= 90.0 && cursor.y <= 210.0 {
+                    if cursor.x >= 30.0 && cursor.x < 240.0 {
+                        state.preset = ContainerPreset::CockpitFull;
+                    } else if cursor.x >= 240.0 && cursor.x < 440.0 {
+                        state.preset = ContainerPreset::CombatFocus;
+                    } else if cursor.x >= 440.0 && cursor.x < 620.0 {
+                        state.preset = ContainerPreset::AuxDisplay;
+                    } else if cursor.x >= 620.0 && cursor.x < 850.0 {
+                        state.preset = ContainerPreset::HelmetMini;
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn sync_preset_state(
+    state: Res<GridDemoState>,
     mut container_q: Query<&mut UNode, With<ResizableGridContainer>>,
     mut status_q: Query<&mut UTextLabel, With<StatusText>>,
     mut buttons_q: Query<
         (&PresetButton, &mut UNode, &mut UBorder),
         Without<ResizableGridContainer>,
     >,
-    input: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
 ) {
-    let Ok(window) = windows.single() else {
-        return;
-    };
-    if !input.just_pressed(MouseButton::Left) {
+    if !state.is_changed() {
         return;
     }
 
-    let Some(cursor) = window.cursor_position() else {
-        return;
-    };
+    if let Ok(mut container_node) = container_q.single_mut() {
+        container_node.width = UVal::Px(state.preset.width());
+    }
 
-    // Cycle through presets on click anywhere for easy demonstration
-    let next_preset = match state.preset {
-        ContainerPreset::CockpitFull => ContainerPreset::CombatFocus,
-        ContainerPreset::CombatFocus => ContainerPreset::AuxDisplay,
-        ContainerPreset::AuxDisplay => ContainerPreset::HelmetMini,
-        ContainerPreset::HelmetMini => ContainerPreset::CockpitFull,
-    };
+    if let Ok(mut txt) = status_q.single_mut() {
+        txt.text = format!(
+            "COCKPIT WIDTH: {:.0}px | {} | TRACK: minmax(200px, 1fr) @ 14px GAP",
+            state.preset.width(),
+            state.preset.expected_cols()
+        );
+    }
 
-    // Only switch if clicked near top bar area or simple click cycle
-    if cursor.y < 250.0 {
-        state.preset = next_preset;
-
-        if let Ok(mut container_node) = container_q.single_mut() {
-            container_node.width = UVal::Px(state.preset.width());
-        }
-
-        if let Ok(mut txt) = status_q.single_mut() {
-            txt.text = format!(
-                "COCKPIT WIDTH: {:.0}px | {} | TRACK: minmax(200px, 1fr) @ 14px GAP",
-                state.preset.width(),
-                state.preset.expected_cols()
-            );
-        }
-
-        for (btn, mut node, mut border) in &mut buttons_q {
-            let is_active = btn.0 == state.preset;
-            node.background_color = if is_active {
-                Color::srgba(0.0, 0.45, 0.7, 0.9)
-            } else {
-                Color::srgba(0.05, 0.09, 0.16, 0.9)
-            };
-            border.color = if is_active {
-                Color::srgb(0.0, 0.9, 1.0)
-            } else {
-                Color::srgba(0.0, 0.8, 1.0, 0.2)
-            };
-        }
+    for (btn, mut node, mut border) in &mut buttons_q {
+        let is_active = btn.0 == state.preset;
+        node.background_color = if is_active {
+            Color::srgba(0.0, 0.45, 0.7, 0.9)
+        } else {
+            Color::srgba(0.05, 0.09, 0.16, 0.9)
+        };
+        border.color = if is_active {
+            Color::srgb(0.0, 0.9, 1.0)
+        } else {
+            Color::srgba(0.0, 0.8, 1.0, 0.2)
+        };
     }
 }
 

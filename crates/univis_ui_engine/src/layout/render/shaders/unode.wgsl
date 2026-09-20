@@ -102,6 +102,25 @@ fn sample_gradient(t_in: f32) -> vec4<f32> {
     }
 
     let t = clamp(t_in, 0.0, 1.0);
+    let is_stepped = material.grad_params.w >= 0.5;
+
+    // Stepped mode: discrete color bands without interpolation
+    if (is_stepped) {
+        var color = material.grad_colors[0];
+        for (var i = 0u; i < 8u; i = i + 1u) {
+            if (i >= count) {
+                break;
+            }
+            let p = get_gradient_stop_pos(i);
+            if (t >= p) {
+                color = material.grad_colors[i];
+            } else {
+                break;
+            }
+        }
+        return color;
+    }
+
     let p_first = get_gradient_stop_pos(0u);
     if (t <= p_first) {
         return material.grad_colors[0];
@@ -119,9 +138,13 @@ fn sample_gradient(t_in: f32) -> vec4<f32> {
         let p_curr = get_gradient_stop_pos(i);
         let p_next = get_gradient_stop_pos(i + 1u);
         if (t >= p_curr && t <= p_next) {
-            let span = max(p_next - p_curr, 0.00001);
-            let factor = clamp((t - p_curr) / span, 0.0, 1.0);
-            color = mix(material.grad_colors[i], material.grad_colors[i + 1u], factor);
+            let span = p_next - p_curr;
+            if (span <= 0.0001) {
+                color = material.grad_colors[i + 1u];
+            } else {
+                let factor = clamp((t - p_curr) / span, 0.0, 1.0);
+                color = mix(material.grad_colors[i], material.grad_colors[i + 1u], factor);
+            }
             break;
         }
     }

@@ -70,8 +70,8 @@ impl PresetId {
         }
     }
 
-    fn to_gradient(self, angle: f32) -> UGradient {
-        match self {
+    fn to_gradient(self, angle: f32, stepped: bool) -> UGradient {
+        let grad = match self {
             PresetId::Cyberpunk => UGradient::linear_stops(
                 angle,
                 [
@@ -128,7 +128,8 @@ impl PresetId {
                     (1.00, Color::srgba(0.03, 0.02, 0.06, 0.98)),
                 ],
             ),
-        }
+        };
+        if stepped { grad.stepped() } else { grad }
     }
 
     fn accent_color(self) -> Color {
@@ -150,6 +151,7 @@ struct GradientDemoState {
     auto_rotate: bool,
     shape_mode: UShapeMode,
     inner_glow_enabled: bool,
+    stepped_mode: bool,
 }
 
 impl Default for GradientDemoState {
@@ -160,6 +162,7 @@ impl Default for GradientDemoState {
             auto_rotate: true,
             shape_mode: UShapeMode::Cut,
             inner_glow_enabled: true,
+            stepped_mode: false,
         }
     }
 }
@@ -178,6 +181,9 @@ struct InspectorText;
 
 #[derive(Component)]
 struct RotateButtonText;
+
+#[derive(Component)]
+struct EdgeButtonText;
 
 #[derive(Component)]
 struct ShapeButtonText;
@@ -313,7 +319,9 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
                 shape_mode: state.shape_mode,
                 ..default()
             },
-            state.current_preset.to_gradient(state.angle),
+            state
+                .current_preset
+                .to_gradient(state.angle, state.stepped_mode),
             UBorder {
                 color: state.current_preset.accent_color().with_alpha(0.6),
                 width: 1.5,
@@ -566,6 +574,25 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
         },
     ));
 
+    // Button 4: Toggle Edge Mode (Smooth vs Hard Stepped)
+    let edge_btn = spawn_button(&mut commands, btn_bar, Color::srgb(0.6, 0.25, 0.15));
+    commands.entity(edge_btn).observe(
+        |_click: On<Pointer<Click>>, mut state: ResMut<GradientDemoState>| {
+            state.stepped_mode = !state.stepped_mode;
+        },
+    );
+    commands.spawn((
+        ChildOf(edge_btn),
+        EdgeButtonText,
+        UNode::default(),
+        UTextLabel {
+            text: "Edge Mode: SMOOTH".to_string(),
+            color: Color::WHITE,
+            font_size: 13.0,
+            ..default()
+        },
+    ));
+
     // ── Bottom Gallery Row: 6 Preset Cards ──────────────────────────────────
     let gallery_header = commands
         .spawn((
@@ -638,7 +665,7 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
                     shape_mode: UShapeMode::Cut,
                     ..default()
                 },
-                preset.to_gradient(FRAC_PI_4),
+                preset.to_gradient(FRAC_PI_4, false),
                 UBorder {
                     color: preset.accent_color().with_alpha(0.35),
                     width: 1.0,
@@ -756,6 +783,7 @@ fn sync_ui_state(
         Option<&HeroPresetDesc>,
         Option<&InspectorText>,
         Option<&RotateButtonText>,
+        Option<&EdgeButtonText>,
         Option<&ShapeButtonText>,
         Option<&GlowButtonText>,
     )>,
@@ -772,7 +800,7 @@ fn sync_ui_state(
         hero_query.single_mut()
     {
         node.shape_mode = state.shape_mode;
-        *grad = preset.to_gradient(state.angle);
+        *grad = preset.to_gradient(state.angle, state.stepped_mode);
         border.color = accent.with_alpha(0.65);
         shadow.color = accent.with_alpha(0.35);
 
@@ -785,16 +813,22 @@ fn sync_ui_state(
 
     // 2. Update UI labels
     let angle_deg = (state.angle.to_degrees() % 360.0).round() as i32;
-    for (mut label, title, desc, inspector, rotate, shape, glow) in &mut text_query {
+    for (mut label, title, desc, inspector, rotate, edge, shape, glow) in &mut text_query {
         if title.is_some() {
             label.text = preset.title().to_string();
         } else if desc.is_some() {
             label.text = preset.description().to_string();
         } else if inspector.is_some() {
+            let edge_str = if state.stepped_mode {
+                "Hard (Stepped Bands)"
+            } else {
+                "Smooth (Blended)"
+            };
             label.text = format!(
-                "Active Preset: {}\nStop Count: {} / 8 stops\nAngle / Radius: {} deg\nDetails: {}",
+                "Active Preset: {}\nStop Count: {} / 8 stops\nEdge Mode: {}\nAngle: {} deg\nDetails: {}",
                 preset.title(),
                 preset.stop_count(),
+                edge_str,
                 angle_deg,
                 preset.description(),
             );
@@ -802,6 +836,15 @@ fn sync_ui_state(
             label.text = format!(
                 "Rotate Angle: {}",
                 if state.auto_rotate { "ON" } else { "OFF" }
+            );
+        } else if edge.is_some() {
+            label.text = format!(
+                "Edge Mode: {}",
+                if state.stepped_mode {
+                    "HARD (STEPPED)"
+                } else {
+                    "SMOOTH"
+                }
             );
         } else if shape.is_some() {
             label.text = format!(

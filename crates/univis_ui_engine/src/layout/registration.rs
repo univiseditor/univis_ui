@@ -43,6 +43,7 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<visual::UGradient>()
         .register_type::<visual::UGradientKind>()
         .register_type::<visual::UGradientStop>()
+        .register_type::<visual::UGradientInterpolation>()
         .register_type::<visual::UShadow>()
         .register_type::<visual::UInnerGlow>()
         .register_type::<transition::UTransition>()

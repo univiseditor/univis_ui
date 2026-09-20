@@ -287,10 +287,14 @@ fn sync_entity_material(
             Vec4::new(positions[0], positions[1], positions[2], positions[3]),
             Vec4::new(positions[4], positions[5], positions[6], positions[7]),
         ];
+        let interp_mode = match grad.interpolation {
+            UGradientInterpolation::Smooth => 0.0,
+            UGradientInterpolation::Stepped => 1.0,
+        };
         (
             colors,
             stops,
-            Vec4::new(grad_type, param_y, count as f32, 0.0),
+            Vec4::new(grad_type, param_y, count as f32, interp_mode),
             Vec4::new(center.x, center.y, 0.0, 0.0),
         )
     } else {

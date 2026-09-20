@@ -50,6 +50,17 @@ impl From<(f32, Color)> for UGradientStop {
 /// Maximum number of color stops supported in a single [`UGradient`].
 pub const MAX_GRADIENT_STOPS: usize = 8;
 
+/// Interpolation mode between gradient color stops.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Reflect)]
+#[reflect(Default)]
+pub enum UGradientInterpolation {
+    /// Smooth linear interpolation between adjacent stops (default).
+    #[default]
+    Smooth,
+    /// Discrete, hard-edged color bands without interpolation (stepped stops).
+    Stepped,
+}
+
 /// Linear or radial gradient fill with multi-stop color blending.
 #[derive(Component, Clone, Debug, PartialEq, Reflect)]
 #[reflect(Component)]
@@ -58,6 +69,8 @@ pub struct UGradient {
     pub stops: Vec<UGradientStop>,
     /// Shape and orientation of the gradient.
     pub kind: UGradientKind,
+    /// Interpolation mode (smooth blending vs sharp, stepped color bands).
+    pub interpolation: UGradientInterpolation,
 }
 
 impl UGradient {
@@ -69,6 +82,7 @@ impl UGradient {
                 UGradientStop::new(1.0, end_color),
             ],
             kind: UGradientKind::Linear { angle: 0.0 },
+            interpolation: UGradientInterpolation::Smooth,
         }
     }
 
@@ -82,6 +96,7 @@ impl UGradient {
             kind: UGradientKind::Linear {
                 angle: core::f32::consts::FRAC_PI_2,
             },
+            interpolation: UGradientInterpolation::Smooth,
         }
     }
 
@@ -93,6 +108,7 @@ impl UGradient {
                 UGradientStop::new(1.0, end_color),
             ],
             kind: UGradientKind::Linear { angle },
+            interpolation: UGradientInterpolation::Smooth,
         }
     }
 
@@ -111,6 +127,7 @@ impl UGradient {
         Self {
             stops: stops_vec,
             kind: UGradientKind::Linear { angle },
+            interpolation: UGradientInterpolation::Smooth,
         }
     }
 
@@ -125,6 +142,7 @@ impl UGradient {
                 center: Vec2::splat(0.5),
                 radius: 0.5,
             },
+            interpolation: UGradientInterpolation::Smooth,
         }
     }
 
@@ -136,6 +154,7 @@ impl UGradient {
                 UGradientStop::new(1.0, end_color),
             ],
             kind: UGradientKind::Radial { center, radius },
+            interpolation: UGradientInterpolation::Smooth,
         }
     }
 
@@ -157,6 +176,7 @@ impl UGradient {
                 center: Vec2::splat(0.5),
                 radius: 0.5,
             },
+            interpolation: UGradientInterpolation::Smooth,
         }
     }
 
@@ -175,7 +195,20 @@ impl UGradient {
         Self {
             stops: stops_vec,
             kind: UGradientKind::Radial { center, radius },
+            interpolation: UGradientInterpolation::Smooth,
         }
+    }
+
+    /// Switches the gradient to stepped interpolation (hard edges, discrete color bands).
+    pub fn stepped(mut self) -> Self {
+        self.interpolation = UGradientInterpolation::Stepped;
+        self
+    }
+
+    /// Sets the gradient interpolation mode explicitly.
+    pub fn with_interpolation(mut self, interpolation: UGradientInterpolation) -> Self {
+        self.interpolation = interpolation;
+        self
     }
 
     /// Appends or inserts a color stop, maintaining ascending position order.
@@ -354,6 +387,18 @@ mod tests {
             .with_stop(0.3, Color::srgb(0.5, 0.5, 0.5));
         assert_eq!(builder.stops.len(), 3);
         assert_eq!(builder.stops[1].position, 0.3);
+    }
+
+    #[test]
+    fn gradient_interpolation_modes() {
+        let smooth = UGradient::linear(Color::BLACK, Color::WHITE, 0.0);
+        assert_eq!(smooth.interpolation, UGradientInterpolation::Smooth);
+
+        let stepped = smooth.stepped();
+        assert_eq!(stepped.interpolation, UGradientInterpolation::Stepped);
+
+        let custom = stepped.with_interpolation(UGradientInterpolation::Smooth);
+        assert_eq!(custom.interpolation, UGradientInterpolation::Smooth);
     }
 
     #[test]

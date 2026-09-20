@@ -124,6 +124,10 @@ name = "layout_radial"
 path = "examples/layout/radial.rs"
 
 [[example]]
+name = "layout_intrinsic_sizing"
+path = "examples/layout/intrinsic_sizing.rs"
+
+[[example]]
 name = "responsive_layout_test"
 path = "examples/responsive_layout_test.rs"
 

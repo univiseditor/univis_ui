@@ -179,6 +179,10 @@ path = "examples/2d/hud_showcase.rs"
 name = "text_2d"
 path = "examples/2d/text_2d.rs"
 
+[[example]]
+name = "gradient_showcase"
+path = "examples/2d/gradient_showcase.rs"
+
 
 
 [[example]]

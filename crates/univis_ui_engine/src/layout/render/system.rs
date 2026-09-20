@@ -271,18 +271,30 @@ fn sync_entity_material(
     let clip_radius = clip_radius * world_scale;
 
     // --- visual inputs ---
-    let (grad_start, grad_end, grad_params) = if let Some(grad) = gradient_opt {
+    let (grad_colors, grad_stops, grad_params, grad_center) = if let Some(grad) = gradient_opt {
         let (grad_type, param_y, center) = match grad.kind {
             UGradientKind::Linear { angle } => (1.0, angle, Vec2::ZERO),
             UGradientKind::Radial { center, radius } => (2.0, radius, center),
         };
+        let count = grad.stops.len().min(8);
+        let mut colors = [Vec4::ZERO; 8];
+        let mut positions = [0.0f32; 8];
+        for (i, stop) in grad.stops.iter().take(8).enumerate() {
+            colors[i] = LinearRgba::from(stop.color).to_vec4();
+            positions[i] = stop.position;
+        }
+        let stops = [
+            Vec4::new(positions[0], positions[1], positions[2], positions[3]),
+            Vec4::new(positions[4], positions[5], positions[6], positions[7]),
+        ];
         (
-            LinearRgba::from(grad.start_color),
-            LinearRgba::from(grad.end_color),
-            Vec4::new(grad_type, param_y, center.x, center.y),
+            colors,
+            stops,
+            Vec4::new(grad_type, param_y, count as f32, 0.0),
+            Vec4::new(center.x, center.y, 0.0, 0.0),
         )
     } else {
-        (LinearRgba::NONE, LinearRgba::NONE, Vec4::ZERO)
+        ([Vec4::ZERO; 8], [Vec4::ZERO; 2], Vec4::ZERO, Vec4::ZERO)
     };
 
     let (shadow_color, shadow_params) = if let Some(s) = shadow_opt {
@@ -358,9 +370,10 @@ fn sync_entity_material(
                         existing_mat.use_texture = use_tex;
                         existing_mat.shape_mode = shape_mode;
                         existing_mat.texture = tex_handle.clone();
-                        existing_mat.grad_start = grad_start.to_vec4();
-                        existing_mat.grad_end = grad_end.to_vec4();
+                        existing_mat.grad_colors = grad_colors;
+                        existing_mat.grad_stops = grad_stops;
                         existing_mat.grad_params = grad_params;
+                        existing_mat.grad_center = grad_center;
                         existing_mat.shadow_color = shadow_color.to_vec4();
                         existing_mat.shadow_params = shadow_params;
                         existing_mat.inner_glow_color = inner_glow_color.to_vec4();
@@ -382,9 +395,10 @@ fn sync_entity_material(
                             use_tex,
                             shape_mode,
                             tex_handle.clone(),
-                            grad_start.to_vec4(),
-                            grad_end.to_vec4(),
+                            grad_colors,
+                            grad_stops,
                             grad_params,
+                            grad_center,
                             shadow_color.to_vec4(),
                             shadow_params,
                             inner_glow_color.to_vec4(),
@@ -408,9 +422,10 @@ fn sync_entity_material(
                         use_tex,
                         shape_mode,
                         tex_handle.clone(),
-                        grad_start.to_vec4(),
-                        grad_end.to_vec4(),
+                        grad_colors,
+                        grad_stops,
                         grad_params,
+                        grad_center,
                         shadow_color.to_vec4(),
                         shadow_params,
                         inner_glow_color.to_vec4(),
@@ -434,9 +449,10 @@ fn sync_entity_material(
                     use_tex,
                     shape_mode,
                     tex_handle.clone(),
-                    grad_start.to_vec4(),
-                    grad_end.to_vec4(),
+                    grad_colors,
+                    grad_stops,
                     grad_params,
+                    grad_center,
                     shadow_color.to_vec4(),
                     shadow_params,
                     inner_glow_color.to_vec4(),
@@ -473,9 +489,10 @@ fn sync_entity_material(
                         existing_mat.clip_size = clip_size;
                         existing_mat.clip_radius = clip_radius;
                         existing_mat.use_clip = use_clip;
-                        existing_mat.grad_start = grad_start;
-                        existing_mat.grad_end = grad_end;
+                        existing_mat.grad_colors = grad_colors;
+                        existing_mat.grad_stops = grad_stops;
                         existing_mat.grad_params = grad_params;
+                        existing_mat.grad_center = grad_center;
                         existing_mat.shadow_color = shadow_color;
                         existing_mat.shadow_params = shadow_params;
                         existing_mat.inner_glow_color = inner_glow_color;
@@ -499,9 +516,10 @@ fn sync_entity_material(
                             clip_size,
                             clip_radius,
                             use_clip,
-                            grad_start,
-                            grad_end,
+                            grad_colors,
+                            grad_stops,
                             grad_params,
+                            grad_center,
                             shadow_color,
                             shadow_params,
                             inner_glow_color,
@@ -527,9 +545,10 @@ fn sync_entity_material(
                         clip_size,
                         clip_radius,
                         use_clip,
-                        grad_start,
-                        grad_end,
+                        grad_colors,
+                        grad_stops,
                         grad_params,
+                        grad_center,
                         shadow_color,
                         shadow_params,
                         inner_glow_color,
@@ -555,9 +574,10 @@ fn sync_entity_material(
                     clip_size,
                     clip_radius,
                     use_clip,
-                    grad_start,
-                    grad_end,
+                    grad_colors,
+                    grad_stops,
                     grad_params,
+                    grad_center,
                     shadow_color,
                     shadow_params,
                     inner_glow_color,
@@ -698,9 +718,10 @@ fn create_2d_material(
     clip_size: Vec2,
     clip_radius: Vec4,
     use_clip: u32,
-    grad_start: LinearRgba,
-    grad_end: LinearRgba,
+    grad_colors: [Vec4; 8],
+    grad_stops: [Vec4; 2],
     grad_params: Vec4,
+    grad_center: Vec4,
     shadow_color: LinearRgba,
     shadow_params: Vec4,
     inner_glow_color: LinearRgba,
@@ -725,9 +746,10 @@ fn create_2d_material(
         _pad1_0: 0.0,
         _pad1_1: 0.0,
         _pad1_2: 0.0,
-        grad_start,
-        grad_end,
+        grad_colors,
+        grad_stops,
         grad_params,
+        grad_center,
         shadow_color,
         shadow_params,
         inner_glow_color,
@@ -749,9 +771,10 @@ fn create_3d_material(
     use_tex: u32,
     shape_mode: u32,
     tex: Option<Handle<Image>>,
-    grad_start: Vec4,
-    grad_end: Vec4,
+    grad_colors: [Vec4; 8],
+    grad_stops: [Vec4; 2],
     grad_params: Vec4,
+    grad_center: Vec4,
     shadow_color: Vec4,
     shadow_params: Vec4,
     inner_glow_color: Vec4,
@@ -770,9 +793,10 @@ fn create_3d_material(
         use_texture: use_tex,
         shape_mode,
         texture: tex,
-        grad_start,
-        grad_end,
+        grad_colors,
+        grad_stops,
         grad_params,
+        grad_center,
         shadow_color,
         shadow_params,
         inner_glow_color,

@@ -22,14 +22,40 @@ pub enum UGradientKind {
     },
 }
 
-/// Linear or radial gradient fill for a [`crate::layout::univis_node::UNode`].
+/// A single color stop in a [`UGradient`].
+#[derive(Clone, Copy, Debug, PartialEq, Reflect)]
+pub struct UGradientStop {
+    /// Color at this stop position.
+    pub color: Color,
+    /// Normalized position along the gradient line in the range `[0.0, 1.0]`.
+    pub position: f32,
+}
+
+impl UGradientStop {
+    /// Creates a new gradient stop.
+    pub fn new(position: f32, color: Color) -> Self {
+        Self {
+            position: position.clamp(0.0, 1.0),
+            color,
+        }
+    }
+}
+
+impl From<(f32, Color)> for UGradientStop {
+    fn from((position, color): (f32, Color)) -> Self {
+        Self::new(position, color)
+    }
+}
+
+/// Maximum number of color stops supported in a single [`UGradient`].
+pub const MAX_GRADIENT_STOPS: usize = 8;
+
+/// Linear or radial gradient fill with multi-stop color blending.
 #[derive(Component, Clone, Debug, PartialEq, Reflect)]
 #[reflect(Component)]
 pub struct UGradient {
-    /// Start color of the gradient.
-    pub start_color: Color,
-    /// End color of the gradient.
-    pub end_color: Color,
+    /// Ordered list of color stops (up to 8 stops).
+    pub stops: Vec<UGradientStop>,
     /// Shape and orientation of the gradient.
     pub kind: UGradientKind,
 }
@@ -38,8 +64,10 @@ impl UGradient {
     /// Creates a linear horizontal gradient (left to right).
     pub fn horizontal(start_color: Color, end_color: Color) -> Self {
         Self {
-            start_color,
-            end_color,
+            stops: vec![
+                UGradientStop::new(0.0, start_color),
+                UGradientStop::new(1.0, end_color),
+            ],
             kind: UGradientKind::Linear { angle: 0.0 },
         }
     }
@@ -47,8 +75,10 @@ impl UGradient {
     /// Creates a linear vertical gradient (top to bottom).
     pub fn vertical(start_color: Color, end_color: Color) -> Self {
         Self {
-            start_color,
-            end_color,
+            stops: vec![
+                UGradientStop::new(0.0, start_color),
+                UGradientStop::new(1.0, end_color),
+            ],
             kind: UGradientKind::Linear {
                 angle: core::f32::consts::FRAC_PI_2,
             },
@@ -58,8 +88,28 @@ impl UGradient {
     /// Creates a linear gradient with an explicit angle in radians.
     pub fn linear(start_color: Color, end_color: Color, angle: f32) -> Self {
         Self {
-            start_color,
-            end_color,
+            stops: vec![
+                UGradientStop::new(0.0, start_color),
+                UGradientStop::new(1.0, end_color),
+            ],
+            kind: UGradientKind::Linear { angle },
+        }
+    }
+
+    /// Creates a multi-stop linear gradient along an explicit angle in radians.
+    pub fn linear_stops<I, S>(angle: f32, stops: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<UGradientStop>,
+    {
+        let mut stops_vec: Vec<UGradientStop> = stops
+            .into_iter()
+            .map(Into::into)
+            .take(MAX_GRADIENT_STOPS)
+            .collect();
+        stops_vec.sort_by(|a, b| a.position.total_cmp(&b.position));
+        Self {
+            stops: stops_vec,
             kind: UGradientKind::Linear { angle },
         }
     }
@@ -67,8 +117,10 @@ impl UGradient {
     /// Creates a radial gradient centered in the node.
     pub fn radial(start_color: Color, end_color: Color) -> Self {
         Self {
-            start_color,
-            end_color,
+            stops: vec![
+                UGradientStop::new(0.0, start_color),
+                UGradientStop::new(1.0, end_color),
+            ],
             kind: UGradientKind::Radial {
                 center: Vec2::splat(0.5),
                 radius: 0.5,
@@ -79,10 +131,70 @@ impl UGradient {
     /// Creates a radial gradient with explicit center and radius.
     pub fn radial_custom(start_color: Color, end_color: Color, center: Vec2, radius: f32) -> Self {
         Self {
-            start_color,
-            end_color,
+            stops: vec![
+                UGradientStop::new(0.0, start_color),
+                UGradientStop::new(1.0, end_color),
+            ],
             kind: UGradientKind::Radial { center, radius },
         }
+    }
+
+    /// Creates a multi-stop radial gradient centered in the node.
+    pub fn radial_stops<I, S>(stops: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<UGradientStop>,
+    {
+        let mut stops_vec: Vec<UGradientStop> = stops
+            .into_iter()
+            .map(Into::into)
+            .take(MAX_GRADIENT_STOPS)
+            .collect();
+        stops_vec.sort_by(|a, b| a.position.total_cmp(&b.position));
+        Self {
+            stops: stops_vec,
+            kind: UGradientKind::Radial {
+                center: Vec2::splat(0.5),
+                radius: 0.5,
+            },
+        }
+    }
+
+    /// Creates a multi-stop radial gradient with custom center and radius.
+    pub fn radial_stops_custom<I, S>(center: Vec2, radius: f32, stops: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<UGradientStop>,
+    {
+        let mut stops_vec: Vec<UGradientStop> = stops
+            .into_iter()
+            .map(Into::into)
+            .take(MAX_GRADIENT_STOPS)
+            .collect();
+        stops_vec.sort_by(|a, b| a.position.total_cmp(&b.position));
+        Self {
+            stops: stops_vec,
+            kind: UGradientKind::Radial { center, radius },
+        }
+    }
+
+    /// Appends or inserts a color stop, maintaining ascending position order.
+    pub fn with_stop(mut self, position: f32, color: Color) -> Self {
+        if self.stops.len() < MAX_GRADIENT_STOPS {
+            self.stops.push(UGradientStop::new(position, color));
+            self.stops.sort_by(|a, b| a.position.total_cmp(&b.position));
+        }
+        self
+    }
+
+    /// Returns the color of the first stop, or white if empty.
+    pub fn start_color(&self) -> Color {
+        self.stops.first().map_or(Color::WHITE, |s| s.color)
+    }
+
+    /// Returns the color of the last stop, or white if empty.
+    pub fn end_color(&self) -> Color {
+        self.stops.last().map_or(Color::WHITE, |s| s.color)
     }
 }
 
@@ -216,6 +328,32 @@ mod tests {
                 radius: 0.5
             }
         );
+        assert_eq!(r.stops.len(), 2);
+        assert_eq!(r.start_color(), Color::WHITE);
+        assert_eq!(r.end_color(), Color::BLACK);
+    }
+
+    #[test]
+    fn multi_stop_gradient_sorts_and_clamps() {
+        let grad = UGradient::linear_stops(
+            1.57,
+            vec![
+                (1.0, Color::srgb(1.0, 0.0, 0.0)),
+                (0.0, Color::srgb(0.0, 0.0, 1.0)),
+                (0.5, Color::srgb(0.0, 1.0, 0.0)),
+            ],
+        );
+        assert_eq!(grad.stops.len(), 3);
+        assert_eq!(grad.stops[0].position, 0.0);
+        assert_eq!(grad.stops[1].position, 0.5);
+        assert_eq!(grad.stops[2].position, 1.0);
+        assert_eq!(grad.start_color(), Color::srgb(0.0, 0.0, 1.0));
+        assert_eq!(grad.end_color(), Color::srgb(1.0, 0.0, 0.0));
+
+        let builder = UGradient::linear(Color::BLACK, Color::WHITE, 0.0)
+            .with_stop(0.3, Color::srgb(0.5, 0.5, 0.5));
+        assert_eq!(builder.stops.len(), 3);
+        assert_eq!(builder.stops[1].position, 0.3);
     }
 
     #[test]

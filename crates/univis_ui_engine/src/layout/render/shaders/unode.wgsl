@@ -27,15 +27,16 @@ struct UNodeMaterial {
     _pad1_1: f32,            // Offset 120
     _pad1_2: f32,            // Offset 124
 
-    grad_start: vec4<f32>,   // Offset 128
-    grad_end: vec4<f32>,     // Offset 144
-    grad_params: vec4<f32>,  // Offset 160: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = center.x, w = center.y
+    grad_colors: array<vec4<f32>, 8>, // Offset 128 (8 * 16 = 128 bytes)
+    grad_stops: array<vec4<f32>, 2>,  // Offset 256 (2 * 16 = 32 bytes)
+    grad_params: vec4<f32>,           // Offset 288: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = count, w = 0.0
+    grad_center: vec4<f32>,           // Offset 304: xy = center, zw = 0.0
 
-    shadow_color: vec4<f32>, // Offset 176
-    shadow_params: vec4<f32>,// Offset 192: x = offset.x, y = offset.y, z = blur, w = spread
+    shadow_color: vec4<f32>, // Offset 320
+    shadow_params: vec4<f32>,// Offset 336: x = offset.x, y = offset.y, z = blur, w = spread
 
-    inner_glow_color: vec4<f32>, // Offset 208
-    inner_glow_params: vec4<f32>,// Offset 224: x = blur, y = active (1.0 or 0.0), z = spread, w = 0.0
+    inner_glow_color: vec4<f32>, // Offset 352
+    inner_glow_params: vec4<f32>,// Offset 368: x = blur, y = active (1.0 or 0.0), z = spread, w = 0.0
 };
 
 @group(2) @binding(0) var<uniform> material: UNodeMaterial;
@@ -71,6 +72,60 @@ fn sd_cut_box(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
     let d_cut = (abs(p.x) + abs(p.y) - (b.x + b.y - radius)) * 0.70710678;
 
     return max(d_box, d_cut);
+}
+
+// -----------------------------------------------------------------------------
+// Multi-Stop Gradient Sampling
+// -----------------------------------------------------------------------------
+
+fn get_gradient_stop_pos(idx: u32) -> f32 {
+    if (idx < 4u) {
+        if (idx == 0u) { return material.grad_stops[0].x; }
+        if (idx == 1u) { return material.grad_stops[0].y; }
+        if (idx == 2u) { return material.grad_stops[0].z; }
+        return material.grad_stops[0].w;
+    } else {
+        if (idx == 4u) { return material.grad_stops[1].x; }
+        if (idx == 5u) { return material.grad_stops[1].y; }
+        if (idx == 6u) { return material.grad_stops[1].z; }
+        return material.grad_stops[1].w;
+    }
+}
+
+fn sample_gradient(t_in: f32) -> vec4<f32> {
+    let count = u32(material.grad_params.z);
+    if (count == 0u) {
+        return material.color;
+    }
+    if (count == 1u) {
+        return material.grad_colors[0];
+    }
+
+    let t = clamp(t_in, 0.0, 1.0);
+    let p_first = get_gradient_stop_pos(0u);
+    if (t <= p_first) {
+        return material.grad_colors[0];
+    }
+    let p_last = get_gradient_stop_pos(count - 1u);
+    if (t >= p_last) {
+        return material.grad_colors[count - 1u];
+    }
+
+    var color = material.grad_colors[count - 1u];
+    for (var i = 0u; i < 7u; i = i + 1u) {
+        if (i + 1u >= count) {
+            break;
+        }
+        let p_curr = get_gradient_stop_pos(i);
+        let p_next = get_gradient_stop_pos(i + 1u);
+        if (t >= p_curr && t <= p_next) {
+            let span = max(p_next - p_curr, 0.00001);
+            let factor = clamp((t - p_curr) / span, 0.0, 1.0);
+            color = mix(material.grad_colors[i], material.grad_colors[i + 1u], factor);
+            break;
+        }
+    }
+    return color;
 }
 
 // -----------------------------------------------------------------------------
@@ -121,21 +176,21 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // Body UV relative to the base element bounds
     let body_uv = (p / material.size) * vec2<f32>(1.0, -1.0) + 0.5;
 
-    // Body fill: color, linear gradient, or radial gradient
+    // Multi-stop gradient fill: color, linear gradient, or radial gradient
     var body_color = material.color;
     if (material.grad_params.x == 1.0) {
-        // Linear gradient
+        // Multi-stop linear gradient
         let angle = material.grad_params.y;
         let dir = vec2<f32>(cos(angle), sin(angle));
-        let t_lin = clamp(dot(body_uv - 0.5, dir) + 0.5, 0.0, 1.0);
-        body_color = mix(material.grad_start, material.grad_end, t_lin);
+        let t_lin = dot(body_uv - 0.5, dir) + 0.5;
+        body_color = sample_gradient(t_lin);
     } else if (material.grad_params.x == 2.0) {
-        // Radial gradient
-        let center = material.grad_params.zw;
+        // Multi-stop radial gradient
+        let center = material.grad_center.xy;
         let radius = max(material.grad_params.y, 0.001);
         let dist_rad = length(body_uv - center);
-        let t_rad = clamp(dist_rad / radius, 0.0, 1.0);
-        body_color = mix(material.grad_start, material.grad_end, t_rad);
+        let t_rad = dist_rad / radius;
+        body_color = sample_gradient(t_rad);
     }
 
     if (material.use_texture == 1u) {

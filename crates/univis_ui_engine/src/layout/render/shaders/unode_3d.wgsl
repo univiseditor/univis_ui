@@ -18,9 +18,10 @@ struct UNodeMaterial3d {
     use_texture: u32,
     shape_mode: u32, 
 
-    grad_start: vec4<f32>,
-    grad_end: vec4<f32>,
+    grad_colors: array<vec4<f32>, 8>,
+    grad_stops: array<vec4<f32>, 2>,
     grad_params: vec4<f32>,
+    grad_center: vec4<f32>,
 
     shadow_color: vec4<f32>,
     shadow_params: vec4<f32>,
@@ -56,6 +57,60 @@ fn sd_box_dynamic(p: vec2<f32>, b: vec2<f32>, r_in: vec4<f32>, mode: u32) -> f32
     }
 }
 
+// -----------------------------------------------------------------------------
+// Multi-Stop Gradient Sampling
+// -----------------------------------------------------------------------------
+
+fn get_gradient_stop_pos(idx: u32) -> f32 {
+    if (idx < 4u) {
+        if (idx == 0u) { return material.grad_stops[0].x; }
+        if (idx == 1u) { return material.grad_stops[0].y; }
+        if (idx == 2u) { return material.grad_stops[0].z; }
+        return material.grad_stops[0].w;
+    } else {
+        if (idx == 4u) { return material.grad_stops[1].x; }
+        if (idx == 5u) { return material.grad_stops[1].y; }
+        if (idx == 6u) { return material.grad_stops[1].z; }
+        return material.grad_stops[1].w;
+    }
+}
+
+fn sample_gradient(t_in: f32) -> vec4<f32> {
+    let count = u32(material.grad_params.z);
+    if (count == 0u) {
+        return material.color;
+    }
+    if (count == 1u) {
+        return material.grad_colors[0];
+    }
+
+    let t = clamp(t_in, 0.0, 1.0);
+    let p_first = get_gradient_stop_pos(0u);
+    if (t <= p_first) {
+        return material.grad_colors[0];
+    }
+    let p_last = get_gradient_stop_pos(count - 1u);
+    if (t >= p_last) {
+        return material.grad_colors[count - 1u];
+    }
+
+    var color = material.grad_colors[count - 1u];
+    for (var i = 0u; i < 7u; i = i + 1u) {
+        if (i + 1u >= count) {
+            break;
+        }
+        let p_curr = get_gradient_stop_pos(i);
+        let p_next = get_gradient_stop_pos(i + 1u);
+        if (t >= p_curr && t <= p_next) {
+            let span = max(p_next - p_curr, 0.00001);
+            let factor = clamp((t - p_curr) / span, 0.0, 1.0);
+            color = mix(material.grad_colors[i], material.grad_colors[i + 1u], factor);
+            break;
+        }
+    }
+    return color;
+}
+
 @fragment
 fn fragment(
     in: VertexOutput,
@@ -80,14 +135,14 @@ fn fragment(
     if (material.grad_params.x == 1.0) {
         let angle = material.grad_params.y;
         let dir = vec2<f32>(cos(angle), sin(angle));
-        let t_lin = clamp(dot(body_uv - 0.5, dir) + 0.5, 0.0, 1.0);
-        current_base_color = mix(material.grad_start, material.grad_end, t_lin);
+        let t_lin = dot(body_uv - 0.5, dir) + 0.5;
+        current_base_color = sample_gradient(t_lin);
     } else if (material.grad_params.x == 2.0) {
-        let center = material.grad_params.zw;
+        let center = material.grad_center.xy;
         let radius = max(material.grad_params.y, 0.001);
         let dist_rad = length(body_uv - center);
-        let t_rad = clamp(dist_rad / radius, 0.0, 1.0);
-        current_base_color = mix(material.grad_start, material.grad_end, t_rad);
+        let t_rad = dist_rad / radius;
+        current_base_color = sample_gradient(t_rad);
     }
 
     if (material.use_texture > 0u) {

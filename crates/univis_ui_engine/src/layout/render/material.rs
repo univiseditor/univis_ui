@@ -69,16 +69,19 @@ pub struct UNodeMaterial {
     #[uniform(0)]
     pub _pad1_2: f32,
 
-    // --- Visual extensions ---
-    /// Gradient start color.
+    // --- Multi-stop gradient extensions (Offset 128) ---
+    /// Up to 8 gradient stop colors (LinearRgba packed as Vec4).
     #[uniform(0)]
-    pub grad_start: LinearRgba,
-    /// Gradient end color.
+    pub grad_colors: [Vec4; 8],
+    /// Up to 8 gradient stop positions packed into 2 Vec4 vectors.
     #[uniform(0)]
-    pub grad_end: LinearRgba,
-    /// Gradient parameters: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = center.x, w = center.y.
+    pub grad_stops: [Vec4; 2],
+    /// Gradient parameters: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = stop count, w = 0.0.
     #[uniform(0)]
     pub grad_params: Vec4,
+    /// Radial gradient center coordinates: xy = center, zw = 0.0.
+    #[uniform(0)]
+    pub grad_center: Vec4,
 
     /// Shadow or outer glow color.
     #[uniform(0)]
@@ -116,9 +119,10 @@ impl Default for UNodeMaterial {
             _pad1_0: 0.0,
             _pad1_1: 0.0,
             _pad1_2: 0.0,
-            grad_start: LinearRgba::NONE,
-            grad_end: LinearRgba::NONE,
+            grad_colors: [Vec4::ZERO; 8],
+            grad_stops: [Vec4::ZERO; 2],
             grad_params: Vec4::ZERO,
+            grad_center: Vec4::ZERO,
             shadow_color: LinearRgba::NONE,
             shadow_params: Vec4::ZERO,
             inner_glow_color: LinearRgba::NONE,

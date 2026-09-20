@@ -494,10 +494,13 @@ fn spawn_card(
                 shape_mode: UShapeMode::Cut,
                 ..default()
             },
-            UGradient::linear(
-                Color::srgba(0.06, 0.11, 0.20, 0.95),
-                Color::srgba(0.02, 0.04, 0.08, 0.98),
+            UGradient::linear_stops(
                 core::f32::consts::FRAC_PI_4,
+                [
+                    (0.0, accent.with_alpha(0.12)),
+                    (0.4, Color::srgba(0.05, 0.10, 0.18, 0.95)),
+                    (1.0, Color::srgba(0.02, 0.035, 0.07, 0.98)),
+                ],
             ),
             UShadow::glow(accent.with_alpha(0.25), 14.0),
             UInnerGlow::new(accent.with_alpha(0.2), 8.0),

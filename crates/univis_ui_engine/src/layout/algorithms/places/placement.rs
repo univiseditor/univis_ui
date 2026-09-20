@@ -683,7 +683,7 @@ pub struct StackPlacer;
 
 impl LayoutPlacer for StackPlacer {
     fn place(&self, items: &mut [SolverItem], axis: &AxisHelper, ctx: &PlacementContext) -> Vec2 {
-        let offset_step = 5.0;
+        let offset_step = 0.0;
         let mut max_main_used: f32 = 0.0;
         let mut max_cross_used: f32 = 0.0;
 

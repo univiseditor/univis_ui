@@ -20,7 +20,9 @@ pub use self::types::{PlacementContext, SolverConfig, SolverItem, SolverResult};
 use crate::layout::algorithms::bridge::final_size_with_indices;
 use crate::layout::geometry::{AxisHelper, BoxConstraints};
 use crate::layout::solver_types::SolverSizeMode;
-use crate::layout::univis_node::{UAlignItemsExt, UAlignSelfExt, UFlexDirection, UPositionType};
+use crate::layout::univis_node::{
+    UAlignItemsExt, UAlignSelfExt, UDisplay, UFlexDirection, UPositionType,
+};
 
 /// The main layout logic. Calculates sizes and positions for a list of items.
 ///
@@ -62,7 +64,10 @@ pub fn solve_flex_layout(
         config.column_gap.unwrap_or(config.gap)
     };
 
-    let mut used_main = 0.0;
+    let is_flex = matches!(config.layout.display, UDisplay::Flex);
+    let is_stack = matches!(config.layout.display, UDisplay::Stack);
+
+    let mut used_main: f32 = 0.0;
 
     for &idx in &normal_indices {
         let item = &mut items[idx];
@@ -87,140 +92,146 @@ pub fn solve_flex_layout(
         base_size = clamp_main_size(&item.spec, &axis, base_size);
 
         let _ = grow_factor;
-        used_main += base_size + margin_span;
+        if is_stack {
+            used_main = used_main.max(base_size + margin_span);
+        } else {
+            used_main += base_size + margin_span;
+        }
         item.result.size = axis.to_world(base_size, 0.0);
     }
 
-    if normal_indices.len() > 1 {
+    if is_flex && normal_indices.len() > 1 {
         used_main += (normal_indices.len() as f32 - 1.0) * main_gap;
     }
 
-    let positive_free_space = (available_main - used_main).max(0.0);
-    if positive_free_space > 0.0 {
-        let mut remaining_free_space = positive_free_space;
-        let mut growable_indices: Vec<usize> = normal_indices
-            .iter()
-            .copied()
-            .filter(|&idx| {
-                let item = &items[idx];
-                let grow_factor = resolved_flex_grow_factor(&item.spec, &axis);
-                if grow_factor <= 0.0 {
-                    return false;
-                }
-
-                let current_main = axis.from_world(item.result.size).0;
-                let (_, max_main) = main_bounds_for_spec(&item.spec, &axis);
-                current_main + 0.0001 < max_main
-            })
-            .collect();
-
-        while remaining_free_space > 0.0001 && !growable_indices.is_empty() {
-            let total_grow: f32 = growable_indices
+    if is_flex {
+        let positive_free_space = (available_main - used_main).max(0.0);
+        if positive_free_space > 0.0 {
+            let mut remaining_free_space = positive_free_space;
+            let mut growable_indices: Vec<usize> = normal_indices
                 .iter()
-                .map(|&idx| {
+                .copied()
+                .filter(|&idx| {
                     let item = &items[idx];
-                    resolved_flex_grow_factor(&item.spec, &axis)
-                })
-                .sum();
+                    let grow_factor = resolved_flex_grow_factor(&item.spec, &axis);
+                    if grow_factor <= 0.0 {
+                        return false;
+                    }
 
-            if total_grow <= 0.0 {
-                break;
-            }
-
-            let mut distributed = 0.0;
-            let mut next_growable = Vec::new();
-
-            for &idx in &growable_indices {
-                let item = &mut items[idx];
-                let grow_factor = resolved_flex_grow_factor(&item.spec, &axis);
-                let (current_main, current_cross) = axis.from_world(item.result.size);
-                let (_, max_main) = main_bounds_for_spec(&item.spec, &axis);
-                let grow_share = remaining_free_space * (grow_factor / total_grow);
-                let next_main = (current_main + grow_share).min(max_main);
-                let added = next_main - current_main;
-
-                if added > 0.0 {
-                    item.result.size = axis.to_world(next_main, current_cross);
-                    used_main += added;
-                    distributed += added;
-                }
-
-                if next_main + 0.0001 < max_main {
-                    next_growable.push(idx);
-                }
-            }
-
-            if distributed <= 0.0001 {
-                break;
-            }
-
-            remaining_free_space = (remaining_free_space - distributed).max(0.0);
-            growable_indices = next_growable;
-        }
-    }
-
-    let overflow = (used_main - available_main).max(0.0);
-    if overflow > 0.0 {
-        let mut remaining_overflow = overflow;
-        let mut shrinkable_indices: Vec<usize> = normal_indices
-            .iter()
-            .copied()
-            .filter(|&idx| {
-                let item = &items[idx];
-                let shrink_factor = flex_shrink_factor(&item.spec);
-                if shrink_factor <= 0.0 {
-                    return false;
-                }
-
-                let current_main = axis.from_world(item.result.size).0;
-                let (min_main, _) = main_bounds_for_spec(&item.spec, &axis);
-                current_main > min_main + 0.0001
-            })
-            .collect();
-
-        while remaining_overflow > 0.0001 && !shrinkable_indices.is_empty() {
-            let total_shrink_weight: f32 = shrinkable_indices
-                .iter()
-                .map(|&idx| {
-                    let item = &items[idx];
                     let current_main = axis.from_world(item.result.size).0;
-                    current_main.max(1.0) * flex_shrink_factor(&item.spec)
+                    let (_, max_main) = main_bounds_for_spec(&item.spec, &axis);
+                    current_main + 0.0001 < max_main
                 })
-                .sum();
+                .collect();
 
-            if total_shrink_weight <= 0.0 {
-                break;
-            }
+            while remaining_free_space > 0.0001 && !growable_indices.is_empty() {
+                let total_grow: f32 = growable_indices
+                    .iter()
+                    .map(|&idx| {
+                        let item = &items[idx];
+                        resolved_flex_grow_factor(&item.spec, &axis)
+                    })
+                    .sum();
 
-            let mut absorbed = 0.0;
-            let mut next_shrinkable = Vec::new();
-
-            for &idx in &shrinkable_indices {
-                let item = &mut items[idx];
-                let (current_main, current_cross) = axis.from_world(item.result.size);
-                let (min_main, _) = main_bounds_for_spec(&item.spec, &axis);
-                let shrink_weight = current_main.max(1.0) * flex_shrink_factor(&item.spec);
-                let shrink_share = remaining_overflow * (shrink_weight / total_shrink_weight);
-                let next_main = (current_main - shrink_share).max(min_main);
-                let reduced = current_main - next_main;
-
-                if reduced > 0.0 {
-                    item.result.size = axis.to_world(next_main, current_cross);
-                    used_main -= reduced;
-                    absorbed += reduced;
+                if total_grow <= 0.0 {
+                    break;
                 }
 
-                if next_main > min_main + 0.0001 {
-                    next_shrinkable.push(idx);
+                let mut distributed = 0.0;
+                let mut next_growable = Vec::new();
+
+                for &idx in &growable_indices {
+                    let item = &mut items[idx];
+                    let (current_main, current_cross) = axis.from_world(item.result.size);
+                    let (_, max_main) = main_bounds_for_spec(&item.spec, &axis);
+                    let grow_factor = resolved_flex_grow_factor(&item.spec, &axis);
+                    let grow_share = remaining_free_space * (grow_factor / total_grow);
+                    let next_main = (current_main + grow_share).min(max_main);
+                    let added = next_main - current_main;
+
+                    if added > 0.0 {
+                        item.result.size = axis.to_world(next_main, current_cross);
+                        used_main += added;
+                        distributed += added;
+                    }
+
+                    if next_main + 0.0001 < max_main {
+                        next_growable.push(idx);
+                    }
                 }
-            }
 
-            if absorbed <= 0.0001 {
-                break;
-            }
+                if distributed <= 0.0001 {
+                    break;
+                }
 
-            remaining_overflow = (remaining_overflow - absorbed).max(0.0);
-            shrinkable_indices = next_shrinkable;
+                remaining_free_space = (remaining_free_space - distributed).max(0.0);
+                growable_indices = next_growable;
+            }
+        }
+
+        let overflow = (used_main - available_main).max(0.0);
+        if overflow > 0.0 {
+            let mut remaining_overflow = overflow;
+            let mut shrinkable_indices: Vec<usize> = normal_indices
+                .iter()
+                .copied()
+                .filter(|&idx| {
+                    let item = &items[idx];
+                    let shrink_factor = flex_shrink_factor(&item.spec);
+                    if shrink_factor <= 0.0 {
+                        return false;
+                    }
+
+                    let current_main = axis.from_world(item.result.size).0;
+                    let (min_main, _) = main_bounds_for_spec(&item.spec, &axis);
+                    current_main > min_main + 0.0001
+                })
+                .collect();
+
+            while remaining_overflow > 0.0001 && !shrinkable_indices.is_empty() {
+                let total_shrink_weight: f32 = shrinkable_indices
+                    .iter()
+                    .map(|&idx| {
+                        let item = &items[idx];
+                        let current_main = axis.from_world(item.result.size).0;
+                        current_main.max(1.0) * flex_shrink_factor(&item.spec)
+                    })
+                    .sum();
+
+                if total_shrink_weight <= 0.0 {
+                    break;
+                }
+
+                let mut absorbed = 0.0;
+                let mut next_shrinkable = Vec::new();
+
+                for &idx in &shrinkable_indices {
+                    let item = &mut items[idx];
+                    let (current_main, current_cross) = axis.from_world(item.result.size);
+                    let (min_main, _) = main_bounds_for_spec(&item.spec, &axis);
+                    let shrink_weight = current_main.max(1.0) * flex_shrink_factor(&item.spec);
+                    let shrink_share = remaining_overflow * (shrink_weight / total_shrink_weight);
+                    let next_main = (current_main - shrink_share).max(min_main);
+                    let reduced = current_main - next_main;
+
+                    if reduced > 0.0 {
+                        item.result.size = axis.to_world(next_main, current_cross);
+                        used_main -= reduced;
+                        absorbed += reduced;
+                    }
+
+                    if next_main > min_main + 0.0001 {
+                        next_shrinkable.push(idx);
+                    }
+                }
+
+                if absorbed <= 0.0001 {
+                    break;
+                }
+
+                remaining_overflow = (remaining_overflow - absorbed).max(0.0);
+                shrinkable_indices = next_shrinkable;
+            }
         }
     }
 

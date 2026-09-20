@@ -62,6 +62,7 @@ pub fn downward_solve_pass_safe(
         Option<&UiLocalStacking>,
         &mut ComputedSize,
         &mut Transform,
+        Option<&mut Visibility>,
     )>,
 
     intrinsic_query: Query<&IntrinsicSize>,
@@ -114,6 +115,7 @@ pub fn downward_solve_pass_safe(
                             cached_context,
                             _,
                             computed,
+                            _,
                             _,
                         )) => (node, layout_opt, children_opt, cached_context, computed),
                         Err(_) => return None,
@@ -171,10 +173,20 @@ pub fn downward_solve_pass_safe(
                 ))
             })(
             ) else {
-                if let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+                if let Ok((_, _, _, _, _, _, _, _, mut computed, mut transform, mut vis_opt)) =
+                    nodes.get_mut(entity)
+                {
                     if computed.width != 0.0 || computed.height != 0.0 {
                         computed.width = 0.0;
                         computed.height = 0.0;
+                    }
+                    if transform.scale != Vec3::ZERO {
+                        transform.scale = Vec3::ZERO;
+                    }
+                    if let Some(ref mut vis) = vis_opt
+                        && **vis != Visibility::Hidden
+                    {
+                        **vis = Visibility::Hidden;
                     }
                 }
                 cache.complete_solve(entity);
@@ -183,7 +195,7 @@ pub fn downward_solve_pass_safe(
             };
 
             if depth == 0
-                && let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity)
+                && let Ok((_, _, _, _, _, _, _, _, mut computed, _, _)) = nodes.get_mut(entity)
             {
                 if (computed.width - container_size.x).abs() > LAYOUT_WRITE_EPSILON {
                     computed.width = container_size.x;
@@ -236,12 +248,22 @@ pub fn downward_solve_pass_safe(
                 &root_stack_query,
             );
 
-            if let Ok((_, _, _, _, _, _, _, _, mut computed, _)) = nodes.get_mut(entity) {
+            if let Ok((_, _, _, _, _, _, _, _, mut computed, mut transform, mut vis_opt)) =
+                nodes.get_mut(entity)
+            {
                 if (computed.width - final_size.x).abs() > LAYOUT_WRITE_EPSILON {
                     computed.width = final_size.x;
                 }
                 if (computed.height - final_size.y).abs() > LAYOUT_WRITE_EPSILON {
                     computed.height = final_size.y;
+                }
+                if transform.scale == Vec3::ZERO {
+                    transform.scale = Vec3::ONE;
+                }
+                if let Some(ref mut vis) = vis_opt
+                    && **vis == Visibility::Hidden
+                {
+                    **vis = Visibility::Inherited;
                 }
             }
 
@@ -380,6 +402,7 @@ fn collect_solver_items_into(
         Option<&UiLocalStacking>,
         &mut ComputedSize,
         &mut Transform,
+        Option<&mut Visibility>,
     )>,
     intrinsic_query: &Query<&IntrinsicSize>,
     scratch: &mut Vec<SolverScratchItem>,
@@ -387,7 +410,8 @@ fn collect_solver_items_into(
     scratch.reserve(children.len());
 
     for child_entity in children.iter() {
-        let Ok((_, node, layout_opt, _, _, uself_opt, _, _, _, _)) = nodes_query.get(child_entity)
+        let Ok((_, node, layout_opt, _, _, uself_opt, _, _, _, _, _)) =
+            nodes_query.get(child_entity)
         else {
             continue;
         };
@@ -455,6 +479,7 @@ fn apply_results_to_children(
         Option<&UiLocalStacking>,
         &mut ComputedSize,
         &mut Transform,
+        Option<&mut Visibility>,
     )>,
 ) {
     for solved in solved_children.iter() {
@@ -469,6 +494,7 @@ fn apply_results_to_children(
             local_stacking,
             mut computed,
             mut transform,
+            mut vis_opt,
         )) = nodes_query.get_mut(solved.entity)
         {
             let size_changed = (computed.width - solved.result.size.x).abs() > LAYOUT_WRITE_EPSILON
@@ -502,6 +528,14 @@ fn apply_results_to_children(
             }
             if z_translation_changed(transform.translation.z, next_z) {
                 transform.translation.z = next_z;
+            }
+            if transform.scale == Vec3::ZERO {
+                transform.scale = Vec3::ONE;
+            }
+            if let Some(ref mut vis) = vis_opt
+                && **vis == Visibility::Hidden
+            {
+                **vis = Visibility::Inherited;
             }
 
             if use_incremental_solve

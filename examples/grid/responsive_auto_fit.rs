@@ -13,6 +13,11 @@ fn main() {
                 title: "Univis UI - Tactical Sci-Fi HUD (CSS Grid auto-fit)".into(),
                 resolution: (1200, 780).into(),
                 resizable: true,
+                resize_constraints: WindowResizeConstraints {
+                    min_width: 380.0,
+                    min_height: 520.0,
+                    ..default()
+                },
                 ..default()
             }),
             ..default()
@@ -190,7 +195,10 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
     let btn_bar = commands
         .spawn((
             ChildOf(shell),
-            UNode::default(),
+            UNode {
+                width: UVal::Percent(1.0),
+                ..default()
+            },
             ULayout {
                 display: UDisplay::Flex,
                 flex_direction: UFlexDirection::Row,
@@ -299,6 +307,7 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
         .spawn((
             ChildOf(shell),
             UNode {
+                width: UVal::Percent(1.0),
                 padding: USides::axes(14.0, 8.0),
                 background_color: Color::srgba(0.0, 0.2, 0.35, 0.5),
                 border_radius: UCornerRadius::all(8.0),
@@ -627,7 +636,22 @@ fn sync_window_and_layout(
 
     // 3. Update status telemetry text
     if let Ok(mut txt) = status_q.single_mut() {
-        let mode_desc = if state.fluid_sync {
+        let mode_desc = if cur_size.x < 650.0 {
+            if state.fluid_sync {
+                format!(
+                    "{:.0}px | {} ({})",
+                    cur_size.x,
+                    state.preset.label(),
+                    state.preset.expected_cols()
+                )
+            } else {
+                format!(
+                    "LOCKED: {} ({})",
+                    state.preset.label(),
+                    state.preset.expected_cols()
+                )
+            }
+        } else if state.fluid_sync {
             format!(
                 "AUTO-FLUID WINDOW SYNC | DETECTED: {} ({})",
                 state.preset.label(),
@@ -640,10 +664,17 @@ fn sync_window_and_layout(
                 state.preset.expected_cols()
             )
         };
-        txt.text = format!(
-            "VIEWPORT: {:.0}x{:.0}px | {} | TRACKS: minmax(200px, 1fr) @ 14px GAP",
-            cur_size.x, cur_size.y, mode_desc
-        );
+        txt.text = if cur_size.x < 650.0 {
+            format!(
+                "VIEWPORT: {:.0}x{:.0}px | {}",
+                cur_size.x, cur_size.y, mode_desc
+            )
+        } else {
+            format!(
+                "VIEWPORT: {:.0}x{:.0}px | {} | TRACKS: minmax(200px, 1fr) @ 14px GAP",
+                cur_size.x, cur_size.y, mode_desc
+            )
+        };
     }
 
     // 4. Update button styles

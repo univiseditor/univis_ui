@@ -11,7 +11,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Univis UI - Responsive Grid auto-fit & minmax()".into(),
-                resolution: (1200.0, 780.0).into(),
+                resolution: (1200, 780).into(),
                 ..default()
             }),
             ..default()
@@ -315,11 +315,36 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
     // Spawn 6 cards with metrics and colors
     let cards = [
         ("Revenue", "$48,290", "+14.2%", Color::srgb(0.2, 0.45, 0.85)),
-        ("Active Users", "12,840", "+8.7%", Color::srgb(0.18, 0.65, 0.48)),
-        ("Conversion", "3.42%", "+1.1%", Color::srgb(0.85, 0.55, 0.15)),
-        ("Bounce Rate", "24.6%", "-2.4%", Color::srgb(0.75, 0.25, 0.45)),
-        ("Avg Duration", "4m 32s", "+18s", Color::srgb(0.55, 0.3, 0.8)),
-        ("Server Uptime", "99.98%", "Stable", Color::srgb(0.15, 0.65, 0.75)),
+        (
+            "Active Users",
+            "12,840",
+            "+8.7%",
+            Color::srgb(0.18, 0.65, 0.48),
+        ),
+        (
+            "Conversion",
+            "3.42%",
+            "+1.1%",
+            Color::srgb(0.85, 0.55, 0.15),
+        ),
+        (
+            "Bounce Rate",
+            "24.6%",
+            "-2.4%",
+            Color::srgb(0.75, 0.25, 0.45),
+        ),
+        (
+            "Avg Duration",
+            "4m 32s",
+            "+18s",
+            Color::srgb(0.55, 0.3, 0.8),
+        ),
+        (
+            "Server Uptime",
+            "99.98%",
+            "Stable",
+            Color::srgb(0.15, 0.65, 0.75),
+        ),
     ];
 
     for (title, val, badge, accent) in cards {
@@ -396,38 +421,32 @@ fn spawn_card(
         ))
         .id();
 
-    commands.spawn((
-        ChildOf(badge_node),
-        label_node(),
-        text(badge, 11.0, accent),
-    ));
+    commands.spawn((ChildOf(badge_node), label_node(), text(badge, 11.0, accent)));
 
     // Value
-    commands.spawn((
-        ChildOf(card),
-        label_node(),
-        text(val, 24.0, Color::WHITE),
-    ));
+    commands.spawn((ChildOf(card), label_node(), text(val, 24.0, Color::WHITE)));
 }
 
 fn handle_preset_clicks(
     mut state: ResMut<GridDemoState>,
     mut container_q: Query<&mut UNode, With<ResizableGridContainer>>,
-    mut status_q: Query<&mut Text, With<StatusText>>,
-    mut buttons_q: Query<(&PresetButton, &mut UNode, &mut UBorder), Without<ResizableGridContainer>>,
+    mut status_q: Query<&mut UTextLabel, With<StatusText>>,
+    mut buttons_q: Query<
+        (&PresetButton, &mut UNode, &mut UBorder),
+        Without<ResizableGridContainer>,
+    >,
     input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
 ) {
-    let window = match windows.single() {
-        w => w,
+    let Ok(window) = windows.single() else {
+        return;
     };
     if !input.just_pressed(MouseButton::Left) {
         return;
     }
 
-    let cursor = match window.cursor_position() {
-        Some(c) => c,
-        None => return,
+    let Some(cursor) = window.cursor_position() else {
+        return;
     };
 
     // Cycle through presets on click anywhere for easy demonstration
@@ -442,12 +461,12 @@ fn handle_preset_clicks(
     if cursor.y < 250.0 {
         state.preset = next_preset;
 
-        if let Ok(mut container_node) = container_q.get_single_mut() {
+        if let Ok(mut container_node) = container_q.single_mut() {
             container_node.width = UVal::Px(state.preset.width());
         }
 
-        if let Ok(mut txt) = status_q.get_single_mut() {
-            txt.0 = format!(
+        if let Ok(mut txt) = status_q.single_mut() {
+            txt.text = format!(
                 "Width: {:.0}px | Result: {} | Track: minmax(200px, 1fr) with 14px gap",
                 state.preset.width(),
                 state.preset.expected_cols()
@@ -477,13 +496,11 @@ fn label_node() -> UNode {
     }
 }
 
-fn text(content: impl Into<String>, font_size: f32, color: Color) -> (Text, TextFont, TextColor) {
-    (
-        Text::new(content),
-        TextFont {
-            font_size,
-            ..default()
-        },
-        TextColor(color),
-    )
+fn text(content: impl Into<String>, font_size: f32, color: Color) -> UTextLabel {
+    UTextLabel {
+        text: content.into(),
+        font_size,
+        color,
+        ..default()
+    }
 }

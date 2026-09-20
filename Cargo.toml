@@ -105,6 +105,10 @@ path = "examples/grid/simple_blocks.rs"
 name = "grid_empty_cells"
 path = "examples/grid/empty_cells.rs"
 
+[[example]]
+name = "responsive_auto_fit"
+path = "examples/grid/responsive_auto_fit.rs"
+
 
 
 [[example]]
@@ -130,6 +134,10 @@ path = "examples/layout/intrinsic_sizing.rs"
 [[example]]
 name = "layout_aspect_ratio"
 path = "examples/layout/aspect_ratio.rs"
+
+[[example]]
+name = "dimension_math"
+path = "examples/layout/dimension_math.rs"
 
 [[example]]
 name = "responsive_layout_test"

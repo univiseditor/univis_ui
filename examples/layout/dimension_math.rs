@@ -11,7 +11,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Univis UI - Dimension Math (calc, min, max, clamp)".into(),
-                resolution: (1200.0, 780.0).into(),
+                resolution: (1200, 780).into(),
                 ..default()
             }),
             ..default()
@@ -422,21 +422,23 @@ fn spawn_math_row(
 fn handle_math_preset_clicks(
     mut state: ResMut<MathDemoState>,
     mut container_q: Query<&mut UNode, With<ResizableMathShell>>,
-    mut status_q: Query<&mut Text, With<MathStatusText>>,
-    mut buttons_q: Query<(&MathPresetButton, &mut UNode, &mut UBorder), Without<ResizableMathShell>>,
+    mut status_q: Query<&mut UTextLabel, With<MathStatusText>>,
+    mut buttons_q: Query<
+        (&MathPresetButton, &mut UNode, &mut UBorder),
+        Without<ResizableMathShell>,
+    >,
     input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
 ) {
-    let window = match windows.single() {
-        w => w,
+    let Ok(window) = windows.single() else {
+        return;
     };
     if !input.just_pressed(MouseButton::Left) {
         return;
     }
 
-    let cursor = match window.cursor_position() {
-        Some(c) => c,
-        None => return,
+    let Some(cursor) = window.cursor_position() else {
+        return;
     };
 
     let next_preset = match state.preset {
@@ -448,12 +450,12 @@ fn handle_math_preset_clicks(
     if cursor.y < 250.0 {
         state.preset = next_preset;
 
-        if let Ok(mut node) = container_q.get_single_mut() {
+        if let Ok(mut node) = container_q.single_mut() {
             node.width = UVal::Px(state.preset.width());
         }
 
-        if let Ok(mut txt) = status_q.get_single_mut() {
-            txt.0 = format!(
+        if let Ok(mut txt) = status_q.single_mut() {
+            txt.text = format!(
                 "Container Width: {:.0}px | Click any preset button to trigger solver re-evaluation",
                 state.preset.width()
             );
@@ -482,13 +484,11 @@ fn label_node() -> UNode {
     }
 }
 
-fn text(content: impl Into<String>, font_size: f32, color: Color) -> (Text, TextFont, TextColor) {
-    (
-        Text::new(content),
-        TextFont {
-            font_size,
-            ..default()
-        },
-        TextColor(color),
-    )
+fn text(content: impl Into<String>, font_size: f32, color: Color) -> UTextLabel {
+    UTextLabel {
+        text: content.into(),
+        font_size,
+        color,
+        ..default()
+    }
 }

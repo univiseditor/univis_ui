@@ -451,7 +451,7 @@ pub(super) fn resolve_track_sizes(
                 floor: content_floor,
                 max: None,
                 fr: 0.0,
-                is_auto: true,
+                is_auto: false,
             },
             UTrackSize::MinMax { min, max } => {
                 let min_px = match min {
@@ -489,7 +489,7 @@ pub(super) fn resolve_track_sizes(
                         floor: min_px,
                         max: None,
                         fr: 0.0,
-                        is_auto: true,
+                        is_auto: false,
                     },
                 }
             }

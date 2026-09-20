@@ -175,7 +175,9 @@ pub fn upward_measure_pass_cached(
             } else {
                 let layout = layout_clone.unwrap_or_default();
                 match layout.display {
-                    UDisplay::Grid => measure_grid_intrinsic(&mut *scratch, &layout),
+                    UDisplay::Grid => {
+                        measure_grid_intrinsic(&mut *scratch, &layout, width, padding)
+                    }
                     UDisplay::Stack => measure_stack_intrinsic(&scratch.child_items),
                     _ => measure_flex_intrinsic(&scratch.child_items, &layout),
                 }
@@ -424,8 +426,15 @@ fn can_place_item(
 fn measure_grid_intrinsic(
     scratch: &mut MeasurePassScratch,
     layout: &ULayout,
+    width: UVal,
+    padding: USides,
 ) -> (f32, f32, f32, f32) {
     let fallback_cols = layout.grid_columns.max(1) as usize;
+    let col_gap = layout
+        .container_ext
+        .box_align
+        .column_gap
+        .unwrap_or(layout.gap);
     let template_cols_len: usize = layout
         .container_ext
         .grid
@@ -433,6 +442,34 @@ fn measure_grid_intrinsic(
         .iter()
         .map(|t| match *t {
             UTrackSize::Repeat(count, _) => count as usize,
+            UTrackSize::RepeatFit(track_repeat) | UTrackSize::RepeatFill(track_repeat) => {
+                if let UVal::Px(w) = width {
+                    let avail = (w - padding.left - padding.right).max(0.0);
+                    let min_bound = match track_repeat {
+                        UTrackRepeat::Px(px) => px,
+                        UTrackRepeat::Percent(p) => p * avail,
+                        UTrackRepeat::MinMax { min, .. } => match min {
+                            UTrackBound::Px(px) => px,
+                            UTrackBound::Percent(p) => p * avail,
+                            _ => 0.0,
+                        },
+                        _ => 0.0,
+                    };
+                    if min_bound > 0.0 && avail > 0.0 {
+                        let count = ((avail + col_gap) / (min_bound + col_gap)).floor() as usize;
+                        let count = count.max(1);
+                        if matches!(*t, UTrackSize::RepeatFit(..)) {
+                            count.min(scratch.child_items.len().max(1))
+                        } else {
+                            count
+                        }
+                    } else {
+                        1
+                    }
+                } else {
+                    1
+                }
+            }
             _ => 1,
         })
         .sum();
@@ -600,6 +637,25 @@ fn measure_grid_intrinsic(
     scratch.row_max.resize(final_rows, 0.0);
 
     let is_fixed_col = |c: usize| -> Option<f32> {
+        let first_is_repeat = layout
+            .container_ext
+            .grid
+            .template_columns
+            .first()
+            .is_some_and(|t| matches!(t, UTrackSize::RepeatFit(_) | UTrackSize::RepeatFill(_)));
+        if first_is_repeat {
+            match layout.container_ext.grid.template_columns[0] {
+                UTrackSize::RepeatFit(rep) | UTrackSize::RepeatFill(rep) => match rep {
+                    UTrackRepeat::Px(v) => return Some(v.max(0.0)),
+                    UTrackRepeat::MinMax {
+                        min: UTrackBound::Px(v),
+                        ..
+                    } => return Some(v.max(0.0)),
+                    _ => return None,
+                },
+                _ => {}
+            }
+        }
         let track = layout
             .container_ext
             .grid

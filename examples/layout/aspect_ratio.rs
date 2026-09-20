@@ -42,11 +42,31 @@ impl PresetRatio {
 
     fn name(self) -> &'static str {
         match self {
-            Self::Cinema16x9 => "16:9 Cinema / Widescreen",
-            Self::Classic4x3 => "4:3 Classic / Retro HUD",
-            Self::Square1x1 => "1:1 Perfect Square",
-            Self::Ultrawide21x9 => "21:9 Ultrawide Cinematic",
-            Self::Mobile9x16 => "9:16 Portrait / Mobile View",
+            Self::Cinema16x9 => "16:9 Cinema",
+            Self::Classic4x3 => "4:3 Classic",
+            Self::Square1x1 => "1:1 Square",
+            Self::Ultrawide21x9 => "21:9 Ultrawide",
+            Self::Mobile9x16 => "9:16 Mobile",
+        }
+    }
+
+    fn default_width(self) -> f32 {
+        match self {
+            Self::Cinema16x9 => 440.0,
+            Self::Classic4x3 => 380.0,
+            Self::Square1x1 => 270.0,
+            Self::Ultrawide21x9 => 460.0,
+            Self::Mobile9x16 => 170.0,
+        }
+    }
+
+    fn width_bounds(self) -> (f32, f32, f32) {
+        match self {
+            Self::Cinema16x9 => (280.0, 480.0, 25.0),
+            Self::Classic4x3 => (240.0, 410.0, 25.0),
+            Self::Square1x1 => (160.0, 310.0, 25.0),
+            Self::Ultrawide21x9 => (300.0, 490.0, 25.0),
+            Self::Mobile9x16 => (110.0, 180.0, 15.0),
         }
     }
 }
@@ -145,7 +165,7 @@ fn setup(mut commands: Commands) {
         ChildOf(header),
         label_node(),
         text(
-            "Controls: [1] 16:9 | [2] 4:3 | [3] 1:1 | [4] 21:9 | [5] 9:16  ---  [W/Up]: Width +40px | [S/Down]: Width -40px",
+            "Controls: [1] 16:9 | [2] 4:3 | [3] 1:1 | [4] 21:9 | [5] 9:16  ---  [W/Up]: Scale Up | [S/Down]: Scale Down",
             12.5,
             Color::srgb(0.30, 0.85, 0.95),
         ),
@@ -275,17 +295,13 @@ fn setup(mut commands: Commands) {
         ChildOf(hero),
         HeroBadge,
         label_node(),
-        text("16:9 Cinema / Widescreen", 16.0, Color::WHITE),
+        text("16:9 Cinema", 15.0, Color::WHITE),
     ));
 
     commands.spawn((
         ChildOf(hero),
         label_node(),
-        text(
-            "Height dynamically resolves from width * ratio",
-            11.5,
-            Color::srgb(0.70, 0.85, 0.95),
-        ),
+        text("h = w / ratio", 11.0, Color::srgb(0.70, 0.85, 0.95)),
     ));
 
     // Telemetry display box
@@ -612,26 +628,32 @@ fn handle_input(
 
     if keyboard.just_pressed(KeyCode::Digit1) {
         state.current_preset = PresetRatio::Cinema16x9;
+        state.hero_width = PresetRatio::Cinema16x9.default_width();
         changed = true;
     } else if keyboard.just_pressed(KeyCode::Digit2) {
         state.current_preset = PresetRatio::Classic4x3;
+        state.hero_width = PresetRatio::Classic4x3.default_width();
         changed = true;
     } else if keyboard.just_pressed(KeyCode::Digit3) {
         state.current_preset = PresetRatio::Square1x1;
+        state.hero_width = PresetRatio::Square1x1.default_width();
         changed = true;
     } else if keyboard.just_pressed(KeyCode::Digit4) {
         state.current_preset = PresetRatio::Ultrawide21x9;
+        state.hero_width = PresetRatio::Ultrawide21x9.default_width();
         changed = true;
     } else if keyboard.just_pressed(KeyCode::Digit5) {
         state.current_preset = PresetRatio::Mobile9x16;
+        state.hero_width = PresetRatio::Mobile9x16.default_width();
         changed = true;
     }
 
+    let (min_w, max_w, step) = state.current_preset.width_bounds();
     if keyboard.just_pressed(KeyCode::KeyW) || keyboard.just_pressed(KeyCode::ArrowUp) {
-        state.hero_width = (state.hero_width + 40.0).min(520.0);
+        state.hero_width = (state.hero_width + step).min(max_w);
         changed = true;
     } else if keyboard.just_pressed(KeyCode::KeyS) || keyboard.just_pressed(KeyCode::ArrowDown) {
-        state.hero_width = (state.hero_width - 40.0).max(180.0);
+        state.hero_width = (state.hero_width - step).max(min_w);
         changed = true;
     }
 

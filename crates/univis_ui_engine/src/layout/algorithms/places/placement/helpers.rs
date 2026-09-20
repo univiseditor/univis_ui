@@ -264,6 +264,131 @@ pub(super) fn compute_content_floors(
     (col_content_floors, row_content_floors)
 }
 
+/// Expands template track specifications into concrete track definitions,
+/// expanding `Repeat`, `RepeatFill`, and `RepeatFit` based on available space and gaps.
+/// Returns the expanded tracks and a boolean vector indicating which tracks originated from `RepeatFit`.
+pub(super) fn expand_grid_template(
+    template: &[UTrackSize],
+    available_space: f32,
+    gap: f32,
+) -> (Vec<UTrackSize>, Vec<bool>) {
+    let mut expanded = Vec::new();
+    let mut is_fit = Vec::new();
+
+    for track in template {
+        match *track {
+            UTrackSize::Repeat(count, repeat_track) => {
+                let concrete: UTrackSize = repeat_track.into();
+                for _ in 0..count {
+                    expanded.push(concrete);
+                    is_fit.push(false);
+                }
+            }
+            UTrackSize::RepeatFill(repeat_track) => {
+                let concrete: UTrackSize = repeat_track.into();
+                let min_size = match repeat_track {
+                    UTrackRepeat::Px(v) => v.max(1.0),
+                    UTrackRepeat::Percent(p) => (p * available_space).max(1.0),
+                    UTrackRepeat::MinMax { min, .. } => match min {
+                        UTrackBound::Px(v) => v.max(1.0),
+                        UTrackBound::Percent(p) => (p * available_space).max(1.0),
+                        _ => 1.0,
+                    },
+                    _ => 1.0,
+                };
+                let count = if available_space > 0.0 {
+                    let fit = ((available_space + gap) / (min_size + gap)).floor() as usize;
+                    fit.max(1)
+                } else {
+                    1
+                };
+                for _ in 0..count {
+                    expanded.push(concrete);
+                    is_fit.push(false);
+                }
+            }
+            UTrackSize::RepeatFit(repeat_track) => {
+                let concrete: UTrackSize = repeat_track.into();
+                let min_size = match repeat_track {
+                    UTrackRepeat::Px(v) => v.max(1.0),
+                    UTrackRepeat::Percent(p) => (p * available_space).max(1.0),
+                    UTrackRepeat::MinMax { min, .. } => match min {
+                        UTrackBound::Px(v) => v.max(1.0),
+                        UTrackBound::Percent(p) => (p * available_space).max(1.0),
+                        _ => 1.0,
+                    },
+                    _ => 1.0,
+                };
+                let count = if available_space > 0.0 {
+                    let fit = ((available_space + gap) / (min_size + gap)).floor() as usize;
+                    fit.max(1)
+                } else {
+                    1
+                };
+                for _ in 0..count {
+                    expanded.push(concrete);
+                    is_fit.push(true);
+                }
+            }
+            other => {
+                expanded.push(other);
+                is_fit.push(false);
+            }
+        }
+    }
+
+    (expanded, is_fit)
+}
+
+pub(super) fn determine_grid_max_rows(
+    template_rows: &[UTrackSize],
+    auto_flow: UGridAutoFlow,
+    available_cross: f32,
+    cross_gap: f32,
+    auto_rows: UTrackSize,
+    items: &[SolverItem],
+    axis: &AxisHelper,
+) -> usize {
+    let mut max_rows = template_rows.len();
+    if template_rows.is_empty() && auto_flow == UGridAutoFlow::Column && available_cross > 0.0 {
+        let auto_row_height = match auto_rows {
+            UTrackSize::Px(v) => v.max(1.0),
+            UTrackSize::MinMax {
+                min: UTrackBound::Px(v),
+                ..
+            } => v.max(1.0),
+            _ => {
+                let mut max_item_cross = 0.0f32;
+                for item in items.iter() {
+                    let (_, child_cross) = axis.from_world(item.result.size);
+                    max_item_cross = max_item_cross.max(child_cross);
+                }
+                max_item_cross.max(1.0)
+            }
+        };
+        let fit_rows =
+            ((available_cross + cross_gap) / (auto_row_height + cross_gap)).floor() as usize;
+        max_rows = fit_rows.max(1);
+    } else if max_rows == 0 {
+        max_rows = 1;
+    }
+
+    for item in items.iter() {
+        if let Some(r_start) = item.spec.grid_row_start {
+            let r_span = item.spec.grid_row_span.max(1) as usize;
+            max_rows = max_rows.max(r_start.saturating_sub(1) as usize + r_span);
+        }
+    }
+    max_rows
+}
+
+struct InternalTrackSpec {
+    floor: f32,
+    max: Option<f32>,
+    fr: f32,
+    is_auto: bool,
+}
+
 pub(super) fn resolve_track_sizes(
     template: &[UTrackSize],
     fallback_count: usize,
@@ -296,65 +421,129 @@ pub(super) fn resolve_track_sizes(
     };
     let distributable = (available_space - total_gap).max(0.0);
 
-    let mut fixed_sum = 0.0;
-    let mut fr_sum = 0.0;
-    let mut auto_count = 0usize;
-    let mut auto_floor_sum = 0.0;
+    let mut specs = Vec::with_capacity(count);
 
     for (i, track) in track_defs.iter().enumerate() {
-        match *track {
-            UTrackSize::Px(v) => fixed_sum += v.max(0.0),
-            UTrackSize::Fr(v) => fr_sum += v.max(0.0),
-            UTrackSize::Auto => {
-                auto_count += 1;
-                let floor = content_floors.get(i).copied().unwrap_or(0.0).max(0.0);
-                auto_floor_sum += floor;
+        let content_floor = content_floors.get(i).copied().unwrap_or(0.0).max(0.0);
+        let spec = match *track {
+            UTrackSize::Px(v) => InternalTrackSpec {
+                floor: v.max(0.0),
+                max: Some(v.max(0.0)),
+                fr: 0.0,
+                is_auto: false,
+            },
+            UTrackSize::Percent(p) => {
+                let px = (p * available_space).max(0.0);
+                InternalTrackSpec {
+                    floor: px,
+                    max: Some(px),
+                    fr: 0.0,
+                    is_auto: false,
+                }
             }
-        }
+            UTrackSize::Fr(v) => InternalTrackSpec {
+                floor: content_floor,
+                max: None,
+                fr: v.max(0.0),
+                is_auto: false,
+            },
+            UTrackSize::Auto => InternalTrackSpec {
+                floor: content_floor,
+                max: None,
+                fr: 0.0,
+                is_auto: true,
+            },
+            UTrackSize::MinMax { min, max } => {
+                let min_px = match min {
+                    UTrackBound::Px(v) => v.max(0.0),
+                    UTrackBound::Percent(p) => (p * available_space).max(0.0),
+                    UTrackBound::Auto => content_floor,
+                    UTrackBound::Fr(_) => 0.0,
+                };
+                match max {
+                    UTrackBound::Fr(v) => InternalTrackSpec {
+                        floor: min_px,
+                        max: None,
+                        fr: v.max(0.0),
+                        is_auto: false,
+                    },
+                    UTrackBound::Px(v) => {
+                        let mx = v.max(min_px);
+                        InternalTrackSpec {
+                            floor: min_px,
+                            max: Some(mx),
+                            fr: 0.0,
+                            is_auto: mx > min_px,
+                        }
+                    }
+                    UTrackBound::Percent(p) => {
+                        let mx = (p * available_space).max(min_px);
+                        InternalTrackSpec {
+                            floor: min_px,
+                            max: Some(mx),
+                            fr: 0.0,
+                            is_auto: mx > min_px,
+                        }
+                    }
+                    UTrackBound::Auto => InternalTrackSpec {
+                        floor: min_px,
+                        max: None,
+                        fr: 0.0,
+                        is_auto: true,
+                    },
+                }
+            }
+            UTrackSize::Repeat(..) | UTrackSize::RepeatFill(..) | UTrackSize::RepeatFit(..) => {
+                InternalTrackSpec {
+                    floor: content_floor,
+                    max: None,
+                    fr: 0.0,
+                    is_auto: true,
+                }
+            }
+        };
+        specs.push(spec);
     }
 
-    if fr_sum > 0.0 {
-        let non_fr_base = fixed_sum + auto_floor_sum;
-        let remaining = (distributable - non_fr_base).max(0.0);
+    let total_floor: f32 = specs.iter().map(|s| s.floor).sum();
+    let fr_sum: f32 = specs.iter().map(|s| s.fr).sum();
+    let auto_count = specs.iter().filter(|s| s.is_auto).count();
 
-        track_defs
+    if fr_sum > 0.0 {
+        let non_fr_floor: f32 = specs.iter().filter(|s| s.fr == 0.0).map(|s| s.floor).sum();
+        let remaining = (distributable - non_fr_floor).max(0.0);
+
+        specs
             .iter()
-            .enumerate()
-            .map(|(i, track)| match *track {
-                UTrackSize::Px(v) => v.max(0.0),
-                UTrackSize::Fr(v) => {
-                    let fr_share = (remaining * (v.max(0.0) / fr_sum)).max(0.0);
-                    let fr_floor = content_floors.get(i).copied().unwrap_or(0.0).max(0.0);
-                    fr_share.max(fr_floor)
+            .map(|s| {
+                if s.fr > 0.0 {
+                    let share = remaining * (s.fr / fr_sum);
+                    share.max(s.floor)
+                } else {
+                    s.floor
                 }
-                UTrackSize::Auto => content_floors.get(i).copied().unwrap_or(0.0).max(0.0),
             })
             .collect()
     } else if auto_count > 0 {
-        let base_sum = fixed_sum + auto_floor_sum;
-        let extra = (distributable - base_sum).max(0.0);
-        let extra_per_auto = extra / auto_count as f32;
+        let remaining = (distributable - total_floor).max(0.0);
+        let extra_per_auto = remaining / auto_count as f32;
 
-        track_defs
+        specs
             .iter()
-            .enumerate()
-            .map(|(i, track)| match *track {
-                UTrackSize::Px(v) => v.max(0.0),
-                UTrackSize::Auto => {
-                    let floor = content_floors.get(i).copied().unwrap_or(0.0).max(0.0);
-                    floor + extra_per_auto
+            .map(|s| {
+                if s.is_auto {
+                    let grown = s.floor + extra_per_auto;
+                    match s.max {
+                        Some(mx) => grown.min(mx),
+                        None => grown,
+                    }
+                } else {
+                    s.floor
                 }
-                UTrackSize::Fr(_) => 0.0,
             })
             .collect()
     } else {
-        track_defs
-            .iter()
-            .map(|track| match *track {
-                UTrackSize::Px(v) => v.max(0.0),
-                _ => 0.0,
-            })
-            .collect()
+        specs.iter().map(|s| s.floor).collect()
     }
 }
 

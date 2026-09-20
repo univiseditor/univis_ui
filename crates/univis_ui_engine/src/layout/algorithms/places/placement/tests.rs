@@ -8,6 +8,14 @@ fn default_spec() -> SolverSpec {
     }
 }
 
+fn auto_spec() -> SolverSpec {
+    SolverSpec {
+        width_mode: SolverSizeMode::Auto,
+        height_mode: SolverSizeMode::Auto,
+        ..Default::default()
+    }
+}
+
 fn base_ctx() -> PlacementContext {
     PlacementContext {
         container_main_size: 100.0,
@@ -478,4 +486,167 @@ fn grid_item_preserves_aspect_ratio_inside_stretched_cell() {
     // In a 200x200 cell, 16:9 item fits as 200.0 x 112.5
     assert!((r1.size.x - 200.0).abs() < 0.001);
     assert!((r1.size.y - 112.5).abs() < 0.001);
+}
+
+#[test]
+fn grid_minmax_track_distributes_remaining_space() {
+    let mut r1 = SolverResult::default();
+    let mut r2 = SolverResult::default();
+    let s1 = auto_spec();
+    let s2 = auto_spec();
+    let mut items = vec![
+        SolverItem::new(s1, &mut r1, USides::default()),
+        SolverItem::new(s2, &mut r2, USides::default()),
+    ];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 600.0;
+    ctx.container_cross_size = 100.0;
+    ctx.grid_columns = 2;
+    ctx.grid_template_columns = vec![
+        UTrackSize::minmax(UTrackBound::px(100.0), UTrackBound::fr(1.0)),
+        UTrackSize::minmax(UTrackBound::px(100.0), UTrackBound::fr(1.0)),
+    ];
+    ctx.grid_template_rows = vec![UTrackSize::Px(50.0)];
+
+    let placer = GridPlacer { columns: 2 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    placer.place(&mut items, &axis, &ctx);
+
+    // 600px container split equally by two 1fr tracks = 300px each
+    assert!((r1.size.x - 300.0).abs() < 0.001);
+    assert!((r2.size.x - 300.0).abs() < 0.001);
+}
+
+#[test]
+fn grid_repeat_fixed_tracks_creates_expected_columns() {
+    let mut r1 = SolverResult::default();
+    let mut r2 = SolverResult::default();
+    let mut r3 = SolverResult::default();
+    let mut items = vec![
+        SolverItem::new(auto_spec(), &mut r1, USides::default()),
+        SolverItem::new(auto_spec(), &mut r2, USides::default()),
+        SolverItem::new(auto_spec(), &mut r3, USides::default()),
+    ];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 400.0;
+    ctx.container_cross_size = 60.0;
+    ctx.main_gap = 10.0;
+    ctx.grid_template_columns = vec![UTrackSize::repeat(3, UTrackRepeat::px(80.0))];
+    ctx.grid_template_rows = vec![UTrackSize::Px(40.0)];
+
+    let placer = GridPlacer { columns: 3 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    placer.place(&mut items, &axis, &ctx);
+
+    assert_eq!(r1.size.x, 80.0);
+    assert_eq!(r2.size.x, 80.0);
+    assert_eq!(r3.size.x, 80.0);
+    assert_eq!(r1.pos.x, 0.0);
+    assert_eq!(r2.pos.x, 90.0);
+    assert_eq!(r3.pos.x, 180.0);
+}
+
+#[test]
+fn grid_repeat_auto_fit_collapses_empty_tracks_and_expands_occupied() {
+    let mut r1 = SolverResult::default();
+    let mut r2 = SolverResult::default();
+    let mut items = vec![
+        SolverItem::new(auto_spec(), &mut r1, USides::default()),
+        SolverItem::new(auto_spec(), &mut r2, USides::default()),
+    ];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 1000.0;
+    ctx.container_cross_size = 100.0;
+    ctx.main_gap = 20.0;
+    // In 1000px with 20px gap, (1000 + 20) / (200 + 20) = 4 columns fit.
+    // With auto-fit and only 2 items, columns 2 and 3 collapse to 0.
+    // Remaining 2 columns share 1000 - 20 = 980px => 490px each.
+    ctx.grid_template_columns = vec![UTrackSize::repeat_fit(UTrackRepeat::minmax(
+        UTrackBound::px(200.0),
+        UTrackBound::fr(1.0),
+    ))];
+    ctx.grid_template_rows = vec![UTrackSize::Px(80.0)];
+
+    let placer = GridPlacer { columns: 1 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    placer.place(&mut items, &axis, &ctx);
+
+    assert!((r1.size.x - 490.0).abs() < 0.001);
+    assert!((r2.size.x - 490.0).abs() < 0.001);
+}
+
+#[test]
+fn grid_repeat_auto_fill_preserves_all_tracks() {
+    let mut r1 = SolverResult::default();
+    let mut r2 = SolverResult::default();
+    let mut items = vec![
+        SolverItem::new(auto_spec(), &mut r1, USides::default()),
+        SolverItem::new(auto_spec(), &mut r2, USides::default()),
+    ];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 1000.0;
+    ctx.container_cross_size = 100.0;
+    ctx.main_gap = 20.0;
+    // In 1000px with 20px gap, 4 columns fit.
+    // With auto-fill, all 4 columns are preserved.
+    // 1000 - 3 * 20 = 940 => 940 / 4 = 235px per column.
+    ctx.grid_template_columns = vec![UTrackSize::repeat_fill(UTrackRepeat::minmax(
+        UTrackBound::px(200.0),
+        UTrackBound::fr(1.0),
+    ))];
+    ctx.grid_template_rows = vec![UTrackSize::Px(80.0)];
+
+    let placer = GridPlacer { columns: 1 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    placer.place(&mut items, &axis, &ctx);
+
+    assert!((r1.size.x - 235.0).abs() < 0.001);
+    assert!((r2.size.x - 235.0).abs() < 0.001);
+}
+
+#[test]
+fn grid_repeat_auto_fit_responsive_wrapping() {
+    let mut r1 = SolverResult::default();
+    let mut r2 = SolverResult::default();
+    let mut r3 = SolverResult::default();
+    let mut r4 = SolverResult::default();
+    let mut items = vec![
+        SolverItem::new(auto_spec(), &mut r1, USides::default()),
+        SolverItem::new(auto_spec(), &mut r2, USides::default()),
+        SolverItem::new(auto_spec(), &mut r3, USides::default()),
+        SolverItem::new(auto_spec(), &mut r4, USides::default()),
+    ];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 500.0;
+    ctx.container_cross_size = 200.0;
+    ctx.main_gap = 10.0;
+    ctx.cross_gap = 10.0;
+    // In 500px with 10px gap: (500 + 10) / (150 + 10) = 510 / 160 = 3 columns fit.
+    // 4 items will place 3 on row 0, and the 4th wraps to row 1.
+    ctx.grid_template_columns = vec![UTrackSize::repeat_fit(UTrackRepeat::minmax(
+        UTrackBound::px(150.0),
+        UTrackBound::fr(1.0),
+    ))];
+    ctx.grid_template_rows = vec![UTrackSize::Px(60.0)];
+
+    let placer = GridPlacer { columns: 1 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    placer.place(&mut items, &axis, &ctx);
+
+    // Row 0 has 3 columns: (500 - 20) / 3 = 160px each
+    assert!((r1.size.x - 160.0).abs() < 0.001);
+    assert_eq!(r1.pos.x, 0.0);
+    assert_eq!(r1.pos.y, 0.0);
+
+    assert_eq!(r3.pos.x, 340.0); // 160 + 10 + 160 + 10 = 340
+    assert_eq!(r3.pos.y, 0.0);
+
+    // Item 4 wraps to row 1 at (col 0, row 1)
+    assert_eq!(r4.pos.x, 0.0);
+    assert_eq!(r4.pos.y, 70.0); // 60 + 10 = 70
 }

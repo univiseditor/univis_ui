@@ -27,6 +27,8 @@ impl Plugin for UnivisNodePlugin {
             .register_type::<UOverflowPosition>()
             .register_type::<UFlexWrap>()
             .register_type::<UTrackSize>()
+            .register_type::<UTrackBound>()
+            .register_type::<UTrackRepeat>()
             .register_type::<UGridAutoFlow>()
             .register_type::<UZIndex>();
     }
@@ -424,17 +426,7 @@ pub enum UFlexWrap {
     WrapReverse,
 }
 
-/// Grid track sizing.
-#[derive(Debug, Clone, Copy, PartialEq, Reflect, Default)]
-pub enum UTrackSize {
-    /// Fixed size in pixels.
-    Px(f32),
-    /// Fractional size taking a share of the remaining space.
-    Fr(f32),
-    /// Automatic sizing based on content.
-    #[default]
-    Auto,
-}
+pub use crate::layout::grid::{UTrackBound, UTrackRepeat, UTrackSize};
 
 /// Grid auto-placement flow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]

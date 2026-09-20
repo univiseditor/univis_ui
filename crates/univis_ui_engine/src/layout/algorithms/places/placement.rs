@@ -4,9 +4,9 @@ mod tests;
 
 use self::helpers::{
     alignment_offset, allows_explicit_stretch, allows_implicit_stretch, can_place_span,
-    canonical_align_self, compute_content_floors, ensure_grid_rows, has_explicit_align_self,
-    has_explicit_justify_self, mark_span, resolve_cross_align, resolve_justify_self,
-    resolve_track_sizes,
+    canonical_align_self, compute_content_floors, determine_grid_max_rows, ensure_grid_rows,
+    expand_grid_template, has_explicit_align_self, has_explicit_justify_self, mark_span,
+    resolve_cross_align, resolve_justify_self, resolve_track_sizes,
 };
 use bevy::math::Vec2;
 
@@ -22,7 +22,7 @@ use crate::layout::solver_types::{SolverSizeMode, SolverSpec};
 use crate::layout::univis_node::UFlexDirection;
 use crate::layout::univis_node::{
     UAlignItems, UAlignItemsExt, UAlignSelf, UAlignSelfExt, UContentAlignExt, UFlexWrap,
-    UGridAutoFlow, UJustifyContent, UOverflowPosition, UTrackSize,
+    UGridAutoFlow, UJustifyContent, UOverflowPosition, UTrackBound, UTrackRepeat, UTrackSize,
 };
 
 #[derive(Clone, Copy)]
@@ -268,43 +268,28 @@ impl LayoutPlacer for GridPlacer {
             (ctx.container_main_size - ctx.padding_main_start - ctx.padding_main_end).max(0.0);
         let available_cross = (ctx.container_cross_size - ctx.padding_cross_start * 2.0).max(0.0);
 
+        let (mut expanded_cols, col_is_fit) =
+            expand_grid_template(&ctx.grid_template_columns, available_main, ctx.main_gap);
+        let (expanded_rows, _) =
+            expand_grid_template(&ctx.grid_template_rows, available_cross, ctx.cross_gap);
+
         let fallback_cols = self.columns.max(ctx.grid_columns as usize).max(1);
-        let mut start_cols = fallback_cols.max(ctx.grid_template_columns.len());
+        let mut start_cols = fallback_cols.max(expanded_cols.len());
         for item in items.iter() {
             let col_start = item.spec.grid_column_start.unwrap_or(1) as usize;
             let col_span = item.spec.grid_column_span.max(1) as usize;
             start_cols = start_cols.max(col_start.saturating_sub(1) + col_span);
         }
 
-        let mut max_rows = ctx.grid_template_rows.len();
-        if ctx.grid_template_rows.is_empty()
-            && ctx.grid_auto_flow == UGridAutoFlow::Column
-            && available_cross > 0.0
-        {
-            let auto_row_height = match ctx.grid_auto_rows {
-                UTrackSize::Px(v) => v.max(1.0),
-                _ => {
-                    let mut max_item_cross = 0.0f32;
-                    for item in items.iter() {
-                        let (_, child_cross) = axis.from_world(item.result.size);
-                        max_item_cross = max_item_cross.max(child_cross);
-                    }
-                    max_item_cross.max(1.0)
-                }
-            };
-            let gap = ctx.cross_gap;
-            let fit_rows = ((available_cross + gap) / (auto_row_height + gap)).floor() as usize;
-            max_rows = fit_rows.max(1);
-        } else if max_rows == 0 {
-            max_rows = 1;
-        }
-
-        for item in items.iter() {
-            if let Some(r_start) = item.spec.grid_row_start {
-                let r_span = item.spec.grid_row_span.max(1) as usize;
-                max_rows = max_rows.max(r_start.saturating_sub(1) as usize + r_span);
-            }
-        }
+        let max_rows = determine_grid_max_rows(
+            &expanded_rows,
+            ctx.grid_auto_flow,
+            available_cross,
+            ctx.cross_gap,
+            ctx.grid_auto_rows,
+            items,
+            axis,
+        );
 
         let mut occupancy: Vec<Vec<bool>> = vec![vec![false; start_cols]; max_rows];
         let mut placements: Vec<(usize, usize, usize, usize)> = Vec::with_capacity(items.len());
@@ -528,13 +513,24 @@ impl LayoutPlacer for GridPlacer {
             .max()
             .unwrap_or(1);
 
-        let total_col_tracks = ctx
-            .grid_template_columns
+        if !col_is_fit.is_empty() {
+            let mut active_cols = expanded_cols.len();
+            while active_cols > final_cols.max(1) {
+                if col_is_fit.get(active_cols - 1).copied().unwrap_or(false) {
+                    active_cols -= 1;
+                } else {
+                    break;
+                }
+            }
+            expanded_cols.truncate(active_cols);
+        }
+
+        let total_col_tracks = expanded_cols
             .len()
             .max(fallback_cols)
             .max(final_cols)
             .max(1);
-        let total_row_tracks = ctx.grid_template_rows.len().max(required_rows).max(1);
+        let total_row_tracks = expanded_rows.len().max(required_rows).max(1);
 
         let (col_content_floors, row_content_floors) = compute_content_floors(
             items,
@@ -547,7 +543,7 @@ impl LayoutPlacer for GridPlacer {
         );
 
         let col_sizes = resolve_track_sizes(
-            &ctx.grid_template_columns,
+            &expanded_cols,
             fallback_cols,
             ctx.grid_auto_columns,
             available_main,
@@ -558,7 +554,7 @@ impl LayoutPlacer for GridPlacer {
         let cols = col_sizes.len();
 
         let row_sizes = resolve_track_sizes(
-            &ctx.grid_template_rows,
+            &expanded_rows,
             required_rows,
             ctx.grid_auto_rows,
             available_cross,

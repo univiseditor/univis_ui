@@ -19,6 +19,8 @@ pub mod components;
 pub mod core;
 /// Logical UI units, spacing helpers, and box-side utilities.
 pub mod geometry;
+/// Grid track sizing and repetition definitions.
+pub mod grid;
 /// Image-backed node helpers.
 pub mod image;
 /// Public requests for external layout invalidation.

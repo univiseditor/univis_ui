@@ -426,8 +426,26 @@ fn measure_grid_intrinsic(
     layout: &ULayout,
 ) -> (f32, f32, f32, f32) {
     let fallback_cols = layout.grid_columns.max(1) as usize;
-    let template_cols_len = layout.container_ext.grid.template_columns.len();
-    let template_rows_len = layout.container_ext.grid.template_rows.len();
+    let template_cols_len: usize = layout
+        .container_ext
+        .grid
+        .template_columns
+        .iter()
+        .map(|t| match *t {
+            UTrackSize::Repeat(count, _) => count as usize,
+            _ => 1,
+        })
+        .sum();
+    let template_rows_len: usize = layout
+        .container_ext
+        .grid
+        .template_rows
+        .iter()
+        .map(|t| match *t {
+            UTrackSize::Repeat(count, _) => count as usize,
+            _ => 1,
+        })
+        .sum();
 
     let mut num_cols = if template_cols_len > 0 {
         template_cols_len
@@ -591,6 +609,10 @@ fn measure_grid_intrinsic(
             .unwrap_or(layout.container_ext.grid.auto_columns);
         match track {
             UTrackSize::Px(v) => Some(v.max(0.0)),
+            UTrackSize::MinMax {
+                min: UTrackBound::Px(v),
+                ..
+            } => Some(v.max(0.0)),
             _ => None,
         }
     };
@@ -605,6 +627,10 @@ fn measure_grid_intrinsic(
             .unwrap_or(layout.container_ext.grid.auto_rows);
         match track {
             UTrackSize::Px(v) => Some(v.max(0.0)),
+            UTrackSize::MinMax {
+                min: UTrackBound::Px(v),
+                ..
+            } => Some(v.max(0.0)),
             _ => None,
         }
     };

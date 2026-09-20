@@ -34,6 +34,8 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<univis_node::UOverflowPosition>()
         .register_type::<univis_node::UFlexWrap>()
         .register_type::<univis_node::UTrackSize>()
+        .register_type::<univis_node::UTrackBound>()
+        .register_type::<univis_node::UTrackRepeat>()
         .register_type::<univis_node::UGridAutoFlow>();
 }
 

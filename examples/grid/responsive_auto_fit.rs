@@ -1,7 +1,7 @@
 //! Responsive Tactical HUD Subsystem Monitor using `UTrackSize::repeat_fit` and `UTrackRepeat::minmax`.
 //!
 //! Demonstrates how `repeat(auto-fit, minmax(200px, 1fr))` dynamically adapts the number of
-//! HUD subsystem slots based on viewport / cockpit mode width without media queries.
+//! HUD subsystem slots in real time based on viewport width (via live mouse drag or preset modes).
 
 use bevy::prelude::*;
 use univis_ui::prelude::*;
@@ -12,6 +12,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "Univis UI - Tactical Sci-Fi HUD (CSS Grid auto-fit)".into(),
                 resolution: (1200, 780).into(),
+                resizable: true,
                 ..default()
             }),
             ..default()
@@ -19,7 +20,7 @@ fn main() {
         .add_plugins(UnivisUiPlugin)
         .init_resource::<GridDemoState>()
         .add_systems(Startup, setup)
-        .add_systems(Update, (handle_input, sync_preset_state))
+        .add_systems(Update, (handle_input, sync_window_and_layout))
         .run();
 }
 
@@ -32,43 +33,76 @@ enum ContainerPreset {
 }
 
 impl ContainerPreset {
-    fn width(self) -> f32 {
+    fn window_width(self) -> f32 {
         match self {
-            Self::CockpitFull => 960.0,
-            Self::CombatFocus => 700.0,
-            Self::AuxDisplay => 460.0,
-            Self::HelmetMini => 300.0,
+            Self::CockpitFull => 1200.0,
+            Self::CombatFocus => 920.0,
+            Self::AuxDisplay => 640.0,
+            Self::HelmetMini => 420.0,
+        }
+    }
+
+    fn container_width(self) -> f32 {
+        match self {
+            Self::CockpitFull => 980.0,
+            Self::CombatFocus => 720.0,
+            Self::AuxDisplay => 480.0,
+            Self::HelmetMini => 320.0,
         }
     }
 
     fn label(self) -> &'static str {
         match self {
-            Self::CockpitFull => "Full Cockpit (960px)",
-            Self::CombatFocus => "Combat Focus (700px)",
-            Self::AuxDisplay => "Aux Display (460px)",
-            Self::HelmetMini => "Helmet Mini (300px)",
+            Self::CockpitFull => "Full Cockpit (1200px)",
+            Self::CombatFocus => "Combat Focus (920px)",
+            Self::AuxDisplay => "Aux Display (640px)",
+            Self::HelmetMini => "Helmet Mini (420px)",
         }
     }
 
     fn expected_cols(self) -> &'static str {
         match self {
-            Self::CockpitFull => "4 subsystem slots",
-            Self::CombatFocus => "3 subsystem slots",
-            Self::AuxDisplay => "2 subsystem slots",
-            Self::HelmetMini => "1 subsystem slot",
+            Self::CockpitFull => "4-5 slots",
+            Self::CombatFocus => "3 slots",
+            Self::AuxDisplay => "2 slots",
+            Self::HelmetMini => "1 slot",
         }
     }
+
+    fn from_window_width(w: f32) -> Self {
+        if w >= 1060.0 {
+            Self::CockpitFull
+        } else if w >= 800.0 {
+            Self::CombatFocus
+        } else if w >= 540.0 {
+            Self::AuxDisplay
+        } else {
+            Self::HelmetMini
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum PresetSelection {
+    Preset(ContainerPreset),
+    AutoFluid,
 }
 
 #[derive(Resource)]
 struct GridDemoState {
     preset: ContainerPreset,
+    fluid_sync: bool,
+    last_window_size: Vec2,
+    preset_request: Option<PresetSelection>,
 }
 
 impl Default for GridDemoState {
     fn default() -> Self {
         Self {
             preset: ContainerPreset::CockpitFull,
+            fluid_sync: true,
+            last_window_size: Vec2::new(1200.0, 780.0),
+            preset_request: None,
         }
     }
 }
@@ -77,7 +111,7 @@ impl Default for GridDemoState {
 struct ResizableGridContainer;
 
 #[derive(Component)]
-struct PresetButton(ContainerPreset);
+struct PresetButton(PresetSelection);
 
 #[derive(Component)]
 struct StatusText;
@@ -107,24 +141,26 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
         .spawn((
             ChildOf(root),
             UNode {
-                width: UVal::Px(1120.0),
-                height: UVal::Px(720.0),
-                padding: USides::all(24.0),
+                width: UVal::Percent(0.96),
+                height: UVal::Percent(0.95),
+                max_width: 1400.0,
+                max_height: 920.0,
+                padding: USides::axes(20.0, 16.0),
                 background_color: Color::srgba(0.03, 0.05, 0.09, 0.95),
-                border_radius: UCornerRadius::all(20.0),
+                border_radius: UCornerRadius::all(18.0),
                 shape_mode: UShapeMode::Cut,
                 ..default()
             },
             UBorder {
                 color: Color::srgba(0.0, 0.8, 1.0, 0.3),
                 width: 1.5,
-                radius: UCornerRadius::all(20.0),
+                radius: UCornerRadius::all(18.0),
                 offset: 0.0,
             },
             ULayout {
                 display: UDisplay::Flex,
                 flex_direction: UFlexDirection::Column,
-                gap: 16.0,
+                gap: 12.0,
                 ..default()
             },
         ))
@@ -144,7 +180,7 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
         ChildOf(shell),
         label_node(),
         text(
-            "Click preset buttons below or press [1, 2, 3, 4] / [Space] to switch cockpit display modes.",
+            "Drag/resize window edges with mouse for live auto-fit reflow, or click presets / press [1-5, Space] to resize.",
             13.0,
             Color::srgb(0.65, 0.78, 0.9),
         ),
@@ -154,39 +190,76 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
     let btn_bar = commands
         .spawn((
             ChildOf(shell),
-            UNode {
-                height: UVal::Px(42.0),
-                ..default()
-            },
+            UNode::default(),
             ULayout {
                 display: UDisplay::Flex,
                 flex_direction: UFlexDirection::Row,
-                gap: 10.0,
+                gap: 8.0,
                 align_items: UAlignItems::Center,
+                container_ext: ULayoutContainerExt {
+                    flex: ULayoutFlexContainer {
+                        wrap: UFlexWrap::Wrap,
+                        ..default()
+                    },
+                    ..default()
+                },
                 ..default()
             },
         ))
         .id();
 
-    for preset in [
-        ContainerPreset::CockpitFull,
-        ContainerPreset::CombatFocus,
-        ContainerPreset::AuxDisplay,
-        ContainerPreset::HelmetMini,
-    ] {
-        let is_active = preset == state.preset;
+    let buttons = [
+        (
+            PresetSelection::Preset(ContainerPreset::CockpitFull),
+            "[1] Full Cockpit (1200px)",
+        ),
+        (
+            PresetSelection::Preset(ContainerPreset::CombatFocus),
+            "[2] Combat Focus (920px)",
+        ),
+        (
+            PresetSelection::Preset(ContainerPreset::AuxDisplay),
+            "[3] Aux Display (640px)",
+        ),
+        (
+            PresetSelection::Preset(ContainerPreset::HelmetMini),
+            "[4] Helmet Mini (420px)",
+        ),
+        (PresetSelection::AutoFluid, "[5] Auto Fluid (Drag Window)"),
+    ];
+
+    for (selection, label) in buttons {
+        let is_active = match selection {
+            PresetSelection::Preset(p) => p == state.preset,
+            PresetSelection::AutoFluid => state.fluid_sync,
+        };
+
         let bg_color = if is_active {
-            Color::srgba(0.0, 0.45, 0.7, 0.9)
+            if selection == PresetSelection::AutoFluid {
+                Color::srgba(0.0, 0.45, 0.3, 0.95)
+            } else {
+                Color::srgba(0.0, 0.45, 0.7, 0.9)
+            }
         } else {
             Color::srgba(0.05, 0.09, 0.16, 0.9)
+        };
+
+        let border_color = if is_active {
+            if selection == PresetSelection::AutoFluid {
+                Color::srgb(0.1, 0.9, 0.5)
+            } else {
+                Color::srgb(0.0, 0.9, 1.0)
+            }
+        } else {
+            Color::srgba(0.0, 0.8, 1.0, 0.2)
         };
 
         let btn = commands
             .spawn((
                 ChildOf(btn_bar),
-                PresetButton(preset),
+                PresetButton(selection),
                 UNode {
-                    padding: USides::axes(14.0, 8.0),
+                    padding: USides::axes(12.0, 7.0),
                     background_color: bg_color,
                     border_radius: UCornerRadius::all(8.0),
                     shape_mode: UShapeMode::Cut,
@@ -199,11 +272,7 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
                     pressed: Color::srgba(0.0, 0.35, 0.6, 0.95),
                 },
                 UBorder {
-                    color: if is_active {
-                        Color::srgb(0.0, 0.9, 1.0)
-                    } else {
-                        Color::srgba(0.0, 0.8, 1.0, 0.2)
-                    },
+                    color: border_color,
                     width: 1.0,
                     radius: UCornerRadius::all(8.0),
                     offset: 0.0,
@@ -217,16 +286,12 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
             ))
             .observe(
                 move |_click: On<Pointer<Click>>, mut state: ResMut<GridDemoState>| {
-                    state.preset = preset;
+                    state.preset_request = Some(selection);
                 },
             )
             .id();
 
-        commands.spawn((
-            ChildOf(btn),
-            label_node(),
-            text(preset.label(), 12.0, Color::WHITE),
-        ));
+        commands.spawn((ChildOf(btn), label_node(), text(label, 12.0, Color::WHITE)));
     }
 
     // Status pill
@@ -260,8 +325,8 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
         label_node(),
         text(
             format!(
-                "COCKPIT WIDTH: {:.0}px | {} | TRACK: minmax(200px, 1fr) @ 14px GAP",
-                state.preset.width(),
+                "VIEWPORT: 1200x780px | AUTO-FLUID SYNC: {} ({}) | TRACK: minmax(200px, 1fr)",
+                state.preset.label(),
                 state.preset.expected_cols()
             ),
             12.0,
@@ -273,18 +338,29 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
     let center_wrapper = commands
         .spawn((
             ChildOf(shell),
+            USelf {
+                item_ext: ULayoutItemExt {
+                    flex: ULayoutFlexItem {
+                        flex_grow: Some(1.0),
+                        flex_shrink: Some(1.0),
+                        ..default()
+                    },
+                    ..default()
+                },
+                ..default()
+            },
             UNode {
-                height: UVal::Px(460.0),
-                padding: USides::all(12.0),
+                width: UVal::Percent(1.0),
+                padding: USides::all(10.0),
                 background_color: Color::srgba(0.02, 0.035, 0.06, 0.8),
-                border_radius: UCornerRadius::all(16.0),
+                border_radius: UCornerRadius::all(14.0),
                 shape_mode: UShapeMode::Cut,
                 ..default()
             },
             UBorder {
                 color: Color::srgba(0.0, 0.8, 1.0, 0.15),
                 width: 1.0,
-                radius: UCornerRadius::all(16.0),
+                radius: UCornerRadius::all(14.0),
                 offset: 0.0,
             },
             ULayout {
@@ -302,17 +378,17 @@ fn setup(mut commands: Commands, state: Res<GridDemoState>) {
             ChildOf(center_wrapper),
             ResizableGridContainer,
             UNode {
-                width: UVal::Px(state.preset.width()),
-                padding: USides::all(16.0),
+                width: UVal::Percent(1.0),
+                padding: USides::all(14.0),
                 background_color: Color::srgba(0.04, 0.07, 0.12, 0.95),
-                border_radius: UCornerRadius::all(14.0),
+                border_radius: UCornerRadius::all(12.0),
                 shape_mode: UShapeMode::Cut,
                 ..default()
             },
             UBorder {
                 color: Color::srgba(0.0, 0.85, 1.0, 0.35),
                 width: 1.0,
-                radius: UCornerRadius::all(14.0),
+                radius: UCornerRadius::all(12.0),
                 offset: 0.0,
             },
             ULayout {
@@ -397,8 +473,8 @@ fn spawn_card(
         .spawn((
             ChildOf(parent),
             UNode {
-                height: UVal::Px(112.0),
-                padding: USides::all(12.0),
+                height: UVal::Px(104.0),
+                padding: USides::all(11.0),
                 background_color: Color::srgba(0.05, 0.09, 0.15, 0.95),
                 border_radius: UCornerRadius::all(10.0),
                 shape_mode: UShapeMode::Cut,
@@ -469,52 +545,38 @@ fn spawn_card(
     commands.spawn((
         ChildOf(card),
         label_node(),
-        text("TELEMETRY: SYNCED", 9.0, Color::srgba(0.5, 0.6, 0.75, 0.6)),
+        text("TELEMETRY: NOMINAL", 9.0, Color::srgba(0.5, 0.6, 0.75, 0.6)),
     ));
 }
 
-fn handle_input(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mouse: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
-    mut state: ResMut<GridDemoState>,
-) {
+fn handle_input(keyboard: Res<ButtonInput<KeyCode>>, mut state: ResMut<GridDemoState>) {
     if keyboard.just_pressed(KeyCode::Digit1) || keyboard.just_pressed(KeyCode::Numpad1) {
-        state.preset = ContainerPreset::CockpitFull;
+        state.preset_request = Some(PresetSelection::Preset(ContainerPreset::CockpitFull));
     } else if keyboard.just_pressed(KeyCode::Digit2) || keyboard.just_pressed(KeyCode::Numpad2) {
-        state.preset = ContainerPreset::CombatFocus;
+        state.preset_request = Some(PresetSelection::Preset(ContainerPreset::CombatFocus));
     } else if keyboard.just_pressed(KeyCode::Digit3) || keyboard.just_pressed(KeyCode::Numpad3) {
-        state.preset = ContainerPreset::AuxDisplay;
+        state.preset_request = Some(PresetSelection::Preset(ContainerPreset::AuxDisplay));
     } else if keyboard.just_pressed(KeyCode::Digit4) || keyboard.just_pressed(KeyCode::Numpad4) {
-        state.preset = ContainerPreset::HelmetMini;
+        state.preset_request = Some(PresetSelection::Preset(ContainerPreset::HelmetMini));
+    } else if keyboard.just_pressed(KeyCode::Digit5)
+        || keyboard.just_pressed(KeyCode::Numpad5)
+        || keyboard.just_pressed(KeyCode::KeyF)
+    {
+        state.preset_request = Some(PresetSelection::AutoFluid);
     } else if keyboard.just_pressed(KeyCode::Space) || keyboard.just_pressed(KeyCode::Tab) {
-        state.preset = match state.preset {
+        let next = match state.preset {
             ContainerPreset::CockpitFull => ContainerPreset::CombatFocus,
             ContainerPreset::CombatFocus => ContainerPreset::AuxDisplay,
             ContainerPreset::AuxDisplay => ContainerPreset::HelmetMini,
             ContainerPreset::HelmetMini => ContainerPreset::CockpitFull,
         };
-    } else if mouse.just_pressed(MouseButton::Left) {
-        if let Ok(window) = windows.single() {
-            if let Some(cursor) = window.cursor_position() {
-                if cursor.y >= 90.0 && cursor.y <= 210.0 {
-                    if cursor.x >= 30.0 && cursor.x < 240.0 {
-                        state.preset = ContainerPreset::CockpitFull;
-                    } else if cursor.x >= 240.0 && cursor.x < 440.0 {
-                        state.preset = ContainerPreset::CombatFocus;
-                    } else if cursor.x >= 440.0 && cursor.x < 620.0 {
-                        state.preset = ContainerPreset::AuxDisplay;
-                    } else if cursor.x >= 620.0 && cursor.x < 850.0 {
-                        state.preset = ContainerPreset::HelmetMini;
-                    }
-                }
-            }
-        }
+        state.preset_request = Some(PresetSelection::Preset(next));
     }
 }
 
-fn sync_preset_state(
-    state: Res<GridDemoState>,
+fn sync_window_and_layout(
+    mut state: ResMut<GridDemoState>,
+    mut windows: Query<&mut Window>,
     mut container_q: Query<&mut UNode, With<ResizableGridContainer>>,
     mut status_q: Query<&mut UTextLabel, With<StatusText>>,
     mut buttons_q: Query<
@@ -522,34 +584,97 @@ fn sync_preset_state(
         Without<ResizableGridContainer>,
     >,
 ) {
-    if !state.is_changed() {
+    let Ok(mut window) = windows.single_mut() else {
         return;
+    };
+    let cur_size = Vec2::new(window.width(), window.height());
+
+    // 1. Check if the user manually dragged/resized the OS window with mouse
+    let window_resized = (cur_size.x - state.last_window_size.x).abs() > 1.5
+        || (cur_size.y - state.last_window_size.y).abs() > 1.5;
+
+    if window_resized && state.preset_request.is_none() {
+        state.last_window_size = cur_size;
+        state.fluid_sync = true;
+        state.preset = ContainerPreset::from_window_width(cur_size.x);
+        if let Ok(mut container_node) = container_q.single_mut() {
+            container_node.width = UVal::Percent(1.0);
+        }
     }
 
-    if let Ok(mut container_node) = container_q.single_mut() {
-        container_node.width = UVal::Px(state.preset.width());
+    // 2. Handle requested preset or fluid mode
+    if let Some(req) = state.preset_request.take() {
+        match req {
+            PresetSelection::Preset(preset) => {
+                state.preset = preset;
+                state.fluid_sync = false;
+                window.resolution.set(preset.window_width(), 780.0);
+                state.last_window_size = Vec2::new(preset.window_width(), 780.0);
+                if let Ok(mut container_node) = container_q.single_mut() {
+                    container_node.width = UVal::Px(preset.container_width());
+                }
+            }
+            PresetSelection::AutoFluid => {
+                state.fluid_sync = true;
+                state.preset = ContainerPreset::from_window_width(cur_size.x);
+                state.last_window_size = cur_size;
+                if let Ok(mut container_node) = container_q.single_mut() {
+                    container_node.width = UVal::Percent(1.0);
+                }
+            }
+        }
     }
 
+    // 3. Update status telemetry text
     if let Ok(mut txt) = status_q.single_mut() {
+        let mode_desc = if state.fluid_sync {
+            format!(
+                "AUTO-FLUID WINDOW SYNC | DETECTED: {} ({})",
+                state.preset.label(),
+                state.preset.expected_cols()
+            )
+        } else {
+            format!(
+                "PRESET LOCKED: {} ({})",
+                state.preset.label(),
+                state.preset.expected_cols()
+            )
+        };
         txt.text = format!(
-            "COCKPIT WIDTH: {:.0}px | {} | TRACK: minmax(200px, 1fr) @ 14px GAP",
-            state.preset.width(),
-            state.preset.expected_cols()
+            "VIEWPORT: {:.0}x{:.0}px | {} | TRACKS: minmax(200px, 1fr) @ 14px GAP",
+            cur_size.x, cur_size.y, mode_desc
         );
     }
 
+    // 4. Update button styles
     for (btn, mut node, mut border) in &mut buttons_q {
-        let is_active = btn.0 == state.preset;
-        node.background_color = if is_active {
-            Color::srgba(0.0, 0.45, 0.7, 0.9)
+        let is_active = match btn.0 {
+            PresetSelection::Preset(p) => p == state.preset,
+            PresetSelection::AutoFluid => state.fluid_sync,
+        };
+
+        let bg_color = if is_active {
+            if btn.0 == PresetSelection::AutoFluid {
+                Color::srgba(0.0, 0.45, 0.3, 0.95)
+            } else {
+                Color::srgba(0.0, 0.45, 0.7, 0.9)
+            }
         } else {
             Color::srgba(0.05, 0.09, 0.16, 0.9)
         };
-        border.color = if is_active {
-            Color::srgb(0.0, 0.9, 1.0)
+
+        let border_color = if is_active {
+            if btn.0 == PresetSelection::AutoFluid {
+                Color::srgb(0.1, 0.9, 0.5)
+            } else {
+                Color::srgb(0.0, 0.9, 1.0)
+            }
         } else {
             Color::srgba(0.0, 0.8, 1.0, 0.2)
         };
+
+        node.background_color = bg_color;
+        border.color = border_color;
     }
 }
 

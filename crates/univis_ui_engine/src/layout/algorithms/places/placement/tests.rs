@@ -12,6 +12,7 @@ fn default_spec() -> SolverSpec {
         height_flex: 0.0,
         min_height: 0.0,
         max_height: f32::INFINITY,
+        aspect_ratio: None,
         position_type: UPositionType::Relative,
         left: UVal::Auto,
         right: UVal::Auto,
@@ -477,4 +478,30 @@ fn multispan_item_distributes_deficit_across_tracks() {
 
     // Two tracks plus 10 gap must be at least 120.0
     assert!(size.x >= 120.0 - 0.1);
+}
+
+#[test]
+fn grid_item_preserves_aspect_ratio_inside_stretched_cell() {
+    let mut r1 = SolverResult::default();
+    let mut s1 = default_spec();
+    s1.width_mode = SolverSizeMode::Auto;
+    s1.height_mode = SolverSizeMode::Auto;
+    s1.aspect_ratio = Some(16.0 / 9.0);
+
+    let mut items = vec![SolverItem::new(s1, &mut r1, USides::default())];
+
+    let mut ctx = base_ctx();
+    ctx.container_main_size = 200.0;
+    ctx.container_cross_size = 200.0;
+    ctx.grid_columns = 1;
+    ctx.grid_template_columns = vec![UTrackSize::Px(200.0)];
+    ctx.grid_template_rows = vec![UTrackSize::Px(200.0)];
+
+    let placer = GridPlacer { columns: 1 };
+    let axis = AxisHelper::new(UFlexDirection::Row);
+    placer.place(&mut items, &axis, &ctx);
+
+    // In a 200x200 cell, 16:9 item fits as 200.0 x 112.5
+    assert!((r1.size.x - 200.0).abs() < 0.001);
+    assert!((r1.size.y - 112.5).abs() < 0.001);
 }

@@ -30,6 +30,7 @@ pub struct SolverSpec {
     pub height_flex: f32,
     pub min_height: f32,
     pub max_height: f32,
+    pub aspect_ratio: Option<f32>,
     pub position_type: UPositionType,
     pub left: UVal,
     pub right: UVal,

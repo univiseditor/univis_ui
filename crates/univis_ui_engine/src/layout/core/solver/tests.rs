@@ -137,6 +137,7 @@ fn auto_cross_size_stretches_but_content_cross_size_keeps_intrinsic_value() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -171,6 +172,7 @@ fn auto_cross_size_stretches_but_content_cross_size_keeps_intrinsic_value() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -220,6 +222,7 @@ fn flex_shrink_respects_min_width_and_redistributes_remaining_overflow() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -254,6 +257,7 @@ fn flex_shrink_respects_min_width_and_redistributes_remaining_overflow() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -304,6 +308,7 @@ fn flex_grow_respects_max_width_and_redistributes_remaining_space() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -338,6 +343,7 @@ fn flex_grow_respects_max_width_and_redistributes_remaining_space() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -389,6 +395,7 @@ fn wrapped_row_moves_item_to_next_line_when_min_width_blocks_further_shrink() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -423,6 +430,7 @@ fn wrapped_row_moves_item_to_next_line_when_min_width_blocks_further_shrink() {
                 height_flex: 0.0,
                 min_height: 0.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -475,6 +483,7 @@ fn wrapped_column_moves_item_to_next_column_when_min_height_blocks_further_shrin
                 height_flex: 0.0,
                 min_height: 90.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -509,6 +518,7 @@ fn wrapped_column_moves_item_to_next_column_when_min_height_blocks_further_shrin
                 height_flex: 0.0,
                 min_height: 90.0,
                 max_height: f32::INFINITY,
+                aspect_ratio: None,
                 position_type: UPositionType::Relative,
                 left: UVal::Auto,
                 right: UVal::Auto,
@@ -538,4 +548,193 @@ fn wrapped_column_moves_item_to_next_column_when_min_height_blocks_further_shrin
     assert_eq!(first.size.y, 90.0);
     assert_eq!(second.size.y, 90.0);
     assert!(second.pos.x >= first.size.x - 0.1);
+}
+
+#[test]
+fn aspect_ratio_derives_height_from_fixed_width_in_row() {
+    let config = base_solver_config();
+    let constraints = BoxConstraints::tight(Vec2::new(400.0, 300.0));
+    let mut result = SolverResult::default();
+    let mut items = vec![SolverItem::new(
+        SolverSpec {
+            width_mode: SolverSizeMode::Fixed,
+            width_val: 160.0,
+            width_flex: 0.0,
+            min_width: 0.0,
+            max_width: f32::INFINITY,
+            height_mode: SolverSizeMode::Auto,
+            height_val: 0.0,
+            height_flex: 0.0,
+            min_height: 0.0,
+            max_height: f32::INFINITY,
+            aspect_ratio: Some(16.0 / 9.0),
+            position_type: UPositionType::Relative,
+            left: UVal::Auto,
+            right: UVal::Auto,
+            top: UVal::Auto,
+            bottom: UVal::Auto,
+            align_self: None,
+            align_self_ext: None,
+            justify_self_ext: None,
+            justify_overflow: UOverflowPosition::Unsafe,
+            align_overflow: UOverflowPosition::Unsafe,
+            flex_grow: None,
+            flex_shrink: None,
+            flex_basis: None,
+            grid_column_start: None,
+            grid_column_span: 1,
+            grid_row_start: None,
+            grid_row_span: 1,
+            order: 0,
+        },
+        &mut result,
+        USides::default(),
+    )];
+
+    solve_flex_layout(&config, constraints, &mut items);
+
+    assert!((result.size.x - 160.0).abs() < 0.001);
+    assert!((result.size.y - 90.0).abs() < 0.001);
+}
+
+#[test]
+fn aspect_ratio_derives_width_from_fixed_height_in_row() {
+    let config = base_solver_config();
+    let constraints = BoxConstraints::tight(Vec2::new(400.0, 300.0));
+    let mut result = SolverResult::default();
+    let mut items = vec![SolverItem::new(
+        SolverSpec {
+            width_mode: SolverSizeMode::Auto,
+            width_val: 0.0,
+            width_flex: 0.0,
+            min_width: 0.0,
+            max_width: f32::INFINITY,
+            height_mode: SolverSizeMode::Fixed,
+            height_val: 100.0,
+            height_flex: 0.0,
+            min_height: 0.0,
+            max_height: f32::INFINITY,
+            aspect_ratio: Some(2.0),
+            position_type: UPositionType::Relative,
+            left: UVal::Auto,
+            right: UVal::Auto,
+            top: UVal::Auto,
+            bottom: UVal::Auto,
+            align_self: None,
+            align_self_ext: None,
+            justify_self_ext: None,
+            justify_overflow: UOverflowPosition::Unsafe,
+            align_overflow: UOverflowPosition::Unsafe,
+            flex_grow: None,
+            flex_shrink: None,
+            flex_basis: None,
+            grid_column_start: None,
+            grid_column_span: 1,
+            grid_row_start: None,
+            grid_row_span: 1,
+            order: 0,
+        },
+        &mut result,
+        USides::default(),
+    )];
+
+    solve_flex_layout(&config, constraints, &mut items);
+
+    assert!((result.size.x - 200.0).abs() < 0.001);
+    assert!((result.size.y - 100.0).abs() < 0.001);
+}
+
+#[test]
+fn aspect_ratio_inhibits_implicit_cross_stretch() {
+    let mut config = base_solver_config();
+    config.layout.align_items = UAlignItems::Stretch;
+    let constraints = BoxConstraints::tight(Vec2::new(400.0, 300.0));
+    let mut result = SolverResult::default();
+    let mut items = vec![SolverItem::new(
+        SolverSpec {
+            width_mode: SolverSizeMode::Fixed,
+            width_val: 120.0,
+            width_flex: 0.0,
+            min_width: 0.0,
+            max_width: f32::INFINITY,
+            height_mode: SolverSizeMode::Auto,
+            height_val: 0.0,
+            height_flex: 0.0,
+            min_height: 0.0,
+            max_height: f32::INFINITY,
+            aspect_ratio: Some(1.0), // Square
+            position_type: UPositionType::Relative,
+            left: UVal::Auto,
+            right: UVal::Auto,
+            top: UVal::Auto,
+            bottom: UVal::Auto,
+            align_self: None,
+            align_self_ext: None,
+            justify_self_ext: None,
+            justify_overflow: UOverflowPosition::Unsafe,
+            align_overflow: UOverflowPosition::Unsafe,
+            flex_grow: None,
+            flex_shrink: None,
+            flex_basis: None,
+            grid_column_start: None,
+            grid_column_span: 1,
+            grid_row_start: None,
+            grid_row_span: 1,
+            order: 0,
+        },
+        &mut result,
+        USides::default(),
+    )];
+
+    solve_flex_layout(&config, constraints, &mut items);
+
+    // Height must be 120.0 (1:1), NOT stretched to container height 300.0!
+    assert!((result.size.x - 120.0).abs() < 0.001);
+    assert!((result.size.y - 120.0).abs() < 0.001);
+}
+
+#[test]
+fn aspect_ratio_absolute_box_resolves_auto_dimension() {
+    let spec = SolverSpec {
+        width_mode: SolverSizeMode::Fixed,
+        width_val: 150.0,
+        width_flex: 0.0,
+        min_width: 0.0,
+        max_width: f32::INFINITY,
+        height_mode: SolverSizeMode::Auto,
+        height_val: 0.0,
+        height_flex: 0.0,
+        min_height: 0.0,
+        max_height: f32::INFINITY,
+        aspect_ratio: Some(1.5),
+        position_type: UPositionType::Absolute,
+        left: UVal::Px(10.0),
+        right: UVal::Auto,
+        top: UVal::Px(10.0),
+        bottom: UVal::Auto,
+        align_self: None,
+        align_self_ext: None,
+        justify_self_ext: None,
+        justify_overflow: UOverflowPosition::Unsafe,
+        align_overflow: UOverflowPosition::Unsafe,
+        flex_grow: None,
+        flex_shrink: None,
+        flex_basis: None,
+        grid_column_start: None,
+        grid_column_span: 1,
+        grid_row_start: None,
+        grid_row_span: 1,
+        order: 0,
+    };
+
+    let (size, pos) = solve_absolute_box(
+        Vec2::new(500.0, 500.0),
+        &spec,
+        USides::default(),
+        Vec2::ZERO,
+    );
+
+    assert!((size.x - 150.0).abs() < 0.001);
+    assert!((size.y - 100.0).abs() < 0.001);
+    assert_eq!(pos, Vec2::new(10.0, 10.0));
 }

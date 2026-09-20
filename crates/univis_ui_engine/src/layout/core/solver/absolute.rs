@@ -8,7 +8,7 @@ pub(super) fn solve_absolute_box(
     intrinsic_size: Vec2,
 ) -> (Vec2, Vec2) {
     let is_h_stretch = !matches!(spec.left, UVal::Auto) && !matches!(spec.right, UVal::Auto);
-    let width = if is_h_stretch {
+    let mut width = if is_h_stretch {
         let l = spec.left.resolve_or_zero(container_size.x);
         let r = spec.right.resolve_or_zero(container_size.x);
         (container_size.x - l - r - margin.left - margin.right).max(0.0)
@@ -22,7 +22,7 @@ pub(super) fn solve_absolute_box(
     .clamp(spec.min_width, spec.max_width);
 
     let is_v_stretch = !matches!(spec.top, UVal::Auto) && !matches!(spec.bottom, UVal::Auto);
-    let height = if is_v_stretch {
+    let mut height = if is_v_stretch {
         let t = spec.top.resolve_or_zero(container_size.y);
         let b = spec.bottom.resolve_or_zero(container_size.y);
         (container_size.y - t - b - margin.top - margin.bottom).max(0.0)
@@ -34,6 +34,17 @@ pub(super) fn solve_absolute_box(
         }
     }
     .clamp(spec.min_height, spec.max_height);
+
+    if let Some(ratio) = spec.aspect_ratio {
+        let w_is_auto = matches!(spec.width_mode, SolverSizeMode::Auto) && !is_h_stretch;
+        let h_is_auto = matches!(spec.height_mode, SolverSizeMode::Auto) && !is_v_stretch;
+
+        if w_is_auto && !h_is_auto {
+            width = (height * ratio).clamp(spec.min_width, spec.max_width);
+        } else if h_is_auto && !w_is_auto {
+            height = (width / ratio).clamp(spec.min_height, spec.max_height);
+        }
+    }
 
     let x = if let Some(l) = spec.left.resolve(container_size.x) {
         l + margin.left

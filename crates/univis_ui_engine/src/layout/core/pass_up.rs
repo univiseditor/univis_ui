@@ -10,6 +10,7 @@ struct MeasuredContainerInput {
     padding: USides,
     width_bounds: (f32, f32),
     height_bounds: (f32, f32),
+    aspect_ratio: Option<f32>,
     calculated_min_width: f32,
     calculated_max_width: f32,
     calculated_min_height: f32,
@@ -81,6 +82,7 @@ pub fn upward_measure_pass_cached(
                 padding,
                 width_bounds,
                 height_bounds,
+                aspect_ratio,
                 layout_clone,
                 measure_scratch_grew,
             ) = {
@@ -101,6 +103,7 @@ pub fn upward_measure_pass_cached(
                     node_spec.padding,
                     node_spec.width_bounds(),
                     node_spec.height_bounds(),
+                    node_spec.sanitized_aspect_ratio(),
                     layout_opt.cloned(),
                     scratch.child_entities.capacity() > measure_scratch_capacity_before,
                 )
@@ -184,6 +187,7 @@ pub fn upward_measure_pass_cached(
                 padding,
                 width_bounds,
                 height_bounds,
+                aspect_ratio,
                 calculated_min_width,
                 calculated_max_width,
                 calculated_min_height,
@@ -199,22 +203,43 @@ pub fn upward_measure_pass_cached(
         let v_pad = measured_input.padding.height_sum();
 
         if let Ok(mut intrinsic) = params.p2().get_mut(entity) {
-            let raw_min_width = match measured_input.width {
+            let mut raw_min_width = match measured_input.width {
                 UVal::Px(v) => v,
                 _ => measured_input.calculated_min_width + h_pad,
             };
-            let raw_max_width = match measured_input.width {
+            let mut raw_max_width = match measured_input.width {
                 UVal::Px(v) => v,
                 _ => measured_input.calculated_max_width + h_pad,
             };
-            let raw_min_height = match measured_input.height {
+            let mut raw_min_height = match measured_input.height {
                 UVal::Px(v) => v,
                 _ => measured_input.calculated_min_height + v_pad,
             };
-            let raw_max_height = match measured_input.height {
+            let mut raw_max_height = match measured_input.height {
                 UVal::Px(v) => v,
                 _ => measured_input.calculated_max_height + v_pad,
             };
+
+            if let Some(ratio) = measured_input.aspect_ratio {
+                let w_is_px = matches!(measured_input.width, UVal::Px(_));
+                let h_is_px = matches!(measured_input.height, UVal::Px(_));
+
+                if w_is_px && !h_is_px {
+                    raw_min_height = raw_min_width / ratio;
+                    raw_max_height = raw_max_width / ratio;
+                } else if h_is_px && !w_is_px {
+                    raw_min_width = raw_min_height * ratio;
+                    raw_max_width = raw_max_height * ratio;
+                } else if !w_is_px && !h_is_px {
+                    if raw_max_width > h_pad && raw_max_height <= v_pad {
+                        raw_min_height = v_pad + (raw_min_width - h_pad).max(0.0) / ratio;
+                        raw_max_height = v_pad + (raw_max_width - h_pad).max(0.0) / ratio;
+                    } else if raw_max_height > v_pad && raw_max_width <= h_pad {
+                        raw_min_width = h_pad + (raw_min_height - v_pad).max(0.0) * ratio;
+                        raw_max_width = h_pad + (raw_max_height - v_pad).max(0.0) * ratio;
+                    }
+                }
+            }
 
             let min_width =
                 raw_min_width.clamp(measured_input.width_bounds.0, measured_input.width_bounds.1);
@@ -232,14 +257,24 @@ pub fn upward_measure_pass_cached(
                 )
                 .max(min_height);
 
-            let new_width = match measured_input.width {
+            let mut new_width = match measured_input.width {
                 UVal::MinContent => min_width,
                 _ => max_width,
             };
-            let new_height = match measured_input.height {
+            let mut new_height = match measured_input.height {
                 UVal::MinContent => min_height,
                 _ => max_height,
             };
+
+            if let Some(ratio) = measured_input.aspect_ratio {
+                let w_is_px = matches!(measured_input.width, UVal::Px(_));
+                let h_is_px = matches!(measured_input.height, UVal::Px(_));
+                if w_is_px && !h_is_px {
+                    new_height = (new_width / ratio).clamp(min_height, max_height);
+                } else if h_is_px && !w_is_px {
+                    new_width = (new_height * ratio).clamp(min_width, max_width);
+                }
+            }
 
             if (intrinsic.width - new_width).abs() > 0.001
                 || (intrinsic.height - new_height).abs() > 0.001

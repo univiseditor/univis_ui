@@ -91,6 +91,7 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         height_flex: h_flex,
         min_height,
         max_height,
+        aspect_ratio: node.sanitized_aspect_ratio(),
 
         position_type: pos_type,
         left: l,

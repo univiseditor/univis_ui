@@ -78,6 +78,10 @@ pub struct UNode {
     pub min_height: f32,
     /// Maximum height constraint applied after preferred or intrinsic sizing.
     pub max_height: f32,
+    /// Preferred aspect ratio (width / height) conforming to CSS aspect-ratio.
+    ///
+    /// When set, automatic or flexible sizing on one axis is calculated from the other axis.
+    pub aspect_ratio: Option<f32>,
 
     /// Inner spacing (affects children placement).
     pub padding: USides,
@@ -101,6 +105,7 @@ impl Default for UNode {
             max_width: f32::INFINITY,
             min_height: 0.0,
             max_height: f32::INFINITY,
+            aspect_ratio: None,
             padding: USides::default(),
             margin: USides::default(),
             background_color: Color::NONE,
@@ -111,6 +116,11 @@ impl Default for UNode {
 }
 
 impl UNode {
+    /// Returns the sanitized aspect ratio (width / height) if positive and finite.
+    pub fn sanitized_aspect_ratio(&self) -> Option<f32> {
+        self.aspect_ratio.filter(|&r| r > 0.0 && r.is_finite())
+    }
+
     /// Returns sanitized width bounds as `(min, max)`.
     pub fn width_bounds(&self) -> (f32, f32) {
         sanitize_bounds(self.min_width, self.max_width)

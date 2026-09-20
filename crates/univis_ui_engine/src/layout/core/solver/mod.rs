@@ -66,6 +66,7 @@ pub fn solve_flex_layout(
 
     let is_flex = matches!(config.layout.display, UDisplay::Flex);
     let is_stack = matches!(config.layout.display, UDisplay::Stack);
+    let available_cross = (max_cross - padding.cross).max(0.0);
 
     let mut used_main: f32 = 0.0;
 
@@ -84,6 +85,29 @@ pub fn solve_flex_layout(
             SolverSizeMode::Content => main_val,
             SolverSizeMode::Auto => main_val,
         };
+        if let Some(ratio) = item.spec.aspect_ratio
+            && main_mode == SolverSizeMode::Auto
+        {
+            let (cross_mode, cross_val, _) = axis.get_cross_spec(&item.spec);
+            match cross_mode {
+                SolverSizeMode::Fixed => {
+                    base_size = if axis.is_row() {
+                        cross_val * ratio
+                    } else {
+                        cross_val / ratio
+                    };
+                }
+                SolverSizeMode::Percent => {
+                    let cross_size = cross_val * available_cross;
+                    base_size = if axis.is_row() {
+                        cross_size * ratio
+                    } else {
+                        cross_size / ratio
+                    };
+                }
+                _ => {}
+            }
+        }
         if let Some(basis) = item.spec.flex_basis
             && let Some(resolved_basis) = resolve_flex_basis(basis, base_size, available_main)
         {
@@ -235,7 +259,6 @@ pub fn solve_flex_layout(
         }
     }
 
-    let available_cross = (max_cross - padding.cross).max(0.0);
     let mut max_child_cross: f32 = 0.0;
     for &idx in &normal_indices {
         let item = &mut items[idx];
@@ -251,17 +274,33 @@ pub fn solve_flex_layout(
             SolverSizeMode::Auto => cross_val,
         };
 
+        let current_main = axis.from_world(item.result.size).0;
+        if let Some(ratio) = item.spec.aspect_ratio
+            && cross_mode == SolverSizeMode::Auto
+        {
+            child_cross = if axis.is_row() {
+                current_main / ratio
+            } else {
+                current_main * ratio
+            };
+        }
+
         let ext_self = item
             .spec
             .align_self_ext
             .or_else(|| item.spec.align_self.map(map_align_self_to_ext));
         let container_ext_align = map_align_items_to_ext(config.layout.align_items);
         let has_explicit_align_override = has_explicit_align_self_override(&item.spec);
-        let should_stretch = match ext_self {
-            Some(UAlignSelfExt::Auto | UAlignSelfExt::Normal) | None => {
-                container_ext_align == UAlignItemsExt::Stretch
+        let has_aspect_ratio = item.spec.aspect_ratio.is_some();
+        let should_stretch = if has_aspect_ratio && !has_explicit_align_override {
+            false
+        } else {
+            match ext_self {
+                Some(UAlignSelfExt::Auto | UAlignSelfExt::Normal) | None => {
+                    container_ext_align == UAlignItemsExt::Stretch
+                }
+                Some(value) => is_ext_stretch(value),
             }
-            Some(value) => is_ext_stretch(value),
         };
         let stretch_allowed = if has_explicit_align_override {
             allows_explicit_stretch(cross_mode)
@@ -275,7 +314,6 @@ pub fn solve_flex_layout(
         child_cross = clamp_cross_size(&item.spec, &axis, child_cross);
 
         max_child_cross = max_child_cross.max(child_cross + m_cross_start + m_cross_end);
-        let current_main = axis.from_world(item.result.size).0;
         item.result.size = axis.to_world(current_main, child_cross);
     }
 

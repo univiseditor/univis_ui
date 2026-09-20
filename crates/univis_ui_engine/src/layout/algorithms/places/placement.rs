@@ -203,6 +203,8 @@ impl LayoutPlacer for FlexPlacer {
                 };
                 let stretch_allowed = if has_explicit_align_self(&item.spec) {
                     allows_explicit_stretch(cross_mode)
+                } else if item.spec.aspect_ratio.is_some() {
+                    false
                 } else {
                     allows_implicit_stretch(cross_mode)
                 };
@@ -643,6 +645,60 @@ impl LayoutPlacer for GridPlacer {
             }
             if canonical_align_self(align_self) == UAlignSelfExt::Stretch && align_stretch_allowed {
                 child_cross = (cell_cross_size - m_cross_start - m_cross_end).max(0.0);
+            }
+
+            if let Some(ratio) = item.spec.aspect_ratio {
+                let avail_w = if axis.is_row() {
+                    (cell_main_size - m_main_start - m_main_end).max(0.0)
+                } else {
+                    (cell_cross_size - m_cross_start - m_cross_end).max(0.0)
+                };
+                let avail_h = if axis.is_row() {
+                    (cell_cross_size - m_cross_start - m_cross_end).max(0.0)
+                } else {
+                    (cell_main_size - m_main_start - m_main_end).max(0.0)
+                };
+
+                let w_is_auto = matches!(
+                    item.spec.width_mode,
+                    SolverSizeMode::Auto | SolverSizeMode::Flex
+                );
+                let h_is_auto = matches!(
+                    item.spec.height_mode,
+                    SolverSizeMode::Auto | SolverSizeMode::Flex
+                );
+
+                let mut w = axis.to_world(child_main, child_cross).x;
+                let mut h = axis.to_world(child_main, child_cross).y;
+
+                if w_is_auto && h_is_auto {
+                    if avail_w > 0.0 && avail_h > 0.0 {
+                        if avail_w / ratio <= avail_h {
+                            w = avail_w;
+                            h = avail_w / ratio;
+                        } else {
+                            h = avail_h;
+                            w = avail_h * ratio;
+                        }
+                    } else if avail_w > 0.0 {
+                        w = avail_w;
+                        h = avail_w / ratio;
+                    } else if avail_h > 0.0 {
+                        h = avail_h;
+                        w = avail_h * ratio;
+                    }
+                } else if w_is_auto {
+                    w = h * ratio;
+                } else if h_is_auto {
+                    h = w / ratio;
+                }
+
+                w = w.clamp(item.spec.min_width, item.spec.max_width);
+                h = h.clamp(item.spec.min_height, item.spec.max_height);
+
+                let (m, c) = axis.from_world(Vec2::new(w, h));
+                child_main = m;
+                child_cross = c;
             }
 
             item.result.size = axis.to_world(child_main, child_cross);

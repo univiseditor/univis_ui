@@ -16,6 +16,10 @@ pub(super) fn solve_absolute_box(
         match spec.width_mode {
             SolverSizeMode::Fixed => spec.width_val,
             SolverSizeMode::Percent => spec.width_val * container_size.x,
+            SolverSizeMode::Calc => spec
+                .width_uval
+                .resolve(container_size.x)
+                .unwrap_or(intrinsic_size.x),
             _ => intrinsic_size.x,
         }
     }
@@ -30,6 +34,10 @@ pub(super) fn solve_absolute_box(
         match spec.height_mode {
             SolverSizeMode::Fixed => spec.height_val,
             SolverSizeMode::Percent => spec.height_val * container_size.y,
+            SolverSizeMode::Calc => spec
+                .height_uval
+                .resolve(container_size.y)
+                .unwrap_or(intrinsic_size.y),
             _ => intrinsic_size.y,
         }
     }

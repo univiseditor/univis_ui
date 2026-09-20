@@ -25,11 +25,14 @@ pub(super) fn resolve_flex_basis(
     default_content: f32,
     available_main: f32,
 ) -> Option<f32> {
-    match basis {
-        UVal::Px(v) => Some(v.max(0.0)),
-        UVal::Percent(p) => Some((p * available_main).max(0.0)),
-        UVal::Content | UVal::MinContent | UVal::MaxContent => Some(default_content.max(0.0)),
-        UVal::Auto | UVal::Flex(_) => None,
+    if let Some(resolved) = basis.resolve(available_main) {
+        Some(resolved.max(0.0))
+    } else {
+        match basis {
+            UVal::Content | UVal::MinContent | UVal::MaxContent => Some(default_content.max(0.0)),
+            UVal::Auto | UVal::Flex(_) => None,
+            _ => None,
+        }
     }
 }
 
@@ -82,7 +85,10 @@ pub(super) fn allows_implicit_stretch(mode: SolverSizeMode) -> bool {
 }
 
 pub(super) fn allows_explicit_stretch(mode: SolverSizeMode) -> bool {
-    !matches!(mode, SolverSizeMode::Fixed | SolverSizeMode::Percent)
+    !matches!(
+        mode,
+        SolverSizeMode::Fixed | SolverSizeMode::Percent | SolverSizeMode::Calc
+    )
 }
 
 pub(super) fn has_explicit_align_self_override(spec: &SolverSpec) -> bool {

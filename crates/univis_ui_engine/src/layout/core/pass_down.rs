@@ -564,6 +564,9 @@ fn map_uval_to_mode(val: UVal) -> SolverSizeMode {
         UVal::MinContent => SolverSizeMode::MinContent,
         UVal::Content | UVal::MaxContent => SolverSizeMode::Content,
         UVal::Auto => SolverSizeMode::Auto,
+        UVal::Calc { .. } | UVal::Min(..) | UVal::Max(..) | UVal::Clamp { .. } => {
+            SolverSizeMode::Calc
+        }
     }
 }
 

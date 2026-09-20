@@ -153,7 +153,10 @@ pub(super) fn allows_implicit_stretch(mode: SolverSizeMode) -> bool {
 }
 
 pub(super) fn allows_explicit_stretch(mode: SolverSizeMode) -> bool {
-    !matches!(mode, SolverSizeMode::Fixed | SolverSizeMode::Percent)
+    !matches!(
+        mode,
+        SolverSizeMode::Fixed | SolverSizeMode::Percent | SolverSizeMode::Calc
+    )
 }
 
 pub(super) fn compute_content_floors(

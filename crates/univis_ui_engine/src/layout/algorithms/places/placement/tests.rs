@@ -3,34 +3,8 @@ use super::*;
 fn default_spec() -> SolverSpec {
     SolverSpec {
         width_mode: SolverSizeMode::Fixed,
-        width_val: 0.0,
-        width_flex: 0.0,
-        min_width: 0.0,
-        max_width: f32::INFINITY,
         height_mode: SolverSizeMode::Fixed,
-        height_val: 0.0,
-        height_flex: 0.0,
-        min_height: 0.0,
-        max_height: f32::INFINITY,
-        aspect_ratio: None,
-        position_type: UPositionType::Relative,
-        left: UVal::Auto,
-        right: UVal::Auto,
-        top: UVal::Auto,
-        bottom: UVal::Auto,
-        align_self: None,
-        align_self_ext: None,
-        justify_self_ext: None,
-        justify_overflow: UOverflowPosition::Unsafe,
-        align_overflow: UOverflowPosition::Unsafe,
-        flex_grow: None,
-        flex_shrink: None,
-        flex_basis: None,
-        grid_column_start: None,
-        grid_column_span: 1,
-        grid_row_start: None,
-        grid_row_span: 1,
-        order: 0,
+        ..Default::default()
     }
 }
 

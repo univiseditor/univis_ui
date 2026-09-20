@@ -16,14 +16,14 @@ use crate::layout::core::solver::SolverResult;
 use crate::layout::core::solver::{PlacementContext, SolverItem};
 use crate::layout::geometry::AxisHelper;
 #[cfg(test)]
-use crate::layout::geometry::{USides, UVal};
+use crate::layout::geometry::USides;
 use crate::layout::solver_types::{SolverSizeMode, SolverSpec};
+#[cfg(test)]
+use crate::layout::univis_node::UFlexDirection;
 use crate::layout::univis_node::{
     UAlignItems, UAlignItemsExt, UAlignSelf, UAlignSelfExt, UContentAlignExt, UFlexWrap,
     UGridAutoFlow, UJustifyContent, UOverflowPosition, UTrackSize,
 };
-#[cfg(test)]
-use crate::layout::univis_node::{UFlexDirection, UPositionType};
 
 #[derive(Clone, Copy)]
 struct FlexLine {

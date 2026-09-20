@@ -29,6 +29,103 @@ impl ComputedSize {
 
 // --- 1. Basic Data Structures ---
 
+/// A length specification combining relative percentage and absolute pixels.
+///
+/// Corresponds to standard CSS `<length-percentage>` values used in `calc()`,
+/// `min()`, `max()`, and `clamp()`.
+#[derive(Reflect, Clone, Copy, Debug, Default, PartialEq)]
+pub struct UValLength {
+    /// Percentage factor of the reference container dimension (1.0 = 100%).
+    pub percent: f32,
+    /// Absolute offset in logical pixels.
+    pub px: f32,
+}
+
+impl UValLength {
+    /// Creates a length from explicit percentage factor and pixel scalar.
+    pub const fn new(percent: f32, px: f32) -> Self {
+        Self { percent, px }
+    }
+
+    /// Creates a pure pixel length: `px(v)`.
+    pub const fn px(v: f32) -> Self {
+        Self {
+            percent: 0.0,
+            px: v,
+        }
+    }
+
+    /// Creates a pure percentage length: `percent(p)` (e.g. 0.5 = 50%).
+    pub const fn percent(p: f32) -> Self {
+        Self {
+            percent: p,
+            px: 0.0,
+        }
+    }
+
+    /// Creates a mixed calc length: `calc(percent * base + px)`.
+    pub const fn calc(percent: f32, px: f32) -> Self {
+        Self { percent, px }
+    }
+
+    /// Resolves this length against a parent reference scalar.
+    #[inline]
+    pub fn resolve(self, base: f32) -> f32 {
+        self.percent.mul_add(base, self.px)
+    }
+}
+
+impl std::ops::Add for UValLength {
+    type Output = Self;
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        Self {
+            percent: self.percent + rhs.percent,
+            px: self.px + rhs.px,
+        }
+    }
+}
+
+impl std::ops::Sub for UValLength {
+    type Output = Self;
+    #[inline]
+    fn sub(self, rhs: Self) -> Self {
+        Self {
+            percent: self.percent - rhs.percent,
+            px: self.px - rhs.px,
+        }
+    }
+}
+
+impl std::ops::Mul<f32> for UValLength {
+    type Output = Self;
+    #[inline]
+    fn mul(self, rhs: f32) -> Self {
+        Self {
+            percent: self.percent * rhs,
+            px: self.px * rhs,
+        }
+    }
+}
+
+impl std::ops::Div<f32> for UValLength {
+    type Output = Self;
+    #[inline]
+    fn div(self, rhs: f32) -> Self {
+        Self {
+            percent: self.percent / rhs,
+            px: self.px / rhs,
+        }
+    }
+}
+
+impl From<f32> for UValLength {
+    #[inline]
+    fn from(px: f32) -> Self {
+        Self::px(px)
+    }
+}
+
 /// Defines dimension values for width, height, or position.
 #[derive(Reflect, Clone, Copy, Debug, PartialEq)]
 pub enum UVal {
@@ -36,6 +133,26 @@ pub enum UVal {
     Px(f32),
     /// A percentage of the parent's size (0.0 to 1.0).
     Percent(f32),
+    /// A linear combination of percentage and pixel offset: `calc(percent * parent + px)`.
+    Calc {
+        /// Percentage factor (1.0 = 100%).
+        percent: f32,
+        /// Pixel offset.
+        px: f32,
+    },
+    /// Takes the minimum of two length expressions: `min(a, b)`.
+    Min(UValLength, UValLength),
+    /// Takes the maximum of two length expressions: `max(a, b)`.
+    Max(UValLength, UValLength),
+    /// Clamps a value between a minimum and maximum: `clamp(min, preferred, max)`.
+    Clamp {
+        /// Minimum bound.
+        min: UValLength,
+        /// Preferred value.
+        val: UValLength,
+        /// Maximum bound.
+        max: UValLength,
+    },
     /// Legacy intrinsic-content mode.
     ///
     /// This is kept for backward compatibility and behaves like `MaxContent`.
@@ -60,11 +177,65 @@ impl Default for UVal {
 }
 
 impl UVal {
+    /// Creates a `calc(percent * parent + px)` dimension value.
+    pub const fn calc(percent: f32, px: f32) -> Self {
+        Self::Calc { percent, px }
+    }
+
+    /// Creates a `min(a, b)` dimension value.
+    pub const fn min(a: UValLength, b: UValLength) -> Self {
+        Self::Min(a, b)
+    }
+
+    /// Creates a `max(a, b)` dimension value.
+    pub const fn max(a: UValLength, b: UValLength) -> Self {
+        Self::Max(a, b)
+    }
+
+    /// Creates a `clamp(min, preferred, max)` dimension value.
+    pub const fn clamp(min: UValLength, preferred: UValLength, max: UValLength) -> Self {
+        Self::Clamp {
+            min,
+            val: preferred,
+            max,
+        }
+    }
+
+    /// Converts this `UVal` into a `UValLength` if it is a definite length, percentage, or calc.
+    pub const fn to_length(&self) -> Option<UValLength> {
+        match *self {
+            UVal::Px(v) => Some(UValLength::px(v)),
+            UVal::Percent(p) => Some(UValLength::percent(p)),
+            UVal::Calc { percent, px } => Some(UValLength::calc(percent, px)),
+            _ => None,
+        }
+    }
+
+    /// Returns the definite pixel value if this dimension does not depend on a parent size.
+    pub const fn to_px(&self) -> Option<f32> {
+        match *self {
+            UVal::Px(v) => Some(v),
+            UVal::Calc { percent: 0.0, px } => Some(px),
+            _ => None,
+        }
+    }
+
     /// Resolves the value against a parent/base scalar when possible.
     pub fn resolve(&self, base: f32) -> Option<f32> {
         match *self {
             UVal::Px(v) => Some(v),
             UVal::Percent(p) => Some(p * base),
+            UVal::Calc { percent, px } => Some(percent.mul_add(base, px)),
+            UVal::Min(a, b) => Some(a.resolve(base).min(b.resolve(base))),
+            UVal::Max(a, b) => Some(a.resolve(base).max(b.resolve(base))),
+            UVal::Clamp { min, val, max } => {
+                let r_min = min.resolve(base);
+                let r_max = max.resolve(base);
+                let r_val = val.resolve(base);
+                let low = r_min.min(r_max);
+                let high = r_min.max(r_max);
+                Some(r_val.clamp(low, high))
+            }
             UVal::Content | UVal::MinContent | UVal::MaxContent | UVal::Auto | UVal::Flex(_) => {
                 None
             }
@@ -83,6 +254,50 @@ impl UVal {
             self,
             UVal::Content | UVal::MinContent | UVal::MaxContent | UVal::Auto
         )
+    }
+}
+
+impl std::ops::Add for UVal {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        match (self.to_length(), rhs.to_length()) {
+            (Some(a), Some(b)) => {
+                let sum = a + b;
+                if sum.percent == 0.0 {
+                    UVal::Px(sum.px)
+                } else if sum.px == 0.0 {
+                    UVal::Percent(sum.percent)
+                } else {
+                    UVal::Calc {
+                        percent: sum.percent,
+                        px: sum.px,
+                    }
+                }
+            }
+            _ => self,
+        }
+    }
+}
+
+impl std::ops::Sub for UVal {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        match (self.to_length(), rhs.to_length()) {
+            (Some(a), Some(b)) => {
+                let diff = a - b;
+                if diff.percent == 0.0 {
+                    UVal::Px(diff.px)
+                } else if diff.px == 0.0 {
+                    UVal::Percent(diff.percent)
+                } else {
+                    UVal::Calc {
+                        percent: diff.percent,
+                        px: diff.px,
+                    }
+                }
+            }
+            _ => self,
+        }
     }
 }
 
@@ -363,6 +578,24 @@ impl AxisHelper {
             (spec.width_mode, spec.width_val, spec.width_flex)
         }
     }
+
+    /// Extracts the main axis `UVal` specification from a `SolverSpec`.
+    pub fn get_main_uval(&self, spec: &SolverSpec) -> UVal {
+        if self.is_row() {
+            spec.width_uval
+        } else {
+            spec.height_uval
+        }
+    }
+
+    /// Extracts the cross axis `UVal` specification from a `SolverSpec`.
+    pub fn get_cross_uval(&self, spec: &SolverSpec) -> UVal {
+        if self.is_row() {
+            spec.height_uval
+        } else {
+            spec.width_uval
+        }
+    }
 }
 
 /// Minimum and maximum size constraints passed from parent to child.
@@ -406,5 +639,75 @@ impl BoxConstraints {
             min_height: 0.0,
             max_height: size.y,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn uval_length_arithmetic_and_resolve() {
+        let a = UValLength::new(0.5, 10.0);
+        let b = UValLength::new(0.2, 5.0);
+
+        let sum = a + b;
+        assert_eq!(sum, UValLength::new(0.7, 15.0));
+
+        let diff = a - b;
+        assert_eq!(diff, UValLength::new(0.3, 5.0));
+
+        let scaled = a * 2.0;
+        assert_eq!(scaled, UValLength::new(1.0, 20.0));
+
+        let halved = scaled / 2.0;
+        assert_eq!(halved, a);
+
+        assert_eq!(sum.resolve(200.0), 155.0);
+    }
+
+    #[test]
+    fn uval_operator_overloading_forms_calc() {
+        let full = UVal::Percent(1.0);
+        let gap = UVal::Px(32.0);
+
+        let calc = full - gap;
+        assert_eq!(
+            calc,
+            UVal::Calc {
+                percent: 1.0,
+                px: -32.0
+            }
+        );
+        assert_eq!(calc.resolve(200.0), Some(168.0));
+
+        let px_sum = UVal::Px(50.0) + UVal::Px(20.0);
+        assert_eq!(px_sum, UVal::Px(70.0));
+
+        let pct_sum = UVal::Percent(0.25) + UVal::Percent(0.5);
+        assert_eq!(pct_sum, UVal::Percent(0.75));
+    }
+
+    #[test]
+    fn uval_min_max_clamp_resolutions() {
+        // min(100%, 200px)
+        let min_val = UVal::min(UValLength::percent(1.0), UValLength::px(200.0));
+        assert_eq!(min_val.resolve(1000.0), Some(200.0));
+        assert_eq!(min_val.resolve(150.0), Some(150.0));
+
+        // max(10%, 50px)
+        let max_val = UVal::max(UValLength::percent(0.1), UValLength::px(50.0));
+        assert_eq!(max_val.resolve(1000.0), Some(100.0));
+        assert_eq!(max_val.resolve(200.0), Some(50.0));
+
+        // clamp(100px, 50%, 300px)
+        let clamp_val = UVal::clamp(
+            UValLength::px(100.0),
+            UValLength::percent(0.5),
+            UValLength::px(300.0),
+        );
+        assert_eq!(clamp_val.resolve(100.0), Some(100.0)); // 50 clamped to 100
+        assert_eq!(clamp_val.resolve(400.0), Some(200.0)); // 200 within [100, 300]
+        assert_eq!(clamp_val.resolve(1000.0), Some(300.0)); // 500 clamped to 300
     }
 }

@@ -80,6 +80,10 @@ pub fn solve_flex_layout(
         let mut base_size = match main_mode {
             SolverSizeMode::Fixed => main_val,
             SolverSizeMode::Percent => main_val * available_main,
+            SolverSizeMode::Calc => axis
+                .get_main_uval(&item.spec)
+                .resolve(available_main)
+                .unwrap_or(0.0),
             SolverSizeMode::Flex => 0.0,
             SolverSizeMode::MinContent => main_val,
             SolverSizeMode::Content => main_val,
@@ -104,6 +108,17 @@ pub fn solve_flex_layout(
                     } else {
                         cross_size / ratio
                     };
+                }
+                SolverSizeMode::Calc => {
+                    if let Some(cross_size) =
+                        axis.get_cross_uval(&item.spec).resolve(available_cross)
+                    {
+                        base_size = if axis.is_row() {
+                            cross_size * ratio
+                        } else {
+                            cross_size / ratio
+                        };
+                    }
                 }
                 _ => {}
             }
@@ -268,6 +283,10 @@ pub fn solve_flex_layout(
         let mut child_cross = match cross_mode {
             SolverSizeMode::Fixed => cross_val,
             SolverSizeMode::Percent => cross_val * available_cross,
+            SolverSizeMode::Calc => axis
+                .get_cross_uval(&item.spec)
+                .resolve(available_cross)
+                .unwrap_or(0.0),
             SolverSizeMode::Flex => available_cross,
             SolverSizeMode::MinContent => cross_val,
             SolverSizeMode::Content => cross_val,

@@ -9,6 +9,7 @@ pub struct UnivisNodePlugin;
 impl Plugin for UnivisNodePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<UVal>()
+            .register_type::<UValLength>()
             .register_type::<ULayout>()
             .register_type::<UNode>()
             .register_type::<ComputedSize>()

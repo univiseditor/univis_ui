@@ -49,7 +49,7 @@ pub(crate) mod internal_prelude {
 /// [`crate::layout::layout_system::UScreenRoot`] and
 /// [`crate::layout::layout_system::UWorldRoot`] instead of this default import.
 pub mod prelude {
-    pub use crate::layout::geometry::{ComputedSize, UCornerRadius, USides, UVal};
+    pub use crate::layout::geometry::{ComputedSize, UCornerRadius, USides, UVal, UValLength};
     pub use crate::layout::image::UImage;
     pub use crate::layout::layout_system::{
         URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,

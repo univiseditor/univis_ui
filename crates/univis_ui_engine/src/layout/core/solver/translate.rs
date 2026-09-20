@@ -9,6 +9,9 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
             UVal::MinContent => (SolverSizeMode::MinContent, 0.0, 0.0),
             UVal::Content | UVal::MaxContent => (SolverSizeMode::Content, 0.0, 0.0),
             UVal::Auto => (SolverSizeMode::Auto, 0.0, 0.0),
+            UVal::Calc { .. } | UVal::Min(..) | UVal::Max(..) | UVal::Clamp { .. } => {
+                (SolverSizeMode::Calc, 0.0, 0.0)
+            }
         }
     };
 
@@ -84,11 +87,13 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         width_mode: w_mode,
         width_val: w_val,
         width_flex: w_flex,
+        width_uval: node.width,
         min_width,
         max_width,
         height_mode: h_mode,
         height_val: h_val,
         height_flex: h_flex,
+        height_uval: node.height,
         min_height,
         max_height,
         aspect_ratio: node.sanitized_aspect_ratio(),

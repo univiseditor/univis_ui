@@ -161,17 +161,13 @@ impl Default for GradientDemoState {
 struct HeroCard;
 
 #[derive(Component)]
-enum HeroLabelType {
+enum DemoLabelType {
     Title,
     Desc,
     Inspector,
-}
-
-#[derive(Component)]
-enum ControlBtnType {
-    Anim,
-    Edge,
-    Shape,
+    AnimBtn,
+    EdgeBtn,
+    ShapeBtn,
 }
 
 #[rustfmt::skip]
@@ -326,7 +322,7 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
     spawn_typed_label(
         &mut commands,
         hero_top,
-        HeroLabelType::Title,
+        DemoLabelType::Title,
         state.current_preset.title(),
         Color::WHITE,
         20.0,
@@ -376,7 +372,7 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
     spawn_typed_label(
         &mut commands,
         hero_bottom,
-        HeroLabelType::Desc,
+        DemoLabelType::Desc,
         state.current_preset.description(),
         Color::srgba(0.9, 0.95, 1.0, 0.92),
         12.0,
@@ -434,7 +430,7 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
     spawn_typed_label(
         &mut commands,
         inspector_panel,
-        HeroLabelType::Inspector,
+        DemoLabelType::Inspector,
         "Initializing...",
         Color::srgba(0.85, 0.92, 0.98, 0.9),
         12.0,
@@ -479,7 +475,7 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
         "Edge Mode: SMOOTH",
         Color::srgb(0.65, 0.25, 0.15),
     );
-    commands.entity(edge_lbl).insert(ControlBtnType::Edge);
+    commands.entity(edge_lbl).insert(DemoLabelType::EdgeBtn);
     commands.entity(edge_btn).observe(
         |_click: On<Pointer<Click>>, mut state: ResMut<GradientDemoState>| {
             state.stepped_mode = !state.stepped_mode;
@@ -494,7 +490,7 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
         "Anim: SWEEP (مرور)",
         Color::srgb(0.0, 0.45, 0.7),
     );
-    commands.entity(anim_lbl).insert(ControlBtnType::Anim);
+    commands.entity(anim_lbl).insert(DemoLabelType::AnimBtn);
     commands.entity(anim_btn).observe(
         |_click: On<Pointer<Click>>, mut state: ResMut<GradientDemoState>| {
             state.anim_mode = match state.anim_mode {
@@ -536,7 +532,7 @@ fn setup_scene(mut commands: Commands, state: Res<GradientDemoState>) {
         "Shape Mode: CUT",
         Color::srgb(0.2, 0.35, 0.6),
     );
-    commands.entity(shape_lbl).insert(ControlBtnType::Shape);
+    commands.entity(shape_lbl).insert(DemoLabelType::ShapeBtn);
     commands.entity(shape_btn).observe(
         |_click: On<Pointer<Click>>, mut state: ResMut<GradientDemoState>| {
             state.shape_mode = match state.shape_mode {
@@ -665,7 +661,7 @@ fn spawn_label(commands: &mut Commands, parent: Entity, text: &str, color: Color
 }
 
 #[rustfmt::skip]
-fn spawn_typed_label(commands: &mut Commands, parent: Entity, label_type: HeroLabelType, text: &str, color: Color, font_size: f32) {
+fn spawn_typed_label(commands: &mut Commands, parent: Entity, label_type: DemoLabelType, text: &str, color: Color, font_size: f32) {
     commands.spawn((ChildOf(parent), label_type, UNode::default(), UTextLabel { text: text.to_string(), color, font_size, ..default() }));
 }
 
@@ -737,8 +733,7 @@ fn sync_ui_state(
         ),
         With<HeroCard>,
     >,
-    mut hero_labels: Query<(&mut UTextLabel, &HeroLabelType)>,
-    mut btn_labels: Query<(&mut UTextLabel, &ControlBtnType)>,
+    mut labels: Query<(&mut UTextLabel, &DemoLabelType)>,
 ) {
     if !state.is_changed() {
         return;
@@ -767,12 +762,12 @@ fn sync_ui_state(
         };
     }
 
-    // 2. Update UI labels
-    for (mut label, label_type) in &mut hero_labels {
+    // 2. Update UI labels and buttons in one unified query
+    for (mut label, label_type) in &mut labels {
         match label_type {
-            HeroLabelType::Title => label.text = preset.title().to_string(),
-            HeroLabelType::Desc => label.text = preset.description().to_string(),
-            HeroLabelType::Inspector => {
+            DemoLabelType::Title => label.text = preset.title().to_string(),
+            DemoLabelType::Desc => label.text = preset.description().to_string(),
+            DemoLabelType::Inspector => {
                 let edge_str = if state.stepped_mode {
                     "Hard (Stepped Bands)"
                 } else {
@@ -797,20 +792,14 @@ fn sync_ui_state(
                     preset.description(),
                 );
             }
-        }
-    }
-
-    // 3. Update button labels
-    for (mut label, btn_type) in &mut btn_labels {
-        match btn_type {
-            ControlBtnType::Anim => {
+            DemoLabelType::AnimBtn => {
                 label.text = match state.anim_mode {
                     AnimMode::Sweep => "Anim: SWEEP (مرور)".to_string(),
                     AnimMode::Rotate => "Anim: ROTATE (دوران)".to_string(),
                     AnimMode::Off => "Anim: OFF (إيقاف)".to_string(),
                 };
             }
-            ControlBtnType::Edge => {
+            DemoLabelType::EdgeBtn => {
                 label.text = format!(
                     "Edge Mode: {}",
                     if state.stepped_mode {
@@ -820,7 +809,7 @@ fn sync_ui_state(
                     }
                 );
             }
-            ControlBtnType::Shape => {
+            DemoLabelType::ShapeBtn => {
                 label.text = format!(
                     "Shape: {}",
                     match state.shape_mode {

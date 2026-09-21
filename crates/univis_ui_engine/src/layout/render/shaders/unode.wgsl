@@ -30,7 +30,7 @@ struct UNodeMaterial {
     grad_colors: array<vec4<f32>, 8>, // Offset 128 (8 * 16 = 128 bytes)
     grad_stops: array<vec4<f32>, 2>,  // Offset 256 (2 * 16 = 32 bytes)
     grad_params: vec4<f32>,           // Offset 288: x = type (0=none, 1=linear, 2=radial), y = angle/radius, z = count, w = 0.0
-    grad_center: vec4<f32>,           // Offset 304: xy = center, zw = 0.0
+    grad_center: vec4<f32>,           // Offset 304: xy = center, z = offset, w = 0.0
 
     shadow_color: vec4<f32>, // Offset 320
     shadow_params: vec4<f32>,// Offset 336: x = offset.x, y = offset.y, z = blur, w = spread
@@ -201,18 +201,19 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // Multi-stop gradient fill: color, linear gradient, or radial gradient
     var body_color = material.color;
+    let offset = material.grad_center.z;
     if (material.grad_params.x == 1.0) {
         // Multi-stop linear gradient
         let angle = material.grad_params.y;
         let dir = vec2<f32>(cos(angle), sin(angle));
-        let t_lin = dot(body_uv - 0.5, dir) + 0.5;
+        let t_lin = dot(body_uv - 0.5, dir) + 0.5 - offset;
         body_color = sample_gradient(t_lin);
     } else if (material.grad_params.x == 2.0) {
         // Multi-stop radial gradient
         let center = material.grad_center.xy;
         let radius = max(material.grad_params.y, 0.001);
         let dist_rad = length(body_uv - center);
-        let t_rad = dist_rad / radius;
+        let t_rad = (dist_rad / radius) - offset;
         body_color = sample_gradient(t_rad);
     }
 

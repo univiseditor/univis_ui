@@ -295,7 +295,7 @@ fn sync_entity_material(
             colors,
             stops,
             Vec4::new(grad_type, param_y, count as f32, interp_mode),
-            Vec4::new(center.x, center.y, 0.0, 0.0),
+            Vec4::new(center.x, center.y, grad.offset, 0.0),
         )
     } else {
         ([Vec4::ZERO; 8], [Vec4::ZERO; 2], Vec4::ZERO, Vec4::ZERO)

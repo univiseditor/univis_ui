@@ -71,6 +71,8 @@ pub struct UGradient {
     pub kind: UGradientKind,
     /// Interpolation mode (smooth blending vs sharp, stepped color bands).
     pub interpolation: UGradientInterpolation,
+    /// Offset / phase shift along the gradient direction (useful for sweeping/passing animations).
+    pub offset: f32,
 }
 
 impl UGradient {
@@ -83,6 +85,7 @@ impl UGradient {
             ],
             kind: UGradientKind::Linear { angle: 0.0 },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -97,6 +100,7 @@ impl UGradient {
                 angle: core::f32::consts::FRAC_PI_2,
             },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -109,6 +113,7 @@ impl UGradient {
             ],
             kind: UGradientKind::Linear { angle },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -128,6 +133,7 @@ impl UGradient {
             stops: stops_vec,
             kind: UGradientKind::Linear { angle },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -143,6 +149,7 @@ impl UGradient {
                 radius: 0.5,
             },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -155,6 +162,7 @@ impl UGradient {
             ],
             kind: UGradientKind::Radial { center, radius },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -177,6 +185,7 @@ impl UGradient {
                 radius: 0.5,
             },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -196,6 +205,7 @@ impl UGradient {
             stops: stops_vec,
             kind: UGradientKind::Radial { center, radius },
             interpolation: UGradientInterpolation::Smooth,
+            offset: 0.0,
         }
     }
 
@@ -208,6 +218,12 @@ impl UGradient {
     /// Sets the gradient interpolation mode explicitly.
     pub fn with_interpolation(mut self, interpolation: UGradientInterpolation) -> Self {
         self.interpolation = interpolation;
+        self
+    }
+
+    /// Sets the offset / phase translation along the gradient direction.
+    pub fn with_offset(mut self, offset: f32) -> Self {
+        self.offset = offset;
         self
     }
 
@@ -390,14 +406,18 @@ mod tests {
     }
 
     #[test]
-    fn gradient_interpolation_modes() {
+    fn gradient_interpolation_and_offset_modes() {
         let smooth = UGradient::linear(Color::BLACK, Color::WHITE, 0.0);
         assert_eq!(smooth.interpolation, UGradientInterpolation::Smooth);
+        assert_eq!(smooth.offset, 0.0);
 
         let stepped = smooth.stepped();
         assert_eq!(stepped.interpolation, UGradientInterpolation::Stepped);
 
-        let custom = stepped.with_interpolation(UGradientInterpolation::Smooth);
+        let with_off = stepped.with_offset(0.45);
+        assert_eq!(with_off.offset, 0.45);
+
+        let custom = with_off.with_interpolation(UGradientInterpolation::Smooth);
         assert_eq!(custom.interpolation, UGradientInterpolation::Smooth);
     }
 

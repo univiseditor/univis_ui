@@ -155,16 +155,17 @@ fn fragment(
     let body_uv = (center_pos / material.size) + 0.5;
 
     var current_base_color = material.color;
+    let offset = material.grad_center.z;
     if (material.grad_params.x == 1.0) {
         let angle = material.grad_params.y;
         let dir = vec2<f32>(cos(angle), sin(angle));
-        let t_lin = dot(body_uv - 0.5, dir) + 0.5;
+        let t_lin = dot(body_uv - 0.5, dir) + 0.5 - offset;
         current_base_color = sample_gradient(t_lin);
     } else if (material.grad_params.x == 2.0) {
         let center = material.grad_center.xy;
         let radius = max(material.grad_params.y, 0.001);
         let dist_rad = length(body_uv - center);
-        let t_rad = dist_rad / radius;
+        let t_rad = (dist_rad / radius) - offset;
         current_base_color = sample_gradient(t_rad);
     }
 

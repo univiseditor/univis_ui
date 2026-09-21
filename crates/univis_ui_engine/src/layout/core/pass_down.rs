@@ -11,6 +11,7 @@ use crate::layout::core::solver::*;
 use crate::layout::geometry::*;
 use crate::layout::layout_system::*;
 use crate::layout::profiling::LayoutProfiler;
+use crate::layout::scroll::UScrollContent;
 use crate::layout::solver_types::{SolverSizeMode, SolverSpec};
 use crate::layout::transition::{UTransition, UTransitionState};
 use crate::layout::univis_node::*;
@@ -67,6 +68,8 @@ pub fn downward_solve_pass_safe(
         Option<&UTransition>,
         Option<&mut UTransitionState>,
     )>,
+
+    mut scroll_contents: Query<&mut UScrollContent>,
 
     intrinsic_query: Query<&IntrinsicSize>,
     root_query: Query<&ResolvedRootUi>,
@@ -295,6 +298,7 @@ pub fn downward_solve_pass_safe(
                 use_incremental_solve,
                 &mut cache,
                 &mut nodes,
+                &mut scroll_contents,
             );
             cache.complete_solve(entity);
 
@@ -504,6 +508,7 @@ fn apply_results_to_children(
         Option<&UTransition>,
         Option<&mut UTransitionState>,
     )>,
+    scroll_contents: &mut Query<&mut UScrollContent>,
 ) {
     for solved in solved_children.iter() {
         if let Ok((
@@ -545,8 +550,19 @@ fn apply_results_to_children(
                 |stack| root_stack.local_depth_offset_for_fraction(stack.normalized),
             );
 
-            let has_transition = transition_opt.is_some();
-            if let Some(mut state) = transition_state_opt {
+            let scroll_content_opt = scroll_contents.get_mut(solved.entity).ok();
+            if let Some(mut scroll_content) = scroll_content_opt {
+                scroll_content.base_translation = Vec2::new(next_x, next_y);
+                if !scroll_content.initialized {
+                    scroll_content.initialized = true;
+                    if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
+                        transform.translation.x = next_x;
+                    }
+                    if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
+                        transform.translation.y = next_y;
+                    }
+                }
+            } else if let Some(mut state) = transition_state_opt {
                 if !state.initialized {
                     state.target_translation = Vec2::new(next_x, next_y);
                     state.velocity = Vec2::ZERO;
@@ -560,7 +576,7 @@ fn apply_results_to_children(
                 } else {
                     state.target_translation = Vec2::new(next_x, next_y);
                 }
-            } else if !has_transition {
+            } else if transition_opt.is_none() {
                 if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
                     transform.translation.x = next_x;
                 }

@@ -183,6 +183,10 @@ path = "examples/2d/text_2d.rs"
 name = "gradient_showcase"
 path = "examples/2d/gradient_showcase.rs"
 
+[[example]]
+name = "scroll_and_transitions"
+path = "examples/2d/scroll_and_transitions.rs"
+
 
 
 [[example]]

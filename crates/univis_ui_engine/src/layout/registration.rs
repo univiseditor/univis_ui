@@ -9,8 +9,8 @@ use crate::schedule::{
 };
 
 use super::{
-    components, core, invalidation, layout_system, query, settlement_loop, transition, univis_node,
-    visual,
+    components, core, invalidation, layout_system, query, scroll, settlement_loop, transition,
+    univis_node, visual,
 };
 
 pub(super) fn register_layout_types(app: &mut App) {
@@ -47,7 +47,9 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<visual::UShadow>()
         .register_type::<visual::UInnerGlow>()
         .register_type::<transition::UTransition>()
-        .register_type::<transition::UTransitionState>();
+        .register_type::<transition::UTransitionState>()
+        .register_type::<scroll::UScrollContainer>()
+        .register_type::<scroll::UScrollContent>();
 }
 
 pub(super) fn install_layout_pipeline(app: &mut App) {
@@ -130,6 +132,23 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
             (
                 transition::init_transition_states,
                 transition::apply_layout_transitions,
+            )
+                .chain()
+                .after(settlement_loop::run_ui_settlement_loop),
+        )
+        .add_systems(
+            Update,
+            (
+                scroll::init_scroll_containers,
+                scroll::auto_init_scroll_content,
+                scroll::handle_mouse_wheel_scroll,
+            ),
+        )
+        .add_systems(
+            PostUpdate,
+            (
+                scroll::sync_scroll_extents,
+                scroll::apply_scroll_transitions,
             )
                 .chain()
                 .after(settlement_loop::run_ui_settlement_loop),

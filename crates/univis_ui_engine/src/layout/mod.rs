@@ -39,6 +39,8 @@ pub mod query;
 mod registration;
 /// Mesh/material synchronization and render-facing types.
 pub mod render;
+/// Scroll container and content types for smooth viewport scrolling.
+pub mod scroll;
 mod settlement_loop;
 #[doc(hidden)]
 pub mod solver_types;
@@ -65,6 +67,7 @@ pub mod prelude {
         URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
+    pub use crate::layout::scroll::*;
     pub use crate::layout::text::{UText, UTextLabel, UTextOverflow, UTextTruncateSide};
     pub use crate::layout::transition::*;
     pub use crate::layout::univis_node::*;

@@ -1,8 +1,8 @@
 //! Scroll container and viewport management for Univis UI.
 //!
-//! Provides [`crate::layout::scroll::UScrollContainer`] and [`crate::layout::scroll::UScrollContent`] for smooth mouse-wheel
+//! Provides [`UScrollContainer`] and [`UScrollContent`] for smooth mouse-wheel
 //! driven scrolling, automatic extent calculation, and hardware-accelerated
-//! rounded SDF clipping via [`UClip`](crate::layout::univis_node::UClip).
+//! rounded SDF clipping via [`UClip`].
 
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
@@ -13,13 +13,13 @@ use crate::layout::univis_node::{UClip, UNode};
 /// Configures a scrollable viewport container.
 ///
 /// When attached to an entity with a [`UNode`], overflowing child content marked
-/// with [`crate::layout::scroll::UScrollContent`] (or the first child node) glides smoothly using mouse
+/// with [`UScrollContent`] (or the first child node) glides smoothly using mouse
 /// wheel input or programmatic target offsets.
 ///
-/// Attaching `UScrollContainer` automatically requires [`UNode`] and [`UClip`].
+/// Attaching `UScrollContainer` automatically requires [`UNode`] and [`UClip`] (enabled by default).
 #[derive(Component, Clone, Copy, Debug, Reflect, PartialEq)]
 #[reflect(Component)]
-#[require(UNode, UClip)]
+#[require(UNode, UClip { enabled: true })]
 pub struct UScrollContainer {
     /// Whether vertical scrolling is enabled (default: true).
     pub vertical: bool,
@@ -138,9 +138,18 @@ impl UScrollContainer {
             0.0
         }
     }
+
+    /// Returns normalized horizontal scroll progress in 0.0..=1.0.
+    pub fn progress_x(&self) -> f32 {
+        if self.max_offset.x > 0.0 {
+            (self.scroll_offset.x / self.max_offset.x).clamp(0.0, 1.0)
+        } else {
+            0.0
+        }
+    }
 }
 
-/// Marks an entity as the scrollable content inside a [`crate::layout::scroll::UScrollContainer`].
+/// Marks an entity as the scrollable content inside a [`UScrollContainer`].
 ///
 /// When attached to a child of a `UScrollContainer`, its layout position is preserved
 /// as `base_translation`, and its rendered transform is smoothly offset by the container's
@@ -161,19 +170,19 @@ impl UScrollContent {
     }
 }
 
-/// Automatically ensures [`UClip`] is enabled when [`crate::layout::scroll::UScrollContainer`] is added.
+/// Automatically ensures [`UClip`] is enabled when [`UScrollContainer`] is added.
 pub fn init_scroll_containers(
     mut commands: Commands,
     query: Query<(Entity, Option<&UClip>), Added<UScrollContainer>>,
 ) {
     for (entity, clip) in query.iter() {
-        if clip.map_or(true, |c| !c.enabled) {
+        if clip.is_none_or(|c| !c.enabled) {
             commands.entity(entity).insert(UClip { enabled: true });
         }
     }
 }
 
-/// Automatically attaches [`crate::layout::scroll::UScrollContent`] to the first child of a [`crate::layout::scroll::UScrollContainer`] if missing.
+/// Automatically attaches [`UScrollContent`] to the first child of a [`UScrollContainer`] if missing.
 pub fn auto_init_scroll_content(
     mut commands: Commands,
     containers: Query<(Entity, &Children), With<UScrollContainer>>,
@@ -183,13 +192,12 @@ pub fn auto_init_scroll_content(
     for (_container_entity, children) in containers.iter() {
         let has_content_child = children.iter().any(|c| all_content.contains(c));
         if !has_content_child {
-            if let Some(&first_child) = children.first() {
-                if unode_query.contains(first_child) {
-                    commands
-                        .entity(first_child)
-                        .insert(UScrollContent::default());
-                }
-            }
+            let Some(&first_child) = children.first().filter(|&&c| unode_query.contains(c)) else {
+                continue;
+            };
+            commands
+                .entity(first_child)
+                .insert(UScrollContent::default());
         }
     }
 }
@@ -271,8 +279,14 @@ pub fn handle_mouse_wheel_scroll(
             }
 
             if container.horizontal {
+                // For horizontal-only containers, allow standard vertical mouse wheel notches to scroll horizontally
+                let h_delta = if !container.vertical && ev.x.abs() < 0.001 {
+                    delta.y
+                } else {
+                    delta.x
+                };
                 container.target_offset.x =
-                    (container.target_offset.x - delta.x).clamp(0.0, container.max_offset.x);
+                    (container.target_offset.x - h_delta).clamp(0.0, container.max_offset.x);
             }
         }
     }
@@ -371,6 +385,19 @@ mod tests {
         sc.scroll_offset.y = 200.0;
         assert!(sc.is_at_bottom());
         assert_eq!(sc.progress_y(), 1.0);
+    }
+
+    #[test]
+    fn test_scroll_progress_horizontal() {
+        let mut sc = UScrollContainer::horizontal();
+        sc.max_offset.x = 400.0;
+        assert_eq!(sc.progress_x(), 0.0);
+
+        sc.scroll_offset.x = 200.0;
+        assert_eq!(sc.progress_x(), 0.5);
+
+        sc.scroll_offset.x = 400.0;
+        assert_eq!(sc.progress_x(), 1.0);
     }
 
     #[test]

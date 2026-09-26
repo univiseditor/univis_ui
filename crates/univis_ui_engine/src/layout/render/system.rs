@@ -126,13 +126,11 @@ pub fn update_materials_optimized(
     let start = std::time::Instant::now();
     let use_cached_ui_context = rollout
         .as_ref()
-        .map_or(true, |config| config.use_cached_ui_context);
+        .is_none_or(|config| config.use_cached_ui_context);
     let use_incremental_render = rollout
         .as_ref()
-        .map_or(true, |config| config.use_incremental_render);
-    let use_mesh_cache = rollout
-        .as_ref()
-        .map_or(true, |config| config.use_mesh_cache);
+        .is_none_or(|config| config.use_incremental_render);
+    let use_mesh_cache = rollout.as_ref().is_none_or(|config| config.use_mesh_cache);
     let created_before = pool.created_count;
     let reused_before = pool.reused_count;
     let mesh_created_before = mesh_pool.created_count;

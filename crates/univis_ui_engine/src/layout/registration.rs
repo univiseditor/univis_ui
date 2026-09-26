@@ -9,8 +9,8 @@ use crate::schedule::{
 };
 
 use super::{
-    components, core, invalidation, layout_system, query, scroll, settlement_loop, transition,
-    univis_node, visual,
+    components, core, invalidation, layout_system, query, render, scroll, settlement_loop,
+    transition, univis_node, visual,
 };
 
 pub(super) fn register_layout_types(app: &mut App) {
@@ -49,7 +49,12 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<transition::UTransition>()
         .register_type::<transition::UTransitionState>()
         .register_type::<scroll::UScrollContainer>()
-        .register_type::<scroll::UScrollContent>();
+        .register_type::<scroll::UScrollContent>()
+        .register_type::<scroll::UScrollbarAxis>()
+        .register_type::<scroll::UScrollbarTrack>()
+        .register_type::<scroll::UScrollbarThumb>()
+        .register_type::<scroll::UScrollbarFade>()
+        .register_type::<scroll::UScrollKineticDrag>();
 }
 
 pub(super) fn install_layout_pipeline(app: &mut App) {
@@ -142,6 +147,9 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
                 scroll::init_scroll_containers,
                 scroll::auto_init_scroll_content,
                 scroll::handle_mouse_wheel_scroll,
+                scroll::handle_scrollbar_drag,
+                scroll::handle_kinetic_drag,
+                scroll::handle_scrollbar_fade,
             ),
         )
         .add_systems(
@@ -149,6 +157,8 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
             (
                 scroll::sync_scroll_extents,
                 scroll::apply_scroll_transitions,
+                scroll::sync_scrollbar_thumbs,
+                render::clip_sync::sync_node_clipper_materials,
             )
                 .chain()
                 .after(settlement_loop::run_ui_settlement_loop),

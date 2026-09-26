@@ -1,5 +1,7 @@
 use bevy::{asset::embedded_asset, prelude::*, sprite_render::Material2dPlugin};
 
+/// Systems for synchronizing hardware SDF rounded clipping uniforms.
+pub mod clip_sync;
 /// Material definitions for the Univis UI engine.
 pub mod material;
 /// 3D material definitions for the Univis UI engine.
@@ -17,7 +19,9 @@ use crate::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 
 /// Convenience exports for Univis UI rendering.
 pub mod prelude {
-    pub use crate::layout::render::{UnivisRenderPlugin, material::*, material_3d::*, system::*};
+    pub use crate::layout::render::{
+        UnivisRenderPlugin, clip_sync::*, material::*, material_3d::*, system::*,
+    };
 }
 
 /// Core rendering plugin for Univis UI materials and mesh synchronization.
@@ -44,7 +48,11 @@ impl Plugin for UnivisRenderPlugin {
             )
             .add_systems(
                 UiSettlementSchedule,
-                update_materials_optimized
+                (
+                    update_materials_optimized,
+                    clip_sync::sync_node_clipper_materials,
+                )
+                    .chain()
                     .in_set(UnivisPostUpdateSet::RenderSync)
                     .after(sync_cached_ui3d),
             );

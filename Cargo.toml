@@ -187,6 +187,14 @@ path = "examples/2d/gradient_showcase.rs"
 name = "scroll_and_transitions"
 path = "examples/2d/scroll_and_transitions.rs"
 
+[[example]]
+name = "gamepad_and_focus"
+path = "examples/2d/gamepad_and_focus.rs"
+
+[[example]]
+name = "scrollbar_and_drag"
+path = "examples/2d/scrollbar_and_drag.rs"
+
 
 
 [[example]]

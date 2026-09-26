@@ -11,7 +11,7 @@ use crate::layout::core::solver::*;
 use crate::layout::geometry::*;
 use crate::layout::layout_system::*;
 use crate::layout::profiling::LayoutProfiler;
-use crate::layout::scroll::UScrollContent;
+use crate::layout::scroll::{UScrollContent, UScrollbarThumb};
 use crate::layout::solver_types::{SolverSizeMode, SolverSpec};
 use crate::layout::transition::{UTransition, UTransitionState};
 use crate::layout::univis_node::*;
@@ -70,6 +70,7 @@ pub fn downward_solve_pass_safe(
     )>,
 
     mut scroll_contents: Query<&mut UScrollContent>,
+    mut scrollbar_thumbs: Query<&mut UScrollbarThumb>,
 
     intrinsic_query: Query<&IntrinsicSize>,
     root_query: Query<&ResolvedRootUi>,
@@ -80,10 +81,10 @@ pub fn downward_solve_pass_safe(
     let mut solved_count = 0;
     let use_incremental_solve = rollout
         .as_ref()
-        .map_or(true, |config| config.use_incremental_solve);
+        .is_none_or(|config| config.use_incremental_solve);
     let use_cached_ui_context = rollout
         .as_ref()
-        .map_or(true, |config| config.use_cached_ui_context);
+        .is_none_or(|config| config.use_cached_ui_context);
     let mut solve_iterations = 0;
     loop {
         let solve_frontier = if use_incremental_solve {
@@ -299,6 +300,7 @@ pub fn downward_solve_pass_safe(
                 &mut cache,
                 &mut nodes,
                 &mut scroll_contents,
+                &mut scrollbar_thumbs,
             );
             cache.complete_solve(entity);
 
@@ -509,6 +511,7 @@ fn apply_results_to_children(
         Option<&mut UTransitionState>,
     )>,
     scroll_contents: &mut Query<&mut UScrollContent>,
+    scrollbar_thumbs: &mut Query<&mut UScrollbarThumb>,
 ) {
     for solved in solved_children.iter() {
         if let Ok((
@@ -523,7 +526,7 @@ fn apply_results_to_children(
             mut computed,
             mut transform,
             mut vis_opt,
-            transition_opt,
+            _transition_opt,
             transition_state_opt,
         )) = nodes_query.get_mut(solved.entity)
         {
@@ -551,10 +554,22 @@ fn apply_results_to_children(
             );
 
             let scroll_content_opt = scroll_contents.get_mut(solved.entity).ok();
+            let scrollbar_thumb_opt = scrollbar_thumbs.get_mut(solved.entity).ok();
             if let Some(mut scroll_content) = scroll_content_opt {
                 scroll_content.base_translation = Vec2::new(next_x, next_y);
                 if !scroll_content.initialized {
                     scroll_content.initialized = true;
+                    if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
+                        transform.translation.x = next_x;
+                    }
+                    if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
+                        transform.translation.y = next_y;
+                    }
+                }
+            } else if let Some(mut thumb) = scrollbar_thumb_opt {
+                thumb.base_translation = Vec2::new(next_x, next_y);
+                if !thumb.initialized {
+                    thumb.initialized = true;
                     if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
                         transform.translation.x = next_x;
                     }
@@ -575,13 +590,6 @@ fn apply_results_to_children(
                     }
                 } else {
                     state.target_translation = Vec2::new(next_x, next_y);
-                }
-            } else if transition_opt.is_none() {
-                if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {
-                    transform.translation.x = next_x;
-                }
-                if (transform.translation.y - next_y).abs() > LAYOUT_WRITE_EPSILON {
-                    transform.translation.y = next_y;
                 }
             } else {
                 if (transform.translation.x - next_x).abs() > LAYOUT_WRITE_EPSILON {

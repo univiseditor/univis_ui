@@ -171,7 +171,18 @@ pub fn upward_measure_pass_cached(
                 calculated_min_height,
                 calculated_max_height,
             ) = if scratch.child_items.is_empty() {
-                (0.0, 0.0, 0.0, 0.0)
+                if let Ok(cur) = params.p2().get(entity) {
+                    let h_p = padding.width_sum();
+                    let v_p = padding.height_sum();
+                    (
+                        (cur.min_width - h_p).max(0.0),
+                        (cur.max_width - h_p).max(0.0),
+                        (cur.min_height - v_p).max(0.0),
+                        (cur.max_height - v_p).max(0.0),
+                    )
+                } else {
+                    (0.0, 0.0, 0.0, 0.0)
+                }
             } else {
                 let layout = layout_clone.unwrap_or_default();
                 match layout.display {

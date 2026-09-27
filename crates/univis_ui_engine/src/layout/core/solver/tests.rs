@@ -498,3 +498,209 @@ fn aspect_ratio_derives_cross_from_calc_main() {
     assert!((result.size.x - 190.0).abs() < 0.001);
     assert!((result.size.y - 95.0).abs() < 0.001);
 }
+
+#[test]
+fn grid_solver_places_2x2_fixed_cells_with_gaps() {
+    let mut config = base_solver_config();
+    config.layout.display = UDisplay::Grid;
+    config.grid_template_columns = vec![UTrackSize::Px(100.0), UTrackSize::Px(100.0)];
+    config.grid_template_rows = vec![UTrackSize::Px(50.0), UTrackSize::Px(50.0)];
+    config.column_gap = Some(10.0);
+    config.row_gap = Some(15.0);
+
+    let constraints = BoxConstraints::tight(Vec2::new(300.0, 200.0));
+    let mut res = [
+        SolverResult::default(),
+        SolverResult::default(),
+        SolverResult::default(),
+        SolverResult::default(),
+    ];
+    let mut items = vec![
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Fixed,
+                width_val: 100.0,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 50.0,
+                ..default()
+            },
+            &mut res[0],
+            USides::default(),
+        ),
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Fixed,
+                width_val: 100.0,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 50.0,
+                ..default()
+            },
+            &mut res[1],
+            USides::default(),
+        ),
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Fixed,
+                width_val: 100.0,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 50.0,
+                ..default()
+            },
+            &mut res[2],
+            USides::default(),
+        ),
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Fixed,
+                width_val: 100.0,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 50.0,
+                ..default()
+            },
+            &mut res[3],
+            USides::default(),
+        ),
+    ];
+
+    solve_grid_layout(&config, constraints, &mut items);
+
+    // Item 0: Row 0, Col 0 -> (0, 0)
+    assert!((res[0].pos.x - 0.0).abs() < 0.001);
+    assert!((res[0].pos.y - 0.0).abs() < 0.001);
+    assert!((res[0].size.x - 100.0).abs() < 0.001);
+    assert!((res[0].size.y - 50.0).abs() < 0.001);
+
+    // Item 1: Row 0, Col 1 -> (110, 0)
+    assert!((res[1].pos.x - 110.0).abs() < 0.001);
+    assert!((res[1].pos.y - 0.0).abs() < 0.001);
+
+    // Item 2: Row 1, Col 0 -> (0, 65)
+    assert!((res[2].pos.x - 0.0).abs() < 0.001);
+    assert!((res[2].pos.y - 65.0).abs() < 0.001);
+
+    // Item 3: Row 1, Col 1 -> (110, 65)
+    assert!((res[3].pos.x - 110.0).abs() < 0.001);
+    assert!((res[3].pos.y - 65.0).abs() < 0.001);
+}
+
+#[test]
+fn grid_solver_distributes_fr_tracks_proportionally() {
+    let mut config = base_solver_config();
+    config.layout.display = UDisplay::Grid;
+    config.grid_template_columns = vec![UTrackSize::Fr(1.0), UTrackSize::Fr(2.0)];
+    config.grid_template_rows = vec![UTrackSize::Px(80.0)];
+
+    let constraints = BoxConstraints::tight(Vec2::new(300.0, 100.0));
+    let mut res = [SolverResult::default(), SolverResult::default()];
+    let mut items = vec![
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Auto,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 80.0,
+                ..default()
+            },
+            &mut res[0],
+            USides::default(),
+        ),
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Auto,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 80.0,
+                ..default()
+            },
+            &mut res[1],
+            USides::default(),
+        ),
+    ];
+
+    solve_grid_layout(&config, constraints, &mut items);
+
+    // 1fr = 100.0, 2fr = 200.0
+    assert!((res[0].size.x - 100.0).abs() < 0.001);
+    assert!((res[0].pos.x - 0.0).abs() < 0.001);
+
+    assert!((res[1].size.x - 200.0).abs() < 0.001);
+    assert!((res[1].pos.x - 100.0).abs() < 0.001);
+}
+
+#[test]
+fn grid_solver_handles_column_spanning() {
+    let mut config = base_solver_config();
+    config.layout.display = UDisplay::Grid;
+    config.grid_template_columns = vec![
+        UTrackSize::Px(100.0),
+        UTrackSize::Px(150.0),
+        UTrackSize::Px(100.0),
+    ];
+    config.grid_template_rows = vec![UTrackSize::Px(60.0)];
+    config.column_gap = Some(10.0);
+
+    let constraints = BoxConstraints::tight(Vec2::new(400.0, 100.0));
+    let mut res = [SolverResult::default()];
+    let mut items = vec![SolverItem::new(
+        SolverSpec {
+            width_mode: SolverSizeMode::Auto,
+            height_mode: SolverSizeMode::Fixed,
+            height_val: 60.0,
+            grid_column_span: 2,
+            ..default()
+        },
+        &mut res[0],
+        USides::default(),
+    )];
+
+    solve_grid_layout(&config, constraints, &mut items);
+
+    // Col 0 (100) + gap (10) + Col 1 (150) = 260.0
+    assert!((res[0].size.x - 260.0).abs() < 0.001);
+    assert!((res[0].pos.x - 0.0).abs() < 0.001);
+}
+
+#[test]
+fn grid_solver_column_auto_flow() {
+    let mut config = base_solver_config();
+    config.layout.display = UDisplay::Grid;
+    config.grid_auto_flow = UGridAutoFlow::Column;
+    config.grid_template_columns = vec![UTrackSize::Px(80.0), UTrackSize::Px(80.0)];
+    config.grid_template_rows = vec![UTrackSize::Px(40.0), UTrackSize::Px(40.0)];
+    config.row_gap = Some(10.0);
+    config.column_gap = Some(10.0);
+
+    let constraints = BoxConstraints::tight(Vec2::new(200.0, 200.0));
+    let mut res = [SolverResult::default(), SolverResult::default()];
+    let mut items = vec![
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Fixed,
+                width_val: 80.0,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 40.0,
+                ..default()
+            },
+            &mut res[0],
+            USides::default(),
+        ),
+        SolverItem::new(
+            SolverSpec {
+                width_mode: SolverSizeMode::Fixed,
+                width_val: 80.0,
+                height_mode: SolverSizeMode::Fixed,
+                height_val: 40.0,
+                ..default()
+            },
+            &mut res[1],
+            USides::default(),
+        ),
+    ];
+
+    solve_grid_layout(&config, constraints, &mut items);
+
+    // In Column flow, Item 0 is at (Row 0, Col 0), Item 1 is at (Row 1, Col 0)
+    assert!((res[0].pos.x - 0.0).abs() < 0.001);
+    assert!((res[0].pos.y - 0.0).abs() < 0.001);
+
+    assert!((res[1].pos.x - 0.0).abs() < 0.001);
+    assert!((res[1].pos.y - 50.0).abs() < 0.001);
+}

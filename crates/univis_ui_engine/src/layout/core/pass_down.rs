@@ -1,6 +1,8 @@
 #![allow(clippy::type_complexity, clippy::too_many_arguments)]
 
 #[cfg(test)]
+mod grid_integration_tests;
+#[cfg(test)]
 mod tests;
 
 use bevy::prelude::*;
@@ -254,7 +256,11 @@ pub fn downward_solve_pass_safe(
                     }
                     prof.solve_ref_peak = prof.solve_ref_peak.max(solver_refs_len);
                 }
-                solve_flex_layout(&solver_config, constraints, &mut scratch.solver_refs)
+                if solver_config.layout.display == UDisplay::Grid {
+                    solve_grid_layout(&solver_config, constraints, &mut scratch.solver_refs)
+                } else {
+                    solve_flex_layout(&solver_config, constraints, &mut scratch.solver_refs)
+                }
             };
             solved_count += 1;
             let final_size = if depth == 0 {

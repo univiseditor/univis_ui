@@ -88,8 +88,11 @@ pub fn sync_node_clipper_materials(
     parents_query: Query<&ChildOf>,
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     root_query: Query<&ResolvedRootUi>,
-    mut materials_2d: ResMut<Assets<UNodeMaterial>>,
+    materials_2d: Option<ResMut<Assets<UNodeMaterial>>>,
 ) {
+    let Some(mut materials_2d) = materials_2d else {
+        return;
+    };
     for (entity, material_handle) in nodes_query.iter() {
         let Some(mut material) = materials_2d.get_mut(&material_handle.0) else {
             continue;

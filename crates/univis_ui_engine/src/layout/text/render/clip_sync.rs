@@ -181,8 +181,11 @@ pub(crate) fn sync_text_clipper_materials(
     clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
     root_query: Query<&ResolvedRootUi>,
     root_stack_query: Query<&ResolvedRootStack>,
-    mut materials: ResMut<Assets<UTextLabelSdfMaterial>>,
+    materials: Option<ResMut<Assets<UTextLabelSdfMaterial>>>,
 ) {
+    let Some(mut materials) = materials else {
+        return;
+    };
     for (entity, material_handle, mut transform) in text_query.iter_mut() {
         let world_scale = text_world_scale_for_entity(entity, &parents_query, &root_query);
         let root_stack = text_root_stack_for_entity(entity, &parents_query, &root_stack_query);

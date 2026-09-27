@@ -216,11 +216,15 @@ pub fn fit_node_to_text_size(
 
         const TEXT_AUTOSIZE_EPSILON: f32 = 0.5;
         let mut changed = false;
-        if (current_w - target_width).abs() > TEXT_AUTOSIZE_EPSILON {
+        if !node.width.uses_intrinsic_measurement()
+            && (current_w - target_width).abs() > TEXT_AUTOSIZE_EPSILON
+        {
             node.width = UVal::Px(target_width);
             changed = true;
         }
-        if (current_h - target_height).abs() > TEXT_AUTOSIZE_EPSILON {
+        if !node.height.uses_intrinsic_measurement()
+            && (current_h - target_height).abs() > TEXT_AUTOSIZE_EPSILON
+        {
             node.height = UVal::Px(target_height);
             changed = true;
         }

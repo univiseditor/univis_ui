@@ -4,9 +4,12 @@ mod tests;
 use bevy::prelude::*;
 
 mod absolute;
+pub mod grid;
 mod helpers;
 mod translate;
 mod types;
+
+pub use self::grid::solve_grid_layout;
 
 use self::absolute::solve_absolute_box;
 use self::helpers::{

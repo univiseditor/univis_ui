@@ -18,6 +18,7 @@ struct InputDemoState {
     last_submitted_field: String,
     last_submitted_value: String,
     active_field: String,
+    active_selection: String,
 }
 
 #[derive(Component)]
@@ -28,6 +29,7 @@ struct FieldIdentifier {
 #[derive(Component)]
 enum TelemetryField {
     ActiveField,
+    ActiveSelection,
     LastChange,
     LastSubmit,
 }
@@ -316,6 +318,13 @@ fn setup_scene(mut commands: Commands) {
     spawn_telemetry_row(
         &mut commands,
         telemetry_panel,
+        "SELECTION RANGE",
+        "None (Click or drag to select)",
+        TelemetryField::ActiveSelection,
+    );
+    spawn_telemetry_row(
+        &mut commands,
+        telemetry_panel,
         "LAST CHANGED",
         "No changes detected",
         TelemetryField::LastChange,
@@ -352,14 +361,14 @@ fn setup_scene(mut commands: Commands) {
     spawn_label(
         &mut commands,
         guide_box,
-        "KEYBOARD CONTROLS",
+        "INPUT & MOUSE CONTROLS",
         Color::srgb(0.85, 0.88, 0.94),
         13.0,
     );
     spawn_label(
         &mut commands,
         guide_box,
-        "- Tab / Shift+Tab: Cycle between input fields\n- Enter: Submit input event\n- Arrows / Home / End: Move caret\n- Ctrl + A: Select all text\n- Ctrl + Backspace: Delete whole word",
+        "- Click: Position caret directly at character\n- Drag: Select text range with mouse\n- Double Click: Select word under cursor\n- Tab / Shift+Tab: Cycle between input fields\n- Enter: Submit input event\n- Arrows / Home / End: Move caret (Shift to select)\n- Ctrl + A: Select all text\n- Ctrl + Backspace: Delete whole word",
         Color::srgb(0.65, 0.72, 0.82),
         12.0,
     );
@@ -535,17 +544,29 @@ fn on_demo_input_submit(
 
 fn update_active_focus(
     focus_state: Res<UFocusState>,
-    query: Query<&FieldIdentifier>,
+    query: Query<(&FieldIdentifier, &UTextInput)>,
     mut state: ResMut<InputDemoState>,
 ) {
     if let Some(focused) = focus_state.focused {
-        if let Ok(field) = query.get(focused) {
+        if let Ok((field, input)) = query.get(focused) {
             state.active_field = field.name.to_string();
+            if let Some((start, end)) = selection_bounds(input) {
+                let selected_text = if start < end && end <= input.value.len() {
+                    &input.value[start..end]
+                } else {
+                    ""
+                };
+                state.active_selection = format!("[{start}..{end}]: \"{selected_text}\"");
+            } else {
+                state.active_selection = format!("None (Cursor at byte {})", input.cursor_position);
+            }
         } else {
             state.active_field = "Other UI element".to_string();
+            state.active_selection = "None".to_string();
         }
     } else {
         state.active_field = "None (Click field or press Tab)".to_string();
+        state.active_selection = "None (No focused input)".to_string();
     }
 }
 
@@ -557,6 +578,12 @@ fn update_telemetry(
         match field {
             TelemetryField::ActiveField => {
                 let target = state.active_field.clone();
+                if label.text != target {
+                    label.text = target;
+                }
+            }
+            TelemetryField::ActiveSelection => {
+                let target = state.active_selection.clone();
                 if label.text != target {
                     label.text = target;
                 }

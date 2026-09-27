@@ -375,6 +375,91 @@ pub fn clamp_cursor_to_boundary(input: &mut UTextInput) {
     }
 }
 
+/// Given an X offset in logical pixels relative to the text content start (excluding left padding)
+/// and the total measured text width, computes the closest valid UTF-8 character boundary.
+pub fn cursor_index_from_x_offset(
+    input: &UTextInput,
+    x_in_text: f32,
+    measured_width: f32,
+) -> usize {
+    if input.value.is_empty() || x_in_text <= 0.0 {
+        return 0;
+    }
+
+    let total_bytes = input.value.len();
+    if measured_width <= 0.0 || x_in_text >= measured_width {
+        return total_bytes;
+    }
+
+    let ratio = (x_in_text / measured_width).clamp(0.0, 1.0);
+    let chars: Vec<(usize, char)> = input.value.char_indices().collect();
+    if chars.is_empty() {
+        return 0;
+    }
+
+    let total_chars = chars.len();
+    let target_char_idx = (ratio * total_chars as f32).round() as usize;
+    if target_char_idx >= total_chars {
+        total_bytes
+    } else {
+        chars[target_char_idx].0
+    }
+}
+
+/// Finds the (start, end) byte boundaries of the word surrounding the given byte offset.
+pub fn find_word_bounds(text: &str, byte_offset: usize) -> (usize, usize) {
+    if text.is_empty() {
+        return (0, 0);
+    }
+    let offset = byte_offset.min(text.len());
+    let mut word_start = 0;
+    let mut word_end = text.len();
+
+    let mut found = false;
+    for (idx, c) in text.char_indices() {
+        let is_word_char = c.is_alphanumeric() || c == '_';
+        if is_word_char {
+            if !found {
+                word_start = idx;
+                found = true;
+            }
+            word_end = idx + c.len_utf8();
+        } else {
+            if found {
+                if offset <= idx {
+                    return (word_start, word_end);
+                }
+                found = false;
+            }
+            if idx == offset {
+                return (idx, idx + c.len_utf8());
+            }
+        }
+    }
+
+    if found {
+        (word_start, word_end)
+    } else {
+        (offset, offset)
+    }
+}
+
+/// Selects the word surrounding the current cursor position.
+pub fn select_word_at_cursor(input: &mut UTextInput) {
+    if input.value.is_empty() {
+        input.selection = None;
+        return;
+    }
+    let pos = input.cursor_position.min(input.value.len());
+    let (start, end) = find_word_bounds(&input.value, pos);
+    if start != end {
+        input.selection = Some((start, end));
+        input.cursor_position = end;
+    } else {
+        input.selection = None;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -481,5 +566,39 @@ mod tests {
 
         delete_word_backward(&mut input);
         assert_eq!(input.value, "first ");
+    }
+
+    #[test]
+    fn test_cursor_index_from_x_offset() {
+        let input = UTextInput::default().with_value("HelloWorld");
+        let width = 100.0;
+
+        assert_eq!(cursor_index_from_x_offset(&input, -10.0, width), 0);
+        assert_eq!(cursor_index_from_x_offset(&input, 0.0, width), 0);
+        assert_eq!(cursor_index_from_x_offset(&input, 10.0, width), 1);
+        assert_eq!(cursor_index_from_x_offset(&input, 50.0, width), 5);
+        assert_eq!(cursor_index_from_x_offset(&input, 100.0, width), 10);
+        assert_eq!(cursor_index_from_x_offset(&input, 150.0, width), 10);
+
+        // Multi-byte UTF-8 safely landing on valid char boundary
+        let arabic_input = UTextInput::default().with_value("مرحبا"); // 5 chars, 10 bytes
+        let arabic_width = 80.0;
+        let mid_idx = cursor_index_from_x_offset(&arabic_input, 40.0, arabic_width);
+        assert!(arabic_input.value.is_char_boundary(mid_idx));
+    }
+
+    #[test]
+    fn test_find_word_bounds_and_select_word() {
+        let text = "alpha beta_gamma delta";
+        assert_eq!(find_word_bounds(text, 2), (0, 5)); // "alpha"
+        assert_eq!(find_word_bounds(text, 5), (0, 5)); // boundary at end of "alpha"
+        assert_eq!(find_word_bounds(text, 10), (6, 16)); // "beta_gamma"
+        assert_eq!(find_word_bounds(text, 18), (17, 22)); // "delta"
+
+        let mut input = UTextInput::default().with_value("station_access granted");
+        input.cursor_position = 4;
+        select_word_at_cursor(&mut input);
+        assert_eq!(input.selection, Some((0, 14))); // "station_access"
+        assert_eq!(input.cursor_position, 14);
     }
 }

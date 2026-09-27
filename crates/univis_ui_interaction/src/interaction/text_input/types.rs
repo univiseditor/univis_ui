@@ -168,6 +168,14 @@ pub struct UTextInputCaret {
     pub caret_entity: Option<Entity>,
     /// Child entity displaying the text label.
     pub text_entity: Option<Entity>,
+    /// Child entity displaying the visual text selection highlight rectangle.
+    pub selection_entity: Option<Entity>,
+    /// Background color of the text selection highlight rectangle.
+    pub selection_color: Color,
+    /// Anchor byte position when mouse dragging to select text.
+    pub drag_anchor: Option<usize>,
+    /// Timestamp in seconds of the last click (for double-click word selection).
+    pub last_click_secs: f64,
 }
 
 impl Default for UTextInputCaret {
@@ -180,6 +188,10 @@ impl Default for UTextInputCaret {
             visible: true,
             caret_entity: None,
             text_entity: None,
+            selection_entity: None,
+            selection_color: Color::srgba(0.0, 0.45, 0.9, 0.35),
+            drag_anchor: None,
+            last_click_secs: 0.0,
         }
     }
 }
@@ -206,6 +218,11 @@ pub struct UTextInputCaretMarker;
 #[derive(Component, Reflect, Clone, Copy, Debug, Default)]
 #[reflect(Component)]
 pub struct UTextInputTextMarker;
+
+/// Marker component attached to the internal text selection highlight child entity.
+#[derive(Component, Reflect, Clone, Copy, Debug, Default)]
+#[reflect(Component)]
+pub struct UTextInputSelectionMarker;
 
 /// Event fired when the value of a [`UTextInput`] changes.
 #[derive(Event, Reflect, Clone, Debug)]

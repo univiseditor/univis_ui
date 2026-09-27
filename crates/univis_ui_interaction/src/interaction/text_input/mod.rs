@@ -16,16 +16,19 @@ mod systems;
 mod types;
 
 pub use actions::{
-    clear_selection, delete_backward, delete_forward, delete_word_backward, display_text,
-    insert_text, is_char_allowed, move_cursor_left, move_cursor_right, move_cursor_to_end,
-    move_cursor_to_start, select_all, selection_bounds,
+    clear_selection, cursor_index_from_x_offset, delete_backward, delete_forward,
+    delete_word_backward, display_text, find_word_bounds, insert_text, is_char_allowed,
+    move_cursor_left, move_cursor_right, move_cursor_to_end, move_cursor_to_start, select_all,
+    select_word_at_cursor, selection_bounds,
 };
 pub use builder::spawn_text_input;
 pub use systems::{
-    on_text_input_focus_lost, on_text_input_pointer_click, text_input_caret_blink_system,
+    on_text_input_focus_lost, on_text_input_pointer_click, on_text_input_pointer_drag,
+    on_text_input_pointer_press, on_text_input_pointer_release, text_input_caret_blink_system,
     text_input_keyboard_system, text_input_sync_visual_system,
 };
 pub use types::{
     TextInputFilter, TextInputMode, UTextInput, UTextInputCancelled, UTextInputCaret,
-    UTextInputCaretMarker, UTextInputChanged, UTextInputSubmit, UTextInputTextMarker,
+    UTextInputCaretMarker, UTextInputChanged, UTextInputSelectionMarker, UTextInputSubmit,
+    UTextInputTextMarker,
 };

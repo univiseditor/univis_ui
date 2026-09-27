@@ -10,14 +10,17 @@ use univis_ui_engine::layout::{
     },
 };
 
-use super::types::{UTextInput, UTextInputCaret, UTextInputCaretMarker, UTextInputTextMarker};
+use super::types::{
+    UTextInput, UTextInputCaret, UTextInputCaretMarker, UTextInputSelectionMarker,
+    UTextInputTextMarker,
+};
 use crate::interaction::{
     feedback::UInteraction,
     focus::{UFocusVisual, UFocusable},
 };
 
 /// Spawns a complete text input widget with interactive styling, focus visual rings,
-/// text label, and animated caret cursor.
+/// text label, selection highlight, and animated caret cursor.
 pub fn spawn_text_input(commands: &mut Commands, input: UTextInput) -> Entity {
     let font_size = input.font_size;
     let initial_text = if input.value.is_empty() {
@@ -60,7 +63,29 @@ pub fn spawn_text_input(commands: &mut Commands, input: UTextInput) -> Entity {
         ))
         .id();
 
-    // 2. Spawn text child
+    // 2. Spawn selection highlight child (rendered behind text)
+    let selection_child = commands
+        .spawn((
+            ChildOf(parent),
+            UNode {
+                width: UVal::Px(0.0),
+                height: UVal::Px(font_size * 1.2),
+                background_color: Color::srgba(0.0, 0.45, 0.9, 0.35),
+                border_radius: UCornerRadius::all(2.0),
+                ..default()
+            },
+            USelf {
+                position_type: UPositionType::Absolute,
+                left: UVal::Px(14.0),
+                top: UVal::Px(11.0),
+                ..default()
+            },
+            Visibility::Hidden,
+            UTextInputSelectionMarker,
+        ))
+        .id();
+
+    // 3. Spawn text child
     let text_child = commands
         .spawn((
             ChildOf(parent),
@@ -78,7 +103,7 @@ pub fn spawn_text_input(commands: &mut Commands, input: UTextInput) -> Entity {
         ))
         .id();
 
-    // 3. Spawn caret child
+    // 4. Spawn caret child
     let caret_child = commands
         .spawn((
             ChildOf(parent),
@@ -99,10 +124,11 @@ pub fn spawn_text_input(commands: &mut Commands, input: UTextInput) -> Entity {
         ))
         .id();
 
-    // 4. Attach caret state linking children
+    // 5. Attach caret state linking children
     let caret = UTextInputCaret {
         text_entity: Some(text_child),
         caret_entity: Some(caret_child),
+        selection_entity: Some(selection_child),
         ..default()
     };
 

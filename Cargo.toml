@@ -199,7 +199,9 @@ path = "examples/2d/scrollbar_and_drag.rs"
 name = "text_input_showcase"
 path = "examples/2d/text_input_showcase.rs"
 
-
+[[example]]
+name = "grid_showcase"
+path = "examples/2d/grid_showcase.rs"
 
 [[example]]
 name = "grid_bento"

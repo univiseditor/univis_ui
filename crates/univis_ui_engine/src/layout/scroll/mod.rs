@@ -8,15 +8,25 @@
 //! - [`crate::layout::scroll::UScrollKineticDrag`] for touch and pointer drag-to-scroll with momentum and friction.
 
 pub mod container;
+pub mod culling;
 pub mod kinetic;
 pub mod scrollbar;
+pub mod virtual_list;
 
 pub use container::{
     UScrollContainer, UScrollContent, apply_scroll_transitions, auto_init_scroll_content,
     handle_mouse_wheel_scroll, init_scroll_containers, sync_scroll_extents,
+};
+pub use culling::{
+    UScrollCulling, cull_scrolled_viewport_children, init_scroll_culling,
 };
 pub use kinetic::{UScrollKineticDrag, handle_kinetic_drag};
 pub use scrollbar::{
     UScrollbarAxis, UScrollbarFade, UScrollbarThumb, UScrollbarTrack, calculate_thumb_size,
     handle_scrollbar_drag, handle_scrollbar_fade, sync_scrollbar_thumbs,
 };
+pub use virtual_list::{
+    UVirtualDirection, UVirtualItem, UVirtualList, UVirtualPool, recycle_virtual_items,
+    sync_virtual_list_extents,
+};
+

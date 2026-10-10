@@ -19,8 +19,10 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<layout_system::UiRootSettlementState>()
         .register_type::<layout_system::UiSpace>()
         .register_type::<layout_system::UiCanvasSize>()
+        .register_type::<layout_system::UVirtualScaleMode>()
         .register_type::<layout_system::UiCameraRef>()
         .register_type::<query::UiPickingContext>()
+        .register_type::<univis_node::UAnchor>()
         .register_type::<univis_node::UAlignSelf>()
         .register_type::<univis_node::UPosition>()
         .register_type::<univis_node::ULayoutContainerExt>()
@@ -54,7 +56,11 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<scroll::UScrollbarTrack>()
         .register_type::<scroll::UScrollbarThumb>()
         .register_type::<scroll::UScrollbarFade>()
-        .register_type::<scroll::UScrollKineticDrag>();
+        .register_type::<scroll::UScrollKineticDrag>()
+        .register_type::<scroll::UVirtualList>()
+        .register_type::<scroll::UVirtualItem>()
+        .register_type::<scroll::UVirtualPool>()
+        .register_type::<scroll::UScrollCulling>();
 }
 
 pub(super) fn install_layout_pipeline(app: &mut App) {
@@ -146,6 +152,7 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
             (
                 scroll::init_scroll_containers,
                 scroll::auto_init_scroll_content,
+                scroll::init_scroll_culling,
                 scroll::handle_mouse_wheel_scroll,
                 scroll::handle_scrollbar_drag,
                 scroll::handle_kinetic_drag,
@@ -156,8 +163,11 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
             PostUpdate,
             (
                 scroll::sync_scroll_extents,
+                scroll::sync_virtual_list_extents,
                 scroll::apply_scroll_transitions,
+                scroll::recycle_virtual_items,
                 scroll::sync_scrollbar_thumbs,
+                scroll::cull_scrolled_viewport_children,
                 render::clip_sync::sync_node_clipper_materials,
             )
                 .chain()

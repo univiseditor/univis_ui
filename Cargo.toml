@@ -134,6 +134,10 @@ path = "examples/bsn_rich_typography.rs"
 name = "bsn_3d_lighting_showcase"
 path = "examples/bsn_3d_lighting_showcase.rs"
 
+[[example]]
+name = "bsn_spring_motion_showcase"
+path = "examples/bsn_spring_motion_showcase.rs"
+
 
 
 

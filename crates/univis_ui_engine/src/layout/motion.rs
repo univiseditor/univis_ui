@@ -134,6 +134,41 @@ impl UMotionEnter {
         }
     }
 
+    /// Slide up with custom spring and delay.
+    pub fn slide_up_with(distance_px: f32, spring: UMotionSpringConfig, delay: f32) -> Self {
+        Self {
+            slide_offset: Vec2::new(0.0, -distance_px),
+            current_offset: Vec2::new(0.0, -distance_px),
+            spring,
+            delay,
+            ..Default::default()
+        }
+    }
+
+    /// Scale pop with custom spring and delay.
+    pub fn pop_with(scale_start: f32, spring: UMotionSpringConfig, delay: f32) -> Self {
+        Self {
+            slide_offset: Vec2::ZERO,
+            current_offset: Vec2::ZERO,
+            scale_start,
+            current_scale: scale_start,
+            spring,
+            delay,
+            ..Default::default()
+        }
+    }
+
+    /// Slide in from left with custom spring and delay.
+    pub fn slide_left_with(distance_px: f32, spring: UMotionSpringConfig, delay: f32) -> Self {
+        Self {
+            slide_offset: Vec2::new(-distance_px, 0.0),
+            current_offset: Vec2::new(-distance_px, 0.0),
+            spring,
+            delay,
+            ..Default::default()
+        }
+    }
+
     /// Sets staggered delay in seconds.
     pub fn with_delay(mut self, delay: f32) -> Self {
         self.delay = delay;
@@ -228,6 +263,21 @@ impl UMotionColor {
             target_border: None,
             speed: 16.0,
         }
+    }
+
+    /// Creates a smooth border color glide towards `target_border`.
+    pub fn to_border(target_border: Color) -> Self {
+        Self {
+            target_background: Color::WHITE,
+            target_border: Some(target_border),
+            speed: 16.0,
+        }
+    }
+
+    /// Also glides border color towards `target_border`.
+    pub fn with_border(mut self, target_border: Color) -> Self {
+        self.target_border = Some(target_border);
+        self
     }
 
     /// Sets transition speed.

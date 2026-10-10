@@ -1,5 +1,7 @@
 use bevy::{asset::embedded_asset, prelude::*, sprite_render::Material2dPlugin};
 
+/// Single-draw instanced batch renderer for 2D SDF UI nodes.
+pub mod batch;
 /// Systems for synchronizing hardware SDF rounded clipping uniforms.
 pub mod clip_sync;
 /// Material definitions for the Univis UI engine.
@@ -12,6 +14,7 @@ pub mod system;
 use crate::layout::components::UI3d;
 use crate::layout::layout_system::sync_cached_ui3d;
 use crate::layout::pbr::UPbr;
+use crate::layout::render::batch::UnivisBatchPlugin;
 use crate::layout::render::material::UNodeMaterial;
 use crate::layout::render::material_3d::UNodeMaterial3d;
 use crate::layout::render::system::{MaterialPool, MeshPool, update_materials_optimized};
@@ -20,7 +23,7 @@ use crate::schedule::{UiSettlementSchedule, UnivisPostUpdateSet};
 /// Convenience exports for Univis UI rendering.
 pub mod prelude {
     pub use crate::layout::render::{
-        UnivisRenderPlugin, clip_sync::*, material::*, material_3d::*, system::*,
+        UnivisRenderPlugin, batch::*, clip_sync::*, material::*, material_3d::*, system::*,
     };
 }
 
@@ -30,11 +33,13 @@ pub struct UnivisRenderPlugin;
 impl Plugin for UnivisRenderPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "shaders/unode.wgsl");
+        embedded_asset!(app, "shaders/unode_batch.wgsl");
         embedded_asset!(app, "shaders/unode_3d.wgsl");
         embedded_asset!(app, "shaders/text_label_sdf.wgsl");
         embedded_asset!(app, "shaders/text_label_sdf_3d.wgsl");
 
-        app.add_plugins(Material2dPlugin::<UNodeMaterial>::default())
+        app.add_plugins(UnivisBatchPlugin)
+            .add_plugins(Material2dPlugin::<UNodeMaterial>::default())
             .add_plugins(MaterialPlugin::<UNodeMaterial3d>::default())
             .register_type::<UI3d>()
             .register_type::<UPbr>()
@@ -46,11 +51,13 @@ impl Plugin for UnivisRenderPlugin {
                     .in_set(UnivisPostUpdateSet::RenderSync)
                     .after(UnivisPostUpdateSet::LayoutSolve),
             )
+            .register_type::<clip_sync::UActiveClip>()
             .add_systems(
                 UiSettlementSchedule,
                 (
                     update_materials_optimized,
                     clip_sync::sync_node_clipper_materials,
+                    clip_sync::sync_node_active_clips,
                 )
                     .chain()
                     .in_set(UnivisPostUpdateSet::RenderSync)

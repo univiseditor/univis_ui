@@ -113,6 +113,57 @@ pub fn sync_node_clipper_materials(
     }
 }
 
+/// Active clipping uniform parameters attached to nodes that are descendants of a [`UClip`] container.
+#[derive(Component, Clone, Copy, Debug, Default, Reflect, PartialEq)]
+#[reflect(Component)]
+pub struct UActiveClip {
+    /// World-space center of the clip box.
+    pub center: Vec2,
+    /// Physical size of the clip box in world units.
+    pub size: Vec2,
+    /// Corner radii of the clip box in world units.
+    pub radius: Vec4,
+    /// Whether clipping is active.
+    pub use_clip: bool,
+}
+
+/// Propagates active clipping geometry from ancestor clippers to all 2D [`UNode`] descendants.
+pub fn sync_node_active_clips(
+    mut commands: Commands,
+    mut existing_query: Query<(Entity, &mut UActiveClip)>,
+    unode_query: Query<Entity, (With<UNode>, Without<UActiveClip>)>,
+    parents_query: Query<&ChildOf>,
+    clipper_query: Query<(&GlobalTransform, &ComputedSize, &UNode, &UClip)>,
+    root_query: Query<&ResolvedRootUi>,
+) {
+    for (entity, mut active_clip) in existing_query.iter_mut() {
+        let clip_info = active_clipper_for_node(entity, &parents_query, &clipper_query, &root_query);
+        let use_clip = clip_info.use_clip == 1;
+        if active_clip.center != clip_info.center
+            || active_clip.size != clip_info.size
+            || active_clip.radius != clip_info.radius
+            || active_clip.use_clip != use_clip
+        {
+            active_clip.center = clip_info.center;
+            active_clip.size = clip_info.size;
+            active_clip.radius = clip_info.radius;
+            active_clip.use_clip = use_clip;
+        }
+    }
+
+    for entity in unode_query.iter() {
+        let clip_info = active_clipper_for_node(entity, &parents_query, &clipper_query, &root_query);
+        if clip_info.use_clip == 1 {
+            commands.entity(entity).insert(UActiveClip {
+                center: clip_info.center,
+                size: clip_info.size,
+                radius: clip_info.radius,
+                use_clip: true,
+            });
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -188,5 +239,52 @@ mod tests {
         assert_eq!(material.clip_center, Vec2::new(100.0, 50.0));
         assert_eq!(material.clip_size, Vec2::new(300.0, 200.0));
         assert_eq!(material.clip_radius, Vec4::splat(8.0));
+    }
+
+    #[test]
+    fn test_sync_node_active_clips_propagation() {
+        let mut app = App::new();
+
+        let clipper = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    border_radius: UCornerRadius::all(12.0),
+                    ..default()
+                },
+                ComputedSize {
+                    width: 400.0,
+                    height: 300.0,
+                    ..default()
+                },
+                UClip { enabled: true },
+                Transform::default(),
+                GlobalTransform::from_translation(Vec3::new(50.0, 50.0, 0.0)),
+            ))
+            .id();
+
+        let child = app
+            .world_mut()
+            .spawn((
+                ChildOf(clipper),
+                UNode::default(),
+                ComputedSize {
+                    width: 100.0,
+                    height: 100.0,
+                    ..default()
+                },
+                Transform::default(),
+                GlobalTransform::from_translation(Vec3::new(60.0, 60.0, 0.0)),
+            ))
+            .id();
+
+        app.add_systems(Update, sync_node_active_clips);
+        app.update();
+
+        let active_clip = app.world().get::<UActiveClip>(child).unwrap();
+        assert!(active_clip.use_clip);
+        assert_eq!(active_clip.center, Vec2::new(50.0, 50.0));
+        assert_eq!(active_clip.size, Vec2::new(400.0, 300.0));
+        assert_eq!(active_clip.radius, Vec4::splat(12.0));
     }
 }

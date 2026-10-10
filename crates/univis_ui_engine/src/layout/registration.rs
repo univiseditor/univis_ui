@@ -60,7 +60,8 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<scroll::UVirtualList>()
         .register_type::<scroll::UVirtualItem>()
         .register_type::<scroll::UVirtualPool>()
-        .register_type::<scroll::UScrollCulling>();
+        .register_type::<scroll::UScrollCulling>()
+        .register_type::<render::clip_sync::UActiveClip>();
 }
 
 pub(super) fn install_layout_pipeline(app: &mut App) {
@@ -169,6 +170,7 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
                 scroll::sync_scrollbar_thumbs,
                 scroll::cull_scrolled_viewport_children,
                 render::clip_sync::sync_node_clipper_materials,
+                render::clip_sync::sync_node_active_clips,
             )
                 .chain()
                 .after(settlement_loop::run_ui_settlement_loop),

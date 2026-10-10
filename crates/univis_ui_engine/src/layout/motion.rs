@@ -83,6 +83,8 @@ pub struct UMotionEnter {
     pub(crate) elapsed: f32,
     pub(crate) completed: bool,
     pub(crate) base_bg_alpha: Option<f32>,
+    pub(crate) base_translation: Option<Vec2>,
+    pub(crate) base_scale: Option<Vec3>,
 }
 
 impl Default for UMotionEnter {
@@ -100,6 +102,8 @@ impl Default for UMotionEnter {
             elapsed: 0.0,
             completed: false,
             base_bg_alpha: None,
+            base_translation: None,
+            base_scale: None,
         }
     }
 }
@@ -185,6 +189,26 @@ impl UMotionEnter {
     pub fn is_completed(&self) -> bool {
         self.completed
     }
+
+    /// Current animated translation offset vector.
+    pub fn current_offset(&self) -> Vec2 {
+        self.current_offset
+    }
+
+    /// Current animated scale factor.
+    pub fn current_scale(&self) -> f32 {
+        self.current_scale
+    }
+
+    /// Replays the entrance animation from its initial offset.
+    pub fn replay(&mut self) {
+        self.current_offset = self.slide_offset;
+        self.offset_velocity = Vec2::ZERO;
+        self.current_scale = self.scale_start;
+        self.scale_velocity = 0.0;
+        self.elapsed = 0.0;
+        self.completed = false;
+    }
 }
 
 /// Applies reactive physical pulses, impact recoil, and error shakes to an entity.
@@ -199,6 +223,8 @@ pub struct UMotionPunch {
     pub scale_velocity: Vec2,
     /// Spring configuration restoring the component to rest.
     pub spring: UMotionSpringConfig,
+    pub(crate) base_translation: Option<Vec2>,
+    pub(crate) base_scale: Option<Vec3>,
 }
 
 impl Default for UMotionPunch {
@@ -209,6 +235,8 @@ impl Default for UMotionPunch {
             scale_offset: Vec2::ZERO,
             scale_velocity: Vec2::ZERO,
             spring: UMotionSpringConfig::wobbly(),
+            base_translation: None,
+            base_scale: None,
         }
     }
 }
@@ -305,12 +333,19 @@ pub fn advance_motion_enter_system(
             continue;
         }
 
+        if enter.base_translation.is_none() {
+            enter.base_translation = Some(transform.translation.xy());
+            enter.base_scale = Some(transform.scale);
+        }
+        let base_pos = enter.base_translation.unwrap_or(transform.translation.xy());
+        let base_scale = enter.base_scale.unwrap_or(transform.scale);
+
         enter.elapsed += dt;
         if enter.elapsed < enter.delay {
-            // Still in delay phase: hold initial offset and scale
-            transform.translation.x += enter.slide_offset.x;
-            transform.translation.y += enter.slide_offset.y;
-            transform.scale *= enter.scale_start;
+            // Still in delay phase: hold initial offset and scale relative to base
+            transform.translation.x = base_pos.x + enter.slide_offset.x;
+            transform.translation.y = base_pos.y + enter.slide_offset.y;
+            transform.scale = base_scale * enter.scale_start;
             if enter.fade_alpha {
                 if enter.base_bg_alpha.is_none() {
                     enter.base_bg_alpha = Some(node.background_color.alpha());
@@ -343,10 +378,10 @@ pub fn advance_motion_enter_system(
         let scale_delta = enter.scale_velocity * dt;
         enter.current_scale += scale_delta;
 
-        // Apply to transform
-        transform.translation.x += enter.current_offset.x;
-        transform.translation.y += enter.current_offset.y;
-        transform.scale *= enter.current_scale;
+        // Apply relative to BASE transform!
+        transform.translation.x = base_pos.x + enter.current_offset.x;
+        transform.translation.y = base_pos.y + enter.current_offset.y;
+        transform.scale = base_scale * enter.current_scale;
 
         // 3. Alpha fade in
         if enter.fade_alpha {
@@ -365,6 +400,9 @@ pub fn advance_motion_enter_system(
             enter.completed = true;
             enter.current_offset = Vec2::ZERO;
             enter.current_scale = 1.0;
+            transform.translation.x = base_pos.x;
+            transform.translation.y = base_pos.y;
+            transform.scale = base_scale;
             if enter.fade_alpha {
                 if let Some(base_alpha) = enter.base_bg_alpha {
                     node.background_color = node.background_color.with_alpha(base_alpha);
@@ -388,6 +426,19 @@ pub fn advance_motion_punch_system(
     }
 
     for (mut punch, mut transform) in query.iter_mut() {
+        let is_active = punch.offset.length_squared() > 0.000001
+            || punch.offset_velocity.length_squared() > 0.000001
+            || punch.scale_offset.length_squared() > 0.000001
+            || punch.scale_velocity.length_squared() > 0.000001;
+
+        if !is_active {
+            punch.base_translation = Some(transform.translation.xy());
+            punch.base_scale = Some(transform.scale);
+            continue;
+        }
+
+        let base_pos = punch.base_translation.unwrap_or(transform.translation.xy());
+        let base_scale = punch.base_scale.unwrap_or(transform.scale);
         let omega = punch.spring.stiffness.sqrt();
 
         // 1. Position recoil restoration
@@ -406,10 +457,13 @@ pub fn advance_motion_punch_system(
         let s_dt = punch.scale_velocity * dt;
         punch.scale_offset += s_dt;
 
-        transform.translation.x += punch.offset.x;
-        transform.translation.y += punch.offset.y;
-        transform.scale.x = (transform.scale.x + punch.scale_offset.x).max(0.01);
-        transform.scale.y = (transform.scale.y + punch.scale_offset.y).max(0.01);
+        transform.translation.x = base_pos.x + punch.offset.x;
+        transform.translation.y = base_pos.y + punch.offset.y;
+        transform.scale = Vec3::new(
+            (base_scale.x * (1.0 + punch.scale_offset.x)).max(0.01),
+            (base_scale.y * (1.0 + punch.scale_offset.y)).max(0.01),
+            base_scale.z,
+        );
 
         if diff_o.length_squared() < 0.00001
             && punch.offset_velocity.length_squared() < 0.00001
@@ -418,6 +472,9 @@ pub fn advance_motion_punch_system(
         {
             punch.offset = Vec2::ZERO;
             punch.scale_offset = Vec2::ZERO;
+            transform.translation.x = base_pos.x;
+            transform.translation.y = base_pos.y;
+            transform.scale = base_scale;
         }
     }
 }

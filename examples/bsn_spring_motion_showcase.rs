@@ -7,12 +7,13 @@
 //! - Physics presets: `UMotionSpringConfig::bouncy()`, `snappy()`, `wobbly()`, `gentle()`.
 //!
 //! Controls:
-//! - [Space]: Trigger scale punch impulse on all cards
+//! - [Click Button]: Trigger high-intensity physical punch on that specific card
+//! - [Space]: Trigger punch impulse on all cards simultaneously
 //! - [R]: Reset & replay staggered entrance animations
-//! - [C]: Cycle color palette glide
-//! - [1]: Apply Bouncy spring preset
-//! - [2]: Apply Snappy spring preset
-//! - [3]: Apply Wobbly spring preset
+//! - [C]: Cycle color palette glide (RGB smooth interpolation)
+//! - [1]: Apply Bouncy spring preset (Overshoot & Elasticity)
+//! - [2]: Apply Snappy spring preset (Critical Damping, No Bounce)
+//! - [3]: Apply Wobbly spring preset (Low Damping, Elastic Wobble)
 
 use bevy::prelude::*;
 use univis_ui::prelude::*;
@@ -33,14 +34,20 @@ impl Default for MotionDemoState {
 }
 
 const PALETTES: [Color; 4] = [
-    Color::srgb(0.20, 0.65, 1.00), // Cyan / Blue
-    Color::srgb(0.70, 0.35, 1.00), // Electric Purple
-    Color::srgb(0.25, 0.85, 0.55), // Emerald Green
-    Color::srgb(1.00, 0.55, 0.20), // Sunset Amber
+    Color::srgb(0.20, 0.65, 1.00), // Electric Cyan
+    Color::srgb(0.75, 0.35, 1.00), // Neon Purple
+    Color::srgb(0.25, 0.88, 0.55), // Emerald Green
+    Color::srgb(1.00, 0.55, 0.18), // Sunset Amber
 ];
 
 #[derive(Component, Clone, Copy, Default)]
 struct MotionCard(usize);
+
+#[derive(Component, Clone, Copy, Default)]
+struct CardPunchButton(usize);
+
+#[derive(Component, Clone, Copy, Default)]
+struct TelemetryLabel(usize);
 
 #[derive(Component, Clone, Copy, Default)]
 struct StatusLabel;
@@ -50,7 +57,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Univis UI - Spring Motion & Transitions System".into(),
-                resolution: (1280, 800).into(),
+                resolution: (1280, 840).into(),
                 ..default()
             }),
             ..default()
@@ -58,7 +65,15 @@ fn main() {
         .add_plugins(UnivisUiPlugin)
         .init_resource::<MotionDemoState>()
         .add_systems(Startup, setup_motion_showcase)
-        .add_systems(Update, (handle_keyboard_controls, update_status_text))
+        .add_systems(
+            Update,
+            (
+                handle_keyboard_controls,
+                handle_button_clicks,
+                update_status_text,
+                update_telemetry,
+            ),
+        )
         .run();
 }
 
@@ -100,15 +115,15 @@ fn header_bar(
     icon_font: Handle<Font>,
 ) -> impl Scene {
     bsn! {
-        UMotionEnter::slide_up_with(36.0, UMotionSpringConfig::bouncy(), 0.05)
+        UMotionEnter::slide_up_with(40.0, UMotionSpringConfig::bouncy(), 0.05)
         UNode {
             width: UVal::Percent(1.0),
-            background_color: Color::srgba(0.08, 0.11, 0.18, 0.85),
+            background_color: Color::srgba(0.08, 0.11, 0.18, 0.88),
             border_radius: UCornerRadius::all(14.0),
             padding: USides::axes(24.0, 16.0),
         }
         UBorder {
-            color: Color::srgba(0.2, 0.35, 0.6, 0.4),
+            color: Color::srgba(0.2, 0.35, 0.6, 0.45),
             width: 1.0,
             radius: UCornerRadius::all(14.0),
         }
@@ -130,8 +145,8 @@ fn header_bar(
                 Children [
                     (
                         UNode {
-                            width: UVal::Px(40.0),
-                            height: UVal::Px(40.0),
+                            width: UVal::Px(42.0),
+                            height: UVal::Px(42.0),
                             background_color: Color::srgb(0.18, 0.45, 0.95),
                             border_radius: UCornerRadius::all(10.0),
                         }
@@ -143,7 +158,7 @@ fn header_bar(
                         Children [
                             (UText {
                                 text: { Icon::ZAP.to_string() },
-                                font_size: 20.0,
+                                font_size: 22.0,
                                 font: { icon_font },
                                 color: Color::WHITE,
                             })
@@ -154,17 +169,17 @@ fn header_bar(
                         ULayout {
                             display: UDisplay::Flex,
                             flex_direction: UFlexDirection::Column,
-                            gap: 2.0,
+                            gap: 3.0,
                         }
                         Children [
                             (UText {
-                                text: { "SPRING MOTION & HAPTIC SYSTEM".to_string() },
-                                font_size: 18.0,
+                                text: { "SPRING MOTION & HAPTICS ENGINE".to_string() },
+                                font_size: 19.0,
                                 font: { title_font },
                                 color: Color::srgb(0.95, 0.98, 1.0),
                             }),
                             (UText {
-                                text: { "Second-order dynamic springs, punch recoil & continuous color glide".to_string() },
+                                text: { "Real-time second-order spring dynamics • Staggered entrance • Recoil punch".to_string() },
                                 font_size: 12.0,
                                 font: { body_font.clone() },
                                 color: Color::srgb(0.60, 0.70, 0.85),
@@ -175,12 +190,12 @@ fn header_bar(
             ),
             (
                 UNode {
-                    background_color: Color::srgba(0.12, 0.18, 0.30, 0.8),
+                    background_color: Color::srgba(0.12, 0.18, 0.32, 0.85),
                     border_radius: UCornerRadius::all(8.0),
-                    padding: USides::axes(14.0, 8.0),
+                    padding: USides::axes(16.0, 10.0),
                 }
                 UBorder {
-                    color: Color::srgba(0.3, 0.5, 0.9, 0.3),
+                    color: Color::srgba(0.3, 0.5, 0.9, 0.35),
                     width: 1.0,
                     radius: UCornerRadius::all(8.0),
                 }
@@ -190,10 +205,10 @@ fn header_bar(
                 }
                 Children [
                     (UText {
-                        text: { "[Space] Punch  •  [R] Re-Enter  •  [C] Color  •  [1-3] Presets".to_string() },
-                        font_size: 11.5,
+                        text: { "[Space] Punch All  •  [R] Re-Enter  •  [C] Color Glide  •  [1-3] Presets".to_string() },
+                        font_size: 12.0,
                         font: { body_font },
-                        color: Color::srgb(0.75, 0.85, 1.0),
+                        color: Color::srgb(0.80, 0.90, 1.0),
                     })
                 ]
             )
@@ -226,12 +241,12 @@ fn card_bouncy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
     let accent = Color::srgb(0.20, 0.65, 1.00);
     bsn! {
         MotionCard(0)
-        UMotionEnter::slide_up_with(50.0, UMotionSpringConfig::bouncy(), 0.15)
+        UMotionEnter::slide_up_with(60.0, UMotionSpringConfig::bouncy(), 0.10)
         UMotionPunch::default()
         UMotionColor::default()
         UNode {
-            width: UVal::Px(310.0),
-            height: UVal::Px(350.0),
+            width: UVal::Px(320.0),
+            height: UVal::Px(380.0),
             background_color: Color::srgb(0.08, 0.12, 0.20),
             border_radius: UCornerRadius::all(16.0),
             padding: USides::all(24.0),
@@ -257,22 +272,33 @@ fn card_bouncy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
                 Children [
                     (UText {
                         text: { "BOUNCY SLIDE".to_string() },
-                        font_size: 17.0,
+                        font_size: 18.0,
                         font: { title_font },
                         color: accent,
                     }),
                     (UText {
-                        text: { "Smooth translation overshoot.\nDamping: 0.75 | Stiffness: 220\nIdeal for modal popups & flyouts.".to_string() },
+                        text: { "High elasticity with smooth overshoot.\nDamping: 0.75 | Stiffness: 220\nIdeal for modal popups, cards & drawers.".to_string() },
                         font_size: 13.0,
                         font: { body_font.clone() },
                         color: Color::srgb(0.70, 0.78, 0.88),
-                    })
+                    }),
+                    (
+                        TelemetryLabel(0)
+                        UText {
+                            text: { "State: ENTERING...".to_string() },
+                            font_size: 11.5,
+                            font: { body_font.clone() },
+                            color: Color::srgb(0.4, 0.75, 1.0),
+                        }
+                    )
                 ]
             ),
             (
+                CardPunchButton(0)
+                UInteraction::default()
                 UNode {
                     width: UVal::Percent(1.0),
-                    height: UVal::Px(42.0),
+                    height: UVal::Px(44.0),
                     background_color: accent,
                     border_radius: UCornerRadius::all(8.0),
                 }
@@ -283,8 +309,8 @@ fn card_bouncy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
                 }
                 Children [
                     (UText {
-                        text: { "PUNCH IMPULSE [SPACE]".to_string() },
-                        font_size: 11.5,
+                        text: { "CLICK TO PUNCH (BOUNCE)".to_string() },
+                        font_size: 12.0,
                         font: { body_font },
                         color: Color::srgb(0.04, 0.06, 0.10),
                     })
@@ -295,15 +321,15 @@ fn card_bouncy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
 }
 
 fn card_snappy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene {
-    let accent = Color::srgb(0.70, 0.35, 1.00);
+    let accent = Color::srgb(0.75, 0.35, 1.00);
     bsn! {
         MotionCard(1)
-        UMotionEnter::pop_with(0.70, UMotionSpringConfig::snappy(), 0.25)
+        UMotionEnter::pop_with(0.70, UMotionSpringConfig::snappy(), 0.22)
         UMotionPunch::default()
         UMotionColor::default()
         UNode {
-            width: UVal::Px(310.0),
-            height: UVal::Px(350.0),
+            width: UVal::Px(320.0),
+            height: UVal::Px(380.0),
             background_color: Color::srgb(0.12, 0.09, 0.22),
             border_radius: UCornerRadius::all(16.0),
             padding: USides::all(24.0),
@@ -329,22 +355,33 @@ fn card_snappy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
                 Children [
                     (UText {
                         text: { "SNAPPY POP".to_string() },
-                        font_size: 17.0,
+                        font_size: 18.0,
                         font: { title_font },
                         color: accent,
                     }),
                     (UText {
-                        text: { "Critical damping without bounce.\nDamping: 1.00 | Stiffness: 380\nHigh-precision responsive action.".to_string() },
+                        text: { "Critical damping without overshoot.\nDamping: 1.00 | Stiffness: 380\nHigh precision responsive tactile feedback.".to_string() },
                         font_size: 13.0,
                         font: { body_font.clone() },
                         color: Color::srgb(0.70, 0.78, 0.88),
-                    })
+                    }),
+                    (
+                        TelemetryLabel(1)
+                        UText {
+                            text: { "State: ENTERING...".to_string() },
+                            font_size: 11.5,
+                            font: { body_font.clone() },
+                            color: Color::srgb(0.75, 0.55, 1.0),
+                        }
+                    )
                 ]
             ),
             (
+                CardPunchButton(1)
+                UInteraction::default()
                 UNode {
                     width: UVal::Percent(1.0),
-                    height: UVal::Px(42.0),
+                    height: UVal::Px(44.0),
                     background_color: accent,
                     border_radius: UCornerRadius::all(8.0),
                 }
@@ -355,8 +392,8 @@ fn card_snappy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
                 }
                 Children [
                     (UText {
-                        text: { "PUNCH IMPULSE [SPACE]".to_string() },
-                        font_size: 11.5,
+                        text: { "CLICK TO PUNCH (SNAP)".to_string() },
+                        font_size: 12.0,
                         font: { body_font },
                         color: Color::srgb(0.04, 0.06, 0.10),
                     })
@@ -367,15 +404,15 @@ fn card_snappy(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
 }
 
 fn card_wobbly(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene {
-    let accent = Color::srgb(0.25, 0.85, 0.55);
+    let accent = Color::srgb(0.25, 0.88, 0.55);
     bsn! {
         MotionCard(2)
-        UMotionEnter::slide_left_with(60.0, UMotionSpringConfig::wobbly(), 0.35)
+        UMotionEnter::slide_left_with(70.0, UMotionSpringConfig::wobbly(), 0.34)
         UMotionPunch::default()
         UMotionColor::default()
         UNode {
-            width: UVal::Px(310.0),
-            height: UVal::Px(350.0),
+            width: UVal::Px(320.0),
+            height: UVal::Px(380.0),
             background_color: Color::srgb(0.07, 0.16, 0.14),
             border_radius: UCornerRadius::all(16.0),
             padding: USides::all(24.0),
@@ -401,22 +438,33 @@ fn card_wobbly(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
                 Children [
                     (UText {
                         text: { "WOBBLY RECOIL".to_string() },
-                        font_size: 17.0,
+                        font_size: 18.0,
                         font: { title_font },
                         color: accent,
                     }),
                     (UText {
-                        text: { "Underdamped elastic punch.\nDamping: 0.45 | Stiffness: 160\nGreat for haptics & game feedback.".to_string() },
+                        text: { "Underdamped elastic recoil oscillation.\nDamping: 0.45 | Stiffness: 160\nGreat for haptics, game shakes & alerts.".to_string() },
                         font_size: 13.0,
                         font: { body_font.clone() },
                         color: Color::srgb(0.70, 0.78, 0.88),
-                    })
+                    }),
+                    (
+                        TelemetryLabel(2)
+                        UText {
+                            text: { "State: ENTERING...".to_string() },
+                            font_size: 11.5,
+                            font: { body_font.clone() },
+                            color: Color::srgb(0.35, 0.90, 0.65),
+                        }
+                    )
                 ]
             ),
             (
+                CardPunchButton(2)
+                UInteraction::default()
                 UNode {
                     width: UVal::Percent(1.0),
-                    height: UVal::Px(42.0),
+                    height: UVal::Px(44.0),
                     background_color: accent,
                     border_radius: UCornerRadius::all(8.0),
                 }
@@ -427,8 +475,8 @@ fn card_wobbly(title_font: Handle<Font>, body_font: Handle<Font>) -> impl Scene 
                 }
                 Children [
                     (UText {
-                        text: { "PUNCH IMPULSE [SPACE]".to_string() },
-                        font_size: 11.5,
+                        text: { "CLICK TO PUNCH (WOBBLE)".to_string() },
+                        font_size: 12.0,
                         font: { body_font },
                         color: Color::srgb(0.04, 0.06, 0.10),
                     })
@@ -442,12 +490,12 @@ fn footer_status_bar(body_font: Handle<Font>) -> impl Scene {
     bsn! {
         UMotionPunch::default()
         UNode {
-            background_color: Color::srgba(0.08, 0.11, 0.18, 0.8),
+            background_color: Color::srgba(0.08, 0.11, 0.18, 0.85),
             border_radius: UCornerRadius::all(8.0),
             padding: USides::axes(20.0, 10.0),
         }
         UBorder {
-            color: Color::srgba(0.2, 0.35, 0.6, 0.3),
+            color: Color::srgba(0.2, 0.35, 0.6, 0.35),
             width: 1.0,
             radius: UCornerRadius::all(8.0),
         }
@@ -460,7 +508,7 @@ fn footer_status_bar(body_font: Handle<Font>) -> impl Scene {
                 StatusLabel
                 UText {
                     text: { "Active Preset: Bouncy (Stiffness: 220, Damping: 0.75)  •  Theme: Palette #1".to_string() },
-                    font_size: 12.0,
+                    font_size: 12.5,
                     font: { body_font },
                     color: Color::srgb(0.8, 0.88, 1.0),
                 }
@@ -474,24 +522,20 @@ fn handle_keyboard_controls(
     mut state: ResMut<MotionDemoState>,
     mut query: Query<(&MotionCard, &mut UMotionPunch, &mut UMotionEnter, &mut UMotionColor)>,
 ) {
-    // 1. Space: Trigger Punch
+    // 1. Space: Trigger Punch on all cards
     if keyboard.just_pressed(KeyCode::Space) {
         for (card, mut punch, _, _) in query.iter_mut() {
-            let factor = 0.15 + (card.0 as f32) * 0.05;
+            let factor = 0.22 + (card.0 as f32) * 0.08;
             punch.punch_scale(Vec2::splat(factor));
-            let recoil_y = if card.0 % 2 == 0 { -16.0 } else { 16.0 };
+            let recoil_y = if card.0 % 2 == 0 { -24.0 } else { 24.0 };
             punch.punch_offset(Vec2::new(0.0, recoil_y));
         }
     }
 
     // 2. R: Replay Entrance
     if keyboard.just_pressed(KeyCode::KeyR) {
-        for (card, _, mut enter, _) in query.iter_mut() {
-            *enter = match card.0 {
-                0 => UMotionEnter::slide_up(50.0).with_delay(0.05),
-                1 => UMotionEnter::pop(0.70).with_delay(0.15),
-                _ => UMotionEnter::slide_left(60.0).with_delay(0.25),
-            };
+        for (_, _, mut enter, _) in query.iter_mut() {
+            enter.replay();
         }
     }
 
@@ -501,7 +545,7 @@ fn handle_keyboard_controls(
         let target_color = PALETTES[state.palette_index];
 
         for (_, _, _, mut motion_color) in query.iter_mut() {
-            *motion_color = UMotionColor::to_border(target_color).with_speed(15.0);
+            *motion_color = UMotionColor::to_border(target_color).with_speed(10.0);
         }
     }
 
@@ -524,6 +568,23 @@ fn handle_keyboard_controls(
     }
 }
 
+fn handle_button_clicks(
+    btn_query: Query<(&CardPunchButton, &UInteraction), Changed<UInteraction>>,
+    mut card_query: Query<(&MotionCard, &mut UMotionPunch)>,
+) {
+    for (btn, interaction) in btn_query.iter() {
+        if *interaction == UInteraction::Pressed || *interaction == UInteraction::Clicked {
+            for (card, mut punch) in card_query.iter_mut() {
+                if card.0 == btn.0 {
+                    punch.punch_scale(Vec2::splat(0.30));
+                    let recoil_y = if card.0 % 2 == 0 { -28.0 } else { 28.0 };
+                    punch.punch_offset(Vec2::new(0.0, recoil_y));
+                }
+            }
+        }
+    }
+}
+
 fn update_status_text(
     state: Res<MotionDemoState>,
     mut query: Query<&mut UText, With<StatusLabel>>,
@@ -535,6 +596,45 @@ fn update_status_text(
                 state.current_preset_name,
                 state.palette_index + 1
             );
+        }
+    }
+}
+
+fn update_telemetry(
+    card_query: Query<(&MotionCard, &UMotionPunch, &UMotionEnter)>,
+    mut text_query: Query<(&TelemetryLabel, &mut UText)>,
+) {
+    for (label, mut text) in text_query.iter_mut() {
+        for (card, punch, enter) in card_query.iter() {
+            if card.0 == label.0 {
+                let is_oscillating = punch.offset.length() > 0.5
+                    || punch.scale_offset.length() > 0.01
+                    || !enter.is_completed();
+                let status = if !enter.is_completed() {
+                    "ENTERING..."
+                } else if is_oscillating {
+                    "OSCILLATING"
+                } else {
+                    "RESTING"
+                };
+                let offset_y = if !enter.is_completed() {
+                    enter.current_offset().y
+                } else {
+                    punch.offset.y
+                };
+                let scale = if !enter.is_completed() {
+                    enter.current_scale()
+                } else {
+                    1.0 + punch.scale_offset.x
+                };
+
+                text.text = format!(
+                    "[{}]  Y: {:+.1}px  •  Scale: {:.0}%",
+                    status,
+                    offset_y,
+                    scale * 100.0,
+                );
+            }
         }
     }
 }

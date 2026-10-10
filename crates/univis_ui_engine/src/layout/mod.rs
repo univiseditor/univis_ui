@@ -52,6 +52,8 @@ pub mod text;
 pub mod transition;
 /// Core node, layout, and local positioning components.
 pub mod univis_node;
+/// Expressive spring physics, entrance animations, and color motion.
+pub mod motion;
 /// Advanced visual styling: gradients, shadows, and holographic glows.
 pub mod visual;
 
@@ -64,11 +66,14 @@ pub mod prelude {
     pub use crate::layout::image::UImage;
     pub use crate::layout::invalidation::{UiInvalidateRequestQueue, UiLayoutInvalidation};
     pub use crate::layout::layout_system::{
-        URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
+        URootUi, UVirtualScaleMode, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
+    pub use crate::layout::motion::*;
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::scroll::*;
-    pub use crate::layout::text::{UText, UTextLabel, UTextOverflow, UTextTruncateSide};
+    pub use crate::layout::text::{
+        UText, UTextLabel, UTextOverflow, UTextTruncateSide, UTextWrapMode,
+    };
     pub use crate::layout::transition::*;
     pub use crate::layout::univis_node::*;
     pub use crate::layout::visual::*;

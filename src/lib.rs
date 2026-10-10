@@ -47,7 +47,7 @@ pub mod render {
 /// Advanced layout access for roots, node primitives, text, and layout-specific systems.
 pub mod layout {
     pub use univis_ui_engine::layout::{
-        UnivisLayoutPlugin, geometry, image, invalidation, layout_system, pbr, profiling, query,
+        UnivisLayoutPlugin, geometry, image, invalidation, layout_system, motion, pbr, profiling, query,
         render, scroll, text, transition, univis_node, visual,
     };
 
@@ -117,6 +117,9 @@ mod tests {
         let _label = UTextLabel::default();
         let _interaction = UInteraction::default();
         let _colors = UInteractionColors::default();
+        let _motion_enter = UMotionEnter::default();
+        let _motion_punch = UMotionPunch::default();
+        let _motion_color = UMotionColor::default();
     }
 
     #[test]

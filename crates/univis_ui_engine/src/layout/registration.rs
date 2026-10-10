@@ -9,7 +9,7 @@ use crate::schedule::{
 };
 
 use super::{
-    components, core, invalidation, layout_system, query, render, scroll, settlement_loop,
+    components, core, invalidation, layout_system, motion, query, render, scroll, settlement_loop,
     transition, univis_node, visual,
 };
 
@@ -61,7 +61,10 @@ pub(super) fn register_layout_types(app: &mut App) {
         .register_type::<scroll::UVirtualItem>()
         .register_type::<scroll::UVirtualPool>()
         .register_type::<scroll::UScrollCulling>()
-        .register_type::<render::clip_sync::UActiveClip>();
+        .register_type::<render::clip_sync::UActiveClip>()
+        .register_type::<motion::UMotionEnter>()
+        .register_type::<motion::UMotionPunch>()
+        .register_type::<motion::UMotionColor>();
 }
 
 pub(super) fn install_layout_pipeline(app: &mut App) {
@@ -144,6 +147,9 @@ pub(super) fn install_layout_pipeline(app: &mut App) {
             (
                 transition::init_transition_states,
                 transition::apply_layout_transitions,
+                motion::advance_motion_enter_system,
+                motion::advance_motion_punch_system,
+                motion::advance_motion_color_system,
             )
                 .chain()
                 .after(settlement_loop::run_ui_settlement_loop),

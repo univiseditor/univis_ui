@@ -13,8 +13,10 @@ example_bloom = ["bevy/bevy_post_process"]
 
 [dependencies]
 bevy = { workspace = true }
+univis_layout = { path = "../univis_layout", version = "0.3.1", features = ["bevy_reflect"] }
 univis_ui_style = { path = "../univis_ui_style", version = "0.3.1" }
 parley = { workspace = true }
 swash = { workspace = true }
 unicode-bidi = "0.3"
 unicode-segmentation = "1.12"
+bytemuck = { version = "1", features = ["derive"] }

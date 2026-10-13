@@ -6,6 +6,7 @@ pub(crate) struct TextGlyphQuad {
     pub(crate) size: Vec2,
     pub(crate) uv_min: Vec2,
     pub(crate) uv_max: Vec2,
+    pub(crate) color: LinearRgba,
 }
 
 #[derive(Clone)]
@@ -37,10 +38,11 @@ pub(crate) fn text_horizontal_offset(
     }
 }
 
-pub(super) fn build_text_page_mesh(quads: &[TextGlyphQuad]) -> Mesh {
+pub(crate) fn build_text_page_mesh(quads: &[TextGlyphQuad]) -> Mesh {
     let mut positions = Vec::with_capacity(quads.len() * 4);
     let mut normals = Vec::with_capacity(quads.len() * 4);
     let mut uvs = Vec::with_capacity(quads.len() * 4);
+    let mut colors = Vec::with_capacity(quads.len() * 4);
     let mut indices = Vec::with_capacity(quads.len() * 6);
 
     for (quad_index, quad) in quads.iter().enumerate() {
@@ -62,6 +64,13 @@ pub(super) fn build_text_page_mesh(quads: &[TextGlyphQuad]) -> Mesh {
             [quad.uv_min.x, quad.uv_min.y],
             [quad.uv_max.x, quad.uv_min.y],
         ]);
+        let col = [
+            quad.color.red,
+            quad.color.green,
+            quad.color.blue,
+            quad.color.alpha,
+        ];
+        colors.extend_from_slice(&[col; 4]);
         indices.extend_from_slice(&[base, base + 2, base + 1, base + 1, base + 2, base + 3]);
     }
 
@@ -72,21 +81,36 @@ pub(super) fn build_text_page_mesh(quads: &[TextGlyphQuad]) -> Mesh {
     .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
     .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
     .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, colors)
     .with_inserted_indices(Indices::U32(indices))
 }
 
-pub(super) fn build_text_material(
+pub(crate) fn build_text_material(
     label: &UTextLabel,
     texture: Handle<Image>,
 ) -> UTextLabelSdfMaterial {
+    let render_scale = resolved_render_scale(label.render_scale);
+    let normalized_outline_width = if label.outline_width > 0.0 {
+        (label.outline_width * render_scale) / (2.0 * TEXT_SDF_PADDING as f32)
+    } else {
+        0.0
+    };
+    let base_color = if label.has_spans() {
+        LinearRgba::WHITE
+    } else {
+        label.color.into()
+    };
+
     UTextLabelSdfMaterial {
-        color: label.color.into(),
+        color: base_color,
+        outline_color: label.outline_color.into(),
         clip_radius: Vec4::ZERO,
         clip_center: Vec2::ZERO,
         clip_size: Vec2::ZERO,
         edge_softness: DEFAULT_TEXT_EDGE_SOFTNESS,
+        outline_width: normalized_outline_width,
         use_clip: 0,
-        _pad: Vec2::ZERO,
+        _pad: 0.0,
         texture,
     }
 }
@@ -95,14 +119,28 @@ pub(super) fn build_text_material_3d(
     label: &UTextLabel,
     texture: Handle<Image>,
 ) -> UTextLabelSdfMaterial3d {
+    let render_scale = resolved_render_scale(label.render_scale);
+    let normalized_outline_width = if label.outline_width > 0.0 {
+        (label.outline_width * render_scale) / (2.0 * TEXT_SDF_PADDING as f32)
+    } else {
+        0.0
+    };
+    let base_color = if label.has_spans() {
+        LinearRgba::WHITE
+    } else {
+        label.color.into()
+    };
+
     UTextLabelSdfMaterial3d {
-        color: label.color.into(),
+        color: base_color,
+        outline_color: label.outline_color.into(),
         clip_radius: Vec4::ZERO,
         clip_center: Vec2::ZERO,
         clip_size: Vec2::ZERO,
         edge_softness: DEFAULT_TEXT_EDGE_SOFTNESS,
+        outline_width: normalized_outline_width,
         use_clip: 0,
-        _pad: Vec2::ZERO,
+        _pad: 0.0,
         texture,
     }
 }

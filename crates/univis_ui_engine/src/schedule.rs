@@ -123,6 +123,8 @@ pub struct UiRolloutConfig {
     pub use_post_settle_picking: bool,
     /// The validation mode for checking layout mismatches.
     pub validation: UiValidationMode,
+    /// Whether to use the single-draw instanced batch renderer for pure 2D nodes.
+    pub use_instanced_batching: bool,
 }
 
 impl Default for UiRolloutConfig {
@@ -135,6 +137,7 @@ impl Default for UiRolloutConfig {
             use_mesh_cache: true,
             use_post_settle_picking: true,
             validation: UiValidationMode::Disabled,
+            use_instanced_batching: true,
         }
     }
 }

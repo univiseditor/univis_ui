@@ -56,6 +56,7 @@ pub(crate) fn clip_quad_to_rect(
         size: clipped_max - clipped_min,
         uv_min: Vec2::new(uv_left, uv_top),
         uv_max: Vec2::new(uv_right, uv_bottom),
+        color: quad.color,
     })
 }
 

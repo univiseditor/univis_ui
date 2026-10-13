@@ -28,11 +28,14 @@ pub(crate) use self::root_stacking::{
 };
 pub(crate) use self::roots::RootSpawnRankCounter;
 pub use self::roots::{
-    ResolvedRootStack, ResolvedRootUi, URootUi, UScreenRoot, UWorldRoot, UiCameraRef, UiCanvasSize,
-    UiRootSettlementState, UiSpace,
+    ResolvedRootStack, ResolvedRootUi, URootUi, UScreenRoot, UVirtualScaleMode, UWorldRoot,
+    UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
 };
 use self::roots::{RootResolutionState, RootSpawnRank};
 pub use self::ui3d_sync::sync_cached_ui3d;
+
+// mod game_anchors_tests;
+// mod virtual_resolution_tests;
 
 #[cfg(test)]
 use self::root_stacking::root_capsule_band_width;

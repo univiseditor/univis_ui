@@ -110,7 +110,7 @@ impl UInteractionScale {
 }
 
 /// High-level interaction state tracked for interactive UI entities.
-#[derive(Component, Clone, Reflect, PartialEq, Default)]
+#[derive(Component, Clone, Copy, Debug, Reflect, PartialEq, Eq, Default)]
 // #[require(Pickable)]
 pub enum UInteraction {
     /// The pointer is not hovering or pressing this entity.
@@ -186,7 +186,7 @@ pub fn on_pointer_click(
     if let Ok((mut interaction, mut node, colors)) = query.get_mut(entity) {
         *interaction = UInteraction::Clicked;
         if let (Some(ref mut node), Some(color)) = (node.as_deref_mut(), colors) {
-            node.background_color = color.pressed;
+            node.background_color = color.hovered;
         }
     }
 }

@@ -145,6 +145,35 @@ impl UNode {
         let (min, max) = self.height_bounds();
         height.clamp(min, max)
     }
+
+    /// Creates a card container with background color, corner radius, and uniform padding.
+    pub fn card(bg: Color, radius: f32, padding: f32) -> Self {
+        Self {
+            background_color: bg,
+            border_radius: UCornerRadius::all(radius),
+            padding: USides::all(padding),
+            ..Default::default()
+        }
+    }
+
+    /// Creates a card container with background color, corner radius, and independent horizontal/vertical padding.
+    pub fn card_axes(bg: Color, radius: f32, x_pad: f32, y_pad: f32) -> Self {
+        Self {
+            background_color: bg,
+            border_radius: UCornerRadius::all(radius),
+            padding: USides::axes(y_pad, x_pad),
+            ..Default::default()
+        }
+    }
+
+    /// Creates a node with explicit pixel width and height.
+    pub fn fixed(width: f32, height: f32) -> Self {
+        Self {
+            width: UVal::Px(width),
+            height: UVal::Px(height),
+            ..Default::default()
+        }
+    }
 }
 
 fn sanitize_bounds(min: f32, max: f32) -> (f32, f32) {
@@ -182,6 +211,18 @@ impl Default for UBorder {
     }
 }
 
+impl UBorder {
+    /// Creates a solid border with the given color, width, and uniform corner radius.
+    pub fn solid(color: Color, width: f32, radius: f32) -> Self {
+        Self {
+            color,
+            width,
+            radius: UCornerRadius::all(radius),
+            offset: 0.0,
+        }
+    }
+}
+
 /// Layout configuration for a [`UNode`].
 ///
 /// This controls the container algorithm and the most common alignment rules
@@ -189,21 +230,43 @@ impl Default for UBorder {
 #[derive(Component, Debug, Clone, PartialEq, Reflect)]
 #[reflect(Component)] // Important for Inspector
 pub struct ULayout {
-    /// The layout algorithm to use (Flex, Grid, Masonry...).
+    /// The layout algorithm to use (Flex, Grid, Stack, Radial, Masonry...).
     pub display: UDisplay,
-    /// Direction of the main axis.
+    /// Direction of the main axis for Flex layout.
     pub flex_direction: UFlexDirection,
     /// Alignment of items along the main axis.
     pub justify_content: UJustifyContent,
     /// Alignment of items along the cross axis.
     pub align_items: UAlignItems,
-    /// Gap between items.
+    /// Uniform gap between items.
     pub gap: f32,
+    /// Overrides gap between rows (for Grid / wrapped Flex).
+    pub row_gap: Option<f32>,
+    /// Overrides gap between columns (for Grid / wrapped Flex).
+    pub column_gap: Option<f32>,
 
     /// Number of columns (used for Grid/Masonry layouts).
     pub grid_columns: u32,
+    /// Explicit track sizes for grid columns.
+    pub grid_template_columns: Vec<UTrackSize>,
+    /// Explicit track sizes for grid rows.
+    pub grid_template_rows: Vec<UTrackSize>,
+    /// Auto placement flow direction for grid items.
+    pub grid_auto_flow: UGridAutoFlow,
+    /// Default track sizing for implicitly created grid rows.
+    pub grid_auto_rows: UTrackSize,
+    /// Default track sizing for implicitly created grid columns.
+    pub grid_auto_columns: UTrackSize,
+    /// Wrap behavior for flex items.
+    pub flex_wrap: UFlexWrap,
+    /// Overrides justify-items alignment inside grid cells.
+    pub justify_items: Option<UAlignItemsExt>,
 
-    /// Advanced container-only layout controls.
+    /// Advanced container-only layout controls (preserved for backward compatibility).
+    #[deprecated(
+        since = "0.3.2",
+        note = "Use flat fields directly on `ULayout` (e.g. `grid_template_columns`, `row_gap`, `column_gap`, `flex_wrap`) instead of nested `container_ext`."
+    )]
     pub container_ext: ULayoutContainerExt,
 }
 
@@ -215,8 +278,60 @@ impl Default for ULayout {
             justify_content: UJustifyContent::Start,
             align_items: UAlignItems::Start,
             gap: 0.0,
+            row_gap: None,
+            column_gap: None,
             grid_columns: 1, // Default is one column
+            grid_template_columns: Vec::new(),
+            grid_template_rows: Vec::new(),
+            grid_auto_flow: UGridAutoFlow::Row,
+            grid_auto_rows: UTrackSize::Auto,
+            grid_auto_columns: UTrackSize::Auto,
+            flex_wrap: UFlexWrap::NoWrap,
+            justify_items: None,
+            #[allow(deprecated)]
             container_ext: ULayoutContainerExt::default(),
+        }
+    }
+}
+
+impl ULayout {
+    /// Creates a grid layout with the given column count and gap.
+    pub fn grid(columns: u32, gap: f32) -> Self {
+        Self {
+            display: UDisplay::Grid,
+            grid_columns: columns,
+            gap,
+            align_items: UAlignItems::Stretch,
+            justify_items: Some(UAlignItemsExt::Stretch),
+            ..Default::default()
+        }
+    }
+
+    /// Creates a flex row layout with the given gap.
+    pub fn flex_row(gap: f32) -> Self {
+        Self {
+            display: UDisplay::Flex,
+            flex_direction: UFlexDirection::Row,
+            gap,
+            ..Default::default()
+        }
+    }
+
+    /// Creates a flex column layout with the given gap.
+    pub fn flex_col(gap: f32) -> Self {
+        Self {
+            display: UDisplay::Flex,
+            flex_direction: UFlexDirection::Column,
+            gap,
+            ..Default::default()
+        }
+    }
+
+    /// Creates a layer stack layout where children overlap in the same container.
+    pub fn stack() -> Self {
+        Self {
+            display: UDisplay::Stack,
+            ..Default::default()
         }
     }
 }
@@ -233,210 +348,11 @@ pub enum LayoutAlign {
     End,
 }
 
-/// Defines how items are aligned on the Cross Axis.
-#[derive(Clone, Copy, PartialEq, Debug, Reflect)]
-pub enum UAlignItems {
-    /// Automatically align based on parent or contextual layout defaults.
-    Auto,
-    /// The items are packed in their default position as if no alignment was applied.
-    Default,
-    /// The items are packed towards the start of the axis.
-    Start,
-    /// The items are packed towards the end of the axis.
-    End,
-    /// The items are packed towards the start of the axis, unless the flex direction is reversed;
-    /// then they are packed towards the end of the axis.
-    FlexStart,
-    /// The items are packed towards the end of the axis, unless the flex direction is reversed;
-    /// then they are packed towards the start of the axis.
-    FlexEnd,
-    /// The items are packed along the center of the axis.
-    Center,
-    /// The items are packed such that their baselines align.
-    Baseline,
-    /// The items are stretched to fill the space they're given.
-    Stretch,
-}
-
-/// Layout direction (Main Axis).
-#[derive(Debug, Clone, Copy, PartialEq, Reflect)]
-pub enum UFlexDirection {
-    /// Items are placed left to right.
-    Row,
-    /// Items are placed top to bottom.
-    Column,
-    /// Items are placed right to left.
-    RowReverse,
-    /// Items are placed bottom to top.
-    ColumnReverse,
-}
-
-/// Distribution of space along the Main Axis.
-#[derive(Debug, Clone, Copy, PartialEq, Default, Reflect)]
-pub enum UJustifyContent {
-    /// Items are packed toward the start.
-    #[default]
-    Start,
-    /// Items are packed toward the center.
-    Center,
-    /// Items are packed toward the end.
-    End,
-    /// Items are evenly distributed with equal space between them.
-    SpaceBetween,
-    /// Items stretch to fill available space.
-    Stretch,
-    /// Items are evenly distributed with half-size spaces on the ends.
-    SpaceAround,
-    /// Items are evenly distributed with equal space around them.
-    SpaceEvenly,
-}
-
-/// Supported display/layout modes for a container node.
-#[derive(Debug, Clone, Copy, PartialEq, Reflect)]
-pub enum UDisplay {
-    /// Flex-style layout using a main axis and a cross axis.
-    Flex,
-    /// Grid-style layout with tracks and placement rules.
-    Grid,
-    /// Simple stacking layout.
-    Stack,
-    /// Radial placement around a center point.
-    Radial,
-    /// Masonry-like column layout.
-    Masonry,
-    /// Do not lay out children.
-    None,
-}
-
-/// CSS-inspired extended alignment values for self alignment.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
-pub enum UAlignSelfExt {
-    /// Inherit from parent.
-    #[default]
-    Auto,
-    /// Normal default alignment.
-    Normal,
-    /// Align to start.
-    Start,
-    /// Align to end.
-    End,
-    /// Align to center.
-    Center,
-    /// Stretch to fill.
-    Stretch,
-    /// Baseline alignment.
-    Baseline,
-    /// First baseline alignment.
-    FirstBaseline,
-    /// Last baseline alignment.
-    LastBaseline,
-    /// Flex start alignment.
-    FlexStart,
-    /// Flex end alignment.
-    FlexEnd,
-    /// Self start alignment.
-    SelfStart,
-    /// Self end alignment.
-    SelfEnd,
-    /// Left alignment.
-    Left,
-    /// Right alignment.
-    Right,
-}
-
-/// CSS-inspired extended alignment values for container item alignment.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
-pub enum UAlignItemsExt {
-    /// Normal default alignment.
-    #[default]
-    Normal,
-    /// Align to start.
-    Start,
-    /// Align to end.
-    End,
-    /// Align to center.
-    Center,
-    /// Stretch to fill.
-    Stretch,
-    /// Baseline alignment.
-    Baseline,
-    /// First baseline alignment.
-    FirstBaseline,
-    /// Last baseline alignment.
-    LastBaseline,
-    /// Flex start alignment.
-    FlexStart,
-    /// Flex end alignment.
-    FlexEnd,
-    /// Self start alignment.
-    SelfStart,
-    /// Self end alignment.
-    SelfEnd,
-    /// Left alignment.
-    Left,
-    /// Right alignment.
-    Right,
-}
-
-/// CSS-inspired extended alignment values for distributing lines/tracks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
-pub enum UContentAlignExt {
-    /// Normal default alignment.
-    #[default]
-    Normal,
-    /// Align to start.
-    Start,
-    /// Align to end.
-    End,
-    /// Align to center.
-    Center,
-    /// Stretch to fill.
-    Stretch,
-    /// Distribute space between items.
-    SpaceBetween,
-    /// Distribute space around items.
-    SpaceAround,
-    /// Distribute space evenly between items.
-    SpaceEvenly,
-    /// Flex start alignment.
-    FlexStart,
-    /// Flex end alignment.
-    FlexEnd,
-}
-
-/// Overflow position behavior for alignment.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
-pub enum UOverflowPosition {
-    /// Safe overflow alignment (prevents data loss).
-    Safe,
-    /// Unsafe overflow alignment (default behavior).
-    #[default]
-    Unsafe,
-}
-
-/// Flex wrap behavior.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
-pub enum UFlexWrap {
-    /// Items are placed on a single line and do not wrap.
-    #[default]
-    NoWrap,
-    /// Items wrap onto multiple lines, from top to bottom.
-    Wrap,
-    /// Items wrap onto multiple lines, from bottom to top.
-    WrapReverse,
-}
-
-pub use crate::layout::grid::{UTrackBound, UTrackRepeat, UTrackSize};
-
-/// Grid auto-placement flow.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
-pub enum UGridAutoFlow {
-    /// Auto-placed items fill rows.
-    #[default]
-    Row,
-    /// Auto-placed items fill columns.
-    Column,
-}
+pub use univis_layout::types::{
+    UAlignItems, UAlignItemsExt, UAlignSelfExt, UContentAlignExt, UDisplay, UFlexDirection,
+    UFlexWrap, UGridAutoFlow, UJustifyContent, UOverflowPosition, UTrackBound, UTrackRepeat,
+    UTrackSize,
+};
 
 /// Advanced container-only controls nested under [`ULayout`].
 #[derive(Debug, Clone, PartialEq, Reflect, Default)]
@@ -587,6 +503,24 @@ pub struct USelf {
     /// Self alignment overriding parent's `align_items`.
     pub align_self: UAlignSelf,
 
+    /// Starting column position for grid layouts (1-indexed).
+    pub column_start: Option<u32>,
+    /// Number of columns to span (minimum 1).
+    pub column_span: u32,
+    /// Starting row position for grid layouts (1-indexed).
+    pub row_start: Option<u32>,
+    /// Number of rows to span (minimum 1).
+    pub row_span: u32,
+
+    /// The flex grow factor.
+    pub flex_grow: Option<f32>,
+    /// The flex shrink factor.
+    pub flex_shrink: Option<f32>,
+    /// The initial main size of the flex item.
+    pub flex_basis: Option<UVal>,
+    /// Overrides horizontal alignment of this item in a grid cell.
+    pub justify_self: Option<UAlignSelfExt>,
+
     /// Positioning offsets (Works for Relative and Absolute).
     /// Left positioning offset.
     pub left: UVal,
@@ -604,14 +538,27 @@ pub struct USelf {
     pub order: i32,
     /// The position type (e.g. Relative or Absolute).
     pub position_type: UPositionType,
-    /// Advanced item-only layout controls.
+    /// Advanced item-only layout controls (preserved for backward compatibility).
+    #[deprecated(
+        since = "0.3.2",
+        note = "Use flat fields directly on `USelf` (e.g. `column_span`, `row_span`, `flex_grow`, `flex_shrink`) instead of nested `item_ext`."
+    )]
     pub item_ext: ULayoutItemExt,
 }
+
 impl Default for USelf {
     fn default() -> Self {
         #[allow(deprecated)]
         Self {
             align_self: UAlignSelf::Auto,
+            column_start: None,
+            column_span: 1,
+            row_start: None,
+            row_span: 1,
+            flex_grow: None,
+            flex_shrink: None,
+            flex_basis: None,
+            justify_self: None,
             left: UVal::Auto,
             top: UVal::Auto,
             bottom: UVal::Auto,
@@ -631,6 +578,170 @@ impl USelf {
             _ => 0.0,
         }
     }
+
+    /// Creates a grid item specifying column span and row span.
+    pub fn grid_span(col_span: u32, row_span: u32) -> Self {
+        Self {
+            column_span: col_span.max(1),
+            row_span: row_span.max(1),
+            ..Default::default()
+        }
+    }
+
+    /// Creates a grid item placed at a specific cell with optional spans.
+    pub fn grid_cell(col: u32, row: u32, col_span: u32, row_span: u32) -> Self {
+        Self {
+            column_start: Some(col),
+            column_span: col_span.max(1),
+            row_start: Some(row),
+            row_span: row_span.max(1),
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element at the top-left of the container/HUD with pixel offset.
+    pub fn anchor_top_left(offset: Vec2) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            left: UVal::Px(offset.x),
+            top: UVal::Px(offset.y),
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element at the top-right of the container/HUD with pixel offset.
+    pub fn anchor_top_right(offset: Vec2) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            right: UVal::Px(offset.x),
+            top: UVal::Px(offset.y),
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element at the bottom-left of the container/HUD with pixel offset.
+    pub fn anchor_bottom_left(offset: Vec2) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            left: UVal::Px(offset.x),
+            bottom: UVal::Px(offset.y),
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element at the bottom-right of the container/HUD with pixel offset.
+    pub fn anchor_bottom_right(offset: Vec2) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            right: UVal::Px(offset.x),
+            bottom: UVal::Px(offset.y),
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element centered horizontally at the top edge with vertical offset.
+    pub fn anchor_top_center(offset_y: f32) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            top: UVal::Px(offset_y),
+            justify_self: Some(UAlignSelfExt::Center),
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element centered horizontally at the bottom edge (e.g. action hotbar).
+    pub fn anchor_bottom_center(offset_y: f32) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            bottom: UVal::Px(offset_y),
+            justify_self: Some(UAlignSelfExt::Center),
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element centered vertically at the left edge with horizontal offset.
+    pub fn anchor_center_left(offset_x: f32) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            left: UVal::Px(offset_x),
+            align_self: UAlignSelf::Center,
+            ..Default::default()
+        }
+    }
+
+    /// Positions the element centered vertically at the right edge with horizontal offset.
+    pub fn anchor_center_right(offset_x: f32) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            right: UVal::Px(offset_x),
+            align_self: UAlignSelf::Center,
+            ..Default::default()
+        }
+    }
+
+    /// Centers the element both horizontally and vertically inside the parent/screen.
+    pub fn center() -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            align_self: UAlignSelf::Center,
+            justify_self: Some(UAlignSelfExt::Center),
+            ..Default::default()
+        }
+    }
+
+    /// Alias for [`USelf::center()`].
+    pub fn anchor_center() -> Self {
+        Self::center()
+    }
+
+    /// Fills the parent container or screen with the given margin on all sides.
+    pub fn anchor_fill(margin: USides) -> Self {
+        Self {
+            position_type: UPositionType::Absolute,
+            left: UVal::Px(margin.left),
+            right: UVal::Px(margin.right),
+            top: UVal::Px(margin.top),
+            bottom: UVal::Px(margin.bottom),
+            ..Default::default()
+        }
+    }
+
+    /// Stretches to completely fill the parent container or screen with zero margin.
+    pub fn stretch_full() -> Self {
+        Self::anchor_fill(USides::all(0.0))
+    }
+
+    /// Configures absolute positioning using a preset [`UAnchor`].
+    pub fn anchor(anchor: UAnchor, offset: Vec2) -> Self {
+        match anchor {
+            UAnchor::TopLeft => Self::anchor_top_left(offset),
+            UAnchor::TopCenter => Self::anchor_top_center(offset.y),
+            UAnchor::TopRight => Self::anchor_top_right(offset),
+            UAnchor::CenterLeft => Self::anchor_center_left(offset.x),
+            UAnchor::Center => Self::center(),
+            UAnchor::CenterRight => Self::anchor_center_right(offset.x),
+            UAnchor::BottomLeft => Self::anchor_bottom_left(offset),
+            UAnchor::BottomCenter => Self::anchor_bottom_center(offset.y),
+            UAnchor::BottomRight => Self::anchor_bottom_right(offset),
+            UAnchor::Fill => Self::anchor_fill(USides::axes(offset.y, offset.x)),
+        }
+    }
+}
+
+/// Screen or container anchor presets for game HUD and absolute positioning.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Reflect, Default)]
+pub enum UAnchor {
+    #[default]
+    TopLeft,
+    TopCenter,
+    TopRight,
+    CenterLeft,
+    Center,
+    CenterRight,
+    BottomLeft,
+    BottomCenter,
+    BottomRight,
+    Fill,
 }
 
 /// Defines the Z-index depth behavior of the node.
@@ -656,19 +767,7 @@ impl Default for UZIndex {
 }
 
 /// Self alignment options.
-#[derive(Debug, Clone, Copy, PartialEq, Reflect)]
-pub enum UAlignSelf {
-    /// Inherit alignment from the parent.
-    Auto,
-    /// Align to the start of the cross axis.
-    Start,
-    /// Align to the center of the cross axis.
-    Center,
-    /// Align to the end of the cross axis.
-    End,
-    /// Stretch to fill the cross axis.
-    Stretch,
-}
+pub use univis_layout::types::{UAlignSelf, UPositionType};
 
 #[derive(Debug, Clone, Copy, Reflect)]
 /// Explicit top/right/bottom/left offsets in resolved scalar form.
@@ -681,15 +780,6 @@ pub struct UPosition {
     pub bottom: Option<f32>,
     /// Resolved left offset.
     pub left: Option<f32>,
-}
-
-/// Determines whether the node stays in normal flow or is taken out of flow.
-#[derive(Reflect, Clone, Debug, Copy, PartialEq)]
-pub enum UPositionType {
-    /// Node stays in normal flow.
-    Relative,
-    /// Node is taken out of flow and positioned absolutely.
-    Absolute,
 }
 
 /// Clips all descendants to the node's resolved bounds and corner radius.

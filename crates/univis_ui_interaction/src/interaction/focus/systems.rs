@@ -10,8 +10,8 @@ use univis_ui_engine::layout::{
 use super::{
     spatial::{find_best_spatial_candidate, find_initial_focus_candidate, find_next_tab_candidate},
     types::{
-        FocusModality, NavDirection, UFocusActivate, UFocusNavigationSettings, UFocusState,
-        UFocusable, set_focus,
+        FocusModality, NavDirection, UFocusActivate, UFocusDeactivate, UFocusNavigationSettings,
+        UFocusState, UFocusable, set_focus,
     },
 };
 
@@ -70,6 +70,17 @@ pub fn focus_keyboard_navigation_system(
         commands
             .entity(focused)
             .trigger(|entity| UFocusActivate { entity });
+    }
+
+    if settings.activation
+        && (keyboard.just_released(KeyCode::Enter)
+            || keyboard.just_released(KeyCode::NumpadEnter)
+            || keyboard.just_released(KeyCode::Space))
+        && let Some(focused) = focus_state.focused
+    {
+        commands
+            .entity(focused)
+            .trigger(|entity| UFocusDeactivate { entity });
     }
 
     // 2. Tab Navigation
@@ -203,6 +214,15 @@ pub fn focus_gamepad_navigation_system(
             commands
                 .entity(focused)
                 .trigger(|entity| UFocusActivate { entity });
+        }
+
+        if settings.activation
+            && gamepad.just_released(GamepadButton::South)
+            && let Some(focused) = focus_state.focused
+        {
+            commands
+                .entity(focused)
+                .trigger(|entity| UFocusDeactivate { entity });
         }
 
         if !settings.spatial_navigation {

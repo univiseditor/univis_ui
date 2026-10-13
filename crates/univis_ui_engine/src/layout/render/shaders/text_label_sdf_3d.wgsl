@@ -7,12 +7,14 @@
 
 struct UTextLabelSdfMaterial3d {
     color: vec4<f32>,
+    outline_color: vec4<f32>,
     clip_radius: vec4<f32>,
     clip_center: vec2<f32>,
     clip_size: vec2<f32>,
     edge_softness: f32,
+    outline_width: f32,
     use_clip: u32,
-    _pad: vec2<f32>,
+    _pad: f32,
 };
 
 @group(3) @binding(0) var<uniform> material: UTextLabelSdfMaterial3d;
@@ -39,22 +41,42 @@ fn fragment(
     let sdf = textureSample(text_texture, text_sampler, in.uv).a;
     let distance = sdf - 0.5;
     let edge = max(fwidth(distance) * max(material.edge_softness, 0.5), 0.001);
-    var alpha = smoothstep(-edge, edge, distance);
+    let fill_alpha = smoothstep(-edge, edge, distance);
+
+#ifdef VERTEX_COLORS
+    let fill_color = material.color * in.color;
+#else
+    let fill_color = material.color;
+#endif
+
+    var final_color: vec4<f32>;
+
+    if (material.outline_width > 0.0 && material.outline_color.a > 0.0) {
+        let outline_distance = distance + material.outline_width;
+        let outline_alpha = smoothstep(-edge, edge, outline_distance);
+
+        let outline_blend = outline_alpha * (1.0 - fill_alpha);
+        let alpha = fill_alpha * fill_color.a + outline_blend * material.outline_color.a;
+        let rgb = (fill_color.rgb * (fill_alpha * fill_color.a) + material.outline_color.rgb * (outline_blend * material.outline_color.a)) / max(alpha, 0.0001);
+        final_color = vec4<f32>(rgb, alpha);
+    } else {
+        final_color = vec4<f32>(fill_color.rgb, fill_color.a * fill_alpha);
+    }
 
     if (material.use_clip == 1u) {
         let clip_p = in.world_position.xy - material.clip_center;
         let clip_distance = sd_rounded_box(clip_p, material.clip_size * 0.5, material.clip_radius);
         let clip_alpha = 1.0 - smoothstep(-0.5, 0.5, clip_distance);
-        alpha = alpha * clip_alpha;
+        final_color = vec4<f32>(final_color.rgb, final_color.a * clip_alpha);
     }
 
-    if (alpha <= 0.001) {
+    if (final_color.a <= 0.001) {
         discard;
     }
 
     // PBR Setup
     var pbr_input = pbr_types::pbr_input_new();
-    pbr_input.material.base_color = material.color;
+    pbr_input.material.base_color = vec4<f32>(final_color.rgb, 1.0);
     pbr_input.material.metallic = 0.0;
     pbr_input.material.perceptual_roughness = 0.8;
     // We could add emissive later if we want glowing text
@@ -70,7 +92,7 @@ fn fragment(
     var out_color = pbr_functions::apply_pbr_lighting(pbr_input);
 
     // Apply alpha
-    out_color.a = out_color.a * alpha;
+    out_color.a = out_color.a * final_color.a;
     out_color = vec4<f32>(out_color.rgb * out_color.a, out_color.a);
 
     return out_color;

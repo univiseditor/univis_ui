@@ -122,10 +122,8 @@ pub(crate) fn mark_text_label_layout_dirty(
         }
 
         let signature = TextLabelIntrinsicSignature::from(*intrinsic);
-        if !intrinsic_signature_changed(
-            last_invalidated_intrinsics.get(&entity).copied(),
-            signature,
-        ) {
+        let prev = last_invalidated_intrinsics.get(&entity).copied();
+        if !intrinsic_signature_changed(prev, signature) {
             continue;
         }
 

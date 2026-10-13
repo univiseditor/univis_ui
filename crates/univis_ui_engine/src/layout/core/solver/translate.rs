@@ -1,5 +1,6 @@
 use crate::internal_prelude::*;
 
+#[allow(deprecated)]
 pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
     let map_dim = |dim: UVal| -> (SolverSizeMode, f32, f32) {
         match dim {
@@ -50,7 +51,7 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         if let Some(u) = uself {
             (
                 u.item_ext.box_align.align_self,
-                u.item_ext.box_align.justify_self,
+                u.justify_self.or(u.item_ext.box_align.justify_self),
                 u.item_ext.box_align.justify_overflow,
                 u.item_ext.box_align.align_overflow,
             )
@@ -64,20 +65,36 @@ pub fn translate_spec(node: &UNode, uself: Option<&USelf>) -> SolverSpec {
         };
     let (flex_grow, flex_shrink, flex_basis) = if let Some(u) = uself {
         (
-            u.item_ext.flex.flex_grow.map(|v| v.max(0.0)),
-            u.item_ext.flex.flex_shrink.map(|v| v.max(0.0)),
-            u.item_ext.flex.flex_basis,
+            u.flex_grow
+                .or(u.item_ext.flex.flex_grow)
+                .map(|v| v.max(0.0)),
+            u.flex_shrink
+                .or(u.item_ext.flex.flex_shrink)
+                .map(|v| v.max(0.0)),
+            u.flex_basis.or(u.item_ext.flex.flex_basis),
         )
     } else {
         (None, None, None)
     };
     let (grid_column_start, grid_column_span, grid_row_start, grid_row_span) =
         if let Some(u) = uself {
+            let col_span = if u.column_span > 1 {
+                u.column_span
+            } else {
+                u.item_ext.grid.column_span
+            }
+            .max(1);
+            let row_span = if u.row_span > 1 {
+                u.row_span
+            } else {
+                u.item_ext.grid.row_span
+            }
+            .max(1);
             (
-                u.item_ext.grid.column_start,
-                u.item_ext.grid.column_span.max(1),
-                u.item_ext.grid.row_start,
-                u.item_ext.grid.row_span.max(1),
+                u.column_start.or(u.item_ext.grid.column_start),
+                col_span,
+                u.row_start.or(u.item_ext.grid.row_start),
+                row_span,
             )
         } else {
             (None, 1, None, 1)

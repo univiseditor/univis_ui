@@ -7,7 +7,8 @@ use univis_ui_engine::layout::{
 };
 
 use super::types::{
-    FocusGained, FocusLost, FocusModality, UFocusActivate, UFocusState, UFocusable, set_focus,
+    FocusGained, FocusLost, FocusModality, UFocusActivate, UFocusDeactivate, UFocusState,
+    UFocusable, set_focus,
 };
 use crate::interaction::feedback::{UInteraction, UInteractionColors, UInteractionScale};
 
@@ -121,6 +122,21 @@ impl UFocusVisual {
         self.focused_background_color = Some(color);
         self
     }
+
+    /// Returns whether this focus visual has captured original styling.
+    pub fn is_captured(&self) -> bool {
+        self.captured
+    }
+
+    /// Sets the original border color to restore when focus is lost.
+    pub fn set_original_border_color(&mut self, color: Color) {
+        self.original_border_color = Some(color);
+    }
+
+    /// Sets the original background color to restore when focus is lost.
+    pub fn set_original_background_color(&mut self, color: Color) {
+        self.original_background_color = Some(color);
+    }
 }
 
 /// Observer updating visual state when an entity gains focus.
@@ -139,12 +155,21 @@ pub fn on_focus_gained_visual(
         query.get_mut(entity)
     {
         if !visual.captured {
-            if let Some(ref node) = node_opt {
-                visual.original_background_color = Some(node.background_color);
+            if visual.focused_background_color.is_some() {
+                if let Some(ref node) = node_opt {
+                    visual.original_background_color = Some(node.background_color);
+                }
+            } else {
+                visual.original_background_color = None;
             }
+
             if let Some(ref border) = border_opt {
-                visual.original_border_color = Some(border.color);
-                visual.original_border_width = Some(border.width);
+                if visual.focused_border_color.is_some() {
+                    visual.original_border_color = Some(border.color);
+                }
+                if visual.focused_border_width.is_some() {
+                    visual.original_border_width = Some(border.width);
+                }
                 visual.had_border_component = true;
             } else {
                 visual.had_border_component = false;
@@ -152,7 +177,7 @@ pub fn on_focus_gained_visual(
             visual.captured = true;
         }
 
-        // Apply background color
+        // Apply background color only if explicitly specified
         if let (Some(ref mut node), Some(bg)) =
             (node_opt.as_deref_mut(), visual.focused_background_color)
         {
@@ -198,27 +223,59 @@ pub fn on_focus_lost_visual(
         Option<&mut UBorder>,
         &mut UFocusVisual,
         Option<&mut UTransitionState>,
+        Option<&mut UInteraction>,
+        Option<&UInteractionColors>,
+        Option<&UInteractionScale>,
     )>,
 ) {
     let entity = trigger.entity;
-    if let Ok((mut node_opt, mut border_opt, mut visual, mut transition_opt)) =
-        query.get_mut(entity)
+    if let Ok((
+        mut node_opt,
+        mut border_opt,
+        mut visual,
+        mut transition_opt,
+        mut interaction_opt,
+        colors_opt,
+        scale_opt,
+    )) = query.get_mut(entity)
         && visual.captured
     {
-        // Restore background color
-        if let (Some(ref mut node), Some(bg)) =
-            (node_opt.as_deref_mut(), visual.original_background_color)
-        {
-            node.background_color = bg;
+        // 1. Restore background color ONLY if this focus visual modified it!
+        if visual.focused_background_color.is_some() {
+            if let Some(ref mut node) = node_opt {
+                if let (Some(colors), Some(interaction)) = (colors_opt, interaction_opt.as_deref()) {
+                    node.background_color = match *interaction {
+                        UInteraction::Hovered => colors.hovered,
+                        UInteraction::Pressed | UInteraction::Clicked => colors.pressed,
+                        _ => colors.normal,
+                    };
+                } else if let Some(bg) = visual.original_background_color {
+                    node.background_color = bg;
+                }
+            }
+        }
+        visual.original_background_color = None;
+
+        // 2. Reset Clicked / Pressed interaction state on focus transition
+        if let Some(ref mut interaction) = interaction_opt {
+            if **interaction == UInteraction::Clicked || **interaction == UInteraction::Pressed {
+                **interaction = UInteraction::Normal;
+                if let (Some(ref mut node), Some(colors)) = (node_opt.as_deref_mut(), colors_opt) {
+                    node.background_color = colors.normal;
+                }
+                if let (Some(scale), Some(ref mut state)) = (scale_opt, transition_opt.as_deref_mut()) {
+                    state.target_scale = Vec2::splat(scale.normal);
+                }
+            }
         }
 
-        // Restore border
+        // 3. Restore border
         if visual.had_border_component {
             if let Some(ref mut border) = border_opt {
-                if let Some(color) = visual.original_border_color {
+                if let Some(color) = visual.original_border_color.take() {
                     border.color = color;
                 }
-                if let Some(width) = visual.original_border_width {
+                if let Some(width) = visual.original_border_width.take() {
                     border.width = width;
                 }
             }
@@ -227,8 +284,8 @@ pub fn on_focus_lost_visual(
             commands.entity(entity).remove::<UBorder>();
         }
 
-        // Restore scale
-        if let Some(scale) = visual.original_scale
+        // 4. Restore scale
+        if let Some(scale) = visual.original_scale.take()
             && let Some(ref mut state) = transition_opt
         {
             state.target_scale = Vec2::splat(scale);
@@ -284,6 +341,33 @@ pub fn on_focus_activate_default(
     }
 }
 
+/// Default observer for [`UFocusDeactivate`], restoring interaction state when activation input is released.
+pub fn on_focus_deactivate_default(
+    trigger: On<UFocusDeactivate>,
+    mut query: Query<(
+        &mut UInteraction,
+        Option<&mut UNode>,
+        Option<&UInteractionColors>,
+        Option<&UInteractionScale>,
+        Option<&mut UTransitionState>,
+    )>,
+) {
+    let entity = trigger.entity;
+    if let Ok((mut interaction, mut node, colors, scale, mut transition_state)) =
+        query.get_mut(entity)
+    {
+        *interaction = UInteraction::Normal;
+        if let (Some(ref mut node), Some(color)) = (node.as_deref_mut(), colors) {
+            node.background_color = color.normal;
+        }
+        if let Some(scale) = scale
+            && let Some(ref mut state) = transition_state
+        {
+            state.target_scale = Vec2::splat(scale.normal);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -302,5 +386,109 @@ mod tests {
 
         let scale = UFocusVisual::scale(1.15);
         assert_eq!(scale.focused_scale, Some(1.15));
+    }
+
+    #[test]
+    fn test_focus_lost_does_not_corrupt_background_when_not_focused_bg() {
+        let mut app = App::new();
+        app.add_observer(on_focus_gained_visual);
+        app.add_observer(on_focus_lost_visual);
+
+        let initial_bg = Color::srgb(0.1, 0.2, 0.3);
+        let entity = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    background_color: initial_bg,
+                    ..Default::default()
+                },
+                UFocusVisual::border(Color::srgb(0.35, 0.65, 1.0), 2.0),
+            ))
+            .id();
+
+        // 1. Gain focus
+        app.world_mut()
+            .commands()
+            .entity(entity)
+            .trigger(|entity| FocusGained { entity });
+        app.update();
+
+        let node = app.world().get::<UNode>(entity).unwrap();
+        assert_eq!(node.background_color, initial_bg);
+
+        // 2. Widget modifies background color while focused (e.g. toggle, checkbox, selection)
+        let toggled_bg = Color::srgb(0.8, 0.2, 0.1);
+        app.world_mut().get_mut::<UNode>(entity).unwrap().background_color = toggled_bg;
+
+        // 3. Lose focus (focus moves to another widget)
+        app.world_mut()
+            .commands()
+            .entity(entity)
+            .trigger(|entity| FocusLost { entity });
+        app.update();
+
+        // Verify background is preserved
+        let node = app.world().get::<UNode>(entity).unwrap();
+        assert_eq!(node.background_color, toggled_bg);
+    }
+
+    #[test]
+    fn test_focus_lost_resets_activation_background_to_normal() {
+        let mut app = App::new();
+        app.add_observer(on_focus_gained_visual);
+        app.add_observer(on_focus_lost_visual);
+        app.add_observer(on_focus_activate_default);
+
+        let normal = Color::srgb(0.2, 0.4, 0.8);
+        let pressed = Color::srgb(0.1, 0.2, 0.5);
+        let colors = UInteractionColors {
+            normal,
+            hovered: Color::srgb(0.3, 0.5, 0.9),
+            pressed,
+        };
+
+        let entity = app
+            .world_mut()
+            .spawn((
+                UNode {
+                    background_color: normal,
+                    ..Default::default()
+                },
+                UInteraction::default(),
+                colors,
+                UFocusVisual::border(Color::srgb(0.35, 0.65, 1.0), 2.0),
+            ))
+            .id();
+
+        // 1. Gain focus
+        app.world_mut()
+            .commands()
+            .entity(entity)
+            .trigger(|entity| FocusGained { entity });
+        app.update();
+
+        // 2. Activate with Enter
+        app.world_mut()
+            .commands()
+            .entity(entity)
+            .trigger(|entity| UFocusActivate { entity });
+        app.update();
+
+        // Node is pressed
+        let node = app.world().get::<UNode>(entity).unwrap();
+        assert_eq!(node.background_color, pressed);
+
+        // 3. Move focus away (FocusLost)
+        app.world_mut()
+            .commands()
+            .entity(entity)
+            .trigger(|entity| FocusLost { entity });
+        app.update();
+
+        // Node background is cleanly restored to normal
+        let node = app.world().get::<UNode>(entity).unwrap();
+        assert_eq!(node.background_color, normal);
+        let interaction = app.world().get::<UInteraction>(entity).unwrap();
+        assert_eq!(*interaction, UInteraction::Normal);
     }
 }

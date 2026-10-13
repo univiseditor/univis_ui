@@ -27,22 +27,15 @@ fn z_translation_changed(current: f32, next: f32) -> bool {
 
 struct SolverScratchItem {
     entity: Entity,
-    spec: SolverSpec,
-    result: SolverResult,
-    margin: USides,
-}
-
-impl SolverScratchItem {
-    fn as_solver_item(&mut self) -> SolverItem {
-        SolverItem::new(self.spec, &mut self.result, self.margin)
-    }
+    item: SolverItem,
 }
 
 #[derive(Default)]
 #[doc(hidden)]
 pub struct LayoutSolveScratch {
     solver_items: Vec<SolverScratchItem>,
-    solver_refs: Vec<SolverItem>,
+    items: Vec<SolverItem>,
+    grid_scratch: GridScratch,
 }
 
 // Main downward solve pass.
@@ -237,30 +230,32 @@ pub fn downward_solve_pass_safe(
             }
 
             let solved_size = {
-                let (solver_refs_capacity_before, solver_refs_len) = {
-                    let LayoutSolveScratch {
-                        solver_items,
-                        solver_refs,
-                    } = &mut *scratch;
-                    let solver_refs_capacity_before = solver_refs.capacity();
-                    solver_refs.clear();
-                    solver_refs.reserve(solver_items.len());
-                    for item in solver_items.iter_mut() {
-                        solver_refs.push(item.as_solver_item());
-                    }
-                    (solver_refs_capacity_before, solver_refs.len())
-                };
+                let LayoutSolveScratch {
+                    solver_items,
+                    items,
+                    grid_scratch,
+                } = &mut *scratch;
+                let items_capacity_before = items.capacity();
+                items.clear();
+                items.reserve(solver_items.len());
+                for entry in solver_items.iter() {
+                    items.push(entry.item);
+                }
                 if let Some(prof) = profiler.as_mut() {
-                    if scratch.solver_refs.capacity() > solver_refs_capacity_before {
+                    if items.capacity() > items_capacity_before {
                         prof.solve_ref_alloc_grows += 1;
                     }
-                    prof.solve_ref_peak = prof.solve_ref_peak.max(solver_refs_len);
+                    prof.solve_ref_peak = prof.solve_ref_peak.max(items.len());
                 }
-                if solver_config.layout.display == UDisplay::Grid {
-                    solve_grid_layout(&solver_config, constraints, &mut scratch.solver_refs)
+                let size = if solver_config.display == UDisplay::Grid {
+                    solve_grid_layout(&solver_config, constraints, items, Some(grid_scratch))
                 } else {
-                    solve_flex_layout(&solver_config, constraints, &mut scratch.solver_refs)
+                    solve_flex_layout(&solver_config, constraints, items)
+                };
+                for (entry, solved_item) in solver_items.iter_mut().zip(items.iter()) {
+                    entry.item = *solved_item;
                 }
+                size
             };
             solved_count += 1;
             let final_size = if depth == 0 {
@@ -288,11 +283,11 @@ pub fn downward_solve_pass_safe(
                 }
                 if transform.scale == Vec3::ZERO {
                     transform.scale = Vec3::ONE;
-                }
-                if let Some(ref mut vis) = vis_opt
-                    && **vis == Visibility::Hidden
-                {
-                    **vis = Visibility::Inherited;
+                    if let Some(ref mut vis) = vis_opt
+                        && **vis == Visibility::Hidden
+                    {
+                        **vis = Visibility::Inherited;
+                    }
                 }
             }
 
@@ -346,9 +341,10 @@ fn calculate_root_size(
                 .unwrap_or(root.canvas_size);
             clamp_root_canvas_size(measured.max(Vec2::ZERO), min, max)
         }
-        UiCanvasSize::Viewport | UiCanvasSize::Fixed(_) | UiCanvasSize::FitContent { .. } => {
-            root.canvas_size
-        }
+        UiCanvasSize::Viewport
+        | UiCanvasSize::Fixed(_)
+        | UiCanvasSize::FitContent { .. }
+        | UiCanvasSize::Virtual { .. } => root.canvas_size,
     }
 }
 
@@ -476,9 +472,7 @@ fn collect_solver_items_into(
 
         scratch.push(SolverScratchItem {
             entity: child_entity,
-            spec,
-            result: SolverResult::default(),
-            margin: node.margin,
+            item: SolverItem::new(spec, node.margin),
         });
     }
 }
@@ -536,21 +530,22 @@ fn apply_results_to_children(
             transition_state_opt,
         )) = nodes_query.get_mut(solved.entity)
         {
-            let size_changed = (computed.width - solved.result.size.x).abs() > LAYOUT_WRITE_EPSILON
-                || (computed.height - solved.result.size.y).abs() > LAYOUT_WRITE_EPSILON;
+            let size_changed = (computed.width - solved.item.result.size.x).abs()
+                > LAYOUT_WRITE_EPSILON
+                || (computed.height - solved.item.result.size.y).abs() > LAYOUT_WRITE_EPSILON;
 
             if size_changed {
-                computed.width = solved.result.size.x;
-                computed.height = solved.result.size.y;
+                computed.width = solved.item.result.size.x;
+                computed.height = solved.item.result.size.y;
             }
 
-            let child_w = solved.result.size.x;
-            let child_h = solved.result.size.y;
+            let child_w = solved.item.result.size.x;
+            let child_h = solved.item.result.size.y;
 
             let next_x =
-                ((-parent_size.x / 2.0) + solved.result.pos.x + (child_w / 2.0)) * world_scale;
+                ((-parent_size.x / 2.0) + solved.item.result.pos.x + (child_w / 2.0)) * world_scale;
             let next_y =
-                ((parent_size.y / 2.0) - solved.result.pos.y - (child_h / 2.0)) * world_scale;
+                ((parent_size.y / 2.0) - solved.item.result.pos.y - (child_h / 2.0)) * world_scale;
 
             #[allow(deprecated)]
             let order = uself.map(|value| value.order).unwrap_or(0);
@@ -610,11 +605,11 @@ fn apply_results_to_children(
             }
             if transform.scale == Vec3::ZERO {
                 transform.scale = Vec3::ONE;
-            }
-            if let Some(ref mut vis) = vis_opt
-                && **vis == Visibility::Hidden
-            {
-                **vis = Visibility::Inherited;
+                if let Some(ref mut vis) = vis_opt
+                    && **vis == Visibility::Hidden
+                {
+                    **vis = Visibility::Inherited;
+                }
             }
 
             if use_incremental_solve
@@ -649,23 +644,55 @@ fn map_uval_to_mode(val: UVal) -> SolverSizeMode {
     }
 }
 
+#[allow(deprecated)]
 fn translate_config(layout: &ULayout, node: &UNode) -> SolverConfig {
     SolverConfig {
-        layout: layout.clone(),
+        display: layout.display,
+        flex_direction: layout.flex_direction,
+        justify_content: layout.justify_content,
+        align_items: layout.align_items,
         gap: layout.gap,
-        row_gap: layout.container_ext.box_align.row_gap,
-        column_gap: layout.container_ext.box_align.column_gap,
+        row_gap: layout.row_gap.or(layout.container_ext.box_align.row_gap),
+        column_gap: layout
+            .column_gap
+            .or(layout.container_ext.box_align.column_gap),
         padding: node.padding,
         grid_columns: layout.grid_columns,
-        justify_items: layout.container_ext.box_align.justify_items,
+        justify_items: layout
+            .justify_items
+            .or(layout.container_ext.box_align.justify_items),
         align_content: layout.container_ext.box_align.align_content,
-        flex_wrap: layout.container_ext.flex.wrap,
+        flex_wrap: if layout.flex_wrap != UFlexWrap::NoWrap {
+            layout.flex_wrap
+        } else {
+            layout.container_ext.flex.wrap
+        },
         flex_align_content: layout.container_ext.flex.align_content,
-        grid_template_columns: layout.container_ext.grid.template_columns.clone(),
-        grid_template_rows: layout.container_ext.grid.template_rows.clone(),
-        grid_auto_flow: layout.container_ext.grid.auto_flow,
-        grid_auto_rows: layout.container_ext.grid.auto_rows,
-        grid_auto_columns: layout.container_ext.grid.auto_columns,
+        grid_template_columns: if !layout.grid_template_columns.is_empty() {
+            layout.grid_template_columns.clone()
+        } else {
+            layout.container_ext.grid.template_columns.clone()
+        },
+        grid_template_rows: if !layout.grid_template_rows.is_empty() {
+            layout.grid_template_rows.clone()
+        } else {
+            layout.container_ext.grid.template_rows.clone()
+        },
+        grid_auto_flow: if layout.grid_auto_flow != UGridAutoFlow::Row {
+            layout.grid_auto_flow
+        } else {
+            layout.container_ext.grid.auto_flow
+        },
+        grid_auto_rows: if layout.grid_auto_rows != UTrackSize::Auto {
+            layout.grid_auto_rows
+        } else {
+            layout.container_ext.grid.auto_rows
+        },
+        grid_auto_columns: if layout.grid_auto_columns != UTrackSize::Auto {
+            layout.grid_auto_columns
+        } else {
+            layout.container_ext.grid.auto_columns
+        },
         width_mode: map_uval_to_mode(node.width),
         height_mode: map_uval_to_mode(node.height),
     }

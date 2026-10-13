@@ -49,6 +49,7 @@ pub struct MeasurePassScratch {
 /// It ignores `Absolute` items as they are out-of-flow.
 ///
 /// Upward Pass with Caching and Reverse Direction Support
+#[allow(deprecated)]
 pub fn upward_measure_pass_cached(
     _tree_depth: Res<LayoutTreeDepth>,
     rollout: Option<Res<UiRolloutConfig>>,
@@ -142,10 +143,18 @@ pub fn upward_measure_pass_cached(
                         let (col_start, col_span, row_start, row_span) = child_uself_opt
                             .map(|u| {
                                 (
-                                    u.item_ext.grid.column_start,
-                                    u.item_ext.grid.column_span,
-                                    u.item_ext.grid.row_start,
-                                    u.item_ext.grid.row_span,
+                                    u.column_start.or(u.item_ext.grid.column_start),
+                                    if u.column_span > 1 {
+                                        u.column_span
+                                    } else {
+                                        u.item_ext.grid.column_span
+                                    },
+                                    u.row_start.or(u.item_ext.grid.row_start),
+                                    if u.row_span > 1 {
+                                        u.row_span
+                                    } else {
+                                        u.item_ext.grid.row_span
+                                    },
                                 )
                             })
                             .unwrap_or((None, 1, None, 1));
@@ -328,11 +337,14 @@ pub fn upward_measure_pass_cached(
     }
 }
 
+#[allow(deprecated)]
 fn measure_flex_intrinsic(items: &[ChildMeasureItem], layout: &ULayout) -> (f32, f32, f32, f32) {
     let direction = layout.flex_direction;
     let legacy_gap = layout.gap;
-    let row_gap = layout.container_ext.box_align.row_gap;
-    let column_gap = layout.container_ext.box_align.column_gap;
+    let row_gap = layout.row_gap.or(layout.container_ext.box_align.row_gap);
+    let column_gap = layout
+        .column_gap
+        .or(layout.container_ext.box_align.column_gap);
 
     let gap = if matches!(direction, UFlexDirection::Row | UFlexDirection::RowReverse) {
         column_gap.unwrap_or(legacy_gap)
@@ -434,6 +446,7 @@ fn can_place_item(
     true
 }
 
+#[allow(deprecated)]
 fn measure_grid_intrinsic(
     scratch: &mut MeasurePassScratch,
     layout: &ULayout,
@@ -442,14 +455,39 @@ fn measure_grid_intrinsic(
 ) -> (f32, f32, f32, f32) {
     let fallback_cols = layout.grid_columns.max(1) as usize;
     let col_gap = layout
-        .container_ext
-        .box_align
         .column_gap
+        .or(layout.container_ext.box_align.column_gap)
         .unwrap_or(layout.gap);
-    let template_cols_len: usize = layout
-        .container_ext
-        .grid
-        .template_columns
+    let row_gap = layout
+        .row_gap
+        .or(layout.container_ext.box_align.row_gap)
+        .unwrap_or(layout.gap);
+    let template_columns = if !layout.grid_template_columns.is_empty() {
+        &layout.grid_template_columns
+    } else {
+        &layout.container_ext.grid.template_columns
+    };
+    let template_rows = if !layout.grid_template_rows.is_empty() {
+        &layout.grid_template_rows
+    } else {
+        &layout.container_ext.grid.template_rows
+    };
+    let auto_flow = if layout.grid_auto_flow != UGridAutoFlow::Row {
+        layout.grid_auto_flow
+    } else {
+        layout.container_ext.grid.auto_flow
+    };
+    let auto_columns = if layout.grid_auto_columns != UTrackSize::Auto {
+        layout.grid_auto_columns
+    } else {
+        layout.container_ext.grid.auto_columns
+    };
+    let auto_rows = if layout.grid_auto_rows != UTrackSize::Auto {
+        layout.grid_auto_rows
+    } else {
+        layout.container_ext.grid.auto_rows
+    };
+    let template_cols_len: usize = template_columns
         .iter()
         .map(|t| match *t {
             UTrackSize::Repeat(count, _) => count as usize,
@@ -484,10 +522,7 @@ fn measure_grid_intrinsic(
             _ => 1,
         })
         .sum();
-    let template_rows_len: usize = layout
-        .container_ext
-        .grid
-        .template_rows
+    let template_rows_len: usize = template_rows
         .iter()
         .map(|t| match *t {
             UTrackSize::Repeat(count, _) => count as usize,
@@ -529,7 +564,7 @@ fn measure_grid_intrinsic(
         let (found_r, found_c) = if let (Some(r), Some(c)) = (fixed_row, fixed_col) {
             (r, c)
         } else {
-            match layout.container_ext.grid.auto_flow {
+            match auto_flow {
                 UGridAutoFlow::Row => {
                     if let Some(r) = fixed_row {
                         let mut c = 0;
@@ -598,7 +633,7 @@ fn measure_grid_intrinsic(
             .push((found_r, found_c, row_span, col_span));
 
         if fixed_col.is_none() && fixed_row.is_none() {
-            match layout.container_ext.grid.auto_flow {
+            match auto_flow {
                 UGridAutoFlow::Row => {
                     auto_cursor_row = found_r;
                     auto_cursor_col = found_c + col_span;
@@ -648,14 +683,11 @@ fn measure_grid_intrinsic(
     scratch.row_max.resize(final_rows, 0.0);
 
     let is_fixed_col = |c: usize| -> Option<f32> {
-        let first_is_repeat = layout
-            .container_ext
-            .grid
-            .template_columns
+        let first_is_repeat = template_columns
             .first()
             .is_some_and(|t| matches!(t, UTrackSize::RepeatFit(_) | UTrackSize::RepeatFill(_)));
         if first_is_repeat {
-            match layout.container_ext.grid.template_columns[0] {
+            match template_columns[0] {
                 UTrackSize::RepeatFit(rep) | UTrackSize::RepeatFill(rep) => match rep {
                     UTrackRepeat::Px(v) => return Some(v.max(0.0)),
                     UTrackRepeat::MinMax {
@@ -667,13 +699,7 @@ fn measure_grid_intrinsic(
                 _ => {}
             }
         }
-        let track = layout
-            .container_ext
-            .grid
-            .template_columns
-            .get(c)
-            .copied()
-            .unwrap_or(layout.container_ext.grid.auto_columns);
+        let track = template_columns.get(c).copied().unwrap_or(auto_columns);
         match track {
             UTrackSize::Px(v) => Some(v.max(0.0)),
             UTrackSize::MinMax {
@@ -685,13 +711,7 @@ fn measure_grid_intrinsic(
     };
 
     let is_fixed_row = |r: usize| -> Option<f32> {
-        let track = layout
-            .container_ext
-            .grid
-            .template_rows
-            .get(r)
-            .copied()
-            .unwrap_or(layout.container_ext.grid.auto_rows);
+        let track = template_rows.get(r).copied().unwrap_or(auto_rows);
         match track {
             UTrackSize::Px(v) => Some(v.max(0.0)),
             UTrackSize::MinMax {
@@ -715,13 +735,6 @@ fn measure_grid_intrinsic(
             scratch.row_max[r] = fixed;
         }
     }
-
-    let col_gap = layout
-        .container_ext
-        .box_align
-        .column_gap
-        .unwrap_or(layout.gap);
-    let row_gap = layout.container_ext.box_align.row_gap.unwrap_or(layout.gap);
 
     // Single-span items establish track baseline
     for i in 0..scratch.child_items.len() {

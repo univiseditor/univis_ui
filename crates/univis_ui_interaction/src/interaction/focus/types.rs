@@ -269,6 +269,14 @@ pub struct UFocusActivate {
     pub entity: Entity,
 }
 
+/// Triggered on the focused entity when an activation input is released
+/// (e.g. Enter, Spacebar, Gamepad South button).
+#[derive(EntityEvent, Clone, Copy, Debug, Reflect, PartialEq)]
+pub struct UFocusDeactivate {
+    /// The entity that was deactivated.
+    pub entity: Entity,
+}
+
 /// Updates the active focus, dispatching [`FocusLost`] and [`FocusGained`] triggers
 /// and inserting/removing the [`UFocused`] marker component.
 pub fn set_focus(

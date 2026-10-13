@@ -44,13 +44,8 @@ source_line_counts() {
 }
 
 cat >"$ALLOWLIST_FILE" <<'EOF'
-crates/univis_ui_engine/src/layout/algorithms/bridge.rs
 crates/univis_ui_engine/src/layout/core/pass_up.rs
-crates/univis_ui_engine/src/layout/core/solver/absolute.rs
-crates/univis_ui_engine/src/layout/core/solver/helpers.rs
 crates/univis_ui_engine/src/layout/core/solver/translate.rs
-crates/univis_ui_engine/src/layout/core/solver/types.rs
-crates/univis_ui_engine/src/layout/geometry.rs
 crates/univis_ui_engine/src/layout/layout_system/root_stacking.rs
 crates/univis_ui_engine/src/layout/layout_system/roots.rs
 crates/univis_ui_engine/src/layout/layout_system/ui3d_sync.rs

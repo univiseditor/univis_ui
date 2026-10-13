@@ -17,7 +17,8 @@ pub use self::measure::{
     fit_node_to_text_size, measure_text_label_layout, sync_text_label_intrinsic_size,
 };
 pub use self::model::{
-    TextChildMarker, UText, UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide,
+    TextChildMarker, UCopyText, USelectableText, UText, UTextLabel, UTextLabelLayoutCache,
+    UTextOverflow, UTextSpan, UTextSpansTemplate, UTextTruncateSide, UTextWrapMode,
 };
 use self::render::atlas::UTextLabelAtlasCache;
 use self::render::clip_sync::sync_text_clipper_materials;
@@ -35,7 +36,9 @@ use self::measure::bounds::{
 #[cfg(test)]
 use self::render::clip_sync::{LocalClipRect, clip_quad_to_rect, label_content_clip_rect};
 #[cfg(test)]
-use self::render::mesh::{TextGlyphQuad, text_horizontal_offset};
+use self::render::mesh::{
+    TextGlyphQuad, build_text_material, build_text_page_mesh, text_horizontal_offset,
+};
 #[cfg(test)]
 use crate::layout::geometry::{USides, UVal};
 #[cfg(test)]
@@ -51,6 +54,9 @@ pub struct UnivisTextPlugin;
 impl Plugin for UnivisTextPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<UTextLabel>()
+            .register_type::<UTextSpan>()
+            .register_type::<USelectableText>()
+            .register_type::<UTextWrapMode>()
             .register_type::<UTextOverflow>()
             .register_type::<UTextTruncateSide>()
             .register_type::<UTextLabelLayoutCache>()
@@ -105,6 +111,7 @@ mod tests {
             size: Vec2::new(10.0, 6.0),
             uv_min: Vec2::new(0.1, 0.2),
             uv_max: Vec2::new(0.5, 0.8),
+            color: LinearRgba::WHITE,
         };
         let clip_rect = LocalClipRect {
             min: Vec2::new(-2.0, -3.0),
@@ -115,6 +122,7 @@ mod tests {
 
         assert_eq!(clipped.size, Vec2::new(7.0, 6.0));
         assert_eq!(clipped.center, Vec2::new(1.5, 0.0));
+        assert_eq!(clipped.color, LinearRgba::WHITE);
         assert!((clipped.uv_min.x - 0.22).abs() < 0.001);
         assert!((clipped.uv_max.x - 0.5).abs() < 0.001);
     }
@@ -126,6 +134,7 @@ mod tests {
             size: Vec2::new(4.0, 4.0),
             uv_min: Vec2::ZERO,
             uv_max: Vec2::ONE,
+            color: LinearRgba::WHITE,
         };
         let clip_rect = LocalClipRect {
             min: Vec2::new(-5.0, -5.0),
@@ -154,7 +163,12 @@ mod tests {
             ..default()
         };
 
-        let desired = desired_text_label_intrinsic_size(&node, &layout_cache, current);
+        let desired = desired_text_label_intrinsic_size(
+            &UTextLabel::default(),
+            &node,
+            &layout_cache,
+            current,
+        );
 
         assert_eq!(desired.width, 132.0);
         assert_eq!(desired.height, 48.0);
@@ -176,8 +190,12 @@ mod tests {
             ..default()
         };
 
-        let desired =
-            desired_text_label_intrinsic_size(&node, &layout_cache, IntrinsicSize::default());
+        let desired = desired_text_label_intrinsic_size(
+            &UTextLabel::default(),
+            &node,
+            &layout_cache,
+            IntrinsicSize::default(),
+        );
 
         assert_eq!(desired.width, 60.0);
         assert_eq!(desired.height, 22.0);
@@ -422,5 +440,217 @@ mod tests {
             candidate,
             format!("{LTR_ISOLATE_START}ab{ISOLATE_END}...{LTR_ISOLATE_START}ef{ISOLATE_END}")
         );
+    }
+
+    #[test]
+    fn wrapping_text_measure_bounds_constrains_width_to_parent_even_when_overflow_visible() {
+        let label =
+            UTextLabel::multiline("A long paragraph of text that should wrap to parent width");
+        let node = UNode::default();
+        let bounds = label_measure_bounds(
+            &label,
+            &node,
+            None,
+            TextBounds {
+                width: Some(320.0),
+                height: Some(100.0),
+            },
+        );
+
+        // Width must be constrained to parent to force word wrapping
+        assert_eq!(bounds.width, Some(320.0));
+        // Height must be unconstrained because overflow is Visible, allowing vertical expansion
+        assert_eq!(bounds.height, None);
+    }
+
+    #[test]
+    fn wrapping_text_desired_intrinsic_size_uses_measured_width_not_unwrapped_max() {
+        let label = UTextLabel::multiline("Wrapped prose");
+        let node = UNode {
+            width: UVal::Auto,
+            height: UVal::Auto,
+            padding: USides::axes(8.0, 4.0),
+            ..default()
+        };
+        let layout_cache = UTextLabelLayoutCache {
+            min_content_size: Vec2::new(60.0, 18.0),
+            max_content_size: Vec2::new(1200.0, 18.0), // Unwrapped single-line would be 1200px
+            measured_size: Vec2::new(300.0, 72.0),     // Wrapped 4 lines: 300px wide, 72px tall
+            ..default()
+        };
+
+        let desired = desired_text_label_intrinsic_size(
+            &label,
+            &node,
+            &layout_cache,
+            IntrinsicSize::default(),
+        );
+
+        // Width should be wrapped width + padding, NOT 1200 + padding!
+        assert_eq!(desired.width, 316.0);
+        assert_eq!(desired.height, 80.0);
+        assert_eq!(desired.min_width, 76.0);
+        assert_eq!(desired.max_width, 316.0);
+    }
+
+    #[test]
+    fn clamped_text_label_sets_effective_max_lines_and_word_boundary() {
+        let label = UTextLabel::clamped("Three lines max", 3);
+
+        assert_eq!(label.wrap_mode, UTextWrapMode::ClampLines(3));
+        assert_eq!(label.effective_max_lines(), Some(3));
+        assert!(label.is_wrapping());
+        assert_eq!(label.overflow, UTextOverflow::Ellipsis);
+    }
+
+    #[test]
+    fn explicit_node_width_takes_precedence_over_wider_parent() {
+        let label = UTextLabel::multiline("Constrained by node width");
+        let node = UNode {
+            width: UVal::Px(180.0),
+            padding: USides::all(10.0),
+            ..default()
+        };
+        let bounds = label_measure_bounds(
+            &label,
+            &node,
+            None,
+            TextBounds {
+                width: Some(500.0),
+                height: None,
+            },
+        );
+
+        // 180 - padding (20) = 160.0, which is smaller than parent 500.0
+        assert_eq!(bounds.width, Some(160.0));
+    }
+
+    #[test]
+    fn parent_width_takes_precedence_over_wider_explicit_node() {
+        let label = UTextLabel::multiline("Constrained by parent container");
+        let node = UNode {
+            width: UVal::Px(600.0),
+            padding: USides::all(0.0),
+            ..default()
+        };
+        let bounds = label_measure_bounds(
+            &label,
+            &node,
+            None,
+            TextBounds {
+                width: Some(350.0),
+                height: None,
+            },
+        );
+
+        // Parent width 350.0 is smaller than node width 600.0 -> must constrain to 350.0!
+        assert_eq!(bounds.width, Some(350.0));
+    }
+
+    #[test]
+    fn rich_text_spans_concatenates_text_and_preserves_spans() {
+        let label = UTextLabel::rich([
+            UTextSpan::new("Hello "),
+            UTextSpan::new("World").with_color(Color::srgb(1.0, 0.0, 0.0)),
+        ])
+        .with_span(UTextSpan::new("!").with_font_size(24.0));
+
+        assert_eq!(label.text, "Hello World!");
+        assert_eq!(label.spans.len(), 3);
+        assert_eq!(label.spans[0].text, "Hello ");
+        assert_eq!(label.spans[1].text, "World");
+        assert_eq!(label.spans[1].color, Some(Color::srgb(1.0, 0.0, 0.0)));
+        assert_eq!(label.spans[2].text, "!");
+        assert_eq!(label.spans[2].font_size, Some(24.0));
+        assert!(label.has_spans());
+    }
+
+    #[test]
+    fn outline_properties_and_builders() {
+        let label = UTextLabel::new("Outlined")
+            .with_outline(2.5, Color::srgb(0.0, 0.0, 0.0))
+            .with_outline_width(3.0);
+
+        assert_eq!(label.outline_width, 3.0);
+        assert_eq!(label.outline_color, Color::srgb(0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn build_text_material_sets_normalized_outline_and_base_color() {
+        // Plain label: base color matches label.color, outline normalized from render scale
+        let plain_label = UTextLabel::new("Plain")
+            .with_render_scale(8.0)
+            .with_outline(1.5, Color::BLACK);
+        let mat = build_text_material(&plain_label, Handle::default());
+        // normalized_outline = (1.5 * 8.0) / (2.0 * 12.0) = 12.0 / 24.0 = 0.5
+        assert!((mat.outline_width - 0.5).abs() < 0.001);
+        assert_eq!(mat.color, LinearRgba::from(Color::WHITE));
+
+        // Rich text label: base color is LinearRgba::WHITE to let vertex colors take over
+        let rich_label = UTextLabel::rich([
+            UTextSpan::new("A").with_color(Color::srgb(1.0, 0.0, 0.0)),
+            UTextSpan::new("B").with_color(Color::srgb(0.0, 1.0, 0.0)),
+        ]);
+        let rich_mat = build_text_material(&rich_label, Handle::default());
+        assert_eq!(rich_mat.color, LinearRgba::WHITE);
+    }
+
+    #[test]
+    fn build_text_page_mesh_inserts_vertex_colors() {
+        let quads = [
+            TextGlyphQuad {
+                center: Vec2::ZERO,
+                size: Vec2::splat(10.0),
+                uv_min: Vec2::ZERO,
+                uv_max: Vec2::ONE,
+                color: LinearRgba::RED,
+            },
+            TextGlyphQuad {
+                center: Vec2::X * 15.0,
+                size: Vec2::splat(10.0),
+                uv_min: Vec2::ZERO,
+                uv_max: Vec2::ONE,
+                color: LinearRgba::BLUE,
+            },
+        ];
+
+        let mesh = build_text_page_mesh(&quads);
+        let colors = mesh
+            .attribute(Mesh::ATTRIBUTE_COLOR)
+            .expect("Mesh must contain ATTRIBUTE_COLOR");
+
+        match colors {
+            bevy::mesh::VertexAttributeValues::Float32x4(values) => {
+                assert_eq!(values.len(), 8); // 2 quads * 4 vertices = 8
+                // First 4 vertices are RED
+                for v in &values[0..4] {
+                    assert_eq!(*v, [1.0, 0.0, 0.0, 1.0]);
+                }
+                // Next 4 vertices are BLUE
+                for v in &values[4..8] {
+                    assert_eq!(*v, [0.0, 0.0, 1.0, 1.0]);
+                }
+            }
+            _ => panic!("Expected Float32x4 attribute values for ATTRIBUTE_COLOR"),
+        }
+    }
+
+    #[test]
+    fn selectable_text_range_and_extraction() {
+        let mut sel = USelectableText::new().with_selection(2, 7);
+        let sample = "Hello World!";
+        assert_eq!(sel.selected_text(sample), Some("llo W"));
+
+        // Inverted indices normalize automatically
+        let sel_inv = USelectableText::new().with_selection(7, 2);
+        assert_eq!(sel_inv.selected_text(sample), Some("llo W"));
+
+        // Select all
+        sel.select_all(sample.len());
+        assert_eq!(sel.selected_text(sample), Some("Hello World!"));
+
+        // Clear
+        sel.clear();
+        assert_eq!(sel.selected_text(sample), None);
     }
 }

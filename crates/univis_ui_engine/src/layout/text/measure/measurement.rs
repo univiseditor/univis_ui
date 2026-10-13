@@ -85,9 +85,19 @@ pub(super) fn log_text_measure_error(error: TextMeasureError) {
 }
 
 pub(super) fn label_text_layout(label: &UTextLabel) -> TextLayout {
+    let linebreak = match label.wrap_mode {
+        UTextWrapMode::SingleLine => label.linebreak,
+        UTextWrapMode::WrapToParent | UTextWrapMode::ClampLines(_) => {
+            if label.linebreak == LineBreak::NoWrap {
+                LineBreak::WordBoundary
+            } else {
+                label.linebreak
+            }
+        }
+    };
     TextLayout {
         justify: label.justify,
-        linebreak: label.linebreak,
+        linebreak,
     }
 }
 
@@ -136,13 +146,128 @@ pub(super) fn measure_layout_for_text(
         )
         .map_err(|_| TextMeasureError::new(entity, stage, text.chars().count()))?;
 
-    let size = measure.compute_size(bounds, computed, font_system);
+    let computed_size = measure.compute_size(bounds, computed, font_system);
     let line_count = computed.buffer().lines().count();
+
+    let size = if text_layout.linebreak == LineBreak::NoWrap {
+        measure.max
+    } else {
+        computed_size
+    };
+
+    let (min_content_size, max_content_size) = if text_layout.linebreak == LineBreak::NoWrap {
+        (measure.max, measure.max)
+    } else {
+        let max_w = bounds
+            .width
+            .map_or(measure.max.x, |bw| computed_size.x.min(bw));
+        (
+            Vec2::new(measure.min.x, computed_size.y),
+            Vec2::new(max_w, computed_size.y),
+        )
+    };
 
     Ok(MeasuredTextInfo {
         size,
-        min_content_size: measure.min,
-        max_content_size: measure.max,
+        min_content_size,
+        max_content_size,
+        line_count,
+    })
+}
+
+pub(super) fn measure_layout_for_label(
+    entity: Entity,
+    label: &UTextLabel,
+    stage: TextMeasureStage,
+    text_font: &TextFont,
+    text_layout: &TextLayout,
+    text_color: Color,
+    bounds: TextBounds,
+    fonts: &Assets<Font>,
+    text_pipeline: &mut TextPipeline,
+    computed: &mut ComputedTextBlock,
+    font_system: &mut FontCx,
+    layout_cx: &mut LayoutCx,
+) -> Result<MeasuredTextInfo, TextMeasureError> {
+    if label.spans.is_empty() {
+        return measure_layout_for_text(
+            entity,
+            label.text.as_str(),
+            stage,
+            text_font,
+            text_layout,
+            text_color,
+            bounds,
+            fonts,
+            text_pipeline,
+            computed,
+            font_system,
+            layout_cx,
+        );
+    }
+
+    let span_fonts: Vec<TextFont> = label
+        .spans
+        .iter()
+        .map(|span| TextFont {
+            font: FontSource::Handle(span.font.as_ref().unwrap_or(&label.font).clone()),
+            font_size: FontSize::Px(span.font_size.unwrap_or(label.font_size)),
+            ..default()
+        })
+        .collect();
+
+    let spans_iter = label.spans.iter().enumerate().map(|(idx, span)| {
+        (
+            entity,
+            idx,
+            span.text.as_str(),
+            &span_fonts[idx],
+            span.color.unwrap_or(label.color),
+            LineHeight::default(),
+            LetterSpacing::default(),
+        )
+    });
+
+    let mut measure = text_pipeline
+        .create_text_measure(
+            entity,
+            fonts,
+            spans_iter,
+            1.0,
+            text_layout,
+            computed,
+            font_system,
+            layout_cx,
+            Vec2::ZERO,
+            20.0,
+        )
+        .map_err(|_| TextMeasureError::new(entity, stage, label.text.chars().count()))?;
+
+    let computed_size = measure.compute_size(bounds, computed, font_system);
+    let line_count = computed.buffer().lines().count();
+
+    let size = if text_layout.linebreak == LineBreak::NoWrap {
+        measure.max
+    } else {
+        computed_size
+    };
+
+    let (min_content_size, max_content_size) = if text_layout.linebreak == LineBreak::NoWrap {
+        (measure.max, measure.max)
+    } else {
+        let max_w = bounds
+            .width
+            .map_or(measure.max.x, |bw| computed_size.x.min(bw));
+        (
+            Vec2::new(measure.min.x, computed_size.y),
+            Vec2::new(max_w, computed_size.y),
+        )
+    };
+
+    Ok(MeasuredTextInfo {
+        size,
+        min_content_size,
+        max_content_size,
         line_count,
     })
 }
@@ -161,11 +286,16 @@ pub(super) fn resolve_final_measured_text(
     layout_cx: &mut LayoutCx,
     measured: MeasuredTextInfo,
 ) -> Result<(String, MeasuredTextInfo, bool), TextMeasureError> {
-    let mut final_text = label.text.clone();
+    let mut final_text = if label.text.is_empty() && !label.spans.is_empty() {
+        label.spans.iter().map(|s| s.text.as_str()).collect()
+    } else {
+        label.text.clone()
+    };
     let mut final_measured = measured;
 
-    if !text_fits_constraints(&final_measured, bounds, label)
-        && label.overflow == UTextOverflow::Ellipsis
+    if label.spans.is_empty()
+        && !text_fits_constraints(&final_measured, bounds, label)
+        && (label.overflow == UTextOverflow::Ellipsis || label.effective_max_lines().is_some())
         && has_overflow_constraints(bounds, label)
     {
         let (displayed_text, _) = super::truncation::build_ellipsized_text(

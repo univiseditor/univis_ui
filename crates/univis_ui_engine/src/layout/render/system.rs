@@ -131,6 +131,9 @@ pub fn update_materials_optimized(
         .as_ref()
         .is_none_or(|config| config.use_incremental_render);
     let use_mesh_cache = rollout.as_ref().is_none_or(|config| config.use_mesh_cache);
+    let use_instanced_batching = rollout
+        .as_ref()
+        .is_none_or(|config| config.use_instanced_batching);
     let created_before = pool.created_count;
     let reused_before = pool.reused_count;
     let mesh_created_before = mesh_pool.created_count;
@@ -168,6 +171,7 @@ pub fn update_materials_optimized(
             pbr_opt,
             cached_context,
             use_cached_ui_context,
+            use_instanced_batching,
             handles_opt,
             gradient_opt,
             shadow_opt,
@@ -204,6 +208,7 @@ fn sync_entity_material(
     pbr_opt: Option<&UPbr>,
     cached_context: Option<&CachedUiContext>,
     use_cached_ui_context: bool,
+    use_instanced_batching: bool,
     handles_opt: Option<Mut<'_, MaterialHandles>>,
     gradient_opt: Option<&UGradient>,
     shadow_opt: Option<&UShadow>,
@@ -230,6 +235,23 @@ fn sync_entity_material(
         None
     };
     let render_context = resolve_render_context(entity, cached_context, parents_query, root_query);
+
+    // Fast-path: Pure 2D SDF nodes without textures or gradients are rendered
+    // entirely via the single-draw instanced batch pipeline!
+    if use_instanced_batching
+        && render_context.mode == ResolvedRenderMode::Flat2d
+        && image.is_none()
+        && gradient_opt.is_none()
+        && inner_glow_opt.is_none()
+    {
+        if handles_opt.is_some() {
+            commands
+                .entity(entity)
+                .remove::<(Mesh2d, MeshMaterial2d<UNodeMaterial>, MaterialHandles)>();
+        }
+        return;
+    }
+
     let world_scale = render_context.ui_to_world_scale;
     let size_vec = logical_size * world_scale;
     let softness = minimum_local_softness(world_scale);

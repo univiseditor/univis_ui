@@ -39,9 +39,11 @@ use self::invalidation::{
 };
 use self::measurement::{
     TextMeasureStage, label_text_font, label_text_layout, log_text_measure_error,
-    measure_layout_for_text, resolve_final_measured_text,
+    measure_layout_for_label, measure_layout_for_text, resolve_final_measured_text,
 };
-use super::model::{UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide};
+use super::model::{
+    UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide, UTextWrapMode,
+};
 
 pub fn measure_text_label_layout(
     mut font_events: MessageReader<AssetEvent<Font>>,
@@ -74,7 +76,12 @@ pub fn measure_text_label_layout(
     }
 
     for (entity, label, node, computed_size, mut computed, mut cache) in query.iter_mut() {
-        let font_changed = changed_fonts.contains(&label.font.id());
+        let font_changed = changed_fonts.contains(&label.font.id())
+            || label.spans.iter().any(|s| {
+                s.font
+                    .as_ref()
+                    .map_or(false, |f| changed_fonts.contains(&f.id()))
+            });
         let parent_bounds =
             parent_label_bounds(entity, &label, &node, &parents_query, &parent_query);
         let bounds_changed = parent_bounds_changed(&cache, parent_bounds);
@@ -94,9 +101,9 @@ pub fn measure_text_label_layout(
         let text_color = label.color;
         let bounds = label_measure_bounds(&label, &node, Some(&computed_size), parent_bounds);
 
-        match measure_layout_for_text(
+        match measure_layout_for_label(
             entity,
-            label.text.as_str(),
+            &label,
             TextMeasureStage::FullText,
             &text_font,
             &text_layout,
@@ -165,6 +172,7 @@ pub fn fit_node_to_text_size(
                     entity,
                     parents_query.get(entity).ok().map(|parent| parent.get()),
                     label.overflow,
+                    label.is_wrapping(),
                     node.margin,
                 ))
             })
@@ -180,7 +188,7 @@ pub fn fit_node_to_text_size(
         adjusted_counts.retain(|_, (generation, _)| *generation == current_gen);
     }
 
-    for (entity, parent_entity, overflow, margin) in autosize_snapshot {
+    for (entity, parent_entity, overflow, is_wrapping, margin) in autosize_snapshot {
         let entry = adjusted_counts.entry(entity).or_insert((current_gen, 0));
         if entry.0 != current_gen {
             entry.0 = current_gen;
@@ -192,7 +200,13 @@ pub fn fit_node_to_text_size(
 
         let parent_bounds = {
             let parent_bounds_query = params.p0();
-            parent_label_bounds_from_ids(parent_entity, overflow, margin, &parent_bounds_query)
+            parent_label_bounds_from_ids(
+                parent_entity,
+                overflow,
+                is_wrapping,
+                margin,
+                &parent_bounds_query,
+            )
         };
 
         let mut labels = params.p1();
@@ -216,12 +230,25 @@ pub fn fit_node_to_text_size(
 
         const TEXT_AUTOSIZE_EPSILON: f32 = 0.5;
         let mut changed = false;
-        if !node.width.uses_intrinsic_measurement()
-            && (current_w - target_width).abs() > TEXT_AUTOSIZE_EPSILON
-        {
-            node.width = UVal::Px(target_width);
-            changed = true;
+
+        // When text wraps to parent, DO NOT shrink the node's width to the measured line width.
+        // Shrinking the width causes oscillation loops and breaks responsive flex layouts.
+        if !is_wrapping {
+            if !node.width.uses_intrinsic_measurement()
+                && (current_w - target_width).abs() > TEXT_AUTOSIZE_EPSILON
+            {
+                node.width = UVal::Px(target_width);
+                changed = true;
+            }
+        } else if let Some(parent_w) = parent_bounds.width {
+            if let UVal::Px(w) = node.width {
+                if w > parent_w + TEXT_AUTOSIZE_EPSILON {
+                    node.width = UVal::Px(parent_w);
+                    changed = true;
+                }
+            }
         }
+
         if !node.height.uses_intrinsic_measurement()
             && (current_h - target_height).abs() > TEXT_AUTOSIZE_EPSILON
         {
@@ -258,14 +285,16 @@ pub fn sync_text_label_intrinsic_size(
             continue;
         }
 
-        let mut target = desired_text_label_intrinsic_size(node, layout_cache, *intrinsic);
+        let mut target = desired_text_label_intrinsic_size(label, node, layout_cache, *intrinsic);
         if label.autosize {
             let parent_bounds =
                 parent_label_bounds(entity, label, node, &parents_query, &parent_bounds_query);
             let clamped_outer_size =
                 clamp_outer_size_to_bounds(Vec2::new(target.width, target.height), parent_bounds);
             target.width = clamped_outer_size.x;
-            target.height = clamped_outer_size.y;
+            if !label.is_wrapping() || label.overflow != UTextOverflow::Visible {
+                target.height = clamped_outer_size.y;
+            }
         }
         if (intrinsic.width - target.width).abs() > 0.1
             || (intrinsic.height - target.height).abs() > 0.1

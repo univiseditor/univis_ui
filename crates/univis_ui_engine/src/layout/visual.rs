@@ -75,6 +75,12 @@ pub struct UGradient {
     pub offset: f32,
 }
 
+impl Default for UGradient {
+    fn default() -> Self {
+        Self::horizontal(Color::WHITE, Color::WHITE)
+    }
+}
+
 impl UGradient {
     /// Creates a linear horizontal gradient (left to right).
     pub fn horizontal(start_color: Color, end_color: Color) -> Self {

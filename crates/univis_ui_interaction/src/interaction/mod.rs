@@ -92,6 +92,7 @@ impl Plugin for UnivisInteractionPlugin {
         app.add_observer(focus::on_focus_lost_visual);
         app.add_observer(focus::on_pointer_focus_click);
         app.add_observer(focus::on_focus_activate_default);
+        app.add_observer(focus::on_focus_deactivate_default);
         app.add_observer(text_input::on_text_input_pointer_press);
         app.add_observer(text_input::on_text_input_pointer_drag);
         app.add_observer(text_input::on_text_input_pointer_release);

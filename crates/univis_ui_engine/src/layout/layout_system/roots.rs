@@ -14,9 +14,39 @@ pub enum UiSpace {
     World3d,
 }
 
+/// Strategy used to scale a virtual resolution canvas across different aspect ratios.
+#[derive(Clone, Copy, Debug, PartialEq, Reflect, Default)]
+pub enum UVirtualScaleMode {
+    /// Match the vertical resolution (standard for most widescreen games).
+    #[default]
+    MatchHeight,
+    /// Match the horizontal resolution.
+    MatchWidth,
+    /// Uniform scale ensuring the entire reference design fits inside the viewport.
+    Fit,
+    /// Uniform scale ensuring the reference design fills the entire viewport.
+    Fill,
+}
+
+impl UVirtualScaleMode {
+    /// Computes the uniform scale factor for the given viewport and reference resolution.
+    pub fn compute_scale_factor(&self, viewport: Vec2, reference: Vec2) -> f32 {
+        let ref_x = reference.x.max(1.0);
+        let ref_y = reference.y.max(1.0);
+        let sx = (viewport.x / ref_x).max(1e-4);
+        let sy = (viewport.y / ref_y).max(1e-4);
+        match self {
+            UVirtualScaleMode::MatchHeight => sy,
+            UVirtualScaleMode::MatchWidth => sx,
+            UVirtualScaleMode::Fit => sx.min(sy),
+            UVirtualScaleMode::Fill => sx.max(sy),
+        }
+    }
+}
+
 /// Describes how a root obtains its logical canvas size.
 ///
-/// `Viewport` is mainly for `UiSpace::Screen`, while `Fixed` and `FitContent`
+/// `Viewport` and `Virtual` are mainly for `UiSpace::Screen`, while `Fixed` and `FitContent`
 /// are most useful for `World2d` and `World3d` roots.
 #[derive(Clone, Copy, Debug, PartialEq, Reflect)]
 pub enum UiCanvasSize {
@@ -30,6 +60,18 @@ pub enum UiCanvasSize {
         min: Vec2,
         /// The maximum size to enforce, or None for unbounded.
         max: Option<Vec2>,
+    },
+    /// Virtual resolution scaling for games.
+    ///
+    /// The canvas adapts to screen resolution while scaling proportionally to the
+    /// reference resolution (e.g. 1920x1080) to maintain crisp, proportional UI
+    /// across different screen resolutions (1080p, 1440p, 4K, Steam Deck) without
+    /// aspect ratio distortion.
+    Virtual {
+        /// Reference design resolution (e.g. 1920.0 x 1080.0).
+        reference: Vec2,
+        /// How scaling adapts to different aspect ratios.
+        mode: UVirtualScaleMode,
     },
 }
 
@@ -105,6 +147,34 @@ impl URootUi {
         Self {
             space: UiSpace::Screen,
             canvas: UiCanvasSize::Viewport,
+            camera: UiCameraRef::Auto,
+            meters_per_unit: Self::DEFAULT_METERS_PER_UNIT,
+            resolution_scale: Self::DEFAULT_RESOLUTION_SCALE,
+        }
+    }
+
+    /// Creates a screen root with virtual resolution scaling for games using default vertical matching.
+    pub fn virtual_screen(reference_resolution: Vec2) -> Self {
+        Self {
+            space: UiSpace::Screen,
+            canvas: UiCanvasSize::Virtual {
+                reference: reference_resolution,
+                mode: UVirtualScaleMode::MatchHeight,
+            },
+            camera: UiCameraRef::Auto,
+            meters_per_unit: Self::DEFAULT_METERS_PER_UNIT,
+            resolution_scale: Self::DEFAULT_RESOLUTION_SCALE,
+        }
+    }
+
+    /// Creates a screen root with virtual resolution scaling using explicit scale mode.
+    pub fn virtual_screen_mode(reference_resolution: Vec2, mode: UVirtualScaleMode) -> Self {
+        Self {
+            space: UiSpace::Screen,
+            canvas: UiCanvasSize::Virtual {
+                reference: reference_resolution,
+                mode,
+            },
             camera: UiCameraRef::Auto,
             meters_per_unit: Self::DEFAULT_METERS_PER_UNIT,
             resolution_scale: Self::DEFAULT_RESOLUTION_SCALE,
@@ -327,7 +397,7 @@ impl ResolvedRootStack {
 
     /// Recommends an offset for text nodes specifically to ensure they render above generic backgrounds.
     pub fn text_child_offset(&self) -> f32 {
-        self.capsule_band_step
+        self.capsule_band_step.max(0.001)
     }
 }
 

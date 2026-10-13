@@ -22,10 +22,10 @@ pub use systems::{
     focus_cleanup_system, focus_gamepad_navigation_system, focus_keyboard_navigation_system,
 };
 pub use types::{
-    FocusGained, FocusLost, FocusModality, NavDirection, UFocusActivate, UFocusNavigationSettings,
-    UFocusState, UFocusable, UFocused, set_focus,
+    FocusGained, FocusLost, FocusModality, NavDirection, UFocusActivate, UFocusDeactivate,
+    UFocusNavigationSettings, UFocusState, UFocusable, UFocused, set_focus,
 };
 pub use visual::{
-    UFocusVisual, on_focus_activate_default, on_focus_gained_visual, on_focus_lost_visual,
-    on_pointer_focus_click,
+    UFocusVisual, on_focus_activate_default, on_focus_deactivate_default, on_focus_gained_visual,
+    on_focus_lost_visual, on_pointer_focus_click,
 };

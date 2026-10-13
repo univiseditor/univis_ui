@@ -98,25 +98,37 @@ pub(super) fn resolve_root_canvas_size(
     match canvas {
         UiCanvasSize::Fixed(size) => size,
         UiCanvasSize::FitContent { min, max } => clamp_canvas_size(min.max(Vec2::ZERO), min, max),
-        UiCanvasSize::Viewport => {
-            if let Some(camera_entity) = camera_entity {
-                if let Ok((_, camera)) = cameras.get(camera_entity)
-                    && let Some(size) = camera.logical_viewport_size()
-                {
-                    return size;
-                }
-
-                if *issue == RootResolutionIssue::None {
-                    *issue = RootResolutionIssue::ViewportSizeUnavailable;
-                }
-            }
-
-            if let Ok(window) = windows.single() {
-                Vec2::new(window.width(), window.height())
-            } else {
-                Vec2::new(800.0, 600.0)
-            }
+        UiCanvasSize::Viewport => resolve_viewport_size(camera_entity, cameras, windows, issue),
+        UiCanvasSize::Virtual { reference, mode } => {
+            let viewport = resolve_viewport_size(camera_entity, cameras, windows, issue);
+            let scale = mode.compute_scale_factor(viewport, reference);
+            viewport / scale
         }
+    }
+}
+
+fn resolve_viewport_size(
+    camera_entity: Option<Entity>,
+    cameras: &Query<(Entity, &Camera)>,
+    windows: &Query<&Window>,
+    issue: &mut RootResolutionIssue,
+) -> Vec2 {
+    if let Some(camera_entity) = camera_entity {
+        if let Ok((_, camera)) = cameras.get(camera_entity)
+            && let Some(size) = camera.logical_viewport_size()
+        {
+            return size;
+        }
+
+        if *issue == RootResolutionIssue::None {
+            *issue = RootResolutionIssue::ViewportSizeUnavailable;
+        }
+    }
+
+    if let Ok(window) = windows.single() {
+        Vec2::new(window.width(), window.height())
+    } else {
+        Vec2::new(800.0, 600.0)
     }
 }
 

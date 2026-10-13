@@ -428,6 +428,22 @@ impl LayoutCache {
         self.dirty_nodes.len()
     }
 
+    pub fn dirty_nodes(&self) -> &HashSet<Entity> {
+        &self.dirty_nodes
+    }
+
+    pub fn measure_frontier(&self) -> &HashMap<Entity, u64> {
+        &self.measure_frontier
+    }
+
+    pub fn solve_frontier(&self) -> &HashMap<Entity, u64> {
+        &self.solve_frontier
+    }
+
+    pub fn render_frontier(&self) -> &HashMap<Entity, u64> {
+        &self.render_frontier
+    }
+
     /// Returns the percentage of dirty entities relative to `total_nodes`.
     pub fn dirty_ratio(&self, total_nodes: usize) -> f32 {
         if total_nodes == 0 {

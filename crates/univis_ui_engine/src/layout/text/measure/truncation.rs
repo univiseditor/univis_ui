@@ -18,14 +18,14 @@ pub(super) fn text_fits_constraints(
         .height
         .map_or(true, |height| measured.size.y <= height + 0.5);
     let lines_ok = label
-        .max_lines
+        .effective_max_lines()
         .map_or(true, |max_lines| measured.line_count <= max_lines);
 
     width_ok && height_ok && lines_ok
 }
 
 pub(super) fn has_overflow_constraints(bounds: TextBounds, label: &UTextLabel) -> bool {
-    bounds.width.is_some() || bounds.height.is_some() || label.max_lines.is_some()
+    bounds.width.is_some() || bounds.height.is_some() || label.effective_max_lines().is_some()
 }
 
 pub(super) fn build_ellipsized_text(

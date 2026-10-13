@@ -1,6 +1,6 @@
 pub(super) mod atlas;
 pub(super) mod clip_sync;
-pub(super) mod mesh;
+pub(crate) mod mesh;
 mod sdf;
 
 use crate::layout::query::{CachedUiContext, UI3d};
@@ -44,22 +44,26 @@ pub(super) struct TextRenderPageMarker {
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub(super) struct UTextLabelSdfMaterial {
     #[uniform(0)]
-    color: LinearRgba,
+    pub(crate) color: LinearRgba,
     #[uniform(0)]
-    clip_radius: Vec4,
+    pub(crate) outline_color: LinearRgba,
     #[uniform(0)]
-    clip_center: Vec2,
+    pub(crate) clip_radius: Vec4,
     #[uniform(0)]
-    clip_size: Vec2,
+    pub(crate) clip_center: Vec2,
     #[uniform(0)]
-    edge_softness: f32,
+    pub(crate) clip_size: Vec2,
     #[uniform(0)]
-    use_clip: u32,
+    pub(crate) edge_softness: f32,
     #[uniform(0)]
-    _pad: Vec2,
+    pub(crate) outline_width: f32,
+    #[uniform(0)]
+    pub(crate) use_clip: u32,
+    #[uniform(0)]
+    pub(crate) _pad: f32,
     #[texture(1)]
     #[sampler(2)]
-    texture: Handle<Image>,
+    pub(crate) texture: Handle<Image>,
 }
 
 impl Material2d for UTextLabelSdfMaterial {
@@ -70,27 +74,35 @@ impl Material2d for UTextLabelSdfMaterial {
     fn alpha_mode(&self) -> AlphaMode2d {
         AlphaMode2d::Blend
     }
+
+    fn depth_bias(&self) -> f32 {
+        0.5
+    }
 }
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub(super) struct UTextLabelSdfMaterial3d {
     #[uniform(0)]
-    color: LinearRgba,
+    pub(crate) color: LinearRgba,
     #[uniform(0)]
-    clip_radius: Vec4,
+    pub(crate) outline_color: LinearRgba,
     #[uniform(0)]
-    clip_center: Vec2,
+    pub(crate) clip_radius: Vec4,
     #[uniform(0)]
-    clip_size: Vec2,
+    pub(crate) clip_center: Vec2,
     #[uniform(0)]
-    edge_softness: f32,
+    pub(crate) clip_size: Vec2,
     #[uniform(0)]
-    use_clip: u32,
+    pub(crate) edge_softness: f32,
     #[uniform(0)]
-    _pad: Vec2,
+    pub(crate) outline_width: f32,
+    #[uniform(0)]
+    pub(crate) use_clip: u32,
+    #[uniform(0)]
+    pub(crate) _pad: f32,
     #[texture(1)]
     #[sampler(2)]
-    texture: Handle<Image>,
+    pub(crate) texture: Handle<Image>,
 }
 
 impl Material for UTextLabelSdfMaterial3d {
@@ -219,6 +231,17 @@ pub(super) fn sync_text_label_meshes(
             for line in computed.buffer().lines() {
                 for item in line.items() {
                     if let PositionedLayoutItem::GlyphRun(glyph_run) = item {
+                        let section_index = glyph_run.style().brush.section_index as usize;
+                        let glyph_color: LinearRgba = if label.spans.is_empty() {
+                            LinearRgba::WHITE
+                        } else {
+                            label
+                                .spans
+                                .get(section_index)
+                                .and_then(|s| s.color)
+                                .unwrap_or(label.color)
+                                .into()
+                        };
                         let run = glyph_run.run();
                         let font = run.font();
                         let font_size = run.font_size();
@@ -412,6 +435,7 @@ pub(super) fn sync_text_label_meshes(
                                 size: glyph_size,
                                 uv_min,
                                 uv_max,
+                                color: glyph_color,
                             };
                             let clipped_quad = if let Some(clip_rect) = content_clip {
                                 clip_quad_to_rect(quad, clip_rect)

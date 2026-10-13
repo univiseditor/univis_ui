@@ -54,11 +54,12 @@ pub mod prelude {
     pub use crate::layout::geometry::{ComputedSize, UCornerRadius, USides, UVal, UValLength};
     pub use crate::layout::image::UImage;
     pub use crate::layout::layout_system::{
-        URootUi, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
+        URootUi, UVirtualScaleMode, UiCameraRef, UiCanvasSize, UiRootSettlementState, UiSpace,
     };
     pub use crate::layout::pbr::UPbr;
     pub use crate::layout::text::{
-        UText, UTextLabel, UTextLabelLayoutCache, UTextOverflow, UTextTruncateSide,
+        UCopyText, USelectableText, UText, UTextLabel, UTextLabelLayoutCache, UTextOverflow,
+        UTextSpan, UTextSpansTemplate, UTextTruncateSide, UTextWrapMode,
     };
     pub use crate::layout::univis_node::*;
     pub use crate::schedule::{

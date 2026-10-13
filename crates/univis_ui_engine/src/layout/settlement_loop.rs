@@ -110,11 +110,14 @@ pub(super) fn begin_ui_settlement_work(
             &current_layout_children,
         )
     });
-    let removed_layout_children = removed_children
-        .read()
-        .any(|entity| layout_nodes.get(entity).is_ok() || cache.has_node_snapshot(entity));
-    let structure_changed =
-        removed_nodes.read().next().is_some() || removed_layout_children || layout_children_changed;
+    let mut removed_layout_children = false;
+    for entity in removed_children.read() {
+        if layout_nodes.get(entity).is_ok() || cache.has_node_snapshot(entity) {
+            removed_layout_children = true;
+        }
+    }
+    let removed_any_nodes = removed_nodes.read().count() > 0;
+    let structure_changed = removed_any_nodes || removed_layout_children || layout_children_changed;
     let layout_changed = !layout_mutations.is_empty() || structure_changed;
     let render_changed = !render_mutations.is_empty();
 
@@ -125,6 +128,8 @@ pub(super) fn begin_ui_settlement_work(
         solve: roots_changed || layout_changed || cache.solve_dirty_count() > 0,
         render: roots_changed || layout_changed || render_changed || cache.render_dirty_count() > 0,
     };
+
+
 
     work_state.begin_generation(pending);
 }

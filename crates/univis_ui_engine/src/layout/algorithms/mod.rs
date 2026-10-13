@@ -1,5 +1,5 @@
-pub mod bridge;
-pub mod places;
+pub use univis_layout::solver::algorithms::*;
+
 pub mod prelude {
-    pub use crate::layout::algorithms::{bridge::*, places::prelude::*};
+    pub use univis_layout::solver::algorithms::*;
 }

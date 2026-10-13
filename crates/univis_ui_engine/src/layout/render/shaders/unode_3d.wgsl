@@ -149,8 +149,8 @@ fn fragment(
     let half_size = material.size * 0.5;
     
     let dist = sd_box_dynamic(center_pos, half_size, material.radius, material.shape_mode);
-    let smoothing = fwidth(dist);
-    let alpha = 1.0 - smoothstep(0.0, smoothing, dist);
+    let smoothing = max(length(vec2<f32>(dpdx(dist), dpdy(dist))), 0.0001);
+    let alpha = 1.0 - smoothstep(-smoothing * 0.5, smoothing * 0.5, dist);
 
     let body_uv = (center_pos / material.size) + 0.5;
 
@@ -186,7 +186,7 @@ fn fragment(
         );
     }
 
-    let border_factor = smoothstep(-material.border_width - smoothing, -material.border_width, dist);
+    let border_factor = select(0.0, smoothstep(-smoothing * 0.5, smoothing * 0.5, dist + material.border_width), material.border_width > 0.0);
     let final_base_color = mix(current_base_color, material.border_color, border_factor);
     let border_glow = material.border_color; 
     let final_emissive = mix(material.emissive, border_glow, border_factor);

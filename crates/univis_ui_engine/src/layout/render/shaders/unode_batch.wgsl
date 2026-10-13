@@ -131,7 +131,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     let softness = max(in.border_params.z, 0.0001);
-    let aa_width = max(fwidth(dist_outer), softness);
+    let grad_outer = length(vec2<f32>(dpdx(dist_outer), dpdy(dist_outer)));
+    let aa_width = max(grad_outer, softness);
     let aa_inner = aa_width * 0.5;
 
     // Hardware clipping
@@ -139,7 +140,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if (in.use_clip > 0.5) {
         let p_clip = in.world_pos - in.clip_rect.xy;
         let d_clip = sd_rounded_box(p_clip, in.clip_rect.zw * 0.5, in.clip_radius);
-        alpha_clip = 1.0 - smoothstep(-softness, softness, d_clip);
+        let grad_clip = length(vec2<f32>(dpdx(d_clip), dpdy(d_clip)));
+        let clip_aa = max(grad_clip, softness) * 0.5;
+        alpha_clip = 1.0 - smoothstep(-clip_aa, clip_aa, d_clip);
         if (alpha_clip < 0.001) {
             discard;
         }
@@ -147,19 +150,21 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let border_width = in.border_params.x;
     let border_offset = in.border_params.y;
-    let dist_border_end = dist_outer + border_width;
-    let dist_body_start = dist_outer + border_width + border_offset;
+    let dist_body = dist_outer + border_width + border_offset;
 
-    let border_mask = (1.0 - smoothstep(-aa_inner, aa_inner, dist_outer)) *
-                      smoothstep(-aa_inner, aa_inner, dist_border_end);
-
-    let body_mask = 1.0 - smoothstep(-aa_inner, aa_inner, dist_body_start);
+    let total_alpha = 1.0 - smoothstep(-aa_inner, aa_inner, dist_outer);
+    var body_alpha = total_alpha;
+    var border_alpha = 0.0;
+    if (border_width > 0.0 || border_offset > 0.0) {
+        body_alpha = min(1.0 - smoothstep(-aa_inner, aa_inner, dist_body), total_alpha);
+        border_alpha = max(total_alpha - body_alpha, 0.0);
+    }
 
     // Outer shadow
+    var shadow_premul = vec4<f32>(0.0, 0.0, 0.0, 0.0);
     let shadow_blur = in.shadow_params.z;
     let shadow_spread = in.shadow_params.w;
     let shadow_offset = in.shadow_params.xy;
-    var final_color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
 
     if (shadow_blur > 0.0) {
         let p_shadow = p - vec2<f32>(shadow_offset.x, -shadow_offset.y);
@@ -173,12 +178,18 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         }
         let shadow_factor = 1.0 - smoothstep(-aa_inner, shadow_blur, dist_shadow);
         let shadow_alpha = shadow_factor * in.shadow_color.a;
-        final_color = vec4<f32>(in.shadow_color.rgb, shadow_alpha);
+        shadow_premul = vec4<f32>(in.shadow_color.rgb * shadow_alpha, shadow_alpha);
     }
 
-    final_color = mix(final_color, in.border_color, border_mask);
-    final_color = mix(final_color, in.color, body_mask);
-    final_color.a = final_color.a * alpha_clip;
+    // Shape compositing: Border + Body seamlessly combined without seam or opacity loss
+    let shape_rgb = in.border_color.rgb * (border_alpha * in.border_color.a) + in.color.rgb * (body_alpha * in.color.a);
+    let shape_alpha = border_alpha * in.border_color.a + body_alpha * in.color.a;
+
+    // Porter-Duff Over: Shape over Shadow
+    let comp_rgb = shape_rgb + shadow_premul.rgb * (1.0 - shape_alpha);
+    let comp_a = shape_alpha + shadow_premul.a * (1.0 - shape_alpha);
+    let straight_rgb = comp_rgb / max(comp_a, 0.0001);
+    let final_color = vec4<f32>(straight_rgb, comp_a * alpha_clip);
 
     if (final_color.a < 0.001) {
         discard;

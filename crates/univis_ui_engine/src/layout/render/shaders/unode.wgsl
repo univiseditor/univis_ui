@@ -174,7 +174,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     }
     
     let softness = max(material.softness, 0.0001);
-    let aa_width = max(fwidth(dist_outer), softness);
+    let grad_outer = length(vec2<f32>(dpdx(dist_outer), dpdy(dist_outer)));
+    let aa_width = max(grad_outer, softness);
     let aa_inner = aa_width * 0.5;
 
     // Optional clipping against parent container
@@ -182,19 +183,25 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if (material.use_clip == 1u) {
         let p_clip = in.world_position.xy - material.clip_center;
         let d_clip = sd_rounded_box(p_clip, material.clip_size * 0.5, material.clip_radius);
-        alpha_clip = 1.0 - smoothstep(-softness, softness, d_clip);
+        let grad_clip = length(vec2<f32>(dpdx(d_clip), dpdy(d_clip)));
+        let clip_aa = max(grad_clip, softness) * 0.5;
+        alpha_clip = 1.0 - smoothstep(-clip_aa, clip_aa, d_clip);
         if (alpha_clip < 0.001) {
             discard;
         }
     }
 
-    let dist_border_end = dist_outer + material.border_width;
-    let dist_body_start = dist_outer + material.border_width + material.border_offset;
-    
-    let border_mask = (1.0 - smoothstep(-aa_inner, aa_inner, dist_outer)) * 
-                      smoothstep(-aa_inner, aa_inner, dist_border_end);
-    
-    let body_mask = 1.0 - smoothstep(-aa_inner, aa_inner, dist_body_start);
+    let border_width = material.border_width;
+    let border_offset = material.border_offset;
+    let dist_body = dist_outer + border_width + border_offset;
+
+    let total_alpha = 1.0 - smoothstep(-aa_inner, aa_inner, dist_outer);
+    var body_alpha = total_alpha;
+    var border_alpha = 0.0;
+    if (border_width > 0.0 || border_offset > 0.0) {
+        body_alpha = min(1.0 - smoothstep(-aa_inner, aa_inner, dist_body), total_alpha);
+        border_alpha = max(total_alpha - body_alpha, 0.0);
+    }
 
     // Body UV relative to the base element bounds
     let body_uv = (p / material.size) * vec2<f32>(1.0, -1.0) + 0.5;
@@ -224,7 +231,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // Holographic inner edge glow along chamfers and rounded edges
     if (material.inner_glow_params.y > 0.5) {
         let inner_blur = max(material.inner_glow_params.x, 0.001);
-        let dist_inward = max(-dist_body_start, 0.0);
+        let dist_inward = max(-dist_body, 0.0);
         let inner_factor = 1.0 - smoothstep(0.0, inner_blur, dist_inward);
         let glow_alpha = inner_factor * material.inner_glow_color.a;
         body_color = vec4<f32>(
@@ -233,9 +240,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         );
     }
 
-    // Base compositing: Outer Shadow -> Border -> Body
-    var final_color = vec4<f32>(0.0, 0.0, 0.0, 0.0);
-
+    // Outer shadow
+    var shadow_premul = vec4<f32>(0.0, 0.0, 0.0, 0.0);
     if (shadow_blur > 0.0) {
         let p_shadow = p - vec2<f32>(shadow_offset.x, -shadow_offset.y);
         let shadow_radius = material.radius + vec4<f32>(shadow_spread);
@@ -248,12 +254,18 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         }
         let shadow_factor = 1.0 - smoothstep(-aa_inner, shadow_blur, dist_shadow);
         let shadow_alpha = shadow_factor * material.shadow_color.a;
-        final_color = vec4<f32>(material.shadow_color.rgb, shadow_alpha);
+        shadow_premul = vec4<f32>(material.shadow_color.rgb * shadow_alpha, shadow_alpha);
     }
 
-    final_color = mix(final_color, material.border_color, border_mask);
-    final_color = mix(final_color, body_color, body_mask);
-    final_color.a = final_color.a * alpha_clip;
+    // Shape compositing: Border + Body seamlessly combined without seam or opacity loss
+    let shape_rgb = material.border_color.rgb * (border_alpha * material.border_color.a) + body_color.rgb * (body_alpha * body_color.a);
+    let shape_alpha = border_alpha * material.border_color.a + body_alpha * body_color.a;
+
+    // Porter-Duff Over: Shape over Shadow
+    let comp_rgb = shape_rgb + shadow_premul.rgb * (1.0 - shape_alpha);
+    let comp_a = shape_alpha + shadow_premul.a * (1.0 - shape_alpha);
+    let straight_rgb = comp_rgb / max(comp_a, 0.0001);
+    let final_color = vec4<f32>(straight_rgb, comp_a * alpha_clip);
 
     if (final_color.a < 0.001) {
         discard;

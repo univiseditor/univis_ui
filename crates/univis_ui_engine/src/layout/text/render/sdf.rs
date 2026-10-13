@@ -114,8 +114,14 @@ pub(super) fn build_sdf_glyph_image(mask: &[u8], width: u32, height: u32) -> Ima
 
     let mut data = Vec::with_capacity(padded_len * 4);
     for idx in 0..padded_len {
-        let signed_distance = distance_to_outside[idx].sqrt() - distance_to_inside[idx].sqrt()
-            + (coverage[idx] - 0.5);
+        let d_out = distance_to_outside[idx].sqrt();
+        let d_in = distance_to_inside[idx].sqrt();
+        let cov = coverage[idx];
+        let signed_distance = if inside_mask[idx] {
+            (d_out - 0.5) + (cov - 1.0)
+        } else {
+            -(d_in - 0.5) + cov
+        };
         let alpha = (0.5 + 0.5 * (signed_distance / spread)).clamp(0.0, 1.0);
         let alpha_u8 = (alpha * 255.0).round() as u8;
         data.extend_from_slice(&[255, 255, 255, alpha_u8]);
@@ -134,4 +140,39 @@ pub(super) fn build_sdf_glyph_image(mask: &[u8], width: u32, height: u32) -> Ima
     );
     image.sampler = ImageSampler::linear();
     image
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_sdf_glyph_image_continuous_subpixel() {
+        // A 4x1 horizontal ramp from outside to inside with subpixel coverage:
+        let mask = vec![0u8, 64, 192, 255];
+        let image = build_sdf_glyph_image(&mask, 4, 1);
+
+        let padded_width = 4 + TEXT_SDF_PADDING * 2;
+        let y = TEXT_SDF_PADDING;
+        let get_alpha = |x: u32| -> u8 {
+            let idx = (y * padded_width + x + TEXT_SDF_PADDING) as usize * 4 + 3;
+            image.data.as_ref().unwrap()[idx]
+        };
+
+        let a0 = get_alpha(0); // 0% coverage
+        let a1 = get_alpha(1); // 25% coverage (subpixel outside)
+        let a2 = get_alpha(2); // 75% coverage (subpixel inside)
+        let a3 = get_alpha(3); // 100% coverage
+
+        // Strictly increasing without cliffs
+        assert!(a0 < a1, "expected a0 ({a0}) < a1 ({a1})");
+        assert!(a1 < a2, "expected a1 ({a1}) < a2 ({a2})");
+        assert!(a2 < a3, "expected a2 ({a2}) < a3 ({a3})");
+
+        // The subpixel transition across the boundary (a2 - a1) must be smooth and not a huge jump
+        assert!(
+            (a2 as i32 - a1 as i32) < 50,
+            "boundary jump should be smooth: a1={a1}, a2={a2}"
+        );
+    }
 }

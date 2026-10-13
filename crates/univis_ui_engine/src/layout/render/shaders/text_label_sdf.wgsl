@@ -32,7 +32,8 @@ fn sd_rounded_box(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let sdf = textureSample(text_texture, text_sampler, in.uv).a;
     let distance = sdf - 0.5;
-    let edge = max(fwidth(distance) * max(material.edge_softness, 0.5), 0.001);
+    let ddist = length(vec2<f32>(dpdx(distance), dpdy(distance)));
+    let edge = max(ddist * 0.5 * max(material.edge_softness, 0.1), 0.0001);
     let fill_alpha = smoothstep(-edge, edge, distance);
 
 #ifdef VERTEX_COLORS
@@ -58,7 +59,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if (material.use_clip == 1u) {
         let clip_p = in.world_position.xy - material.clip_center;
         let clip_distance = sd_rounded_box(clip_p, material.clip_size * 0.5, material.clip_radius);
-        let clip_alpha = 1.0 - smoothstep(-0.5, 0.5, clip_distance);
+        let clip_ddist = length(vec2<f32>(dpdx(clip_distance), dpdy(clip_distance)));
+        let clip_edge = max(clip_ddist * 0.5, 0.0001);
+        let clip_alpha = 1.0 - smoothstep(-clip_edge, clip_edge, clip_distance);
         final_color = vec4<f32>(final_color.rgb, final_color.a * clip_alpha);
     }
 

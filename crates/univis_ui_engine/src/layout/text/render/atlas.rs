@@ -76,3 +76,27 @@ pub(super) fn create_text_atlas_page(
         glyphs: HashMap::default(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_glyph_key_deduplication() {
+        let key1 = UTextLabelGlyphKey {
+            glyph_id: 42,
+            x_bin_bits: 0,
+            y_bin_bits: 0,
+        };
+        let key2 = UTextLabelGlyphKey {
+            glyph_id: 42,
+            x_bin_bits: 0,
+            y_bin_bits: 0,
+        };
+        assert_eq!(key1, key2);
+
+        let mut map = HashMap::new();
+        map.insert(key1, "cached");
+        assert_eq!(map.get(&key2), Some(&"cached"));
+    }
+}

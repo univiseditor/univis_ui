@@ -30,11 +30,46 @@ fn sd_rounded_box(p: vec2<f32>, b: vec2<f32>, r: vec4<f32>) -> f32 {
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
-    let sdf = textureSample(text_texture, text_sampler, in.uv).a;
-    let distance = sdf - 0.5;
-    let ddist = length(vec2<f32>(dpdx(distance), dpdy(distance)));
+    let tex_size = vec2<f32>(textureDimensions(text_texture));
+    let uv_dx = dpdx(in.uv);
+    let uv_dy = dpdy(in.uv);
+
+    // Isotropic screen-space derivative in atlas texels per screen pixel
+    let d_tex_x = uv_dx * tex_size;
+    let d_tex_y = uv_dy * tex_size;
+    let texels_per_px = length(vec2<f32>(length(d_tex_x), length(d_tex_y))) * 0.70710678;
+    // Spread is 12 texels, distance is normalized in [-0.5, 0.5] over 24 texels
+    let ddist = max(texels_per_px / 24.0, 0.0001);
+
+    // Filter edge softness (scaled to subpixel tap footprint)
     let edge = max(ddist * 0.5 * max(material.edge_softness, 0.1), 0.0001);
-    let fill_alpha = smoothstep(-edge, edge, distance);
+    let sub_edge = edge * 0.65;
+
+    // Adaptive stem darkening: dilate strokes by ~0.22 screen pixels to prevent thin stem dropouts in small fonts
+    let stem_darkening = 0.22 * ddist;
+
+    // Rotated Grid Super-Sampling (RGSS 4-tap) offsets in screen pixels:
+    // (-1/8, -3/8), (3/8, -1/8), (-3/8, 1/8), (1/8, 3/8)
+    let o0 = uv_dx * -0.125 + uv_dy * -0.375;
+    let o1 = uv_dx *  0.375 + uv_dy * -0.125;
+    let o2 = uv_dx * -0.375 + uv_dy *  0.125;
+    let o3 = uv_dx *  0.125 + uv_dy *  0.375;
+
+    let s0 = textureSampleLevel(text_texture, text_sampler, in.uv + o0, 0.0).a;
+    let s1 = textureSampleLevel(text_texture, text_sampler, in.uv + o1, 0.0).a;
+    let s2 = textureSampleLevel(text_texture, text_sampler, in.uv + o2, 0.0).a;
+    let s3 = textureSampleLevel(text_texture, text_sampler, in.uv + o3, 0.0).a;
+
+    let dist0 = s0 - 0.5 + stem_darkening;
+    let dist1 = s1 - 0.5 + stem_darkening;
+    let dist2 = s2 - 0.5 + stem_darkening;
+    let dist3 = s3 - 0.5 + stem_darkening;
+
+    let a0 = smoothstep(-sub_edge, sub_edge, dist0);
+    let a1 = smoothstep(-sub_edge, sub_edge, dist1);
+    let a2 = smoothstep(-sub_edge, sub_edge, dist2);
+    let a3 = smoothstep(-sub_edge, sub_edge, dist3);
+    let fill_alpha = (a0 + a1 + a2 + a3) * 0.25;
 
 #ifdef VERTEX_COLORS
     let fill_color = material.color * in.color;
@@ -45,8 +80,11 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     var final_color: vec4<f32>;
 
     if (material.outline_width > 0.0 && material.outline_color.a > 0.0) {
-        let outline_distance = distance + material.outline_width;
-        let outline_alpha = smoothstep(-edge, edge, outline_distance);
+        let out_a0 = smoothstep(-sub_edge, sub_edge, dist0 + material.outline_width);
+        let out_a1 = smoothstep(-sub_edge, sub_edge, dist1 + material.outline_width);
+        let out_a2 = smoothstep(-sub_edge, sub_edge, dist2 + material.outline_width);
+        let out_a3 = smoothstep(-sub_edge, sub_edge, dist3 + material.outline_width);
+        let outline_alpha = (out_a0 + out_a1 + out_a2 + out_a3) * 0.25;
 
         let outline_blend = outline_alpha * (1.0 - fill_alpha);
         let alpha = fill_alpha * fill_color.a + outline_blend * material.outline_color.a;

@@ -278,8 +278,8 @@ pub(super) fn sync_text_label_meshes(
 
                             let glyph_key = UTextLabelGlyphKey {
                                 glyph_id,
-                                x_bin_bits: (glyph.x * render_scale).to_bits(),
-                                y_bin_bits: (glyph.y * render_scale).to_bits(),
+                                x_bin_bits: 0,
+                                y_bin_bits: 0,
                             };
 
                             let atlas_pages =
